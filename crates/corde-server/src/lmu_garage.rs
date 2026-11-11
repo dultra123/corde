@@ -260,10 +260,15 @@ mod tests {
     use std::sync::Mutex;
 
     fn tmp_dir(name: &str) -> PathBuf {
+        // Digits only: the debug form of a `SystemTime` holds `:` and `{`, which Windows
+        // refuses in a file name.
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0);
         let d = std::env::temp_dir().join(format!(
-            "corde-garage-{name}-{}-{:?}",
-            std::process::id(),
-            std::time::SystemTime::now()
+            "corde-garage-{name}-{}-{nanos}",
+            std::process::id()
         ));
         let _ = fs::remove_dir_all(&d);
         d

@@ -137,7 +137,7 @@ jobs:
         run: cargo clippy --workspace --all-targets
 
       - name: Tests
-        run: cargo test --workspace
+        run: cargo test --workspace --no-fail-fast
 
       - name: Build release (corde-server, lmu-probe, corde-sim, corde-store)
         run: cargo build --release -p corde-server -p corde-lmu -p corde-sim -p corde-store --bins
