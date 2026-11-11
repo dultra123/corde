@@ -332,7 +332,7 @@ try {
           game = ws;
           ws.onMessage(() => {});
           say(ws, "hello", {
-            server_version: "0.3.0",
+            server_version: "0.4.0",
             protocol_version: 1,
             status: { ...status, in_realtime: false },
           });
@@ -390,7 +390,7 @@ try {
               invoke: async (cmd, args) => {
                 window.__calls.push([cmd, args ?? null]);
                 if (cmd === "get_autostart") return false;
-                if (cmd === "app_version") return "0.3.0";
+                if (cmd === "app_version") return "0.4.0";
                 return null;
               },
             },
@@ -416,7 +416,7 @@ try {
     await autostart.locator("input").click();
     await page.waitForFunction(() => window.__calls.some(([c]) => c === "set_autostart"));
     const dialogText = await page.textContent("dialog.sheet[open]");
-    check(/0\.3\.0/.test(dialogText ?? ""), "desktop: the application version is shown");
+    check(/0\.4\.0/.test(dialogText ?? ""), "desktop: the application version is shown");
     const calls = await page.evaluate(() => window.__calls);
     const sent = (cmd, args) =>
       calls.some(([c, a]) => c === cmd && JSON.stringify(a) === JSON.stringify(args));

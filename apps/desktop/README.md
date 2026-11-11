@@ -75,7 +75,7 @@ const invoke = window.__TAURI__?.core?.invoke; // undefined dans un navigateur o
 await invoke("get_autostart");                 // → boolean
 await invoke("set_autostart", { enabled: true });
 await invoke("restart_app");                   // l'application s'arrête et se relance
-await invoke("app_version");                   // → "0.3.0"
+await invoke("app_version");                   // → "0.4.0"
 ```
 
 | Commande | Arguments | Retour | Effet |
