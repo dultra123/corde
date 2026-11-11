@@ -377,3 +377,98 @@ async fn a_phone_of_the_lan_keeps_the_dashboard_not_the_pc_only_routes() {
     server.stop().await;
     let _ = std::fs::remove_dir_all(&data);
 }
+
+/// An OBS browser source (Chromium embedded in OBS) loads the overlay page
+/// from the server itself: `http://127.0.0.1:<port>/#/overlay/…` on the same
+/// PC, `http://<ip>:<port>/#/overlay/…` from a second streaming PC. The hash
+/// never reaches the server; the page then reads `GET /api/layouts` and opens
+/// the WebSocket with its own origin. All of that must pass the guard, and
+/// the overlay needs no route of its own (no new write route).
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn an_obs_browser_source_loads_the_overlay_from_the_server() {
+    let root = temp_dir("obs");
+    let ui = root.join("ui");
+    std::fs::create_dir_all(ui.join("assets")).unwrap();
+    std::fs::write(ui.join("index.html"), "<!doctype html>corde-index").unwrap();
+    std::fs::write(ui.join("assets").join("index.js"), "console.log(1)").unwrap();
+    let data = root.join("data");
+    let overlay = br#"{"id":"default-overlay","name":"OBS","device":"overlay","columns":48,"widgets":[{"id":"w1","kind":"inputs","x":17,"y":19,"w":15,"h":8,"config":{}}],"updated_ms":5}"#;
+
+    // Same PC, LAN closed (the default).
+    let ui_dir = ui.clone();
+    let server = Running::start(&data, move |c| c.ui_dir = Some(ui_dir)).await;
+    let to = server.bound;
+    let host = format!("127.0.0.1:{}", server.port());
+    let page = format!("http://{host}");
+    // the dashboard of this PC saved the overlay layout (existing route)
+    let r = raw(
+        to,
+        "PUT",
+        "/api/layouts/default-overlay",
+        &[("Host", &host), ("Origin", &page)],
+        overlay,
+    )
+    .await;
+    assert_eq!(r.status, 200, "{}", r.body);
+    // navigation of the source: no Origin, any query string (options, preview)
+    for path in ["/", "/?preview=1&demo=1", "/assets/index.js"] {
+        let r = raw(to, "GET", path, &[("Host", &host)], b"").await;
+        assert_eq!(r.status, 200, "{path}: {}", r.body);
+    }
+    // what the page reads, with its own origin
+    let r = raw(
+        to,
+        "GET",
+        "/api/layouts",
+        &[("Host", &host), ("Origin", &page)],
+        b"",
+    )
+    .await;
+    assert_eq!(r.status, 200, "{}", r.body);
+    assert!(r.body.contains("\"device\":\"overlay\""), "{}", r.body);
+    assert_eq!(ws_open(to, &host, Some(&page)).await, Ok(()));
+    // `localhost` typed instead of 127.0.0.1
+    let lhost = format!("localhost:{}", server.port());
+    let lpage = format!("http://{lhost}");
+    let r = raw(
+        to,
+        "GET",
+        "/api/layouts",
+        &[("Host", &lhost), ("Origin", &lpage)],
+        b"",
+    )
+    .await;
+    assert_eq!(r.status, 200);
+    assert_eq!(ws_open(to, &lhost, Some(&lpage)).await, Ok(()));
+    server.stop().await;
+
+    // Second streaming PC: LAN open, the page comes from the address of the PC.
+    if let Some(lan_ip) = corde_server::net::lan_ipv4().first().map(|(_, ip)| *ip) {
+        let ui_dir = ui.clone();
+        let server = Running::start(&data, move |c| {
+            c.ui_dir = Some(ui_dir);
+            c.lan = true;
+        })
+        .await;
+        let to = SocketAddr::new(IpAddr::V4(lan_ip), server.port());
+        let host = to.to_string();
+        let page = format!("http://{to}");
+        let r = raw(to, "GET", "/", &[("Host", &host)], b"").await;
+        assert_eq!(r.status, 200);
+        assert!(r.body.contains("corde-index"));
+        let r = raw(
+            to,
+            "GET",
+            "/api/layouts",
+            &[("Host", &host), ("Origin", &page)],
+            b"",
+        )
+        .await;
+        assert_eq!(r.status, 200, "{}", r.body);
+        assert_eq!(ws_open(to, &host, Some(&page)).await, Ok(()));
+        server.stop().await;
+    } else {
+        eprintln!("no LAN address on this machine: second-PC case skipped");
+    }
+    let _ = std::fs::remove_dir_all(&root);
+}
