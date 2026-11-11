@@ -53,6 +53,9 @@
 //! /*                         static UI with SPA fallback, or a small landing page
 //! ```
 //!
+//! Every request goes through [`crate::guard`] (Host, Origin, routes "this PC
+//! only", body ≤ 1 MiB): see `docs/SECURITY-MODEL.md`.
+//!
 //! Without a usable store (database failed to open) the `/api/sessions*`,
 //! `/api/recording*`, `/api/storage`, `/api/profile*` and `/api/results*`
 //! routes answer 503.
@@ -61,7 +64,7 @@ use crate::results_import::{linked_session, ImportStatus, ResultsImporter, ScanC
 use crate::state::{AppState, SERVER_VERSION};
 use crate::ws::ws_handler;
 use axum::body::Bytes;
-use axum::extract::{ConnectInfo, Path, Query, State};
+use axum::extract::{ConnectInfo, DefaultBodyLimit, Path, Query, State};
 use axum::http::{header, HeaderMap, StatusCode};
 use axum::response::{Html, IntoResponse, Response};
 use axum::routing::{any, get, post};
@@ -79,7 +82,6 @@ use serde_json::{json, Value};
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tower_http::cors::CorsLayer;
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
 
@@ -209,7 +211,16 @@ pub fn router(state: Arc<AppState>, ui_dir: Option<PathBuf>) -> Router {
         None => api.fallback(landing),
     };
 
-    app.layer(CorsLayer::permissive())
+    // Outermost last: the guard (Host, Origin, PC-only routes) sees every
+    // request before CORS answers a preflight. See `guard` and
+    // docs/SECURITY-MODEL.md.
+    let policy = Arc::new(crate::guard::HostPolicy::for_listener(state.listen));
+    app.layer(DefaultBodyLimit::max(crate::guard::MAX_BODY_BYTES))
+        .layer(crate::guard::cors_layer())
+        .layer(axum::middleware::from_fn_with_state(
+            policy,
+            crate::guard::guard,
+        ))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }

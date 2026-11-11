@@ -32,6 +32,7 @@ clap = { version = "4", features = ["derive"] }
 local-ip-address = "0.6"
 
 [dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
 tokio-tungstenite = "0.30"
 futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
 ureq = { version = "3", default-features = false, features = ["json"] }

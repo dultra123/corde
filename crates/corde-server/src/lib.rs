@@ -21,6 +21,7 @@
 pub mod api;
 pub mod config;
 pub mod events;
+pub mod guard;
 pub mod layouts;
 pub mod lmu_api;
 pub mod lmu_garage;

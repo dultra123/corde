@@ -84,40 +84,104 @@ pub fn network_info(bound: SocketAddr, settings: &Settings) -> NetworkInfo {
     }
 }
 
-/// Who may change the settings: a program of this PC only. The peer must be
-/// the loopback, and when a browser sent the request (it adds `Origin` to
-/// every cross-origin one, and to every `PUT`), the page must itself come
-/// from this PC — the Corde UI, the desktop shell or a dev server. A web page
-/// from anywhere else cannot open the server to the network behind the
-/// user's back, even though the read API is CORS-permissive.
-pub fn may_change_settings(peer: IpAddr, origin: Option<&str>) -> bool {
-    let peer_is_local = match peer {
+/// `true` for a connection made from this machine (loopback, IPv4-mapped
+/// loopback included).
+pub fn peer_is_local(peer: IpAddr) -> bool {
+    match peer {
         IpAddr::V4(v4) => v4.is_loopback(),
         IpAddr::V6(v6) => v6.is_loopback() || v6.to_ipv4_mapped().is_some_and(|m| m.is_loopback()),
-    };
-    peer_is_local && origin.is_none_or(origin_is_local)
+    }
 }
 
-/// `http://127.0.0.1:8471`, `http://localhost:5173`, `http://[::1]:8471`,
-/// `tauri://localhost`, `https://tauri.localhost`… — any port, any scheme.
-fn origin_is_local(origin: &str) -> bool {
-    let Some((_, rest)) = origin.trim().split_once("://") else {
+/// Who may change the settings (and call the other "this PC only" routes,
+/// see [`crate::guard::route_access`]): a program of this PC only. The peer
+/// must be the loopback, and when a browser sent the request (it adds
+/// `Origin` to every cross-origin one, and to every `PUT`), the page must
+/// itself come from this PC — the Corde UI, the desktop shell or a dev
+/// server. A phone of the LAN, even through the UI this server gave it, is
+/// refused.
+pub fn may_change_settings(peer: IpAddr, origin: Option<&str>) -> bool {
+    peer_is_local(peer) && origin.is_none_or(origin_is_local)
+}
+
+/// Origins of pages that run on this PC: `http://127.0.0.1:<port>`,
+/// `http://localhost:<port>`, `http://[::1]:<port>` (any port: the UI served
+/// by this server, a dev server, a capture script), and the Tauri shell's own
+/// pages (`tauri://localhost`, `http(s)://tauri.localhost`).
+pub fn origin_is_local(origin: &str) -> bool {
+    let Some((scheme, authority)) = split_origin(origin) else {
         return false;
     };
-    let authority = rest.split(['/', '?', '#']).next().unwrap_or("");
-    if authority.contains('@') {
+    let Some((host, _)) = split_host_port(&authority) else {
         return false;
-    }
-    let host = match authority.strip_prefix('[') {
-        // [::1]:8471
-        Some(v6) => v6.split(']').next().unwrap_or(""),
-        None => authority.rsplit_once(':').map_or(authority, |(h, _)| h),
     };
-    let host = host.to_ascii_lowercase();
-    match host.as_str() {
-        "localhost" | "tauri.localhost" => true,
-        other => other.parse::<IpAddr>().is_ok_and(|ip| ip.is_loopback()),
+    match (scheme.as_str(), host.as_str()) {
+        ("tauri", "localhost") => true,
+        ("http" | "https", "tauri.localhost") => true,
+        ("http", "localhost") => true,
+        ("http", other) => parse_ip_host(other).is_some_and(|ip| ip.is_loopback()),
+        _ => false,
     }
+}
+
+/// `("http", "pc-jeu:8471")` from `http://PC-Jeu:8471`, lower case. `None`
+/// when it is not `scheme://authority` (with nothing after but an optional
+/// `/`), or the authority carries credentials.
+pub(crate) fn split_origin(origin: &str) -> Option<(String, String)> {
+    let origin = origin.trim().to_ascii_lowercase();
+    let (scheme, rest) = origin.split_once("://")?;
+    let authority = rest.strip_suffix('/').unwrap_or(rest);
+    if scheme.is_empty()
+        || authority.is_empty()
+        || authority.contains(['/', '?', '#', '@', ' '])
+        || !scheme
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '-' | '.'))
+    {
+        return None;
+    }
+    Some((scheme.to_string(), authority.to_string()))
+}
+
+/// `("192.168.1.20", Some(8471))`, `("::1", None)`, `("localhost", None)`
+/// from an authority (`Host` header or origin), host in lower case. `None`
+/// when malformed (bad port, unclosed bracket, empty host).
+pub(crate) fn split_host_port(authority: &str) -> Option<(String, Option<u16>)> {
+    let a = authority.trim().to_ascii_lowercase();
+    let (host, port) = if let Some(v6) = a.strip_prefix('[') {
+        // [::1]:8471 — only an IPv6 literal goes between brackets.
+        let (host, rest) = v6.split_once(']')?;
+        host.parse::<std::net::Ipv6Addr>().ok()?;
+        let port = match rest {
+            "" => None,
+            p => Some(p.strip_prefix(':')?),
+        };
+        (host.to_string(), port)
+    } else {
+        let (h, p) = match a.rsplit_once(':') {
+            Some((h, p)) => (h.to_string(), Some(p)),
+            None => (a.clone(), None),
+        };
+        // A bare IPv6 literal (no brackets) is not a valid authority.
+        if h.contains(':') {
+            return None;
+        }
+        (h, p)
+    };
+    if host.is_empty() {
+        return None;
+    }
+    let port = match port {
+        None => None,
+        Some(p) if !p.is_empty() && p.chars().all(|c| c.is_ascii_digit()) => Some(p.parse().ok()?),
+        Some(_) => return None,
+    };
+    Some((host, port))
+}
+
+/// An IP literal host (`192.168.1.20`, or `::1` taken out of its brackets).
+pub(crate) fn parse_ip_host(host: &str) -> Option<IpAddr> {
+    host.parse::<IpAddr>().ok()
 }
 
 /// Lines of the start-up banner.

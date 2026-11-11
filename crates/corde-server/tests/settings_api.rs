@@ -167,8 +167,8 @@ async fn lan_access_is_off_by_default_saved_by_put_and_applied_at_the_next_start
         "a rejected body must not write anything"
     );
 
-    // A web page from somewhere else cannot flip the setting (CORS lets the
-    // request through, the server refuses it).
+    // A web page from somewhere else cannot flip the setting (the origin
+    // check refuses it before the route does).
     for origin in ["https://evil.example", "http://192.168.1.20:8471"] {
         let (code, body) = call(
             "PUT",

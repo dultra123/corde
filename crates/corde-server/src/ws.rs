@@ -65,7 +65,9 @@ pub async fn ws_handler(
         Err(rejection) => return rejection.into_response(),
     };
     let rate = q.rate.map(clamp_rate).unwrap_or(state.default_rate);
-    ws.on_upgrade(move |socket| client_loop(socket, state, rate))
+    ws.max_message_size(crate::guard::WS_MAX_MESSAGE_BYTES)
+        .max_frame_size(crate::guard::WS_MAX_MESSAGE_BYTES)
+        .on_upgrade(move |socket| client_loop(socket, state, rate))
 }
 
 fn clamp_rate(hz: u8) -> u8 {
