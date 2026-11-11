@@ -6,6 +6,7 @@ import { lapNo, lapStatus, lapStatusHintKey } from "../lib/laps";
 import { useLaps, usePlayer } from "../store/telemetry";
 import { registerWidget, type WidgetProps } from "./registry";
 import { Empty } from "./shared/Empty";
+import { hint } from "./shared/hint";
 
 const DELTA_BAR_SCALE_S = 2;
 
@@ -81,7 +82,7 @@ function HistoryRow({ lap, best }: { lap: LapRecord; best: number | null }) {
       </span>
       <span
         className={`lap-valid ${lap.valid ? "is-ok" : "is-ko"}`}
-        title={t(lapStatusHintKey(lapStatus(lap)))}
+        title={hint(t(lapStatusHintKey(lapStatus(lap))))}
       >
         {lap.valid ? "" : "✕"}
       </span>

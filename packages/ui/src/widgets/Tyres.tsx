@@ -5,6 +5,7 @@ import { fmtNum } from "../lib/format";
 import { usePlayer } from "../store/telemetry";
 import { registerWidget, type WidgetProps } from "./registry";
 import { Empty } from "./shared/Empty";
+import { hint } from "./shared/hint";
 
 const compoundKey = (c: CompoundType) =>
   (
@@ -24,7 +25,7 @@ function Tyre({ wheel, side }: { wheel: Wheel; side: "left" | "right" }) {
   const bad = wheel.flat || wheel.detached;
   return (
     <div className={`tyre is-${side}${bad ? " is-bad" : ""}`}>
-      <div className="tyre-tread" title={`${t("tyres.inner")} / ${t("tyres.outer")}`}>
+      <div className="tyre-tread" title={hint(`${t("tyres.inner")} / ${t("tyres.outer")}`)}>
         {zones.map((temp, i) => (
           <div key={i} className="tyre-zone num" style={{ background: tempColor(temp, scale) }}>
             {Math.round(temp)}

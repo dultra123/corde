@@ -739,7 +739,7 @@ small {
 }
 .st-row {
   display: grid;
-  grid-template-columns: 4px 26px 18px 1fr auto auto;
+  grid-template-columns: 4px 26px 18px 1fr auto auto auto;
   gap: 8px;
   align-items: center;
   padding: 3px 4px 3px 0;

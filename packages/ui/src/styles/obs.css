@@ -68,9 +68,13 @@
   font-size: 13.5px;
 }
 .obs-steps-list li {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  padding-left: 4px;
+}
+.obs-steps-list li > * {
+  display: block;
+}
+.obs-steps-list li > b {
+  margin-bottom: 2px;
 }
 .obs-steps-list li::marker {
   color: var(--accent);
@@ -106,7 +110,7 @@
   padding: 0;
   margin-bottom: 8px;
 }
-.obs-field b {
+.obs-field > span > b {
   color: var(--text);
   font-weight: 600;
 }

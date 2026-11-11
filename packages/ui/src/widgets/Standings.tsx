@@ -122,8 +122,11 @@ function StandingsWidget({ config }: WidgetProps) {
               {s.driver_name}
               <small className="st-car dim">{s.vehicle_name}</small>
             </span>
-            {s.in_pits && <span className="pill is-warn">{t("standings.pit")}</span>}
-            {s.flag_blue && !s.in_pits && <span className="pill is-blue">B</span>}
+            {/* always one cell, so that a badge never pushes the row onto two lines */}
+            <span className="st-flag">
+              {s.in_pits && <span className="pill is-warn">{t("standings.pit")}</span>}
+              {s.flag_blue && !s.in_pits && <span className="pill is-blue">B</span>}
+            </span>
             <Gap row={row} relative={relative} lapWord={lapWord} />
             <span className="st-last num dim">{fmtLapTime(s.last_lap_s, { ms: 1 })}</span>
           </div>

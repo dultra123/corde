@@ -133,15 +133,21 @@ function OverlayWidget({ kind, options }: { kind: string; options: OverlayOption
   );
 }
 
+/**
+ * One layout of the server, `"missing"` when it has none of that id, `null` when the server
+ * does not answer. Reads the list (`GET /api/layouts`, a few kilobytes) rather than the layout
+ * itself: an unknown id then does not log a 404 in the console of OBS every ten seconds.
+ */
 async function fetchLayout(id: string): Promise<DashboardLayout | "missing" | null> {
   try {
-    const res = await fetch(`${connection.endpoint.http}/api/layouts/${encodeURIComponent(id)}`, {
+    const res = await fetch(`${connection.endpoint.http}/api/layouts`, {
       headers: { Accept: "application/json" },
     });
-    if (res.status === 404) return "missing";
     if (!res.ok) return null;
     const json: unknown = await res.json();
-    return isLayout(json) ? json : null;
+    if (!Array.isArray(json)) return null;
+    const found = json.find((l: unknown) => isLayout(l) && l.id === id);
+    return found && isLayout(found) ? found : "missing";
   } catch {
     return null;
   }

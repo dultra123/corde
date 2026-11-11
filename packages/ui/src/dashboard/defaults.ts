@@ -85,9 +85,9 @@ export function defaultOverlayLayout(): DashboardLayout {
     widgets: place([
       { kind: "map", x: 0, y: 0, w: 9, h: 9 },
       { kind: "gaps", x: 40, y: 0, w: 8, h: 9 },
-      { kind: "standings", x: 0, y: 15, w: 14, h: 12, config: { mode: "relative" } },
-      { kind: "inputs", x: 16, y: 19, w: 16, h: 8, config: { window: 10 } },
-      { kind: "tyres", x: 37, y: 18, w: 11, h: 9 },
+      { kind: "standings", x: 0, y: 17, w: 16, h: 10, config: { mode: "relative" } },
+      { kind: "inputs", x: 17, y: 19, w: 15, h: 8, config: { window: 10 } },
+      { kind: "tyres", x: 36, y: 17, w: 12, h: 10 },
     ]),
   };
 }

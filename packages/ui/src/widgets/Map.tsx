@@ -4,6 +4,7 @@ import { COLORS, classColor } from "../lib/color";
 import { useTelemetry } from "../store/telemetry";
 import { TrackLearner } from "./map/learner";
 import { registerWidget, type WidgetProps } from "./registry";
+import { Empty } from "./shared/Empty";
 import { fitCanvas, useElementSize, useFrameDraw } from "./shared/hooks";
 
 interface Bounds {
@@ -211,11 +212,14 @@ function MapWidget(_props: WidgetProps) {
   });
 
   const learning = progress < 1;
+  // The canvas stays mounted (it keeps what was learnt); « no data » shows over it.
+  const noData = useTelemetry((s) => s.frame === null);
   return (
     <div className="map" ref={hostRef}>
       <canvas ref={canvasRef} className="map-canvas" />
+      {noData && <Empty textKey="widget.noData" />}
       <div className="map-overlay">
-        {learning ? (
+        {noData ? null : learning ? (
           <span className="dim">
             {t("map.learning")} <span className="num">{Math.round(progress * 100)} %</span>
           </span>
