@@ -26,6 +26,7 @@ que l'on vise à chaque tour. Corde s'appelait anciennement Muret (nom de travai
   - [Sessions et tours](#sessions-et-tours)
   - [Profil et résultats de course](#profil-et-résultats-de-course)
   - [L'ingénieur de course](#lingénieur-de-course)
+  - [Courses en ligne](#courses-en-ligne)
 - [Où en est le projet](#où-en-est-le-projet)
 - [Pour les développeurs](#pour-les-développeurs)
 - [Documentation](#documentation)
@@ -134,6 +135,26 @@ jamais un fichier existant, et n'écrit rien d'autre dans le dossier du jeu.
 
 ![Ton réglage, et les changements calculés dessus](docs/images/ingenieur-reglage-fichiers.png)
 
+### Courses en ligne
+
+L'onglet **Courses** montre le planning en ligne de Le Mans Ultimate : les courses quotidiennes (trois
+niveaux, plusieurs départs par heure), les hebdomadaires, les événements spéciaux et les championnats
+RaceControl Pro, avec leur circuit, leur durée, leurs catégories de voitures et les badges d'accès SR / DR
+(marqués quand ton rang, que tu indiques, est en dessous). Touche un horaire : la course rejoint **Mes
+courses**, avec un compte à rebours, et Corde te prévient avant le départ (15 et 5 min par défaut, au
+choix entre 60 min et le départ) par un bandeau et un son court, sur le PC et sur le téléphone, quelle que
+soit la page ouverte. L'Accueil affiche la prochaine course des trois heures à venir. L'inscription, elle,
+se fait toujours dans le jeu : lance LMU et rejoins la course.
+
+![Planning des courses, mes courses et un rappel, sur PC et téléphone](docs/images/courses.png)
+
+Le planning est **désactivé par défaut** : tant que tu ne l'actives pas (bouton de la page, sur le PC),
+Corde ne contacte aucun site. Une fois activé, elle lit les pages publiques
+[racecontrol.gg](https://racecontrol.gg/) (site officiel, courses quotidiennes) et
+[lmu.tools](https://lmu.tools/schedule) (site communautaire, le reste), au plus toutes les 10 minutes,
+sans compte ni identifiant ([vie privée](PRIVACY.md#planning-des-courses-en-ligne-optionnel-désactivé-par-défaut)).
+Planning non officiel : si un site change sa page, Corde le dit et en garde une copie pour être adaptée.
+
 ## Où en est le projet
 
 | Partie | État |
@@ -144,7 +165,7 @@ jamais un fichier existant, et n'écrit rien d'autre dans le dossier du jeu.
 | Profil et résultats de course | fait |
 | Ingénieur : analyse, trois orientations de réglage, ressenti → ajustement | fait, à calibrer sur des données réelles |
 | Fichiers de réglage `.svm` prêts à charger dans le jeu | fait (lecture de tes réglages, crans réels, écriture à la demande) ; bornes exactes à lire dans le garage du jeu sur ton PC |
-| Page des courses en ligne avec rappel sonore avant le départ | à l'étude |
+| Page des courses en ligne (planning, mes courses, rappel sonore avant le départ) | fait ; lecture des vrais sites, son dans l'application Windows et rappels sur le téléphone à vérifier chez le pilote |
 | Signature de l'installeur (plus d'avertissement Windows) | à décider |
 | Application mobile autonome (iOS / Android) | à venir |
 | Linux (le jeu tourne sous Proton) | serveur compilé, non testé avec le jeu |
@@ -206,7 +227,7 @@ corde/
 │  └─ corde-server/           # exécutable serveur (axum : HTTP, WebSocket, UI statique)
 ├─ packages/
 │  ├─ protocol/               # @corde/protocol : types TS générés + constantes
-│  └─ ui/                     # @corde/ui : interface React (accueil, dashboard, sessions, ingénieur)
+│  └─ ui/                     # @corde/ui : interface React (accueil, dashboard, sessions, courses, ingénieur)
 ├─ apps/
 │  └─ desktop/                # application Windows (Tauri 2) + installeur, workspace Cargo à part
 ├─ docs/                      # SPEC, ARCHITECTURE, ADR, guides, research/
@@ -238,7 +259,8 @@ corde/
 ## Sécurité et vie privée
 
 - **Vie privée** : tout reste sur ton PC — pas de compte, pas de télémétrie, rien n'est envoyé sur Internet
-  sauf si tu actives l'extracteur LLM optionnel. Détails : [PRIVACY.md](PRIVACY.md).
+  sauf si tu actives l'extracteur LLM optionnel ; le planning des courses en ligne, s'il est activé, lit
+  deux pages publiques sans rien y envoyer de toi. Détails : [PRIVACY.md](PRIVACY.md).
 - **Sécurité** : le serveur local n'écoute que sur ton PC par défaut ; ce qui est exposé quand l'accès
   depuis le téléphone est activé est décrit dans [docs/SECURITY-MODEL.md](docs/SECURITY-MODEL.md).
 - **Signaler une faille** : en privé, par l'onglet *Security* du dépôt → *Report a vulnerability*

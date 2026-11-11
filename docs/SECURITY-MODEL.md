@@ -56,8 +56,10 @@ ne sont accordées qu'aux pages `http://127.0.0.1:*` et `http://localhost:*`
 1. **Une machine hostile sur le même réseau quand l'accès réseau est activé.** Tout appareil du Wi-Fi peut
    alors lire tout ce que l'interface montre (sessions, télémétrie en direct, résultats avec les noms des
    autres pilotes, chemins de dossiers du PC, adresses IP), modifier les dispositions, envoyer un ressenti
-   (qui part vers l'API d'Anthropic si l'extracteur LLM optionnel est activé, donc à tes frais) et démarrer
-   ou arrêter l'enregistrement. Un programme (pas un navigateur) peut aussi forger `Host` et `Origin` : ces
+   (qui part vers l'API d'Anthropic si l'extracteur LLM optionnel est activé, donc à tes frais), démarrer
+   ou arrêter l'enregistrement, choisir ou retirer des courses de « Mes courses » (≤ 50), changer les
+   réglages de la page Courses et, si le planning est activé, faire relire les deux pages publiques du
+   planning (au plus une fois par minute, cache compris). Un programme (pas un navigateur) peut aussi forger `Host` et `Origin` : ces
    contrôles visent les navigateurs. Le trafic est en HTTP simple, non chiffré. **N'active l'accès réseau
    que sur un réseau de confiance** (la maison, pas un Wi-Fi public), et coupe-le quand tu n'en as pas besoin.
 2. **Un programme malveillant qui tourne déjà sur le PC** : il a les mêmes droits que l'utilisateur, il
@@ -140,15 +142,35 @@ PC seulement.
 | GET | `/api/profile` | L | aucune | ouverte | profil pilote, état de l'import (chemin du dossier de résultats) |
 | POST | `/api/profile/import` | lit le dossier de résultats du jeu, D, traitement lourd | aucune | **PC** | relit tous les fichiers de résultats, y compris ceux ignorés |
 | GET | `/api/results`, `/api/results/{id}` | L | aucune | ouverte | résultats importés (classement complet : noms des autres pilotes) |
-| GET | `/api/settings` | L | aucune | ouverte | `{lan_access}` |
-| PUT | `/api/settings` | D ; ouvre ou ferme le serveur au réseau | PC | **PC** | inchangé |
+| GET | `/api/settings` | L | aucune | ouverte | `{lan_access, online_schedule}` |
+| PUT | `/api/settings` | D ; ouvre ou ferme le serveur au réseau ; autorise ou non la lecture du planning en ligne (`online_schedule`) | PC | **PC** | inchangé ; le réglage `online_schedule` (0.4) suit la même règle |
+| GET | `/api/races/sources` | **X** si `online_schedule` : `GET` des deux pages de la liste fermée (`races::sources`), cache 10 / 60 min, relecture forcée ≤ 1/min | — (0.4) | ouverte | la page Courses, aussi sur le téléphone ; aucune adresse ne vient de la requête ; rien n'est lu si le réglage est faux |
+| POST | `/api/races/sources/{source}/unreadable` | D (`diagnostics/races/<source>.html`, copie déjà détenue par le serveur, une par source) | — (0.4) | ouverte | l'interface signale une page sans course ; `source` ∈ {`racecontrol`, `lmutools`}, le contenu ne vient pas du client |
+| GET | `/api/races/picks` | L | — (0.4) | ouverte | « Mes courses », partagées PC / téléphone |
+| PUT | `/api/races/picks/{id}` | D (`races/picks.json`) | — (0.4) | ouverte | choix validé (identifiant `<course>@<départ>`, champs bornés, image `https://` seulement, champs inconnus refusés), ≤ 50 choix (409 au-delà) |
+| DELETE | `/api/races/picks/{id}` | S (un choix, recréable) | — (0.4) | ouverte | retirer une course depuis le téléphone |
+| GET | `/api/races/settings` | L | — (0.4) | ouverte | délais de rappel, affichage, correction d'heure, DR / SR, exigences |
+| PUT | `/api/races/settings` | D (`races/settings.json`) | — (0.4) | ouverte | clés connues seulement, valeurs dans des listes fermées |
 | GET | `/api/network` | L | aucune | ouverte | adresses à ouvrir sur le téléphone |
 | GET | `/ws` | L (télémétrie en direct ; le client n'envoie que `SetRate` et `Ping`) | aucune | ouverte, avec contrôle d'`Origin` | tableaux de bord, OBS |
 | GET | `/*` | L (fichiers de l'interface, repli sur `index.html`) | aucune | ouverte, contrôle `Host` seulement | |
 
 Tâches de fond (pas de route) : lecture de la mémoire partagée du jeu ; `GET` vers l'API locale du jeu
 (`http://127.0.0.1:6397`, liste fermée de chemins en lecture seule, `lmu_api.rs`, `lmu_garage.rs`) avec
-copie dans `diagnostics/lmu-api/` du dossier de données ; lecture des fichiers de résultats toutes les 60 s.
+copie dans `diagnostics/lmu-api/` du dossier de données ; lecture des fichiers de résultats toutes les 60 s ;
+rappels des courses choisies toutes les 5 s (`races/mod.rs` : message `race_reminder` diffusé sur `/ws`,
+rappels envoyés notés dans `races/reminders.json`, aucun appel extérieur).
+
+**Appels vers Internet (planning des courses, 0.4)** : seulement `https://racecontrol.gg/` et
+`https://lmu.tools/schedule` (constante `SOURCES` de `crates/corde-server/src/races/sources.rs`), seulement
+quand `online_schedule` est vrai et qu'un client demande `/api/races/sources`. `GET`, délai 20 s, réponse
+≤ 3 Mio, au plus 3 redirections et seulement en `https://` sur le même site, sans cookie (`ureq` sans la
+fonctionnalité `cookies`), en-têtes `User-Agent: Corde/<version> (+https://github.com/dultra123/corde)`,
+`Accept: text/html`, `Accept-Language: en-GB,en;q=0.8`. La page est rendue à l'interface **comme texte** ;
+l'interface l'analyse (`packages/ui/src/races/parse.ts`) et ne la met jamais dans le DOM ; les images de
+course ne sont affichées que pour des adresses `https://`, en `<img loading="lazy"
+referrerpolicy="no-referrer">`, et le nom des courses n'est inséré que comme texte (React). Jamais d'appel
+vers `raceos.gg` ni vers l'API du jeu pour l'inscription.
 
 ### Ce qui change pour l'utilisateur
 
@@ -182,7 +204,12 @@ saisie du ressenti, la commande d'enregistrement et toutes les lectures restent 
 - `crates/corde-server/tests/access_policy.rs` (serveur réel, requêtes HTTP brutes et WebSocket) : `Host`,
   `Origin`, CORS, 413, traversée de chemin, et — si la machine a une adresse réseau — les routes réservées au
   PC appelées depuis cette adresse.
-- `crates/corde-server/tests/settings_api.rs`, `setups_api.rs` : gardes existantes.
+- `crates/corde-server/tests/settings_api.rs`, `setups_api.rs` : gardes existantes ; `online_schedule`
+  refusé depuis un autre appareil.
+- `crates/corde-server/src/races/` (unitaires) et `tests/races_api.rs` : liste fermée et `https`, règles de
+  cache, aucune lecture tant que le réglage est faux, redirections limitées au site, en-têtes réels envoyés
+  (serveur HTTP local), pas de cookie, limite de taille, validation des choix et des réglages, copie de
+  diagnostic, rappel reçu sur le WebSocket.
 - Les scripts de capture (`packages/ui/scripts/screenshot-home.mjs`, `screenshot-sessions.mjs --spawn`)
   échouent sur toute erreur de console : ils vérifient que l'interface fonctionne depuis une autre origine
   locale.

@@ -140,6 +140,47 @@ Par défaut c'est désactivé, pour que Windows ne te demande rien. Pour l'activ
 
 ---
 
+## 6 bis. Les courses en ligne et leurs rappels (facultatif)
+
+L'onglet **Courses** (icône drapeau, entre Sessions et Profil) reprend le planning en ligne du jeu et te
+prévient avant le départ des courses que tu choisis.
+
+**Activer le planning** (une fois, sur le PC) :
+
+1. Ouvre l'onglet **Courses**. Tant que le planning est désactivé, la page l'explique : Corde lira les pages
+   publiques racecontrol.gg et lmu.tools depuis ce PC, au plus toutes les 10 minutes.
+2. Clique **Activer le planning**. Les courses apparaissent en quelques secondes, rangées en courses
+   quotidiennes, hebdomadaires, événements spéciaux et championnats RaceControl Pro. Ce bouton ne marche
+   que sur le PC qui fait tourner Corde (depuis le téléphone, la page te le rappelle) ; pour revenir en
+   arrière : **Affichage et heure** → **Ne plus lire le planning sur ces sites**.
+3. Facultatif : dans **Mon profil pilote**, recopie ton DR et ton SR (en haut du menu Multijoueur du jeu).
+   Les courses qui demandent un rang plus élevé sont marquées « Il te faut SR … ».
+
+**Choisir une course** : touche un horaire doré. Il se remplit, la course apparaît dans **Mes courses** avec
+un compte à rebours ; touche-le à nouveau pour l'annuler. Pour un événement spécial, **Me le rappeler**
+programme un rappel la veille à 18:00 et le jour même à 10:00. Tes choix sont gardés par Corde : le
+téléphone voit les mêmes. L'inscription se fait toujours **dans le jeu** (Multijoueur) : Corde ne
+t'inscrit pas.
+
+**Les rappels** : 15 et 5 minutes avant le départ par défaut (**Rappels avant le départ** : 60, 30, 15, 10,
+5, 2 min ou au départ). À l'heure dite, un bandeau apparaît en haut de n'importe quelle page de Corde —
+« Départ dans 5 min — LMP3 Fixed, Monza, 21:30 » — avec un son court (plus insistant à 5 minutes et
+moins), sur le PC **et** sur le téléphone si Corde y est ouverte. L'Accueil affiche aussi « Prochaine
+course … dans 12 min » quand une course choisie part dans les trois heures.
+
+**Tester la sonnerie** : sur la page Courses, bouton **Tester la sonnerie**. Fais-le une fois sur chaque
+appareil : un navigateur (surtout sur téléphone) n'autorise le son qu'après un premier geste sur la page.
+Dans l'application Windows, le son est autorisé d'office. Le son se coupe par appareil (**Son des rappels
+sur cet appareil**). Sur le téléphone, la page doit rester ouverte et l'écran allumé : un navigateur en
+veille ne reçoit rien.
+
+Si les heures ne correspondent pas à celles du jeu (le site ne dit pas son fuseau horaire, Corde le
+devine), corrige-les dans **Affichage et heure** → **Heure des courses quotidiennes** (−2 h à +2 h). Si
+un site change sa page et que Corde n'y reconnaît plus aucune course, la page le dit ; envoie le fichier
+`%LOCALAPPDATA%\Corde\diagnostics\races\<site>.html` avec ton signalement.
+
+---
+
 ## 7. Où sont tes données
 
 Tout ce que Corde enregistre est dans **`%LOCALAPPDATA%\Corde\`**
@@ -151,9 +192,12 @@ y reprend son dossier au premier lancement, avec toutes tes sessions (voir § 9)
 | `corde.db` | sessions, tours, résultats importés, analyses, ressentis |
 | `sessions\<date-circuit-type>\` | la télémétrie de chaque session (≈ 60 Mo par heure de roulage) |
 | `settings.json` | tes réglages |
+| `races\` | tes courses choisies, les réglages de la page Courses, les rappels déjà envoyés |
+| `diagnostics\races\` | la copie d'une page de planning que Corde n'a pas su lire (seulement dans ce cas) |
 | `logs\corde-desktop.log` | le **journal** de l'application |
 
-Rien n'est envoyé sur Internet. Corde n'écrit dans le dossier du jeu que lorsque tu le lui demandes
+Rien n'est envoyé sur Internet (le planning des courses, si tu l'actives, lit deux pages publiques sans
+rien y envoyer de toi). Corde n'écrit dans le dossier du jeu que lorsque tu le lui demandes
 (paragraphe suivant).
 
 ### Tes fichiers de réglage (`.svm`)
