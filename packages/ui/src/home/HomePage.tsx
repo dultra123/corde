@@ -10,6 +10,9 @@ import { fetchProfile, fetchResults, type Profile, type ResultRow } from "../net
 import { ApiError, fetchSession, fetchSessions, fetchStorage } from "../net/sessions-api";
 import { fetchNetwork, saveSettings } from "../net/system-api";
 import { classLabel } from "../profile/lib";
+import { hm, relLabel } from "../races/format";
+import { useNow, usePicks } from "../races/hooks";
+import { nextRace } from "../races/model";
 import { LapTimesChart } from "../sessions/LapTimesChart";
 import { lapStats, sessionDurationS } from "../sessions/lib/stats";
 import {
@@ -822,6 +825,31 @@ function PhoneCard() {
   );
 }
 
+/* ------------------------------------------------------------------ next race */
+
+/** « Prochaine course : LMP3 Fixed, Monza, 21:30 — dans 12 min » when a pick starts within 3 h. */
+function NextRaceLine() {
+  const { t, lang } = useT();
+  const { picks } = usePicks();
+  const now = useNow(15_000);
+  const next = picks ? nextRace(picks, now) : null;
+  if (!next) return null;
+  const soon = next.start_ms - now <= 5 * 60_000;
+  return (
+    <a className={`home-nextrace${soon ? " is-soon" : ""}`} href={routeHash({ page: "races" })}>
+      <span className="home-nextrace-label">{t("home.nextRace")}</span>
+      <span className="home-nextrace-what">
+        <b>{next.name}</b>
+        <span className="dim">
+          {" "}
+          · {next.track} · {hm(next.start_ms)}
+        </span>
+      </span>
+      <span className="home-nextrace-when num">{relLabel(next.start_ms, now, lang)}</span>
+    </a>
+  );
+}
+
 /* ------------------------------------------------------------------ foot */
 
 function HomeFoot({ online, onGuide }: { online: boolean; onGuide: () => void }) {
@@ -884,6 +912,7 @@ export function HomePage({ onSettings }: { onSettings: () => void }) {
     <div className="home-page">
       <h1 className="sr-only">{t("home.title")}</h1>
       <StatusCard onSettings={onSettings} />
+      {online && <NextRaceLine />}
       {online && (
         <div className="home-grid">
           <LastSessionCard minute={minute} />

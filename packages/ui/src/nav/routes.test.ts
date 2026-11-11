@@ -70,6 +70,13 @@ describe("parseRoute", () => {
     expect(parseRoute("#/sessions/%20")).toEqual({ page: "sessions" });
   });
 
+  it("parses the online races page", () => {
+    expect(parseRoute("#/races")).toEqual({ page: "races" });
+    expect(parseRoute("#/races/")).toEqual({ page: "races" });
+    expect(routeHash({ page: "races" })).toBe("#/races");
+    expect(sectionOf({ page: "races" })).toBe("races");
+  });
+
   it("parses the profile and its track filter", () => {
     expect(parseRoute("#/profile")).toEqual({ page: "profile" });
     expect(parseRoute("#/profile/")).toEqual({ page: "profile" });

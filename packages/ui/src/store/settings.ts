@@ -12,6 +12,8 @@ export interface Settings {
   autoDashboard: boolean;
   /** Show the session summary when the driver is back in the garage (`nav/auto`). Per device. */
   autoSummary: boolean;
+  /** Play a short sound with the race reminders (page « Courses »). Per device. */
+  raceSound: boolean;
 }
 
 const KEY = "corde.settings.v1";
@@ -24,6 +26,7 @@ const DEFAULTS: Settings = {
   rateHz: 20,
   autoDashboard: true,
   autoSummary: true,
+  raceSound: true,
 };
 
 function detectLang(): Lang {
@@ -43,6 +46,7 @@ function load(): Settings {
       // absent (settings saved by an older version) → on
       autoDashboard: parsed.autoDashboard !== false,
       autoSummary: parsed.autoSummary !== false,
+      raceSound: parsed.raceSound !== false,
     };
   } catch {
     return { ...DEFAULTS, lang: detectLang() };
@@ -57,11 +61,11 @@ export const useSettings = create<SettingsState>((set, get) => ({
   ...load(),
   update(patch) {
     set(patch);
-    const { server, lang, rateHz, autoDashboard, autoSummary } = get();
+    const { server, lang, rateHz, autoDashboard, autoSummary, raceSound } = get();
     try {
       localStorage.setItem(
         KEY,
-        JSON.stringify({ server, lang, rateHz, autoDashboard, autoSummary }),
+        JSON.stringify({ server, lang, rateHz, autoDashboard, autoSummary, raceSound }),
       );
     } catch {
       // storage can be unavailable (private mode) — settings then live for the session only

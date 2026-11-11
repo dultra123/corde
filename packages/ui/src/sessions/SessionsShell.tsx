@@ -7,6 +7,7 @@ import { HomePage } from "../home/HomePage";
 import { type Route, sectionOf } from "../nav/routes";
 import { ProfilePage } from "../profile/ProfilePage";
 import { ResultPage } from "../profile/ResultPage";
+import { RacesPage } from "../races/RacesPage";
 import { useRecordingWatch } from "../store/recording";
 import { LapPage } from "./LapPage";
 import { SessionPage } from "./SessionPage";
@@ -27,7 +28,7 @@ function useIsMobile(): boolean {
 }
 
 /**
- * Shell of every section but the dashboard — `#/home`, `#/sessions…`, `#/profile`,
+ * Shell of every section but the dashboard — `#/home`, `#/sessions…`, `#/races`, `#/profile`,
  * `#/results/…`: top bar, scrolling page, settings dialog.
  */
 export function SessionsShell({ route }: { route: Exclude<Route, { page: "dashboard" }> }) {
@@ -55,6 +56,9 @@ export function SessionsShell({ route }: { route: Exclude<Route, { page: "dashbo
       break;
     case "engineer":
       page = <EngineerPage id={route.id} />;
+      break;
+    case "races":
+      page = <RacesPage />;
       break;
     case "profile":
       page = <ProfilePage track={route.track} />;

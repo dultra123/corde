@@ -1,0 +1,127 @@
+<!doctype html>
+<!--
+  Sample page written for the tests. SHAPE ASSUMED: no real copy of lmu.tools/schedule was
+  available; this page follows what the owner's script expects (parseLmuTools, parseOnlineEntry,
+  parseSpecialEntry): section headings, one block per race (name, track, classes, format,
+  multipliers, setup, « Mon 15:00 » + « in 1h 5m »), a link to the fuel calculator closing each
+  block, special events closed by their « availability poll » link. Read on Wednesday 11 Nov 2026
+  at 20:10 UTC, the site showing Central European Time (UTC+1).
+-->
+<html lang="en">
+  <body>
+    <header><a href="/">lmu.tools</a><a href="/schedule">Schedule</a></header>
+    <main>
+      <h1>Schedule</h1>
+      <h2>Special events</h2>
+      <div class="event">
+        <span>Next up</span>
+        <h3>Sebring International Raceway</h3>
+        <p>Sat 21 Nov – Sun 22 Nov</p>
+        <p>Hypercar · LMP2 · LMGT3</p>
+        <a href="/stint-planner?minutes=480&amp;track=sebring">Plan this race</a>
+        <a href="/poll/new?title=Sebring+1000+Miles&amp;from=2026-11-21&amp;to=2026-11-22">Create availability poll</a>
+      </div>
+      <div class="event">
+        <span>6 Hours</span>
+        <h3>Track TBA</h3>
+        <p>Sat 12 Dec – Sun 13 Dec</p>
+        <p>LMGT3</p>
+        <a href="/poll/new?from=2026-12-12&amp;to=2026-12-13">Create availability poll</a>
+      </div>
+
+      <h2>Online races</h2>
+      <h3>Weekly races</h3>
+      <h4>November 2026</h4>
+      <div class="race">
+        <h4>GT3 Sprint Weekly</h4>
+        <p>Algarve International Circuit</p>
+        <span>LMGT3</span>
+        <dl>
+          <dt>Practice</dt><dd>10 min</dd>
+          <dt>Qualifying</dt><dd>10 min</dd>
+          <dt>Race</dt><dd>40 min</dd>
+        </dl>
+        <p>SR 1.5x</p><p>DR 1.5x</p>
+        <p>Fixed setup</p>
+        <ul>
+          <li><b>Fri 19:00</b> <span>in 1d 21h 50m</span></li>
+          <li><b>Sat 19:00</b> <span>in 2d 21h 50m</span></li>
+          <li><b>Sun 15:00</b> <span>in 3d 17h 50m</span></li>
+        </ul>
+        <a href="/fuel-calculator?race=gt3-sprint-weekly">Fuel calculator</a>
+      </div>
+      <div class="race">
+        <h4>Hypercar Weekly</h4>
+        <p>Circuit de la Sarthe</p>
+        <span>Hypercar</span>
+        <dl>
+          <dt>Practice</dt><dd>15 min</dd>
+          <dt>Qualifying</dt><dd>10 min</dd>
+          <dt>Race</dt><dd>90 min</dd>
+        </dl>
+        <p>SR 1.5x</p><p>DR 1.5x</p>
+        <p>Open setup</p>
+        <ul>
+          <li><b>Sat 20:00</b> <span>in 2d 22h 50m</span></li>
+          <li><b>Sun 20:00</b></li>
+        </ul>
+        <a href="/fuel-calculator?race=hypercar-weekly">Fuel calculator</a>
+      </div>
+
+      <h3>Daily races</h3>
+      <div class="race">
+        <h4>One Stint Sprint</h4>
+        <p>Autodromo Nazionale Monza</p>
+        <span>Hypercar</span><span>LMP2</span>
+        <dl>
+          <dt>Practice</dt><dd>10 min</dd>
+          <dt>Qualifying</dt><dd>10 min</dd>
+          <dt>Race</dt><dd>55 min</dd>
+        </dl>
+        <p>SR 1.5x</p><p>DR 1.5x</p>
+        <p>Fixed setup</p>
+        <ul>
+          <li><b>Wed 21:25</b> <span>in 15m</span></li>
+          <li><b>Wed 22:55</b> <span>in 1h 45m</span></li>
+        </ul>
+        <a href="/fuel-calculator?race=one-stint-sprint">Fuel calculator</a>
+      </div>
+      <div class="race">
+        <h4>LMP3 Fixed</h4>
+        <p>Autodromo Nazionale Monza</p>
+        <span>LMP3</span>
+        <dl>
+          <dt>Practice</dt><dd>5 min</dd>
+          <dt>Qualifying</dt><dd>5 min</dd>
+          <dt>Race</dt><dd>32 min</dd>
+        </dl>
+        <p>SR 1x</p><p>DR 1x</p>
+        <p>Fixed setup</p>
+        <ul>
+          <li><b>Wed 21:30</b> <span>in 20m</span></li>
+        </ul>
+        <a href="/fuel-calculator?race=lmp3-fixed">Fuel calculator</a>
+      </div>
+
+      <h3>Championships</h3>
+      <div class="race">
+        <h4>RC Pro LMGT3 Championship</h4>
+        <p>Circuit de Spa-Francorchamps</p>
+        <span>LMGT3</span>
+        <dl>
+          <dt>Practice</dt><dd>15 min</dd>
+          <dt>Qualifying</dt><dd>15 min</dd>
+          <dt>Race</dt><dd>60 min</dd>
+        </dl>
+        <p>SR 2x</p><p>DR 2x</p>
+        <p>Open setup</p>
+        <ul>
+          <li><b>Thu 20:00</b> <span>in 22h 50m</span></li>
+          <li><b>Sat 14:00</b> <span>in 2d 16h 50m</span></li>
+        </ul>
+        <a href="/fuel-calculator?race=rc-pro-lmgt3">Fuel calculator</a>
+      </div>
+      <p>Source: RaceControl · updated every hour</p>
+    </main>
+  </body>
+</html>

@@ -14,6 +14,7 @@ import "./styles/sessions.css";
 import "./styles/profile.css";
 import "./styles/engineer.css";
 import "./styles/home.css";
+import "./styles/races.css";
 
 import { createRoot } from "react-dom/client";
 import { App } from "./App";

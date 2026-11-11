@@ -4,7 +4,7 @@ import { request } from "./sessions-api";
  * REST access to the server's own settings and network state:
  *
  *   GET /api/settings    ServerSettings — `<data-dir>/settings.json`
- *   PUT /api/settings    body { lan_access } → SavedSettings · 400 invalid · 403 not from this PC
+ *   PUT /api/settings    body { lan_access?, online_schedule? } → SavedSettings · 400 · 403 not from this PC
  *   GET /api/network     NetworkInfo
  *   GET /api/health      Health
  *
@@ -15,6 +15,8 @@ import { request } from "./sessions-api";
 export interface ServerSettings {
   /** Listen on the local network (phone, other PC) instead of this PC only. */
   lan_access: boolean;
+  /** Read the public race schedule pages (racecontrol.gg, lmu.tools) for the « Courses » page. */
+  online_schedule: boolean;
 }
 
 export interface SavedSettings extends ServerSettings {

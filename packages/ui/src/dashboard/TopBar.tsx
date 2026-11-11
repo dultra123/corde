@@ -9,6 +9,7 @@ import {
   IconDemo,
   IconEdit,
   IconExitFullscreen,
+  IconFlag,
   IconFullscreen,
   IconHome,
   IconLive,
@@ -36,13 +37,14 @@ function useFullscreen(): [boolean, () => void] {
   return [on, toggle];
 }
 
-/** The four top-level tabs: home, live dashboard, recorded sessions, driver profile. */
+/** The top-level tabs: home, live dashboard, recorded sessions, online races, driver profile. */
 function NavTabs({ section }: { section: Section }) {
   const { t } = useT();
   const tabs = [
     { id: "home" as const, href: routeHash({ page: "home" }), icon: <IconHome /> },
     { id: "dashboard" as const, href: routeHash({ page: "dashboard" }), icon: <IconLive /> },
     { id: "sessions" as const, href: routeHash({ page: "sessions" }), icon: <IconSessions /> },
+    { id: "races" as const, href: routeHash({ page: "races" }), icon: <IconFlag /> },
     { id: "profile" as const, href: routeHash({ page: "profile" }), icon: <IconProfile /> },
   ];
   return (

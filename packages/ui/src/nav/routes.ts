@@ -11,6 +11,7 @@ import { useSyncExternalStore } from "react";
  *   #/sessions/<id>/laps/<n>             one lap (charts)
  *   #/sessions/<id>/compare?a=3&b=5      two laps side by side
  *   #/sessions/<id>/engineer             the race engineer's report (analysis + setup plans + feedback)
+ *   #/races                              online races: schedule, my races, reminders
  *   #/profile                            driver profile (imported results)
  *   #/profile?track=<course>             …filtered on one track
  *   #/results/<id>                       one imported result (classification, player laps)
@@ -26,10 +27,11 @@ export type Route =
   | { page: "lap"; id: string; lap: number }
   | { page: "compare"; id: string; a: number; b: number }
   | { page: "engineer"; id: string }
+  | { page: "races" }
   | { page: "profile"; track?: string }
   | { page: "result"; id: number };
 
-export type Section = "home" | "dashboard" | "sessions" | "profile";
+export type Section = "home" | "dashboard" | "sessions" | "races" | "profile";
 
 const SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
@@ -69,6 +71,7 @@ export function parseRoute(hash: string): Route {
 
   if (parts.length === 0) return { page: "dashboard" };
   if (parts[0] === "home") return { page: "home" };
+  if (parts[0] === "races") return { page: "races" };
   if (parts[0] === "profile") {
     const track = query.get("track")?.trim();
     return track ? { page: "profile", track } : { page: "profile" };
@@ -116,6 +119,8 @@ export function routeHash(route: Route): string {
       return `#/sessions/${encodeURIComponent(route.id)}/compare?a=${route.a}&b=${route.b}`;
     case "engineer":
       return `#/sessions/${encodeURIComponent(route.id)}/engineer`;
+    case "races":
+      return "#/races";
     case "profile":
       return route.track ? `#/profile?track=${encodeURIComponent(route.track)}` : "#/profile";
     case "result":
@@ -151,6 +156,7 @@ export function useRoute(): Route {
 export function sectionOf(route: Route): Section {
   if (route.page === "home") return "home";
   if (route.page === "dashboard") return "dashboard";
+  if (route.page === "races") return "races";
   if (route.page === "profile" || route.page === "result") return "profile";
   return "sessions";
 }

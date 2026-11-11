@@ -1,4 +1,5 @@
 import { DemoRunner } from "../demo/runner";
+import { useRaces } from "../store/races";
 import { useSettings } from "../store/settings";
 import { useTelemetry } from "../store/telemetry";
 import { CordeClient } from "./client";
@@ -105,6 +106,10 @@ class ConnectionManager {
         if (s.demo === "off") s.pushEvent(m.event);
         break;
       case "pong":
+        break;
+      case "race_reminder":
+        // Shown whatever the page and the demo: it is about the driver's evening, not the stream.
+        useRaces.getState().pushReminder(m.reminder);
         break;
     }
   }

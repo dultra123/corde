@@ -1,0 +1,112 @@
+<!doctype html>
+<!--
+  Sample page written for the tests, after what racecontrol.gg showed on 11 Nov 2026 around
+  20:10 UTC (the daily races section with the game's logo, one card per race: level, picture,
+  name, duration, track, then the starts). The markup is made up; the text is the one the page
+  showed. Pictures point to a placeholder domain.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>RaceControl</title>
+    <style>
+      .card { color: #fff }
+    </style>
+    <script>
+      window.__STATE__ = { banner: "Advanced 11 Nov at 1:00pm" };
+    </script>
+  </head>
+  <body>
+    <nav>
+      <a href="/"><img src="https://img.example/assets/rc_logo.png" alt="RaceControl" /></a>
+      <a href="/events">Events</a>
+      <img src="https://img.example/users/avatar-1.png" alt="" />
+    </nav>
+    <section class="daily">
+      <h2>Upcoming Daily Races</h2>
+      <img src="/images/lmu_logo.svg" alt="Le Mans Ultimate" />
+      <div class="grid">
+        <article class="card">
+          <span class="level">Advanced</span>
+          <img src="https://img.example/rc/daily/one-stint-sprint-monza.webp?w=800" alt="" />
+          <h3>One Stint Sprint</h3>
+          <div class="row"><span>Duration</span><span>55 minutes</span></div>
+          <div class="row"><span>Track</span><span>Monza</span></div>
+          <ul class="times">
+            <li>11 Nov at 4:25pm</li>
+            <li>11 Nov at 5:55pm</li>
+            <li>11 Nov at 7:25pm</li>
+            <li>11 Nov at 8:55pm</li>
+            <li>11 Nov at 10:25pm</li>
+            <li>11 Nov at 11:55pm</li>
+          </ul>
+        </article>
+        <article class="card">
+          <span class="level">Beginner</span>
+          <img src="https://img.example/rc/daily/lmp3-fixed-monza.webp?w=800" alt="" />
+          <h3>LMP3 Fixed</h3>
+          <div class="row"><span>Duration</span><span>32 minutes</span></div>
+          <div class="row"><span>Track</span><span>Monza</span></div>
+          <ul class="times">
+            <li>11 Nov at 4:30pm</li>
+            <li>11 Nov at 5:15pm</li>
+            <li>11 Nov at 6:00pm</li>
+            <li>11 Nov at 6:45pm</li>
+            <li>11 Nov at 7:30pm</li>
+            <li>11 Nov at 8:15pm</li>
+            <li>11 Nov at 9:00pm</li>
+            <li>11 Nov at 9:45pm</li>
+            <li>11 Nov at 10:30pm</li>
+            <li>11 Nov at 11:15pm</li>
+          </ul>
+        </article>
+        <article class="card">
+          <span class="level">Intermediate</span>
+          <img src="https://img.example/rc/daily/prototype-fixed-barcelona.webp?w=800" alt="" />
+          <h3>Prototype Fixed</h3>
+          <div class="row"><span>Duration</span><span>44 minutes</span></div>
+          <div class="row"><span>Track</span><span>Circuit De Barcelona Catalunya</span></div>
+          <ul class="times">
+            <li>11 Nov at 4:30pm</li>
+            <li>11 Nov at 5:30pm</li>
+            <li>11 Nov at 6:30pm</li>
+            <li>11 Nov at 7:30pm</li>
+            <li>11 Nov at 8:30pm</li>
+            <li>11 Nov at 9:30pm</li>
+            <li>11 Nov at 10:30pm</li>
+            <li>11 Nov at 11:30pm</li>
+          </ul>
+        </article>
+        <article class="card">
+          <span class="level">Advanced</span>
+          <img src="https://img.example/rc/daily/elms-super-60-le-mans.webp?w=800" alt="" />
+          <h3>ELMS Super 60</h3>
+          <div class="row"><span>Duration</span><span>1h 13 minutes</span></div>
+          <div class="row"><span>Track</span><span>Le Mans</span></div>
+          <ul class="times">
+            <li>11 Nov at 4:55pm</li>
+            <li>11 Nov at 6:25pm</li>
+            <li>11 Nov at 7:55pm</li>
+            <li>11 Nov at 9:25pm</li>
+            <li>11 Nov at 10:55pm</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+    <section class="daily">
+      <h2>Upcoming Daily Races</h2>
+      <img src="/images/rf2_logo.svg" alt="rFactor 2" />
+      <article class="card">
+        <span class="level">Beginner</span>
+        <h3>Mazda MX-5 Cup</h3>
+        <div class="row"><span>Duration</span><span>20 minutes</span></div>
+        <div class="row"><span>Track</span><span>Brands Hatch</span></div>
+        <ul class="times"><li>11 Nov at 4:20pm</li></ul>
+      </article>
+    </section>
+    <section>
+      <h2>Featured Community Events</h2>
+      <article><span>Advanced</span><h3>Community Endurance</h3><p>14 Nov at 7:00pm</p></article>
+    </section>
+  </body>
+</html>

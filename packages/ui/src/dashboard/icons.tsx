@@ -126,6 +126,15 @@ export const IconClose = () => (
   </svg>
 );
 
+/** Online races (a chequered flag on its pole). */
+export const IconFlag = () => (
+  <svg {...base} aria-hidden="true">
+    <path d="M5 21V4" />
+    <path d="M5 4h13l-2.5 4.5L18 13H5" />
+    <path d="M9 4v9M13 4v9M5 8.5h11.5" strokeWidth="1.2" />
+  </svg>
+);
+
 /** Driver profile (imported results). */
 export const IconProfile = () => (
   <svg {...base} aria-hidden="true">

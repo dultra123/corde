@@ -2,13 +2,14 @@ import type {
   ClientMessage,
   GameEvent,
   LapRecord,
+  RaceReminder,
   ServerMessage,
   SourceStatus,
   TelemetryFrame,
 } from "@corde/protocol";
 
 /** The `type` tags we understand. Anything else is dropped (forward compatibility). */
-const KNOWN_TYPES = new Set(["hello", "status", "frame", "lap", "event", "pong"]);
+const KNOWN_TYPES = new Set(["hello", "status", "frame", "lap", "event", "pong", "race_reminder"]);
 
 export type ParsedMessage =
   | { kind: "hello"; serverVersion: string; protocolVersion: number; status: SourceStatus }
@@ -16,7 +17,8 @@ export type ParsedMessage =
   | { kind: "frame"; frame: TelemetryFrame }
   | { kind: "lap"; lap: LapRecord }
   | { kind: "event"; event: GameEvent }
-  | { kind: "pong"; t: number };
+  | { kind: "pong"; t: number }
+  | { kind: "race_reminder"; reminder: RaceReminder };
 
 const isObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
@@ -73,6 +75,16 @@ export function parseServerMessage(raw: string | unknown): ParsedMessage | null 
     }
     case "pong":
       return { kind: "pong", t: Number(msg.t) };
+    case "race_reminder": {
+      const { type: _t, ...reminder } = msg;
+      if (
+        typeof reminder.pick_id !== "string" ||
+        typeof reminder.name !== "string" ||
+        typeof reminder.start_ms !== "number"
+      )
+        return null;
+      return { kind: "race_reminder", reminder: reminder as RaceReminder };
+    }
     default:
       return null;
   }
