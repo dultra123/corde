@@ -9,6 +9,14 @@
 # continuous : sur push main seulement, pré-release glissante étiquetée `continuous` (« Corde — dernière version ») :
 #              installeur + zip portable, anciens fichiers remplacés
 # release    : sur tag v*, zip Windows + tar.gz Linux + installeur attachés à une GitHub Release
+# deny       : licences, avis de sécurité et sources des dépendances Rust (cargo-deny, deny.toml) —
+#              informatif : n'empêche ni les autres jobs ni la publication
+#
+# Sécurité (dépôt public) : jeton en lecture seule par défaut, `contents: write` seulement dans
+# `continuous` et `release`, qui ne tournent que sur une poussée du dépôt d'origine (jamais sur
+# une PR ni sur un fork) ; pas de `pull_request_target` ; secrets de signature jamais exposés au
+# code d'une PR ; aucune valeur contrôlable par un tiers (titre de PR, nom de branche ou
+# d'étiquette) n'est collée dans un script `run:`, elle passe par une variable d'environnement.
 
 name: CI
 
@@ -43,10 +51,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       # Les types de @corde/protocol sont générés par ts-rs et ignorés par git :
       # il faut Rust ici aussi.
-      - uses: dtolnay/rust-toolchain@stable
+      # Action épinglée sur un commit (branche `stable` de dtolnay/rust-toolchain, qui ne publie
+      # pas de versions) : `toolchain` devient alors obligatoire.
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: web
@@ -103,9 +117,12 @@ jobs:
             ext: ".exe"
     steps:
       - uses: actions/checkout@v5
-
-      - uses: dtolnay/rust-toolchain@stable
         with:
+          persist-credentials: false
+
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
           components: rustfmt, clippy
 
       - uses: Swatinem/rust-cache@v2
@@ -162,18 +179,22 @@ jobs:
       TAURI_CLI_VERSION: "2.12.4"
       # Signature de code OPTIONNELLE (Azure Artifact Signing, voir docs/adr/0007) : tant que ces
       # secrets et variables n'existent pas dans le dépôt, les étapes de signature sont sautées et
-      # l'installeur est construit non signé.
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      # l'installeur est construit non signé. Jamais sur une PR : le code d'une PR (même d'une
+      # branche du dépôt) ne reçoit pas les secrets de signature.
+      AZURE_CLIENT_ID: ${{ github.event_name != 'pull_request' && secrets.AZURE_CLIENT_ID || '' }}
+      AZURE_CLIENT_SECRET: ${{ github.event_name != 'pull_request' && secrets.AZURE_CLIENT_SECRET || '' }}
+      AZURE_TENANT_ID: ${{ github.event_name != 'pull_request' && secrets.AZURE_TENANT_ID || '' }}
       ARTIFACT_SIGNING_ENDPOINT: ${{ vars.ARTIFACT_SIGNING_ENDPOINT }}
       ARTIFACT_SIGNING_ACCOUNT: ${{ vars.ARTIFACT_SIGNING_ACCOUNT }}
       ARTIFACT_SIGNING_PROFILE: ${{ vars.ARTIFACT_SIGNING_PROFILE }}
     steps:
       - uses: actions/checkout@v5
-
-      - uses: dtolnay/rust-toolchain@stable
         with:
+          persist-credentials: false
+
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
           components: rustfmt
 
       # Le crate de la coquille est un workspace à part : son propre dossier target.
@@ -272,8 +293,9 @@ jobs:
 
   continuous:
     name: Version continue (pré-release « continuous »)
-    # Uniquement quand `main` avance : jamais sur une branche, une PR ou un tag.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Uniquement quand `main` du dépôt d'origine avance : jamais sur une branche, une PR, un tag
+    # ni un fork.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'dultra123/corde'
     needs: [rust, desktop]
     runs-on: ubuntu-latest
     permissions:
@@ -287,6 +309,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 20
+          persist-credentials: false
 
       - uses: actions/download-artifact@v4
         with:
@@ -364,11 +387,15 @@ jobs:
 
   release:
     name: Release GitHub
-    if: startsWith(github.ref, 'refs/tags/v')
+    # Uniquement sur une étiquette v* poussée dans le dépôt d'origine (jamais sur une PR ni un fork).
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && github.repository == 'dultra123/corde'
     needs: [rust, desktop]
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      # Nom de l'étiquette : passé par l'environnement, jamais collé dans le script.
+      VERSION: ${{ github.ref_name }}
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -388,7 +415,6 @@ jobs:
       - name: Créer les archives
         run: |
           set -euo pipefail
-          VERSION="${{ github.ref_name }}"
           (cd corde-windows && zip -r "../corde-${VERSION}-windows.zip" \
             corde-server.exe lmu-probe.exe corde-sim.exe corde-store.exe ui docs/TESTING-ON-PC.md README.md)
           tar -C corde-linux -czf "corde-${VERSION}-linux.tar.gz" .
@@ -402,3 +428,28 @@ jobs:
             corde-*-linux.tar.gz
           generate_release_notes: true
           fail_on_unmatched_files: true
+
+  deny:
+    name: Dépendances Rust (cargo-deny, informatif)
+    # Non bloquant : un avis de sécurité tout neuf ou une licence à examiner ne doit pas empêcher
+    # de publier ; le résultat se lit dans le journal du job. Aucun autre job n'en dépend.
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Serveur, outils et bibliothèques (workspace racine)
+        uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check
+          command-arguments: --config deny.toml
+
+      - name: Application de bureau (apps/desktop/src-tauri)
+        if: always()
+        uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          manifest-path: apps/desktop/src-tauri/Cargo.toml
+          command: check
+          command-arguments: --config deny.toml
