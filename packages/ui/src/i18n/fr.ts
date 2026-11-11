@@ -843,6 +843,10 @@ export const fr = {
   "home.phone.title": "Sur ton téléphone",
   "home.phone.on":
     "Même Wi-Fi que le PC : scanne le code, ou tape l'adresse dans le navigateur du téléphone.",
+  "home.phone.show": "Afficher l'adresse",
+  "home.phone.hide": "Masquer l'adresse",
+  "home.phone.hidden":
+    "L'adresse et le code sont masqués (utile en direct ou pour une capture d'écran). Affiche-les, puis scanne le code avec le téléphone, sur le même Wi-Fi que le PC.",
   "home.phone.qrLabel": "QR code de l'adresse {url}",
   "home.phone.other": "Autres adresses de ce PC",
   "home.phone.off":
@@ -864,6 +868,8 @@ export const fr = {
   "home.phone.error": "Le réglage n'a pas été enregistré : {msg}",
   "home.foot.version": "Corde {v}",
   "home.foot.data": "Données",
+  "home.foot.pathShow": "Afficher le chemin complet",
+  "home.foot.pathHide": "Masquer le chemin complet",
   "home.foot.guide": "Guide",
 
   // Quick-start guide (home page)

@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import type { ResultRow } from "../net/profile-api";
 import {
   bareAddress,
+  HIDDEN_ADDRESS,
   homeLamps,
   homePhase,
   lastRaces,
+  maskUserPath,
   matchResult,
   ordinalSuffix,
   phoneState,
@@ -220,5 +222,27 @@ describe("phoneState", () => {
   it("strips the scheme for display", () => {
     expect(bareAddress("http://192.168.1.20:8471")).toBe("192.168.1.20:8471");
     expect(bareAddress("http://[fd00::20]:8471/")).toBe("[fd00::20]:8471");
+  });
+});
+
+describe("what is shown while details are hidden", () => {
+  it("removes the account name from the data folder", () => {
+    expect(maskUserPath("C:\\Users\\someone\\AppData\\Local\\Corde")).toBe("%LOCALAPPDATA%\\Corde");
+    expect(maskUserPath("C:\\Users\\someone\\AppData\\Roaming\\Corde")).toBe("%APPDATA%\\Corde");
+    expect(maskUserPath("D:/Users/someone/Documents/corde-data")).toBe(
+      "%USERPROFILE%\\Documents/corde-data",
+    );
+    expect(maskUserPath("/home/someone/.local/share/corde")).toBe("~/.local/share/corde");
+    expect(maskUserPath("/Users/someone/Library/corde")).toBe("~/Library/corde");
+  });
+
+  it("leaves other folders alone", () => {
+    for (const p of ["D:\\Sim\\Corde", "/var/lib/corde", "/tmp/corde-home-x", ""]) {
+      expect(maskUserPath(p)).toBe(p);
+    }
+  });
+
+  it("stands in for the address with something that is not one of this PC's", () => {
+    expect(HIDDEN_ADDRESS).toMatch(/^0+\.0+\.0+\.0+:\d+$/);
   });
 });

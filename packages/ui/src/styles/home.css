@@ -572,6 +572,30 @@ button.link:disabled {
   overflow-wrap: anywhere;
   user-select: all;
 }
+/* Stand-in shown while the address is hidden: blurred, not selectable, not the real value. */
+.home-hidden {
+  filter: blur(7px);
+  user-select: none;
+  pointer-events: none;
+}
+.home-hidden.home-url {
+  user-select: none;
+}
+.home-reveal {
+  font-size: 12.5px;
+  padding: 5px 12px;
+}
+.home-foot-path {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.home-foot-path:hover {
+  color: var(--text-dim);
+}
 .home-url-scheme {
   font-weight: 500;
   color: var(--text-faint);

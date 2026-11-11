@@ -60,7 +60,9 @@ plusieurs dispositions, par exemple une pour l'écran du PC et une pour le tél�
 ### Sur le téléphone
 
 Les mêmes pages s'ouvrent dans le navigateur du téléphone, sur le même Wi-Fi que le PC. L'accès est fermé par
-défaut ; il s'active d'un bouton sur l'écran d'accueil, qui affiche alors un QR code à scanner.
+défaut ; il s'active d'un bouton sur l'écran d'accueil, qui propose alors un QR code à scanner. L'adresse
+du PC et le QR code restent floutés tant qu'on ne demande pas à les voir, et le dossier de données est
+affiché sans le nom du compte Windows : rien de personnel n'apparaît en direct ou sur une capture.
 
 ![Accueil, tableau de bord et analyse d'un tour sur téléphone](docs/images/mobile.png)
 

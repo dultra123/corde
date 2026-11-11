@@ -131,7 +131,9 @@ Par défaut c'est désactivé, pour que Windows ne te demande rien. Pour l'activ
    (Windows demande une confirmation administrateur). Si tu cliques sur Annuler, Corde marche toujours sur
    le PC mais le téléphone ne pourra pas se connecter (dépannage, point 4).
 3. L'écran d'accueil de Corde affiche maintenant, dans le bloc **Sur ton téléphone**, l'adresse à ouvrir
-   et un **QR code**.
+   et un **QR code**. Ils sont **floutés par défaut** (pratique en direct ou pour une capture d'écran) :
+   clique **Afficher l'adresse** pour les voir, **Masquer l'adresse** pour les cacher à nouveau. Ils
+   redeviennent masqués à chaque retour sur l'accueil.
 4. Sur le téléphone, **connecté au même Wi-Fi**, scanne le QR code avec l'appareil photo (ou tape
    l'adresse affichée dans le navigateur, par exemple `http://192.168.1.20:8471` ; c'est bien `http`,
    pas `https`).

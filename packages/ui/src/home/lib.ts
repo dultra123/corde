@@ -165,6 +165,33 @@ export function phoneState(net: NetworkInfo): PhoneState {
   return net.lan_access_setting ? { kind: "restart" } : { kind: "off" };
 }
 
+/**
+ * What stands in for the address while it is hidden (shown blurred): same shape as a real one,
+ * so the card keeps its layout, but nothing of the real address reaches the screen — the page
+ * may be on a stream or in a screenshot.
+ */
+export const HIDDEN_ADDRESS = "000.000.0.00:8471";
+
+/**
+ * A data folder without the name of the user's account: `C:\Users\<name>\AppData\Local\Corde`
+ * → `%LOCALAPPDATA%\Corde`, `/home/<name>/.local/share/corde` → `~/.local/share/corde`. Other
+ * paths are returned as they are.
+ */
+export function maskUserPath(path: string): string {
+  const win = path.match(/^[A-Za-z]:[\\/]Users[\\/][^\\/]+[\\/](.*)$/);
+  if (win) {
+    const rest = win[1] ?? "";
+    const local = rest.match(/^AppData[\\/]Local[\\/](.*)$/i);
+    if (local) return `%LOCALAPPDATA%\\${local[1] ?? ""}`;
+    const roaming = rest.match(/^AppData[\\/]Roaming[\\/](.*)$/i);
+    if (roaming) return `%APPDATA%\\${roaming[1] ?? ""}`;
+    return `%USERPROFILE%\\${rest}`;
+  }
+  const unix = path.match(/^\/(?:home|Users)\/[^/]+\/(.*)$/);
+  if (unix) return `~/${unix[1] ?? ""}`;
+  return path;
+}
+
 /** `http://192.168.1.20:8471` → `192.168.1.20:8471` (what is shown in large type). */
 export function bareAddress(url: string): string {
   return url.replace(/^https?:\/\//i, "").replace(/\/+$/, "");

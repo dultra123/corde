@@ -808,6 +808,10 @@ export const en: Record<TranslationKey, string> = {
   "home.phone.title": "On your phone",
   "home.phone.on":
     "Same Wi-Fi as the PC: scan the code, or type the address in the phone's browser.",
+  "home.phone.show": "Show the address",
+  "home.phone.hide": "Hide the address",
+  "home.phone.hidden":
+    "The address and the code are hidden (useful on a stream or for a screenshot). Show them, then scan the code with the phone, on the same Wi-Fi as the PC.",
   "home.phone.qrLabel": "QR code of the address {url}",
   "home.phone.other": "Other addresses of this PC",
   "home.phone.off":
@@ -829,6 +833,8 @@ export const en: Record<TranslationKey, string> = {
   "home.phone.error": "The setting was not saved: {msg}",
   "home.foot.version": "Corde {v}",
   "home.foot.data": "Data",
+  "home.foot.pathShow": "Show the full path",
+  "home.foot.pathHide": "Hide the full path",
   "home.foot.guide": "Guide",
 
   // Quick-start guide (home page)

@@ -25,11 +25,13 @@ import { useConnectionPhase, useTelemetry } from "../store/telemetry";
 import { GuideDialog } from "./GuideDialog";
 import {
   bareAddress,
+  HIDDEN_ADDRESS,
   type HomePhase,
   homeLamps,
   homePhase,
   type Lamp,
   lastRaces,
+  maskUserPath,
   matchResult,
   ordinalSuffix,
   phoneState,
@@ -638,6 +640,9 @@ function PhoneCard() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [chosen, setChosen] = useState(0);
+  // The address stays hidden (blurred stand-in) until the driver asks for it: the page may be
+  // on a stream. Not remembered: every visit starts hidden.
+  const [shown, setShown] = useState(false);
   // Only the PC that runs Corde may change the setting (the server refuses anyone else).
   const canChange = isDesktop() || isLocalPage();
 
@@ -681,14 +686,35 @@ function PhoneCard() {
     const others = state.urls.filter((u) => u !== url);
     body = (
       <div className="home-phone-on">
-        <Qr value={url} label={t("home.phone.qrLabel", { url })} />
+        {shown ? (
+          <Qr value={url} label={t("home.phone.qrLabel", { url })} />
+        ) : (
+          <div className="home-hidden" aria-hidden="true">
+            <Qr value={`http://${HIDDEN_ADDRESS}`} label="" />
+          </div>
+        )}
         <div className="home-phone-text">
-          <p className="home-url num">
-            <span className="home-url-scheme">http://</span>
-            {bareAddress(url)}
-          </p>
-          <p className="dim">{t("home.phone.on")}</p>
-          {others.length > 0 && (
+          {shown ? (
+            <p className="home-url num">
+              <span className="home-url-scheme">http://</span>
+              {bareAddress(url)}
+            </p>
+          ) : (
+            <p className="home-url num home-hidden" aria-hidden="true">
+              <span className="home-url-scheme">http://</span>
+              {HIDDEN_ADDRESS}
+            </p>
+          )}
+          <button
+            type="button"
+            className="btn home-reveal"
+            aria-pressed={shown}
+            onClick={() => setShown((v) => !v)}
+          >
+            {t(shown ? "home.phone.hide" : "home.phone.show")}
+          </button>
+          <p className="dim">{t(shown ? "home.phone.on" : "home.phone.hidden")}</p>
+          {shown && others.length > 0 && (
             <p className="home-phone-others dim">
               {t("home.phone.other")}{" "}
               {others.map((u) => (
@@ -807,6 +833,9 @@ function HomeFoot({ online, onGuide }: { online: boolean; onGuide: () => void })
     [online, revision],
   );
   const st = online ? storage.data : null;
+  // The folder is shown without the name of the Windows account (stream, screenshots); a click
+  // gives the full path.
+  const [fullPath, setFullPath] = useState(false);
   return (
     <footer className="page-foot home-foot dim">
       <span className="is-strong">
@@ -816,9 +845,15 @@ function HomeFoot({ online, onGuide }: { online: boolean; onGuide: () => void })
         <>
           <span className="home-foot-data">
             <span>{t("home.foot.data")}</span>{" "}
-            <span className="faint page-foot-path" title={st.path}>
-              {st.path}
-            </span>
+            <button
+              type="button"
+              className="faint page-foot-path home-foot-path"
+              title={t(fullPath ? "home.foot.pathHide" : "home.foot.pathShow")}
+              aria-pressed={fullPath}
+              onClick={() => setFullPath((v) => !v)}
+            >
+              {fullPath ? st.path : maskUserPath(st.path)}
+            </button>
           </span>
           <span className="num">
             {nOf(st.sessions, "word.session", "word.sessions")} · {fmtBytes(st.total_bytes, lang)}
