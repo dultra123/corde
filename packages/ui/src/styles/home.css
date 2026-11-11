@@ -261,16 +261,16 @@ button.link:disabled {
   background: var(--slower);
 }
 
-/* ---- the three cards -------------------------------------------------------- */
+/* ---- the cards: last session on the left, races / phone / OBS on the right ---------- */
 .home-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto 1fr;
   gap: 14px;
   align-items: start;
 }
 .home-last {
-  grid-row: span 2;
+  grid-row: span 3;
 }
 .card.home-card {
   padding: 16px 20px 18px;

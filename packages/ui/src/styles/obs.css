@@ -1,0 +1,260 @@
+/* Page « OBS » (#/obs) and the overlay layout editor of the dashboard. */
+
+/* Stands for transparency (editor, previews). */
+.checkerboard {
+  background-color: #1b2129;
+  background-image: conic-gradient(#262e38 25%, transparent 0 50%, #262e38 0 75%, transparent 0);
+  background-size: 20px 20px;
+}
+
+/* ---- dashboard: an overlay layout being edited --------------------------------------- */
+.board.is-overlay {
+  display: flex;
+  justify-content: center;
+}
+.overlay-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.overlay-frame {
+  position: relative;
+  outline: 1px solid var(--line-strong);
+  border-radius: 2px;
+}
+.overlay-frame > .grid-stack {
+  height: 100%;
+}
+.board.is-overlay .widget {
+  background: rgba(9, 12, 16, 0.72);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.overlay-caption {
+  margin: 0;
+  font-size: 12px;
+}
+
+/* ---- the page ------------------------------------------------------------------------- */
+.obs-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.obs-title {
+  margin: 4px 0 0;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.obs-lead {
+  margin: 0;
+  max-width: 76ch;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.obs-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+.obs-steps-list {
+  margin: 0;
+  padding: 0 0 0 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13.5px;
+}
+.obs-steps-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.obs-steps-list li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+.obs-hint {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.obs-seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.obs-options-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px 24px;
+  align-items: start;
+}
+.obs-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+  font-size: 12.5px;
+}
+.obs-field legend {
+  padding: 0;
+  margin-bottom: 8px;
+}
+.obs-field b {
+  color: var(--text);
+  font-weight: 600;
+}
+.obs-field input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+.obs-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.obs-check input {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+  margin: 0;
+}
+.obs-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+}
+.obs-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+}
+.obs-section-head h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.obs-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(390px, 1fr));
+  gap: 12px;
+}
+.card.obs-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+}
+.obs-preview {
+  height: 236px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.obs-preview-box {
+  position: relative;
+  overflow: hidden;
+  outline: 1px dashed rgba(255, 180, 84, 0.45);
+  outline-offset: 0;
+}
+.obs-preview-frame {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border: 0;
+  transform-origin: 0 0;
+  pointer-events: none;
+  background: transparent;
+  color-scheme: dark;
+}
+.obs-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.obs-item-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.obs-item-name {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+.obs-size {
+  color: var(--accent);
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.obs-size::after {
+  content: " px";
+  color: var(--text-dim);
+  font-weight: 500;
+}
+.obs-copy {
+  display: flex;
+  gap: 6px;
+}
+.obs-url {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+}
+.obs-copy-btn {
+  min-width: 78px;
+  justify-content: center;
+}
+.obs-item-meta {
+  margin: 0;
+  font-size: 12.5px;
+}
+.obs-item-config {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+/* ---- home page card ------------------------------------------------------------------- */
+.home-obs-lead {
+  margin: 0 0 12px;
+  line-height: 1.4;
+}
+
+@media (max-width: 1100px) {
+  .obs-top {
+    grid-template-columns: 1fr;
+  }
+  .obs-options-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 699px) {
+  .obs-options-grid {
+    grid-template-columns: 1fr;
+  }
+  .obs-list {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1082,6 +1082,72 @@ export const fr = {
   "races.banner.view": "Voir",
   "races.banner.close": "Fermer le rappel",
   "home.nextRace": "Prochaine course",
+  "layout.device.overlayMenu": "Overlay (OBS)",
+  "layout.newOverlay": "Nouvelle disposition overlay",
+  "layout.obsLink": "Adresses pour OBS…",
+  "overlay.editorCaption":
+    "Disposition overlay : 1920 × 1080, le damier sera transparent dans OBS.",
+  "overlay.editorLink": "Adresse et réglages pour OBS",
+  "home.obs.title": "Dans OBS",
+  "home.obs.lead":
+    "Tes widgets par-dessus le jeu, sur fond transparent : une adresse à coller dans une source « Navigateur ».",
+  "home.obs.open": "Adresses pour OBS",
+  "obs.title": "Corde dans OBS",
+  "obs.lead":
+    "Chaque widget, ou une disposition entière, sur fond transparent par-dessus ton jeu. Copie l'adresse, colle-la dans une source « Navigateur » d'OBS, avec la taille indiquée.",
+  "obs.steps.title": "Mode d'emploi",
+  "obs.steps.1.title": "Dans OBS : Sources → + → Navigateur",
+  "obs.steps.1.text": "Donne un nom à la source (par exemple « Corde – Commandes »), puis OK.",
+  "obs.steps.2.title": "Colle l'adresse dans « URL »",
+  "obs.steps.2.text":
+    "Bouton « Copier » ci-dessous. Garde Corde ouvert pendant le stream : la source se reconnecte toute seule.",
+  "obs.steps.3.title": "Largeur et hauteur : la taille conseillée",
+  "obs.steps.3.text": "Puis OK. Place et redimensionne la source dans la scène comme une image.",
+  "obs.steps.css":
+    "Le champ « CSS personnalisé » peut rester vide (ou contenir body { background: rgba(0,0,0,0); }). « Actualiser le navigateur quand la scène devient active » est inutile.",
+  "obs.address.title": "OBS tourne sur…",
+  "obs.address.local": "Ce PC",
+  "obs.address.lan": "Un autre PC (réseau)",
+  "obs.address.localHint":
+    "Adresse 127.0.0.1 : OBS et Corde sur le même PC. Elle ne révèle rien si elle apparaît à l'écran.",
+  "obs.address.lanHint":
+    "Adresse réseau de ce PC, pour OBS sur un second PC de stream. Ne la montre pas à l'écran.",
+  "obs.address.lanOff":
+    "L'accès réseau est coupé : active-le dans l'Accueil (« Sur ton téléphone »), redémarre Corde, puis reviens ici.",
+  "obs.address.lanRestart":
+    "L'accès réseau sera actif après le redémarrage de Corde (Accueil, « Sur ton téléphone »).",
+  "obs.address.other": "Autre adresse :",
+  "obs.options.title": "Options de l'adresse",
+  "obs.options.reset": "Valeurs par défaut",
+  "obs.options.bg": "Fond des widgets",
+  "obs.bg.none": "Transparent",
+  "obs.bg.glass": "Verre fumé",
+  "obs.bg.solid": "Opaque",
+  "obs.bg.none.hint":
+    "Rien derrière les chiffres : un contour sombre les garde lisibles sur le jeu.",
+  "obs.bg.glass.hint": "Panneau sombre translucide (par défaut) : lisible sur tous les décors.",
+  "obs.bg.solid.hint": "Panneau sombre plein, comme dans le tableau de bord.",
+  "obs.options.opacity": "Opacité",
+  "obs.options.scale": "Taille des textes et graphiques",
+  "obs.options.hide": "Masquer quand je ne suis pas en piste (fondu)",
+  "obs.options.titles": "Titre des widgets",
+  "obs.options.lang": "Langue",
+  "obs.lang.app": "Celle de Corde",
+  "obs.layouts.title": "Dispositions overlay",
+  "obs.layouts.hint":
+    "Plusieurs widgets placés librement sur un canevas 1920 × 1080 : une seule source, de la taille de ta scène.",
+  "obs.layouts.none": "Aucune disposition overlay.",
+  "obs.layouts.count": "{n} widget(s)",
+  "obs.layouts.edit": "Modifier dans le tableau de bord",
+  "obs.widgets.title": "Widgets seuls",
+  "obs.widgets.hint": "Une source par widget : le widget remplit la source.",
+  "obs.size": "{w} × {h}",
+  "obs.sizeHint": "Taille conseillée de la source (largeur × hauteur, en pixels)",
+  "obs.copy": "Copier",
+  "obs.copied": "Copié !",
+  "obs.copyFailed": "Sélectionne et copie",
+  "obs.previewOf": "Aperçu : {name}",
+  "obs.urlOf": "Adresse pour OBS : {name}",
 } as const;
 
 export type TranslationKey = keyof typeof fr;

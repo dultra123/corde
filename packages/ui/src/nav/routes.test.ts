@@ -130,3 +130,11 @@ describe("parseRoute", () => {
     expect(sectionOf({ page: "result", id: 3 })).toBe("profile");
   });
 });
+
+describe("the OBS page", () => {
+  it("is #/obs, under the dashboard tab", () => {
+    expect(parseRoute("#/obs")).toEqual({ page: "obs" });
+    expect(routeHash({ page: "obs" })).toBe("#/obs");
+    expect(sectionOf({ page: "obs" })).toBe("dashboard");
+  });
+});

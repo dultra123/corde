@@ -9,6 +9,18 @@ import { isDemoForced, resolveEndpoint, type ServerEndpoint } from "./url";
 
 const AUTO_DEMO_AFTER_MS = 3000;
 const RATE_REFRESH_MS = 500;
+/** What an overlay asks the server for: enough for a video at 30 or 60 fps, half of the 60 Hz cap. */
+export const OVERLAY_RATE_HZ = 30;
+
+export interface StartOptions {
+  /**
+   * OBS browser source (`#/overlay/…`): 30 Hz, never the demo race on its own (a stream must
+   * not show invented data), never writes layouts back to the server, reconnects within 3 s.
+   */
+  overlay?: boolean;
+  /** With the demo (`?demo=1`): stop it after this delay and keep the last picture (previews). */
+  freezeDemoAfterMs?: number;
+}
 
 /**
  * Owns the WebSocket client and the demo generator and decides which one feeds the store:
@@ -22,14 +34,23 @@ class ConnectionManager {
   private demo: DemoRunner | null = null;
   private autoDemoTimer: ReturnType<typeof setTimeout> | null = null;
   endpoint: ServerEndpoint = resolveEndpoint("");
+  private overlay = false;
 
-  start(): void {
+  start(opts: StartOptions = {}): void {
+    this.overlay = opts.overlay ?? false;
     setInterval(() => this.refreshRates(), RATE_REFRESH_MS);
     if (isDemoForced()) {
       this.setDemo(true);
+      const freeze = opts.freezeDemoAfterMs;
+      if (freeze !== undefined) setTimeout(() => this.demo?.stop(), freeze);
       return;
     }
     this.connect();
+  }
+
+  /** The page is an OBS overlay (see {@link StartOptions.overlay}). */
+  get isOverlay(): boolean {
+    return this.overlay;
   }
 
   /** (Re)connects to the address currently configured in settings. */
@@ -39,7 +60,9 @@ class ConnectionManager {
     const telemetry = useTelemetry.getState();
     telemetry.setSocket("connecting", 0);
     this.client = new CordeClient(
-      { url: this.endpoint.ws, rateHz: useSettings.getState().rateHz },
+      this.overlay
+        ? { url: this.endpoint.ws, rateHz: OVERLAY_RATE_HZ, maxDelayMs: 3000 }
+        : { url: this.endpoint.ws, rateHz: useSettings.getState().rateHz },
       {
         onMessage: (m) => this.onMessage(m),
         onState: (state, attempt) => {
@@ -62,7 +85,7 @@ class ConnectionManager {
   }
 
   setRate(hz: number): void {
-    this.client?.setRate(hz);
+    if (!this.overlay) this.client?.setRate(hz);
   }
 
   /** Switches the demo on (manual) or off (reconnects to the server). */
@@ -91,7 +114,8 @@ class ConnectionManager {
           protocolVersion: m.protocolVersion,
           status: m.status,
         });
-        void syncLayoutsWithServer(this.endpoint.http);
+        // An overlay only reads the layout it shows (`overlay/OverlayApp.tsx`).
+        if (!this.overlay) void syncLayoutsWithServer(this.endpoint.http);
         break;
       case "status":
         if (s.demo === "off") s.setStatus(m.status);
@@ -115,7 +139,7 @@ class ConnectionManager {
   }
 
   private armAutoDemo(): void {
-    if (this.autoDemoTimer || useTelemetry.getState().demo !== "off") return;
+    if (this.overlay || this.autoDemoTimer || useTelemetry.getState().demo !== "off") return;
     this.autoDemoTimer = setTimeout(() => {
       this.autoDemoTimer = null;
       const s = useTelemetry.getState();

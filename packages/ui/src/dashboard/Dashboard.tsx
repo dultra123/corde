@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useT } from "../i18n";
+import { routeHash } from "../nav/routes";
+import { OVERLAY_COLUMNS, OVERLAY_ROWS } from "../overlay/model";
 import { useCurrentLayout, useDashboard } from "../store/dashboard";
 import { MOBILE_MAX_WIDTH } from "./defaults";
 import { GridCanvas } from "./GridCanvas";
@@ -9,23 +11,37 @@ import { TopBar } from "./TopBar";
 
 const DESKTOP_ROWS = 16;
 const MOBILE_CELL = 72;
+const TOPBAR = 38;
+/** Room kept under an overlay canvas for its caption. */
+const OVERLAY_CAPTION = 30;
 
 /** Desktop: 16 rows fill the viewport; mobile: fixed rows, the page scrolls. */
 function computeCellHeight(device: "desktop" | "mobile"): number {
   if (device === "mobile") return MOBILE_CELL;
-  const topbar = 38;
-  const avail = window.innerHeight - topbar - 6;
+  const avail = window.innerHeight - TOPBAR - 6;
   return Math.max(44, Math.floor(avail / DESKTOP_ROWS));
 }
 
-function useCellHeight(device: "desktop" | "mobile"): number {
-  const [h, setH] = useState(() => computeCellHeight(device));
+/**
+ * Overlay layouts: square cells, the whole 1920 × 1080 canvas (48 × 27 cells) visible at once —
+ * what OBS will show, scaled down to the window.
+ */
+function computeOverlayCell(editing: boolean): number {
+  const width = window.innerWidth - 6;
+  const height = window.innerHeight - TOPBAR - 6 - OVERLAY_CAPTION - (editing ? 120 : 0);
+  return Math.max(8, Math.min(width / OVERLAY_COLUMNS, height / OVERLAY_ROWS));
+}
+
+function useCellHeight(device: "desktop" | "mobile", overlay: boolean, editing: boolean): number {
+  const compute = () => (overlay ? computeOverlayCell(editing) : computeCellHeight(device));
+  const [h, setH] = useState(compute);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `compute` reads exactly these
   useEffect(() => {
-    const on = () => setH(computeCellHeight(device));
+    const on = () => setH(compute());
     on();
     window.addEventListener("resize", on);
     return () => window.removeEventListener("resize", on);
-  }, [device]);
+  }, [device, overlay, editing]);
   return h;
 }
 
@@ -36,7 +52,8 @@ export function Dashboard() {
   const editing = useDashboard((s) => s.editing);
   const paletteOpen = useDashboard((s) => s.paletteOpen);
   const layout = useCurrentLayout();
-  const cellHeight = useCellHeight(device);
+  const overlay = layout?.device === "overlay";
+  const cellHeight = useCellHeight(device, overlay, editing);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
@@ -47,18 +64,42 @@ export function Dashboard() {
     return () => mq.removeEventListener("change", apply);
   }, [setDevice]);
 
+  const grid = layout && (
+    <GridCanvas
+      key={layout.id}
+      layout={layout}
+      editing={editing}
+      cellHeight={cellHeight}
+      maxRow={overlay ? OVERLAY_ROWS : undefined}
+    />
+  );
+
   return (
     <div className={`app is-${device}${editing ? " is-editing" : ""}`}>
       <TopBar onSettings={() => setSettingsOpen(true)} />
-      <main className="board">
-        {layout ? (
-          <>
-            <GridCanvas key={layout.id} layout={layout} editing={editing} cellHeight={cellHeight} />
-            {layout.widgets.length === 0 && (
-              <div className="board-empty dim">{t("layout.empty")}</div>
-            )}
-          </>
+      <main className={`board${overlay ? " is-overlay" : ""}`}>
+        {layout && overlay ? (
+          <div className="overlay-stage">
+            <div
+              className="overlay-frame checkerboard"
+              style={{
+                width: cellHeight * OVERLAY_COLUMNS,
+                height: cellHeight * OVERLAY_ROWS,
+              }}
+            >
+              {grid}
+            </div>
+            <p className="overlay-caption dim">
+              {t("overlay.editorCaption")}{" "}
+              <a className="link" href={routeHash({ page: "obs" })}>
+                {t("overlay.editorLink")}
+              </a>
+            </p>
+          </div>
         ) : (
+          grid
+        )}
+        {(!layout || layout.widgets.length === 0) && (
           <div className="board-empty dim">{t("layout.empty")}</div>
         )}
       </main>

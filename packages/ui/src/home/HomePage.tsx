@@ -825,6 +825,24 @@ function PhoneCard() {
   );
 }
 
+/* ------------------------------------------------------------------ OBS */
+
+/** Streamers: the widgets on a transparent background, in an OBS browser source. */
+function ObsCard() {
+  const { t } = useT();
+  return (
+    <section className="card home-card home-obs">
+      <div className="home-card-head">
+        <h2 className="home-card-title">{t("home.obs.title")}</h2>
+      </div>
+      <p className="dim home-obs-lead">{t("home.obs.lead")}</p>
+      <a className="home-btn" href={routeHash({ page: "obs" })}>
+        {t("home.obs.open")}
+      </a>
+    </section>
+  );
+}
+
 /* ------------------------------------------------------------------ next race */
 
 /** « Prochaine course : LMP3 Fixed, Monza, 21:30 — dans 12 min » when a pick starts within 3 h. */
@@ -918,6 +936,7 @@ export function HomePage({ onSettings }: { onSettings: () => void }) {
           <LastSessionCard minute={minute} />
           <RacesCard minute={minute} />
           <PhoneCard />
+          <ObsCard />
         </div>
       )}
       <HomeFoot online={online} onGuide={() => setGuide(true)} />

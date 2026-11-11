@@ -5,6 +5,7 @@ import { TopBar } from "../dashboard/TopBar";
 import { EngineerPage } from "../engineer/EngineerPage";
 import { HomePage } from "../home/HomePage";
 import { type Route, sectionOf } from "../nav/routes";
+import { ObsPage } from "../overlay/ObsPage";
 import { ProfilePage } from "../profile/ProfilePage";
 import { ResultPage } from "../profile/ResultPage";
 import { RacesPage } from "../races/RacesPage";
@@ -28,8 +29,8 @@ function useIsMobile(): boolean {
 }
 
 /**
- * Shell of every section but the dashboard — `#/home`, `#/sessions…`, `#/races`, `#/profile`,
- * `#/results/…`: top bar, scrolling page, settings dialog.
+ * Shell of every section but the dashboard — `#/home`, `#/sessions…`, `#/races`, `#/obs`,
+ * `#/profile`, `#/results/…`: top bar, scrolling page, settings dialog.
  */
 export function SessionsShell({ route }: { route: Exclude<Route, { page: "dashboard" }> }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -59,6 +60,9 @@ export function SessionsShell({ route }: { route: Exclude<Route, { page: "dashbo
       break;
     case "races":
       page = <RacesPage />;
+      break;
+    case "obs":
+      page = <ObsPage />;
       break;
     case "profile":
       page = <ProfilePage track={route.track} />;

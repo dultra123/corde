@@ -42,6 +42,9 @@ describe("storage keys of the former name", () => {
       JSON.stringify({ layouts: [layout], current: { desktop: "l1", mobile: "l1" } }),
     );
     const { useDashboard } = await import("./dashboard");
-    expect(useDashboard.getState().layouts.map((l) => l.name)).toEqual(["Ancienne"]);
+    // the overlay layout (0.5) is added to a list saved by an older version
+    expect(useDashboard.getState().layouts.map((l) => l.name)).toEqual(["Ancienne", "OBS"]);
+    expect(useDashboard.getState().current.overlay).toBe("default-overlay");
+    expect(useDashboard.getState().current.desktop).toBe("l1");
   });
 });

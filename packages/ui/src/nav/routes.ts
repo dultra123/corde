@@ -12,6 +12,9 @@ import { useSyncExternalStore } from "react";
  *   #/sessions/<id>/compare?a=3&b=5      two laps side by side
  *   #/sessions/<id>/engineer             the race engineer's report (analysis + setup plans + feedback)
  *   #/races                              online races: schedule, my races, reminders
+ *   #/obs                                the widgets in OBS: addresses, sizes, options
+ *   #/overlay/…                          a widget or a layout alone, for OBS (`overlay/model.ts`;
+ *                                        not a page of this router: the app boots bare)
  *   #/profile                            driver profile (imported results)
  *   #/profile?track=<course>             …filtered on one track
  *   #/results/<id>                       one imported result (classification, player laps)
@@ -28,6 +31,7 @@ export type Route =
   | { page: "compare"; id: string; a: number; b: number }
   | { page: "engineer"; id: string }
   | { page: "races" }
+  | { page: "obs" }
   | { page: "profile"; track?: string }
   | { page: "result"; id: number };
 
@@ -72,6 +76,7 @@ export function parseRoute(hash: string): Route {
   if (parts.length === 0) return { page: "dashboard" };
   if (parts[0] === "home") return { page: "home" };
   if (parts[0] === "races") return { page: "races" };
+  if (parts[0] === "obs") return { page: "obs" };
   if (parts[0] === "profile") {
     const track = query.get("track")?.trim();
     return track ? { page: "profile", track } : { page: "profile" };
@@ -121,6 +126,8 @@ export function routeHash(route: Route): string {
       return `#/sessions/${encodeURIComponent(route.id)}/engineer`;
     case "races":
       return "#/races";
+    case "obs":
+      return "#/obs";
     case "profile":
       return route.track ? `#/profile?track=${encodeURIComponent(route.track)}` : "#/profile";
     case "result":
@@ -155,7 +162,7 @@ export function useRoute(): Route {
 /** Which top-level tab a route belongs to. */
 export function sectionOf(route: Route): Section {
   if (route.page === "home") return "home";
-  if (route.page === "dashboard") return "dashboard";
+  if (route.page === "dashboard" || route.page === "obs") return "dashboard";
   if (route.page === "races") return "races";
   if (route.page === "profile" || route.page === "result") return "profile";
   return "sessions";

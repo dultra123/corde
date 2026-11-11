@@ -31,6 +31,11 @@ export interface WidgetDef {
   defaultSize: WidgetSize;
   /** Size on the 4-column mobile grid (defaults to `defaultSize` clamped to 4 columns). */
   mobileSize?: WidgetSize;
+  /**
+   * Size of the widget alone in an OBS browser source, in px at scale 1 (defaults to its desktop
+   * size on a 1080p screen, see `overlay/model.ts`). Also its size when added to an overlay layout.
+   */
+  overlaySize?: { width: number; height: number };
   component: ComponentType<WidgetProps>;
   defaultConfig?: Record<string, unknown>;
   configFields?: WidgetConfigField[];

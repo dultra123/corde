@@ -1,0 +1,96 @@
+/*
+ * OBS overlay pages (`#/overlay/…`, `html.is-overlay`, see src/overlay/): transparent from the
+ * root down, nothing but the widgets — no cursor, no scroll bar, no hover (no tooltip either).
+ */
+html.is-overlay,
+html.is-overlay body,
+html.is-overlay #root {
+  background: transparent !important;
+  overflow: hidden;
+  height: 100%;
+  scrollbar-width: none;
+}
+html.is-overlay ::-webkit-scrollbar {
+  display: none;
+}
+html.is-overlay,
+html.is-overlay * {
+  cursor: none !important;
+}
+
+.ov {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  opacity: var(--ov-opacity, 1);
+  transition: opacity 700ms ease;
+}
+.ov.is-hidden {
+  opacity: 0;
+}
+.ov-fill {
+  position: absolute;
+  inset: 0;
+}
+.ov-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+}
+.ov-item {
+  position: absolute;
+}
+/* `scale=`: laid out smaller, then enlarged (canvases follow, see overlay/boot.ts). */
+.ov-scale {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-origin: 0 0;
+}
+/* « Waiting for the driver… » has no place on a stream: an empty widget shows nothing. */
+.ov .w-empty {
+  display: none;
+}
+
+/* ---- panel backgrounds (bg=) ---------------------------------------------------------- */
+.ov .widget-head {
+  color: var(--text-dim);
+}
+.ov.is-bg-glass {
+  /* over a bright game the panel is lighter than on the dashboard: lift the faint texts */
+  --text-faint: #8c98a6;
+  --line: rgba(255, 255, 255, 0.14);
+}
+.ov.is-bg-glass .widget {
+  background: rgba(9, 12, 16, 0.72);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.ov.is-bg-solid .widget {
+  background: var(--panel);
+}
+
+/*
+ * bg=none: nothing behind the numbers. Lighter greys, and a dark outline + soft shadow around
+ * every text, bar and trace (the filter covers canvases and SVG too), so that they stay
+ * readable over a bright sky as over a night track.
+ */
+.ov.is-bg-none {
+  --text: #ffffff;
+  --text-dim: #e3e8ee;
+  --text-faint: #c7d0da;
+  --line: rgba(255, 255, 255, 0.3);
+  --line-strong: rgba(255, 255, 255, 0.45);
+  --panel-raised: rgba(0, 0, 0, 0.35);
+}
+.ov.is-bg-none .widget {
+  background: transparent;
+  border-color: transparent;
+}
+.ov.is-bg-none .widget-head,
+.ov.is-bg-none .widget-body {
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.95)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7));
+}

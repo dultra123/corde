@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import type { DashboardLayout, DeviceKind } from "@corde/protocol";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useT } from "../i18n";
-import { useDashboard } from "../store/dashboard";
+import { routeHash } from "../nav/routes";
+import { activeSlot, useDashboard } from "../store/dashboard";
 import { IconChevron } from "./icons";
 
 /** Layout switcher + management (new / rename / duplicate / delete) in a small popover. */
@@ -8,7 +10,8 @@ export function LayoutMenu() {
   const { t } = useT();
   const layouts = useDashboard((s) => s.layouts);
   const device = useDashboard((s) => s.device);
-  const currentId = useDashboard((s) => s.current[s.device]);
+  const slot = useDashboard(activeSlot);
+  const currentId = useDashboard((s) => s.current[activeSlot(s)]);
   const sync = useDashboard((s) => s.sync);
   const { selectLayout, createLayout, renameLayout, duplicateLayout, deleteLayout, setEditing } =
     useDashboard.getState();
@@ -34,8 +37,28 @@ export function LayoutMenu() {
     };
   }, [open]);
 
-  const mine = layouts.filter((l) => l.device === device);
-  const others = layouts.filter((l) => l.device !== device);
+  const slotOf = (l: DashboardLayout): DeviceKind =>
+    l.device === "mobile" || l.device === "overlay" ? l.device : "desktop";
+  // On a desktop the screen layouts and the overlays (OBS) can be chosen; the phone keeps its own.
+  const choosable: DeviceKind[] = device === "mobile" ? ["mobile"] : ["desktop", "overlay"];
+  const others = layouts.filter((l) => !choosable.includes(slotOf(l)));
+
+  const item = (l: DashboardLayout) => (
+    <button
+      key={l.id}
+      type="button"
+      role="menuitemradio"
+      aria-checked={l.id === currentId}
+      className={`menu-item${l.id === currentId ? " is-current" : ""}`}
+      onClick={() => {
+        selectLayout(l.id);
+        setOpen(false);
+      }}
+    >
+      {l.name}
+      <small className="num dim">{l.widgets.length}</small>
+    </button>
+  );
 
   const submitRename = () => {
     if (current) renameLayout(current.id, name);
@@ -56,22 +79,13 @@ export function LayoutMenu() {
       </button>
       {open && (
         <div className="menu" role="menu">
-          <div className="menu-section dim">{t(`layout.device.${device}`)}</div>
-          {mine.map((l) => (
-            <button
-              key={l.id}
-              type="button"
-              role="menuitemradio"
-              aria-checked={l.id === currentId}
-              className={`menu-item${l.id === currentId ? " is-current" : ""}`}
-              onClick={() => {
-                selectLayout(l.id);
-                setOpen(false);
-              }}
-            >
-              {l.name}
-              <small className="num dim">{l.widgets.length}</small>
-            </button>
+          {choosable.map((kind) => (
+            <Fragment key={kind}>
+              <div className="menu-section dim">
+                {t(kind === "overlay" ? "layout.device.overlayMenu" : `layout.device.${kind}`)}
+              </div>
+              {layouts.filter((l) => slotOf(l) === kind).map(item)}
+            </Fragment>
           ))}
           {others.length > 0 && (
             <>
@@ -118,8 +132,21 @@ export function LayoutMenu() {
                   setOpen(false);
                 }}
               >
-                {t("layout.new")}
+                {t(slot === "overlay" ? "layout.newOverlay" : "layout.new")}
               </button>
+              {device === "desktop" && slot !== "overlay" && (
+                <button
+                  type="button"
+                  className="menu-item"
+                  onClick={() => {
+                    createLayout(t("layout.newOverlay"), "overlay");
+                    setEditing(true);
+                    setOpen(false);
+                  }}
+                >
+                  {t("layout.newOverlay")}
+                </button>
+              )}
               <button
                 type="button"
                 className="menu-item"
@@ -153,6 +180,10 @@ export function LayoutMenu() {
               </button>
             </>
           )}
+          <div className="menu-sep" />
+          <a className="menu-item" href={routeHash({ page: "obs" })} onClick={() => setOpen(false)}>
+            {t("layout.obsLink")}
+          </a>
           <div className="menu-sep" />
           <div className="menu-section faint">
             {sync === "synced"

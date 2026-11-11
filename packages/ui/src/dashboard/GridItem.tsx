@@ -12,7 +12,7 @@ interface Props {
   editing: boolean;
 }
 
-class WidgetBoundary extends Component<
+export class WidgetBoundary extends Component<
   { children: ReactNode; label: string },
   { error: string | null }
 > {

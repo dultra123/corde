@@ -3,6 +3,7 @@ import { Dashboard } from "./dashboard/Dashboard";
 import { useRoute } from "./nav/routes";
 import { ReminderBanner } from "./races/ReminderBanner";
 import { SessionsShell } from "./sessions/SessionsShell";
+import { useDashboard } from "./store/dashboard";
 import { useSettings } from "./store/settings";
 
 /**
@@ -20,6 +21,12 @@ export function App() {
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
+  // An overlay layout is edited on purpose (menu, OBS page): leaving the dashboard ends it, so
+  // that the dashboard opened on track shows the screen layout again.
+  const onDashboard = route.page === "dashboard";
+  useEffect(() => {
+    if (!onDashboard) useDashboard.getState().setView("screen");
+  }, [onDashboard]);
   return (
     <>
       <ReminderBanner />

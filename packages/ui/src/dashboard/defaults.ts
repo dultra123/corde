@@ -1,4 +1,5 @@
 import type { DashboardLayout, DeviceKind, WidgetPlacement } from "@corde/protocol";
+import { OVERLAY_COLUMNS } from "../overlay/model";
 
 export const DESKTOP_COLUMNS = 12;
 export const MOBILE_COLUMNS = 4;
@@ -6,7 +7,7 @@ export const MOBILE_COLUMNS = 4;
 export const MOBILE_MAX_WIDTH = 700;
 
 export const columnsFor = (device: DeviceKind): number =>
-  device === "mobile" ? MOBILE_COLUMNS : DESKTOP_COLUMNS;
+  device === "mobile" ? MOBILE_COLUMNS : device === "overlay" ? OVERLAY_COLUMNS : DESKTOP_COLUMNS;
 
 let counter = 0;
 export function newId(prefix: string): string {
@@ -63,6 +64,30 @@ export function defaultMobileLayout(): DashboardLayout {
       { kind: "map", x: 0, y: 27, w: 4, h: 5 },
       { kind: "session", x: 0, y: 32, w: 4, h: 3 },
       { kind: "electronics", x: 0, y: 35, w: 4, h: 4 },
+    ]),
+  };
+}
+
+/** Id of the overlay layout every installation starts with (the OBS page offers it first). */
+export const DEFAULT_OVERLAY_ID = "default-overlay";
+
+/**
+ * 48 × 27 cells of 40 px on a 1920 × 1080 canvas, transparent around the widgets: the map in a
+ * corner, the gaps across, the relative standings on the left, the pedals at the bottom.
+ */
+export function defaultOverlayLayout(): DashboardLayout {
+  return {
+    id: DEFAULT_OVERLAY_ID,
+    name: "OBS",
+    device: "overlay",
+    columns: OVERLAY_COLUMNS,
+    updated_ms: 0,
+    widgets: place([
+      { kind: "map", x: 0, y: 0, w: 9, h: 9 },
+      { kind: "gaps", x: 40, y: 0, w: 8, h: 9 },
+      { kind: "standings", x: 0, y: 15, w: 14, h: 12, config: { mode: "relative" } },
+      { kind: "inputs", x: 16, y: 19, w: 16, h: 8, config: { window: 10 } },
+      { kind: "tyres", x: 37, y: 18, w: 11, h: 9 },
     ]),
   };
 }

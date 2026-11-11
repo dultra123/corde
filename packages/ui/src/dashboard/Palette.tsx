@@ -1,5 +1,6 @@
 import { useT } from "../i18n";
-import { useDashboard } from "../store/dashboard";
+import { overlayCells, recommendedWidgetSize } from "../overlay/model";
+import { useCurrentLayout, useDashboard } from "../store/dashboard";
 import { listWidgets } from "../widgets";
 import { IconPlus } from "./icons";
 
@@ -9,6 +10,7 @@ export function Palette() {
   const addWidget = useDashboard((s) => s.addWidget);
   const setPaletteOpen = useDashboard((s) => s.setPaletteOpen);
   const device = useDashboard((s) => s.device);
+  const overlay = useCurrentLayout()?.device === "overlay";
   return (
     <div className="palette" role="dialog" aria-label={t("palette.title")}>
       <div className="palette-head">
@@ -25,7 +27,11 @@ export function Palette() {
       </div>
       <div className="palette-list">
         {listWidgets().map((w) => {
-          const size = device === "mobile" ? (w.mobileSize ?? w.defaultSize) : w.defaultSize;
+          const size = overlay
+            ? overlayCells(recommendedWidgetSize(w), { w: w.minW, h: w.minH })
+            : device === "mobile"
+              ? (w.mobileSize ?? w.defaultSize)
+              : w.defaultSize;
           return (
             <button key={w.id} type="button" className="chip" onClick={() => addWidget(w.id)}>
               <IconPlus />

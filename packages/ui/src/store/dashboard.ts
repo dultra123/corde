@@ -1,10 +1,18 @@
 import type { DashboardLayout, DeviceKind, WidgetPlacement } from "@corde/protocol";
 import { create } from "zustand";
-import { columnsFor, defaultLayouts, newId } from "../dashboard/defaults";
+import { columnsFor, defaultLayouts, defaultOverlayLayout, newId } from "../dashboard/defaults";
 import { isLayout } from "../net/layouts-api";
+import { freeSpot, OVERLAY_ROWS, overlayCells, recommendedWidgetSize } from "../overlay/model";
 import { getWidget } from "../widgets/registry";
 
 export type Device = Extract<DeviceKind, "desktop" | "mobile">;
+/** Which layout list a layout belongs to: the two screens, and the overlays (OBS). */
+export type Slot = DeviceKind;
+/**
+ * What the dashboard shows on a desktop: the screen layout, or an overlay layout being edited
+ * (the phone always shows its own layout).
+ */
+export type View = "screen" | "overlay";
 export type SyncState = "local" | "syncing" | "synced" | "error";
 
 export interface GridPosition {
@@ -17,7 +25,7 @@ export interface GridPosition {
 
 interface Persisted {
   layouts: DashboardLayout[];
-  current: Record<Device, string>;
+  current: Record<Slot, string>;
 }
 
 const KEY = "corde.layouts.v1";
@@ -26,8 +34,9 @@ const LEGACY_KEY = "muret.layouts.v1";
 
 export interface DashboardState {
   layouts: DashboardLayout[];
-  current: Record<Device, string>;
+  current: Record<Slot, string>;
   device: Device;
+  view: View;
   editing: boolean;
   paletteOpen: boolean;
   sync: SyncState;
@@ -35,12 +44,13 @@ export interface DashboardState {
   revision: number;
 
   setDevice(device: Device): void;
+  setView(view: View): void;
   setEditing(on: boolean): void;
   setPaletteOpen(on: boolean): void;
   setSync(state: SyncState): void;
 
   selectLayout(id: string): void;
-  createLayout(name: string, device?: Device): string;
+  createLayout(name: string, device?: Slot): string;
   renameLayout(id: string, name: string): void;
   duplicateLayout(id: string): string;
   deleteLayout(id: string): void;
@@ -55,26 +65,46 @@ export interface DashboardState {
   replaceLayouts(layouts: DashboardLayout[], fromServer: boolean): void;
 }
 
+function slotOf(layout: DashboardLayout): Slot {
+  return layout.device === "mobile" || layout.device === "overlay" ? layout.device : "desktop";
+}
+
+/**
+ * Overlay layouts came with Corde 0.5: a list saved by an older version has none, so the default
+ * one is added (it reaches the server with the next sync, like any local layout).
+ */
+export function withOverlay(layouts: DashboardLayout[]): DashboardLayout[] {
+  return layouts.some((l) => l.device === "overlay")
+    ? layouts
+    : [...layouts, defaultOverlayLayout()];
+}
+
 function load(): Persisted {
   const fallback = (): Persisted => {
-    const layouts = defaultLayouts();
+    const layouts = withOverlay(defaultLayouts());
     return {
       layouts,
-      current: { desktop: layouts[0]?.id ?? "", mobile: layouts[1]?.id ?? "" },
+      current: {
+        desktop: pickCurrent(layouts, undefined, "desktop"),
+        mobile: pickCurrent(layouts, undefined, "mobile"),
+        overlay: pickCurrent(layouts, undefined, "overlay"),
+      },
     };
   };
   try {
     const raw = localStorage.getItem(KEY) ?? localStorage.getItem(LEGACY_KEY);
     if (!raw) return fallback();
     const parsed = JSON.parse(raw) as Partial<Persisted>;
-    const layouts = Array.isArray(parsed.layouts) ? parsed.layouts.filter(isLayout) : [];
-    if (layouts.length === 0) return fallback();
-    const cur = parsed.current ?? ({} as Partial<Record<Device, string>>);
+    const stored = Array.isArray(parsed.layouts) ? parsed.layouts.filter(isLayout) : [];
+    if (stored.length === 0) return fallback();
+    const layouts = withOverlay(stored);
+    const cur = parsed.current ?? ({} as Partial<Record<Slot, string>>);
     return {
       layouts,
       current: {
         desktop: pickCurrent(layouts, cur.desktop, "desktop"),
         mobile: pickCurrent(layouts, cur.mobile, "mobile"),
+        overlay: pickCurrent(layouts, cur.overlay, "overlay"),
       },
     };
   } catch {
@@ -82,14 +112,17 @@ function load(): Persisted {
   }
 }
 
-function pickCurrent(
-  layouts: DashboardLayout[],
-  wanted: string | undefined,
-  device: Device,
-): string {
-  if (wanted && layouts.some((l) => l.id === wanted)) return wanted;
-  const sameDevice = layouts.find((l) => l.device === device);
-  return sameDevice?.id ?? layouts[0]?.id ?? "";
+function pickCurrent(layouts: DashboardLayout[], wanted: string | undefined, slot: Slot): string {
+  if (wanted && layouts.some((l) => l.id === wanted && slotOf(l) === slot)) return wanted;
+  const sameSlot = layouts.find((l) => slotOf(l) === slot);
+  if (sameSlot) return sameSlot.id;
+  // a screen without its own layout shows any other screen layout, never an overlay
+  return slot === "overlay" ? "" : (layouts.find((l) => slotOf(l) !== "overlay")?.id ?? "");
+}
+
+/** The list the dashboard edits right now. */
+export function activeSlot(s: Pick<DashboardState, "device" | "view">): Slot {
+  return s.device === "desktop" && s.view === "overlay" ? "overlay" : s.device;
 }
 
 function save(state: Pick<DashboardState, "layouts" | "current">): void {
@@ -127,6 +160,7 @@ export const useDashboard = create<DashboardState>((set, get) => {
     layouts: initial.layouts,
     current: initial.current,
     device: detectDevice(),
+    view: "screen",
     editing: false,
     paletteOpen: false,
     sync: "local",
@@ -134,6 +168,9 @@ export const useDashboard = create<DashboardState>((set, get) => {
 
     setDevice(device) {
       if (get().device !== device) set({ device, editing: false, paletteOpen: false });
+    },
+    setView(view) {
+      if (get().view !== view) set({ view, paletteOpen: false });
     },
     setEditing(on) {
       set({ editing: on, paletteOpen: on ? get().paletteOpen : false });
@@ -148,12 +185,15 @@ export const useDashboard = create<DashboardState>((set, get) => {
     selectLayout(id) {
       const l = get().layouts.find((x) => x.id === id);
       if (!l) return;
-      const device: Device = l.device === "mobile" ? "mobile" : "desktop";
-      set((s) => ({ current: { ...s.current, [device]: id } }));
+      const slot = slotOf(l);
+      set((s) => ({
+        current: { ...s.current, [slot]: id },
+        view: slot === "overlay" ? "overlay" : slot === "desktop" ? "screen" : s.view,
+      }));
       save(get());
     },
 
-    createLayout(name, device = get().device) {
+    createLayout(name, device = activeSlot(get())) {
       const id = newId("layout");
       const layout: DashboardLayout = {
         id,
@@ -166,6 +206,7 @@ export const useDashboard = create<DashboardState>((set, get) => {
       set((s) => ({
         layouts: [...s.layouts, layout],
         current: { ...s.current, [device]: id },
+        view: device === "overlay" ? "overlay" : device === "desktop" ? "screen" : s.view,
         revision: s.revision + 1,
       }));
       save(get());
@@ -188,10 +229,10 @@ export const useDashboard = create<DashboardState>((set, get) => {
         widgets: src.widgets.map((w) => ({ ...w, id: newId(w.kind), config: { ...w.config } })),
         updated_ms: Date.now(),
       };
-      const device: Device = copy.device === "mobile" ? "mobile" : "desktop";
+      const slot = slotOf(copy);
       set((s) => ({
         layouts: [...s.layouts, copy],
-        current: { ...s.current, [device]: copy.id },
+        current: { ...s.current, [slot]: copy.id },
         revision: s.revision + 1,
       }));
       save(get());
@@ -203,16 +244,16 @@ export const useDashboard = create<DashboardState>((set, get) => {
       const victim = s.layouts.find((l) => l.id === id);
       if (!victim) return;
       let layouts = s.layouts.filter((l) => l.id !== id);
-      const device: Device = victim.device === "mobile" ? "mobile" : "desktop";
-      if (!layouts.some((l) => l.device === device)) {
-        // never leave a device without a layout: recreate the default one
-        const fresh = defaultLayouts().find((l) => l.device === device);
+      const slot = slotOf(victim);
+      if (!layouts.some((l) => slotOf(l) === slot)) {
+        // never leave a device (or the overlays) without a layout: recreate the default one
+        const fresh = [...defaultLayouts(), defaultOverlayLayout()].find((l) => slotOf(l) === slot);
         if (fresh)
           layouts = [...layouts, { ...fresh, id: newId("layout"), updated_ms: Date.now() }];
       }
       set({
         layouts,
-        current: { ...s.current, [device]: pickCurrent(layouts, undefined, device) },
+        current: { ...s.current, [slot]: pickCurrent(layouts, undefined, slot) },
         revision: s.revision + 1,
       });
       save(get());
@@ -239,16 +280,26 @@ export const useDashboard = create<DashboardState>((set, get) => {
     addWidget(kind) {
       const def = getWidget(kind);
       const s = get();
-      const layoutId = s.current[s.device];
+      const layoutId = s.current[activeSlot(s)];
       const layout = s.layouts.find((l) => l.id === layoutId);
       if (!def || !layout) return;
-      const size = s.device === "mobile" ? (def.mobileSize ?? def.defaultSize) : def.defaultSize;
+      const size =
+        layout.device === "overlay"
+          ? overlayCells(recommendedWidgetSize(def), { w: def.minW, h: def.minH })
+          : s.device === "mobile"
+            ? (def.mobileSize ?? def.defaultSize)
+            : def.defaultSize;
       const w = Math.min(size.w, layout.columns);
+      // an overlay canvas has a bottom: find a free place on it rather than below everything
+      const spot =
+        layout.device === "overlay"
+          ? (freeSpot(layout.widgets, w, size.h, layout.columns, OVERLAY_ROWS) ?? { x: 0, y: 0 })
+          : { x: 0, y: bottomOf(layout.widgets) };
       const placement: WidgetPlacement = {
         id: newId(kind),
         kind,
-        x: 0,
-        y: bottomOf(layout.widgets),
+        x: spot.x,
+        y: spot.y,
         w,
         h: size.h,
         config: { ...(def.defaultConfig ?? {}) },
@@ -258,13 +309,13 @@ export const useDashboard = create<DashboardState>((set, get) => {
 
     removeWidget(widgetId) {
       const s = get();
-      const layoutId = s.current[s.device];
+      const layoutId = s.current[activeSlot(s)];
       touch(layoutId, (l) => ({ ...l, widgets: l.widgets.filter((w) => w.id !== widgetId) }));
     },
 
     setWidgetConfig(widgetId, patch) {
       const s = get();
-      const layoutId = s.current[s.device];
+      const layoutId = s.current[activeSlot(s)];
       touch(layoutId, (l) => ({
         ...l,
         widgets: l.widgets.map((w) =>
@@ -281,6 +332,7 @@ export const useDashboard = create<DashboardState>((set, get) => {
         current: {
           desktop: pickCurrent(layouts, s.current.desktop, "desktop"),
           mobile: pickCurrent(layouts, s.current.mobile, "mobile"),
+          overlay: pickCurrent(layouts, s.current.overlay, "overlay"),
         },
         sync: fromServer ? "synced" : s.sync,
       });
@@ -291,7 +343,7 @@ export const useDashboard = create<DashboardState>((set, get) => {
 
 /** The layout shown on the current device. */
 export function selectCurrentLayout(s: DashboardState): DashboardLayout | null {
-  return s.layouts.find((l) => l.id === s.current[s.device]) ?? null;
+  return s.layouts.find((l) => l.id === s.current[activeSlot(s)]) ?? null;
 }
 
 export const useCurrentLayout = () => useDashboard(selectCurrentLayout);

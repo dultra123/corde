@@ -8,6 +8,8 @@ interface Props {
   layout: DashboardLayout;
   editing: boolean;
   cellHeight: number;
+  /** Rows the items may not go below (overlay canvas: 27); none by default. */
+  maxRow?: number;
 }
 
 /**
@@ -15,7 +17,7 @@ interface Props {
  * themselves with `makeWidget` on mount; the grid writes positions back to the store on change.
  * The component is keyed by layout id from the parent, so a layout switch is a clean remount.
  */
-export function GridCanvas({ layout, editing, cellHeight }: Props) {
+export function GridCanvas({ layout, editing, cellHeight, maxRow }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [grid, setGrid] = useState<GridStack | null>(null);
   const applyPositions = useDashboard((s) => s.applyPositions);
@@ -36,7 +38,8 @@ export function GridCanvas({ layout, editing, cellHeight }: Props) {
         mode: "top",
         animate: true,
         staticGrid: true,
-        minRow: 1,
+        minRow: maxRow ?? 1,
+        maxRow: maxRow ?? 0,
         alwaysShowResizeHandle: true,
         draggable: { handle: ".widget-head", appendTo: "body" },
         resizable: { handles: "se,sw" },
@@ -58,7 +61,7 @@ export function GridCanvas({ layout, editing, cellHeight }: Props) {
       g.destroy(false);
       setGrid(null);
     };
-  }, [layoutId, columns, applyPositions]);
+  }, [layoutId, columns, applyPositions, maxRow]);
 
   useEffect(() => {
     grid?.setStatic(!editing);
