@@ -1,0 +1,2 @@
+# Fichiers .svm réels du jeu : CRLF et UTF-8 à conserver octet pour octet (tests aller-retour).
+crates/corde-lmu/tests/fixtures/svm/*.svm -text

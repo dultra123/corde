@@ -1,0 +1,37 @@
+[package]
+name = "corde-server"
+description = "Serveur local Corde : lit la télémétrie, la diffuse en WebSocket aux tableaux de bord (desktop, mobile, OBS), persiste layouts et sessions."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "corde-server"
+path = "src/main.rs"
+
+[dependencies]
+corde-protocol = { workspace = true }
+corde-core = { workspace = true }
+corde-sim = { path = "../corde-sim" }
+corde-lmu = { workspace = true }
+corde-store = { workspace = true }
+corde-engineer = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tokio = { workspace = true }
+axum = { version = "0.8", features = ["ws", "json", "query"] }
+tower-http = { version = "0.6", features = ["fs", "cors", "trace"] }
+clap = { version = "4", features = ["derive"] }
+local-ip-address = "0.6"
+
+[dev-dependencies]
+tokio-tungstenite = "0.30"
+futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
+ureq = { version = "3", default-features = false, features = ["json"] }

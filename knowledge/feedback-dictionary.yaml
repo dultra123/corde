@@ -1,0 +1,449 @@
+# knowledge/feedback-dictionary.yaml — ressenti pilote (texte libre FR/EN) → symptômes de setup.
+#
+# GÉNÉRÉ depuis docs/research/02-ingenieur-de-course.md (section D) puis nettoyé. Schéma dans
+# knowledge/README.md. Les expressions françaises sont des formulations courantes de pilotes sim
+# (non sourçables, confiance medium) ; les symptômes pointent vers `symptom` de setup-rules.yaml.
+# Un symptôme terminé par `*` est un motif (glob) : US_* = toutes les règles de sous-virage, etc.
+# Les 5 entrées de la section `aliases` ont été ajoutées pour résoudre des identifiants référencés
+# par les règles mais absents de la table du brief ; elles héritent des expressions de leur cible.
+
+schema_version: 1
+source: "docs/research/02-ingenieur-de-course.md"
+confidence: medium
+
+# Prétraitement recommandé avant la recherche de motifs : minuscules, suppression des accents,
+# lemmatisation légère ; recherche par regex ou par similarité (embeddings). Chaque motif reconnu
+# renvoie un identifiant FEEL_* ; si plusieurs symptômes sont candidats et que la télémétrie ne
+# tranche pas, poser les questions `clarify` dans l'ordre.
+normalisation:
+  lowercase: true
+  strip_accents: true
+  light_lemmatisation: true
+
+# Protocole de débrief (≈ 60 s), ordre recommandé des questions.
+debrief_protocol:
+  - "phase du virage (entrée / milieu / sortie / freinage en ligne droite)"
+  - "vitesse du virage (lent / moyen / rapide)"
+  - "début ou fin de relais"
+  - "pneus : température et pression vues au HUD"
+  - "Hypercar : état de charge batterie et réglages TC/map au moment du symptôme"
+  - "« est-ce que c'est pire qu'avant la dernière modification ? »"
+
+# Ambiguïtés fréquentes à lever systématiquement.
+ambiguities:
+  - {expression: "« ça glisse » sans précision", resolve: "demander l'essieu (avant/arrière) et la phase (freins / sans pédale / gaz)."}
+  - {expression: "« instable »", resolve: "ligne droite au freinage (BRK_UNSTABLE_STRAIGHT) vs entrée en virage (OS_ENTRY_*) vs haute vitesse (OS_*_FAST)."}
+  - {expression: "« pas de grip »", resolve: "froid (TYR_COLD) vs surchauffe (TYR_HOT_*) vs équilibre (US_*/OS_*)."}
+  - {expression: "« ça saute »", resolve: "vibreurs (PLT_KERB_UNSETTLED) vs bosses (PLT_BUMPY_LOSS) vs talonnage (PLT_BOTTOMING)."}
+  - {expression: "symptôme final vs cause amont", resolve: "le pilote décrit souvent la conséquence (« tête-à-queue en sortie ») alors que la cause est en amont (entrée trop rapide, freinage tardif) : croiser avec S-08 (vitesse mini) et S-02 (trail braking) avant de modifier le setup."}
+
+# 56 entrées.
+entries:
+  - id: FEEL_FRONT_WONT_TURN_IN
+    fr: ["l'avant ne tourne pas à l'inscription", "ça n'inscrit pas", "je tourne le volant et rien", "ça pousse à l'entrée", "sous-virage en entrée", "l'avant s'enfuit au freinage"]
+    en: ["won't turn in", "pushes on entry", "no front end on turn-in", "understeer on entry", "front washes out under braking"]
+    symptoms: [US_ENTRY_SLOW, US_ENTRY_FAST]
+    default_phase: entry
+    default_corner_speed: null
+    default_note: "vitesse à demander"
+    clarify: ["Dans les virages lents, rapides ou les deux ?", "Toujours sur les freins à ce moment-là, ou déjà relâchés ?", "Ça empire en fin de relais ?"]
+  - id: FEEL_FRONT_WONT_TURN
+    fr: ["sous-virage en milieu", "ça pousse au milieu", "je dois attendre pour remettre les gaz", "l'avant glisse en appui", "ça élargit"]
+    en: ["mid-corner understeer", "pushes mid-corner", "front slides at the apex", "runs wide"]
+    symptoms: [US_MID_SLOW, US_MID_FAST]
+    default_phase: mid
+    default_corner_speed: null
+    clarify: ["Lents ou rapides ?", "Avec combien de gaz ?", "Plus avec le plein ?"]
+  - id: FEEL_PUSH_ON_THROTTLE
+    fr: ["ça sous-vire à la remise des gaz", "quand j'accélère ça élargit", "l'avant s'ouvre sous gaz"]
+    en: ["power understeer", "pushes on throttle", "opens up on power"]
+    symptoms: [US_EXIT_SLOW, US_EXIT_FAST]
+    default_phase: exit
+    default_corner_speed: null
+    clarify: ["Vitesse du virage ?", "Hypercar LMH : au-dessus de 150/190 km/h ?", "Batterie pleine ou vide à ce moment ?"]
+    note: "Hypercar LMH : vérifier d'abord le motor map (déploiement avant > 150/190 km/h)."
+  - id: FEEL_PUSH_ON_BRAKES
+    fr: ["ça pousse sur les freins", "l'avant bloque et pousse"]
+    en: ["pushes under braking", "locks and pushes"]
+    symptoms: [US_ENTRY_SLOW, BRK_LOCK_FRONT]
+    default_phase: entry
+    default_corner_speed: null
+    clarify: ["La roue bloque vraiment ou ça glisse juste ?", "Début ou fin de freinage ?"]
+    note: "Les deux symptômes sont souvent simultanés."
+  - id: FEEL_FRONT_LIGHT_HIGH_SPEED
+    fr: ["l'avant est léger à haute vitesse", "flotte dans les courbes rapides", "pas de confiance dans les rapides"]
+    en: ["front is light at speed", "vague in fast corners", "no confidence in high-speed"]
+    symptoms: [US_ENTRY_FAST, US_MID_FAST]
+    default_phase: any
+    default_corner_speed: fast
+    clarify: ["Plutôt à l'inscription ou en appui ?", "Freins encore engagés ?"]
+  - id: FEEL_REAR_LOOSE_ON_BRAKES
+    fr: ["l'arrière se dérobe au freinage", "ça survire au freinage", "l'arrière passe devant quand je freine", "instable en entrée", "l'arrière décroche au lâcher de frein"]
+    en: ["rear steps out under braking", "loose on entry", "oversteer on turn-in", "rear comes around when I release the brake"]
+    symptoms: [OS_ENTRY_SLOW, OS_ENTRY_FAST, BRK_UNSTABLE_STRAIGHT]
+    default_phase: entry
+    default_corner_speed: null
+    clarify: ["En ligne droite (avant de tourner) ou une fois le volant tourné ?", "Au rétrogradage ?", "Lents ou rapides ?", "Hypercar : batterie à 100 % ?"]
+  - id: FEEL_REAR_STEPS_OUT_TURN_IN
+    fr: ["l'arrière part à l'inscription", "ça pivote trop à l'entrée", "trop pointu à l'entrée"]
+    en: ["rear snaps on turn-in", "too pointy on entry", "rotates too much on entry"]
+    symptoms: [OS_ENTRY_SLOW, OS_ENTRY_FAST]
+    default_phase: entry
+    default_corner_speed: null
+    clarify: ["Lents ou rapides ?", "Plutôt bienvenu (rotation) ou dangereux ?"]
+  - id: FEEL_REAR_LOOSE_MID
+    fr: ["l'arrière glisse en appui", "survirage en milieu de virage", "ça dérive de l'arrière sans gaz"]
+    en: ["loose mid-corner", "rear slides at the apex", "oversteer off-throttle mid-corner"]
+    symptoms: [OS_MID_SLOW, OS_MID_FAST]
+    default_phase: mid
+    default_corner_speed: null
+    clarify: ["Lents ou rapides ?", "Pneus chauds ou froids ?", "Sur bosses/vibreurs ?"]
+  - id: FEEL_REAR_SLIDES_ON_THROTTLE
+    fr: ["ça glisse de l'arrière à la remise des gaz", "survirage à l'accélération", "l'arrière part quand j'accélère", "ça part en travers en sortie", "ça patine et ça part"]
+    en: ["oversteer on throttle", "rear slides on power", "power oversteer", "snaps on exit"]
+    symptoms: [OS_EXIT_SLOW, OS_EXIT_FAST, "TRC_*"]
+    default_phase: exit
+    default_corner_speed: null
+    clarify: ["Les deux roues patinent ou seulement l'intérieure ? (ou laisser la télémétrie trancher)", "Lents ou rapides ?", "Dès le début du relais ou en fin ?", "Avec le TC à combien ?"]
+  - id: FEEL_WHEELSPIN
+    fr: ["ça patine", "pas de motricité", "je ne peux pas remettre les gaz", "ça cire"]
+    en: [wheelspin, "no traction", "can't get on the power", "spins up"]
+    symptoms: [TRC_WHEELSPIN_BOTH, TRC_WHEELSPIN_INNER]
+    default_phase: exit
+    default_corner_speed: slow
+    clarify: ["Intérieure seule ?", "Sur bosses ?", "TC réglé à combien ?"]
+  - id: FEEL_INNER_WHEELSPIN
+    fr: ["la roue intérieure patine", "ça cire d'une roue"]
+    en: ["inside wheel spins", "one-wheel peel"]
+    symptoms: [TRC_WHEELSPIN_INNER]
+    default_phase: exit
+    default_corner_speed: slow
+    clarify: ["Sur les vibreurs intérieurs ?"]
+  - id: FEEL_TC_CUTS_POWER
+    fr: ["le TC coupe trop", "ça bride en sortie", "le moteur s'étouffe"]
+    en: ["TC too intrusive", "TC kills the exit", "bogs down on exit"]
+    symptoms: [TC_TOO_INTRUSIVE]
+    default_phase: exit
+    default_corner_speed: null
+    clarify: ["Est-ce que ça patinerait sans ?", "Valeurs TC/cut/slip actuelles ?"]
+  - id: FEEL_SLUGGISH_EXIT
+    fr: ["mou en sortie", "manque de punch"]
+    en: ["sluggish exit", "no punch"]
+    symptoms: [TC_TOO_INTRUSIVE, STR_TOP_SPEED_LOW, HYB_SOC_EMPTY]
+    default_phase: exit
+    default_corner_speed: null
+    clarify: ["Batterie vide ?", "Map moteur ?"]
+  - id: FEEL_SNAP_HIGH_SPEED
+    fr: ["ça décroche d'un coup dans les rapides", "snap à haute vitesse", "l'arrière part sans prévenir à 250"]
+    en: ["snap oversteer at high speed", "sudden loss in fast corners", "rear goes without warning"]
+    symptoms: [OS_MID_FAST, OS_ENTRY_FAST, PLT_FLOOR_STALL]
+    default_phase: any
+    default_corner_speed: fast
+    clarify: ["Au freinage, en appui ou sous gaz ?", "Sur une bosse/compression précise (Eau Rouge, Porsche Curves) ?", "Sensation de talonnage ?"]
+  - id: FEEL_SUDDEN_LOSS_HIGH_SPEED
+    fr: ["perte d'appui soudaine", "la voiture s'affaisse puis décroche", "ça décroche du fond plat"]
+    en: ["floor stall", "sudden loss of downforce", "bottoms then lets go"]
+    symptoms: [PLT_FLOOR_STALL, PLT_BOTTOMING]
+    default_phase: any
+    default_corner_speed: fast
+    clarify: ["Étincelles / bruit de fond plat ?", "Avec le plein ?"]
+  - id: FEEL_BALANCE_SHIFT_UNPREDICTABLE
+    fr: ["l'équilibre change d'un virage à l'autre", "imprévisible", "je ne sais jamais ce que la voiture va faire"]
+    en: ["unpredictable balance", inconsistent, "never know what it'll do"]
+    symptoms: [PLT_FLOOR_STALL, PLT_NERVOUS, TYR_COLD]
+    default_phase: any
+    default_corner_speed: null
+    clarify: ["Plutôt rapide ou lent ?", "Pneus dans la fenêtre ?", "Plus en début ou fin de relais ?"]
+  - id: FEEL_UNSTABLE_BRAKING
+    fr: ["instable au freinage", "ça louvoie au freinage", "l'arrière flotte au freinage en ligne droite", "ça serpente"]
+    en: ["unstable under braking", "wanders under braking", "rear moves around in a straight line", snakes]
+    symptoms: [BRK_UNSTABLE_STRAIGHT]
+    default_phase: braking
+    default_corner_speed: null
+    clarify: ["Avant de tourner le volant ?", "Au rétrogradage ?", "Sur bosses (Sebring) ?"]
+  - id: FEEL_REAR_WANDERS_BRAKING
+    fr: ["l'arrière balade", "l'arrière est léger au freinage"]
+    en: ["rear is light under braking", "tail wags"]
+    symptoms: [BRK_UNSTABLE_STRAIGHT, BRK_LOCK_REAR]
+    default_phase: braking
+    default_corner_speed: null
+    clarify: ["Avant de tourner le volant ?", "Au rétrogradage ?", "Sur bosses (Sebring) ?"]
+  - id: FEEL_FRONT_LOCKS
+    fr: ["ça bloque de l'avant", "blocage avant", "je bloque les roues avant en fin de freinage"]
+    en: ["front locks", "locking the fronts", "front lock-up at the end of braking"]
+    symptoms: [BRK_LOCK_FRONT]
+    default_phase: braking
+    default_corner_speed: null
+    clarify: ["Début (haute vitesse) ou fin (basse vitesse) du freinage ?", "Les deux roues ou l'intérieure ?", "Hypercar : migration réglée à combien ? Batterie ?"]
+  - id: FEEL_REAR_LOCKS
+    fr: ["ça bloque de l'arrière", "blocage arrière au rétrogradage"]
+    en: ["rear locks", "rear lock-up on downshift"]
+    symptoms: [BRK_LOCK_REAR]
+    default_phase: braking
+    default_corner_speed: null
+    clarify: ["Au rétrogradage ?", "LMH : batterie pleine ?"]
+  - id: FEEL_INNER_FRONT_LOCKS
+    fr: ["la roue intérieure bloque en trail", "blocage de l'intérieure en entrée"]
+    en: ["inside front locks", "inner wheel locks on trail brake"]
+    symptoms: [BRK_LOCK_INNER_FRONT]
+    default_phase: entry
+    default_corner_speed: slow
+    clarify: ["Avec beaucoup de volant encore sur les freins ?"]
+  - id: FEEL_NO_BRAKES_COLD
+    fr: ["pas de freins à froid", "la pédale est longue au premier tour", "pas de freins la nuit"]
+    en: ["no brakes when cold", "long pedal on the out-lap", "brakes don't work at night"]
+    symptoms: [BRK_COLD]
+    default_phase: braking
+    default_corner_speed: null
+    clarify: ["Combien de tours avant que ça vienne ?", "Conduits actuels ?"]
+  - id: FEEL_LONG_PEDAL
+    fr: ["pédale longue", "freins spongieux"]
+    en: ["long pedal", "spongy brakes"]
+    symptoms: [BRK_COLD, BRK_OVERHEAT]
+    default_phase: braking
+    default_corner_speed: null
+    clarify: ["Début ou fin de relais ?"]
+  - id: FEEL_BRAKES_FADE
+    fr: ["les freins s'évanouissent", fading, "je freine de plus en plus tôt"]
+    en: ["brake fade", "brakes go away", "braking earlier and earlier"]
+    symptoms: [BRK_OVERHEAT]
+    default_phase: braking
+    default_corner_speed: null
+    clarify: ["Après combien de tours ?", "Avant ou arrière ?"]
+  - id: FEEL_BRAKES_CHANGE_MID_STINT
+    fr: ["le freinage change pendant le relais", "d'un coup ça freine différemment"]
+    en: ["braking feel changes mid-stint", "suddenly brakes differently"]
+    symptoms: [HYB_SOC_FULL, BRK_OVERHEAT]
+    default_phase: braking
+    default_corner_speed: null
+    clarify: ["Hypercar : état de charge quand ça arrive ?"]
+  - id: FEEL_ABS_PULSING
+    fr: ["l'ABS pompe tout le temps", "ça vibre au freinage"]
+    en: ["ABS kicks in all the time", "pulsing under braking"]
+    symptoms: [ABS_TOO_ACTIVE]
+    default_phase: braking
+    default_corner_speed: null
+    clarify: ["Vous cherchez plus de rotation ou plus de sécurité ?"]
+  - id: FEEL_LONG_BRAKING
+    fr: ["je freine trop long", "distances de freinage trop longues"]
+    en: ["braking distances too long"]
+    symptoms: [ABS_TOO_ACTIVE, BRK_COLD, "BRK_LOCK_*"]
+    default_phase: braking
+    default_corner_speed: null
+    clarify: ["Avec blocages ou sans ?"]
+  - id: FEEL_BOTTOMING
+    fr: ["ça talonne", "ça touche", "des étincelles partout", "ça tape le fond"]
+    en: ["bottoming out", scraping, "sparks everywhere", "hits the floor"]
+    symptoms: [PLT_BOTTOMING]
+    default_phase: any
+    default_corner_speed: fast
+    clarify: ["Où sur le circuit ?", "Avec le plein ?", "Sur bosses ou en compression aéro ?"]
+  - id: FEEL_SPARKS_UNSETTLE
+    fr: ["ça décroche quand ça touche"]
+    en: ["it lets go when it bottoms"]
+    symptoms: [PLT_BOTTOMING, PLT_FLOOR_STALL]
+    default_phase: any
+    default_corner_speed: fast
+    clarify: ["Où sur le circuit ?", "Avec le plein ?", "Sur bosses ou en compression aéro ?"]
+  - id: FEEL_JUMPS_ON_KERBS
+    fr: ["ça saute sur les vibreurs", "les vibreurs la déstabilisent", "elle décolle sur les vibreurs", "ça rebondit"]
+    en: ["jumps on the kerbs", "kerbs unsettle it", "bounces off the kerbs"]
+    symptoms: [PLT_KERB_UNSETTLED]
+    default_phase: any
+    default_corner_speed: null
+    clarify: ["Vibreurs intérieurs (apex) ou extérieurs (sortie) ?", "C'est l'avant ou l'arrière qui réagit ?"]
+  - id: FEEL_KERBS_KICK_REAR
+    fr: ["l'arrière saute sur les vibreurs en sortie", "coup de pied sur vibreur"]
+    en: ["rear kicks on exit kerbs"]
+    symptoms: [PLT_KERB_UNSETTLED]
+    default_phase: exit
+    default_corner_speed: null
+    clarify: []
+    note: "Essieu arrière."
+  - id: FEEL_SKIPS_OVER_BUMPS
+    fr: ["ça sautille sur les bosses", "ça perd le contact sur les bosses", "voiture trop raide"]
+    en: ["skips over bumps", "loses contact on bumps", "too stiff"]
+    symptoms: [PLT_BUMPY_LOSS]
+    default_phase: any
+    default_corner_speed: null
+    clarify: ["Freinage, virage ou ligne droite ?"]
+  - id: FEEL_LOSES_GRIP_ON_BUMPS
+    fr: ["ça décroche sur la bosse de …"]
+    en: ["loses grip on the bump at…"]
+    symptoms: [PLT_BUMPY_LOSS]
+    default_phase: any
+    default_corner_speed: null
+    clarify: ["Quel virage ?"]
+  - id: FEEL_WALLOWS
+    fr: ["ça flotte", "ça roule beaucoup", "ça tangue", mou, bateau]
+    en: [wallows, floaty, "rolls a lot", boat-like, soggy]
+    symptoms: [PLT_FLOATY]
+    default_phase: any
+    default_corner_speed: null
+    clarify: ["En roulis (virages) ou en tangage (freinage/accélération) ?"]
+  - id: FEEL_SLOW_TO_SETTLE
+    fr: ["elle met du temps à se poser", "oscille après les bosses"]
+    en: ["slow to settle", "oscillates after bumps"]
+    symptoms: [PLT_FLOATY]
+    default_phase: any
+    default_corner_speed: null
+    clarify: []
+  - id: FEEL_SKITTISH
+    fr: [nerveuse, sautillante, "trop vive", "pas posée"]
+    en: [skittish, nervous, darty, edgy]
+    symptoms: [PLT_NERVOUS]
+    default_phase: any
+    default_corner_speed: null
+    clarify: ["Surtout sur bosses ou partout ?"]
+  - id: FEEL_TOO_POINTY
+    fr: ["trop pointue", "trop réactive", "je n'ose pas tourner le volant"]
+    en: ["too pointy", "too reactive", "oversensitive steering"]
+    symptoms: [PLT_NERVOUS, "OS_ENTRY_*"]
+    default_phase: entry
+    default_corner_speed: null
+    clarify: ["Entrée ou milieu ?", "Rapides ?"]
+  - id: FEEL_LAZY
+    fr: [paresseuse, "lente à changer de direction", "molle dans les chicanes", "elle ne veut pas changer d'appui"]
+    en: [lazy, "slow to change direction", "sluggish in chicanes", "won't take a set"]
+    symptoms: [STR_SLOW_DIRECTION_CHANGE]
+    default_phase: any
+    default_corner_speed: medium
+    clarify: ["Chicanes rapides ou lentes ?"]
+  - id: FEEL_SLOW_ON_STRAIGHTS
+    fr: ["je me fais déposer en ligne droite", "pas de vitesse de pointe", "trop d'aile"]
+    en: ["slow on the straights", "no top speed", "too much wing"]
+    symptoms: [STR_TOP_SPEED_LOW]
+    default_phase: straight
+    default_corner_speed: null
+    clarify: ["Même carburant/ERS que les autres ?", "Régime max atteint ?"]
+  - id: FEEL_FRONT_TYRES_OVERHEAT
+    fr: ["les pneus avant surchauffent", "l'avant chauffe", "les avants sont cuits"]
+    en: ["front tyres overheat", "fronts are cooked"]
+    symptoms: [TYR_HOT_FRONT]
+    default_phase: any
+    default_corner_speed: null
+    clarify: ["Dès le début ou après X tours ?", "Ça pousse en même temps ?"]
+  - id: FEEL_REAR_TYRES_OVERHEAT
+    fr: ["les pneus arrière surchauffent", "les arrières sont morts", "ça surchauffe de l'arrière"]
+    en: ["rears overheat", "rear tyres are gone"]
+    symptoms: [TYR_HOT_REAR]
+    default_phase: any
+    default_corner_speed: null
+    clarify: ["Patinage en sortie ?", "TC ?"]
+  - id: FEEL_FRONT_GOES_OFF
+    fr: ["l'avant s'en va après 10 tours", "l'avant dégrade"]
+    en: ["front goes off after 10 laps", "front degrades"]
+    symptoms: [TYR_HOT_FRONT, TYR_WEAR_FAST]
+    default_phase: any
+    default_corner_speed: null
+    clarify: ["Pression/température vues au HUD ?"]
+  - id: FEEL_REAR_GOES_OFF
+    fr: ["l'arrière s'en va en fin de relais"]
+    en: ["rear falls off late in the stint"]
+    symptoms: [TYR_HOT_REAR, TYR_WEAR_FAST]
+    default_phase: any
+    default_corner_speed: null
+    clarify: []
+  - id: FEEL_TYRES_DROP_OFF
+    fr: ["les pneus tombent", "grosse dégradation", "je perds 1 s après 15 tours"]
+    en: ["tyres drop off", "big deg", "lose a second after 15 laps"]
+    symptoms: [TYR_WEAR_FAST]
+    default_phase: any
+    default_corner_speed: null
+    clarify: ["Avant ou arrière ?", "Quel composé ?"]
+  - id: FEEL_CANT_DOUBLE_STINT
+    fr: ["impossible de doubler le relais"]
+    en: ["can't double stint"]
+    symptoms: [TYR_WEAR_FAST]
+    default_phase: any
+    default_corner_speed: null
+    clarify: []
+  - id: FEEL_NO_GRIP_COLD
+    fr: ["pas de grip à froid", "les pneus ne montent pas en température", "il faut 5 tours pour que ça vienne"]
+    en: ["no grip when cold", "tyres won't come in", "takes 5 laps"]
+    symptoms: [TYR_COLD, WET_NO_TEMP]
+    default_phase: any
+    default_corner_speed: null
+    clarify: ["Température piste ?", "Composé ?", "Pression actuelle vs mini ?"]
+  - id: FEEL_TAKES_LAPS_TO_COME_IN
+    fr: ["ça met des tours à venir"]
+    en: ["takes laps to come in"]
+    symptoms: [TYR_COLD]
+    default_phase: any
+    default_corner_speed: null
+    clarify: []
+  - id: FEEL_NO_BOOST
+    fr: ["plus de boost", "batterie vide", "le moteur électrique ne pousse plus"]
+    en: ["no boost", "battery flat", "no deployment"]
+    symptoms: [HYB_SOC_EMPTY]
+    default_phase: any
+    default_corner_speed: null
+    clarify: ["Motor map / regen actuels ?"]
+  - id: FEEL_WANT_MORE_ROTATION
+    fr: ["je veux qu'elle tourne plus", "trop sûre", "trop sous-vireuse pour attaquer"]
+    en: ["want more rotation", "too safe", "too much understeer to push"]
+    symptoms: [PHILOSOPHY_AGGRESSIVE, "US_*"]
+    default_phase: any
+    default_corner_speed: null
+    clarify: ["Où manque la rotation : entrée, milieu, sortie ?"]
+  - id: FEEL_WANT_STABILITY
+    fr: ["je veux plus de stabilité", "trop vive pour un relais", "fatigante à conduire"]
+    en: ["want more stability", "too lively for a stint", "tiring to drive"]
+    symptoms: [PHILOSOPHY_SAFE, "OS_*"]
+    default_phase: any
+    default_corner_speed: null
+    clarify: ["Quelle phase vous coûte le plus ?"]
+  - id: FEEL_TOO_SAFE
+    fr: ["on peut y aller plus fort", "il y a de la marge"]
+    en: ["can be more aggressive", "there's margin"]
+    symptoms: [PHILOSOPHY_AGGRESSIVE]
+    default_phase: any
+    default_corner_speed: null
+    clarify: []
+  - id: FEEL_TIRING_TO_DRIVE
+    fr: ["épuisante", "je dois corriger tout le temps"]
+    en: [exhausting, "constantly correcting"]
+    symptoms: [PHILOSOPHY_SAFE, PLT_NERVOUS]
+    default_phase: any
+    default_corner_speed: null
+    clarify: []
+  - id: FEEL_STEERING_HEAVY
+    fr: ["volant trop lourd", "FFB trop dur en appui"]
+    en: ["steering too heavy"]
+    symptoms: []
+    default_phase: any
+    default_corner_speed: null
+    clarify: ["Réglage FFB vérifié ?"]
+    note: "Pas un symptôme de setup : vérifier le réglage FFB ; éventuellement geo.caster −."
+  - id: FEEL_STEERING_LIGHT
+    fr: ["volant léger, pas de retour", "je ne sens pas l'avant"]
+    en: ["no feel in the steering", "light steering"]
+    symptoms: [US_MID_SLOW, US_MID_FAST]
+    default_phase: any
+    default_corner_speed: null
+    clarify: ["Léger tout le temps ou seulement quand ça pousse ?"]
+    note: "Volant léger quand ça pousse = saturation avant ; sinon geo.caster +."
+  - id: FEEL_SNAPS_ON_DOWNSHIFT
+    fr: ["l'arrière passe au rétrogradage", "ça bloque au rétrogradage"]
+    en: ["rear locks on downshift", "snaps on downshift"]
+    symptoms: [BRK_LOCK_REAR]
+    default_phase: braking
+    default_corner_speed: null
+    clarify: ["Rétrogradages tardifs ?", "LMDh : autoblip corrigé en 1.2.3 — version du jeu ?"]
+    note: "Voir aussi frein moteur / coast du différentiel ; LMDh : autoblip corrigé en 1.2.3, vérifier la version du jeu."
+  - id: FEEL_FUEL_HIGH
+    fr: ["je consomme trop", "je n'arrive pas à finir le relais en énergie"]
+    en: ["burning too much fuel", "can't make the stint on energy"]
+    symptoms: [ENERGY_SHORT]
+    default_phase: any
+    default_corner_speed: null
+    clarify: ["Lift & coast pratiqué ?", "Map moteur ?", "Fuel ratio ?"]
+    note: "Symptôme de stratégie (D-CON-02), pas de règle de setup dans setup-rules.yaml (voir known_gaps)."
+
+# Alias ajoutés au nettoyage (référencés par setup-rules.yaml).
+aliases:
+  - {id: FEEL_FLOATY, alias_of: FEEL_WALLOWS}
+  - {id: FEEL_NERVOUS, alias_of: FEEL_SKITTISH}
+  - {id: FEEL_NO_TRACTION, alias_of: FEEL_WHEELSPIN}
+  - {id: FEEL_PUSH_MID, alias_of: FEEL_FRONT_WONT_TURN}
+  - {id: FEEL_SLOW_IN_CHICANES, alias_of: FEEL_LAZY}

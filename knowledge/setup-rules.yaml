@@ -1,0 +1,1281 @@
+# knowledge/setup-rules.yaml — règles « symptôme → modification de setup » pour Le Mans Ultimate.
+#
+# GÉNÉRÉ depuis docs/research/02-ingenieur-de-course.md (blocs YAML C.1–C.8, dictionnaire C.0,
+# matrice C.9) puis nettoyé : identifiants normalisés, directions en énumération, confiances en toutes
+# lettres, références aux diagnostics de knowledge/diagnostics.yaml. Le schéma est décrit dans
+# knowledge/README.md. Ne pas modifier à la main sans mettre à jour le brief ou le README.
+#
+# Conventions : classes = valeurs de `VehicleClass` du protocole (hypercar, lmp2, gt3) ;
+# philosophy `safe` = le réglage « soft / sûr » du client, `aggressive` = « agressif », `both` = neutre.
+# Les magnitudes sont des pas relatifs (jamais des valeurs absolues) : la plage réelle d'un paramètre
+# se lit à l'exécution (REST getPlayerGarageData / .svm). Niveau de confiance : high / medium / low,
+# tel que porté par le brief (C=H/M/L). Aucun chiffre n'a été ajouté par rapport au brief.
+
+schema_version: 1
+source: "docs/research/02-ingenieur-de-course.md"
+generated_from_sections: [C.0, C.1, C.2, C.3, C.4, C.5, C.6, C.7, C.8, C.9]
+
+# Énumérations utilisées par les règles.
+enums:
+  phase: [entry, mid, exit, braking, straight, any]
+  corner_speed: [slow, medium, fast, any]
+  surface: [dry, wet, any]
+  philosophy: [both, aggressive, safe]
+  direction:
+    increase: "augmenter le paramètre dans le sens défini par params[].sign (voir ci-dessous)"
+    decrease: "diminuer"
+    either: "le sens dépend du diagnostic (voir magnitude / side_effects)"
+    toward_zero: "réduire la valeur absolue (ex. moins de pince, qu'elle soit positive ou négative)"
+    set: "fixer une valeur discrète donnée par `value` (max, harder, softer, wet, slick)"
+    check: "pas de modification : vérifier la condition décrite dans magnitude avant tout changement"
+    meta: "appliquer un autre groupe de règles (param meta.balance, value = reduce_understeer | reduce_oversteer | neutralise_balance)"
+  confidence: [high, medium, low]
+
+# Dictionnaire des paramètres canoniques (C.0). La correspondance avec les clés .svm / REST et les
+# plages par classe est dans knowledge/setup-parameters.yaml (même identifiant `id`).
+params:
+  - {id: aero.rear_wing, unit: "cran ou °", sign: "+ = plus d'appui arrière"}
+  - {id: aero.front_flap, unit: cran, sign: "+ = plus d'appui avant ; si absent sur la voiture, utiliser aero.rake"}
+  - {id: aero.rh_front, unit: mm, sign: "+ = plus haut"}
+  - {id: aero.rh_rear, unit: mm, sign: "+ = plus haut"}
+  - {id: aero.rake, unit: "mm (dérivé = rh_rear − rh_front)", sign: "+ = plus de rake (arrière plus haut ou avant plus bas)"}
+  - {id: susp.spring_front, unit: cran, sign: "+ = plus raide"}
+  - {id: susp.spring_rear, unit: cran, sign: "+ = plus raide"}
+  - {id: susp.third_front, unit: cran, sign: "3e élément (heave), prototypes ; + = plus raide"}
+  - {id: susp.third_rear, unit: cran, sign: "3e élément (heave), prototypes ; + = plus raide"}
+  - {id: susp.packer_front, unit: mm, sign: "+ = butée plus longue = course restante plus courte"}
+  - {id: susp.packer_rear, unit: mm, sign: "+ = butée plus longue = course restante plus courte"}
+  - {id: susp.arb_front, unit: cran, sign: "+ = plus raide"}
+  - {id: susp.arb_rear, unit: cran, sign: "+ = plus raide"}
+  - {id: susp.sbump_front, unit: clics, sign: "bump lent ; + = plus ferme"}
+  - {id: susp.sbump_rear, unit: clics, sign: "bump lent ; + = plus ferme"}
+  - {id: susp.srebound_front, unit: clics, sign: "rebound lent ; + = plus ferme"}
+  - {id: susp.srebound_rear, unit: clics, sign: "rebound lent ; + = plus ferme"}
+  - {id: susp.fbump_front, unit: clics, sign: "bump rapide ; + = plus ferme"}
+  - {id: susp.fbump_rear, unit: clics, sign: "bump rapide ; + = plus ferme"}
+  - {id: susp.frebound_front, unit: clics, sign: "rebound rapide ; + = plus ferme"}
+  - {id: susp.frebound_rear, unit: clics, sign: "rebound rapide ; + = plus ferme"}
+  - {id: geo.camber_front, unit: "°", sign: "+ = plus négatif (« plus de carrossage »)"}
+  - {id: geo.camber_rear, unit: "°", sign: "+ = plus négatif (« plus de carrossage »)"}
+  - {id: geo.toe_front, unit: "°", sign: "+ = plus de pince (toe-in) ; − = ouverture"}
+  - {id: geo.toe_rear, unit: "°", sign: "+ = plus de pince (toe-in) ; − = ouverture"}
+  - {id: geo.caster, unit: "°", sign: "+ = plus de chasse"}
+  - {id: tyre.pressure_front, unit: kPa, sign: "+ = plus de pression (par roue possible)"}
+  - {id: tyre.pressure_rear, unit: kPa, sign: "+ = plus de pression (par roue possible)"}
+  - {id: tyre.compound, unit: "soft|medium|hard|wet", sign: "valeur discrète (set)"}
+  - {id: brake.bias_front, unit: "% avant", sign: "+ = plus avant"}
+  - {id: brake.migration, unit: "0–2,5 (pas 0,5)", sign: "Hypercar ; + = plus de migration vers l'avant à pleine pédale"}
+  - {id: brake.pressure, unit: "% force pédale max", sign: "+ = plus de pression"}
+  - {id: brake.duct_front, unit: cran, sign: "+ = plus ouvert = freins plus froids"}
+  - {id: brake.duct_rear, unit: cran, sign: "+ = plus ouvert = freins plus froids"}
+  - {id: brake.abs_map, unit: map, sign: "LMGT3 ; + = plus intrusif"}
+  - {id: diff.preload, unit: Nm, sign: "+ = plus de précharge"}
+  - {id: diff.power, unit: "% ou cran", sign: "+ = plus fermé en charge"}
+  - {id: diff.coast, unit: "% ou cran", sign: "+ = plus fermé en retenue"}
+  - {id: elec.tc, unit: "1–11", sign: "+ = plus d'intervention"}
+  - {id: elec.tc_cut, unit: "1–11", sign: "+ = plus de coupure quand le TC intervient"}
+  - {id: elec.tc_slip, unit: "1–11", sign: "+ = plus de glissement toléré avant intervention (valeur basse = intervention plus tôt, dans les deux lectures du guide officiel et de la communauté)"}
+  - {id: elec.motor_map, unit: kW, sign: "Hypercar ; + = plus de déploiement"}
+  - {id: elec.regen, unit: niveau, sign: "Hypercar ; + = plus de régénération"}
+  - {id: elec.engine_map, unit: "map / mixture", sign: "+ = plus riche / plus de performance"}
+  - {id: energy.fuel_ratio, unit: "sans unité (≈ 0,90–1,00)", sign: "+ = plus de carburant réel par unité d'énergie virtuelle"}
+  - {id: energy.virtual_energy, unit: "% du max relais", sign: "+ = plus d'énergie chargée"}
+  - {id: fuel.load, unit: L, sign: "+ = plus de carburant"}
+  - {id: steer.lock, unit: "° ou cran", sign: "+ = direction plus directe"}
+  - {id: meta.balance, unit: "—", sign: "pseudo-paramètre : appliquer les règles d'équilibre indiquées dans `value` (reduce_understeer / reduce_oversteer / neutralise_balance)"}
+
+# Magnitude par défaut d'un « cran d'ingénieur » quand une règle dit « 1 pas » (C.0, confiance medium).
+default_steps:
+  "susp.arb_*": "±1 cran"
+  "susp.spring_*": "±1 cran (≈ ±5–10 %)"
+  "susp.*bump_* / susp.*rebound_*": "±2 clics"
+  "aero.rh_*": "±2 mm (Hypercar avant : ±1 mm)"
+  "aero.rear_wing": "±1 cran (GT3 : ±0,5–1°)"
+  "tyre.pressure_*": "±3 kPa (≈ ±0,4 psi)"
+  "geo.camber_*": "±0,2°"
+  "geo.toe_*": "±0,05°"
+  "brake.bias_front": "±0,5–1 %"
+  "brake.migration": "±0,5"
+  "diff.preload": "±15 Nm"
+  "diff.power / diff.coast": "±1 cran (≈ ±5–10 %)"
+  "elec.tc / elec.tc_cut / elec.tc_slip": "±1"
+  "elec.motor_map": "±10 kW (LMH) / ±5 kW (LMDh)"
+  "susp.packer_*": "±2 mm"
+
+# Règles d'arbitrage entre règles concurrentes (C.9).
+arbitration:
+  - id: ARB-01
+    rule: "Ne jamais appliquer deux changements de signe opposé sur le même paramètre dans une même itération."
+  - id: ARB-02
+    rule: "Si deux symptômes appellent des changements contradictoires sur un paramètre, privilégier le symptôme de sécurité (freinage, stabilité) en philosophie safe et le symptôme de performance en philosophie aggressive ; chercher un autre levier pour le second symptôme."
+  - id: ARB-03
+    rule: "Limiter une itération à 3 paramètres modifiés (1 seul en phase de validation)."
+  - id: ARB-04
+    rule: "Toute modification de hauteur de caisse ou d'aileron sur Hypercar réactive automatiquement la vérification de talonnage (D-PLT-01)."
+  - id: ARB-05
+    rule: "Priorité des symptômes : sécurité (blocages, instabilité au freinage, snaps rapides) > pilotabilité (prévisibilité, fatigue) > performance (rotation, Vmax) > usure/consommation ; en philosophie safe, usure/consommation remonte en 2e position."
+
+# Matrice d'effets croisés (C.9) : effet principal attendu et effets secondaires à surveiller.
+cross_effects:
+  - {param: aero.rear_wing, direction: increase, main_effect: "stabilité rapide, grip arrière", watch: "Vmax −, sous-virage rapide, consommation +"}
+  - {param: aero.rake, direction: increase, main_effect: "appui avant, rotation rapide", watch: "talonnage avant, décrochage de fond plat (Hypercar), instabilité arrière rapide"}
+  - {param: "aero.rh_*", direction: decrease, main_effect: "appui +", watch: "talonnage, packers sollicités, bascule d'équilibre"}
+  - {param: susp.arb_front, direction: increase, main_effect: "réponse, moins de roulis", watch: "sous-virage, roue avant intérieure délestée (blocage)"}
+  - {param: susp.arb_rear, direction: increase, main_effect: rotation, watch: "patinage intérieur, vibreurs, usure arrière"}
+  - {param: "susp.spring_*", direction: increase, main_effect: "plateforme, assiette", watch: "grip sur bosses −, vibreurs −"}
+  - {param: "susp.packer_*", direction: increase, main_effect: anti-talonnage, watch: "raideur soudaine en appui"}
+  - {param: "susp.third_*", direction: increase, main_effect: "assiette aéro", watch: "compliance en heave −"}
+  - {param: "susp.sbump_*", direction: either, main_effect: "transitoire (charge immédiate sur l'extrémité qui se comprime)", watch: "nervosité / flottement"}
+  - {param: "susp.srebound_*", direction: either, main_effect: "transitoire (délestage de l'extrémité qui se détend)", watch: "roue intérieure soulevée, « jacking down »"}
+  - {param: "susp.fbump_* / susp.frebound_*", direction: decrease, main_effect: "vibreurs, bosses", watch: "mouvement de caisse sur gros chocs"}
+  - {param: "geo.camber_*", direction: increase, main_effect: "grip latéral", watch: "intérieur chaud, freinage/motricité en ligne −"}
+  - {param: geo.toe_front, direction: decrease, main_effect: turn-in, watch: "stabilité en ligne −, chauffe"}
+  - {param: geo.toe_rear, direction: increase, main_effect: "stabilité entrée/sortie", watch: "chauffe/usure arrière, traînée"}
+  - {param: "tyre.pressure_*", direction: decrease, main_effect: "grip mécanique, compliance", watch: "chauffe carcasse +, réponse −, minimum imposé par le jeu"}
+  - {param: brake.bias_front, direction: increase, main_effect: "stabilité au freinage", watch: "sous-virage d'entrée, blocage avant"}
+  - {param: brake.migration, direction: increase, main_effect: "freinage max en appui, rotation en trail braking", watch: "blocages avant à pleine pédale, chauffe des freins"}
+  - {param: diff.power, direction: increase, main_effect: "motricité, stabilité en sortie", watch: "pousse-avant sous gaz"}
+  - {param: diff.coast, direction: increase, main_effect: "stabilité en entrée", watch: "sous-virage d'entrée"}
+  - {param: diff.preload, direction: increase, main_effect: "stabilité des transitions", watch: "voiture moins libre"}
+  - {param: elec.tc, direction: increase, main_effect: "sécurité, usure arrière −", watch: "performance en sortie −"}
+  - {param: elec.motor_map, direction: increase, main_effect: "performance, vide la batterie", watch: "LMH : sous-virage sous gaz > 150/190 km/h ; batterie vide"}
+  - {param: "brake.duct_*", direction: increase, main_effect: "freins plus froids", watch: "pneus/jantes plus froids, légère traînée"}
+
+# Lacunes connues (références non résolues, à compléter lors de la validation en jeu).
+known_gaps:
+  - {kind: dangling_conflict, id: PLT-ROLL-01, note: "référencé comme conflit mais aucune règle de cet identifiant n'existe (roulis excessif : voir diagnostic D-PLT-04)"}
+  - {kind: missing_rule, symptom: ENERGY_SHORT, note: "symptôme présent dans le dictionnaire de ressenti (FEEL_FUEL_HIGH) sans règle de setup ; relève de la stratégie (D-CON-02), pas du setup"}
+
+# 46 règles, 270 couples symptôme → paramètre.
+rules:
+  - id: US-ENTRY-SLOW-01
+    symptom: US_ENTRY_SLOW
+    family: understeer
+    phase: entry
+    corner_speed: slow
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "balance[entry][slow] > +0.3 ET brake > 0.05 pendant la dérive"
+      diagnostics: [D-BAL-01]
+      feel: [FEEL_FRONT_WONT_TURN_IN, FEEL_PUSH_ON_BRAKES]
+    changes:
+      - {prio: 1, param: brake.bias_front, direction: decrease, magnitude: "0.5–1 %", confidence: high, side_effects: "risque de blocage AR en fin de freinage, instabilité en ligne droite", conflicts: [BRK-LOCK-REAR-01]}
+      - {prio: 2, param: diff.coast, direction: decrease, magnitude: "1 cran", confidence: medium, side_effects: "plus de rotation au lâcher de frein, peut devenir survireur en entrée rapide", conflicts: [OS-ENTRY-FAST-01]}
+      - {prio: 3, param: susp.arb_front, direction: decrease, magnitude: "1 cran", confidence: high, side_effects: "plus de roulis AV, réponse un peu plus lente, pneu AV ext. plus chargé", conflicts: [STR-LAZY-01]}
+      - {prio: 4, param: susp.sbump_front, direction: increase, magnitude: "2 clics", confidence: medium, side_effects: "transitoire : plus de charge AV à la plongée, voiture plus sèche sur bosses à l'entrée", conflicts: [PLT-BUMPY-01]}
+      - {prio: 5, param: susp.srebound_rear, direction: increase, magnitude: "2 clics", confidence: medium, side_effects: "délestage AR transitoire = rotation ; trop = AR léger au freinage", conflicts: [OS-ENTRY-SLOW-01]}
+      - {prio: 6, param: geo.toe_front, direction: decrease, magnitude: "0.05° (vers ouverture)", confidence: medium, side_effects: "usure/chauffe AV, moins stable en ligne droite", conflicts: []}
+      - {prio: 7, param: tyre.pressure_front, direction: decrease, magnitude: "3 kPa (si > mini)", confidence: medium, side_effects: "plus de chauffe carcasse AV, réponse moins vive", conflicts: [TYR-HOT-FRONT-01]}
+      - {prio: 8, param: geo.camber_front, direction: increase, magnitude: "0.2° (si ΔIO < 12 °C)", confidence: medium, side_effects: "intérieur AV plus chaud, freinage droit un peu moins bon", conflicts: [TYR-HOT-INNER-01]}
+      - {prio: 9, param: brake.migration, direction: decrease, magnitude: "0.5 (HY)", confidence: medium, side_effects: "moins de charge AV à pleine pédale → moins de freinage pur, mais plus de rotation en trail", conflicts: []}
+    justification: "En virage lent sous freinage, l'avant sature parce que la répartition et le transfert de charge lui demandent trop ; on redonne de la rotation par le frein, le coast du différentiel et la raideur en roulis AV avant de toucher à la géométrie."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+      - "https://lemansultimate.com/?p=3955"
+      - "https://www.sau.com.au/forums/topic/302303-car-set-up-cause-and-effect-by-carroll-smith"
+    brief_section: "C.1"
+
+  - id: US-ENTRY-FAST-01
+    symptom: US_ENTRY_FAST
+    family: understeer
+    phase: entry
+    corner_speed: fast
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "balance[entry][fast] > +0.3"
+      diagnostics: [D-BAL-01]
+      feel: [FEEL_FRONT_WONT_TURN_IN, FEEL_FRONT_LIGHT_HIGH_SPEED]
+    changes:
+      - {prio: 1, param: aero.rake, direction: increase, magnitude: "+1–2 mm AR ou −1 mm AV", confidence: high, side_effects: "plus d'appui AV ; HY : risque de décrochage de fond plat/talonnage si AV trop bas", conflicts: [PLT-BOTTOM-01, PLT-STALL-01]}
+      - {prio: 2, param: aero.front_flap, direction: increase, magnitude: "1 cran (si dispo)", confidence: high, side_effects: "un peu de traînée, AR relativement moins stable", conflicts: [OS-EXIT-FAST-01]}
+      - {prio: 3, param: aero.rear_wing, direction: decrease, magnitude: "1 cran", confidence: high, side_effects: "moins de stabilité AR en appui et au freinage, gain de Vmax", conflicts: [OS-MID-FAST-01, OS-ENTRY-FAST-01]}
+      - {prio: 4, param: brake.bias_front, direction: decrease, magnitude: "0.5 %", confidence: medium, side_effects: "blocages AR possibles en freinage appuyé", conflicts: [BRK-LOCK-REAR-01]}
+      - {prio: 5, param: susp.arb_front, direction: decrease, magnitude: "1 cran", confidence: medium, side_effects: "plus de roulis = plateforme aéro moins stable (HY)", conflicts: [PLT-ROLL-01]}
+      - {prio: 6, param: susp.third_front, direction: decrease, magnitude: "1 cran (prototypes)", confidence: medium, side_effects: "AV plus bas en appui → plus d'appui AV mais talonnage possible", conflicts: [PLT-BOTTOM-01]}
+      - {prio: 7, param: susp.sbump_front, direction: increase, magnitude: "2 clics", confidence: low, side_effects: "transitoire seulement", conflicts: []}
+    justification: "En entrée rapide l'équilibre est aéro : d'abord le rake et les éléments d'appui, ensuite les transferts de charge."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+      - "https://arnouthoekstra.substack.com/p/fixed-setups-are-a-blessing-in-lmu"
+    brief_section: "C.1"
+
+  - id: US-MID-SLOW-01
+    symptom: US_MID_SLOW
+    family: understeer
+    phase: mid
+    corner_speed: slow
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "balance[mid][slow] > +0.3 ; ΔG = G_F − G_R > 0.15 ; T_front − T_rear > 6 °C"
+      diagnostics: [D-BAL-01, D-TYR-05]
+      feel: [FEEL_FRONT_WONT_TURN, FEEL_PUSH_MID]
+    changes:
+      - {prio: 1, param: susp.arb_front, direction: decrease, magnitude: "1 cran", confidence: high, side_effects: "réponse moins immédiate, plus de roulis", conflicts: [STR-LAZY-01]}
+      - {prio: 2, param: susp.arb_rear, direction: increase, magnitude: "1 cran", confidence: high, side_effects: "AR plus délesté à l'intérieur → patinage intérieur en sortie, moins tolérant sur vibreurs", conflicts: [TRC-INNER-01, PLT-KERB-01]}
+      - {prio: 3, param: susp.spring_front, direction: decrease, magnitude: "1 cran", confidence: medium, side_effects: "plus de plongée au freinage, hauteur AV dynamique plus basse (HY : revérifier talonnage)", conflicts: [PLT-BOTTOM-01]}
+      - {prio: 4, param: tyre.pressure_front, direction: decrease, magnitude: "3 kPa", confidence: medium, side_effects: "chauffe AV", conflicts: [TYR-HOT-FRONT-01]}
+      - {prio: 5, param: geo.camber_front, direction: increase, magnitude: "0.2°", confidence: medium, side_effects: "intérieur chaud, usure", conflicts: [TYR-HOT-INNER-01]}
+      - {prio: 6, param: diff.preload, direction: decrease, magnitude: "15 Nm", confidence: medium, side_effects: "voiture plus libre en transition, moins stable en sortie", conflicts: [OS-EXIT-SLOW-01]}
+      - {prio: 7, param: diff.power, direction: decrease, magnitude: "1 cran", confidence: medium, side_effects: "patinage intérieur en sortie", conflicts: [TRC-INNER-01]}
+      - {prio: 8, param: geo.caster, direction: increase, magnitude: "0.5°", confidence: low, side_effects: "volant plus lourd, plus de gain de carrossage en braquage", conflicts: []}
+      - {prio: 9, param: steer.lock, direction: increase, magnitude: "1 cran", confidence: low, side_effects: "direction plus vive (non physique, mais utile sur circuits lents)", conflicts: []}
+    justification: "Virage lent = grip mécanique : répartition de raideur en roulis (barres) d'abord, ressorts ensuite, puis pneus/géométrie ; le différentiel compte car un diff serré pousse l'avant."
+    sources:
+      - "https://lemansultimate.wiki.gg/wiki/Setup_Guide"
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+      - "Carroll Smith, Tune to Win"
+    brief_section: "C.1"
+
+  - id: US-MID-FAST-01
+    symptom: US_MID_FAST
+    family: understeer
+    phase: mid
+    corner_speed: fast
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "balance[mid][fast] > +0.3 ; mFrontDownforce/mRearDownforce bas vs référence"
+      diagnostics: [D-BAL-01, D-PLT-01]
+      feel: [FEEL_FRONT_WONT_TURN, FEEL_FRONT_LIGHT_HIGH_SPEED]
+    changes:
+      - {prio: 1, param: aero.rear_wing, direction: decrease, magnitude: "1 cran", confidence: high, side_effects: "moins de stabilité AR rapide, moins de traînée (Vmax +)", conflicts: [OS-MID-FAST-01]}
+      - {prio: 2, param: aero.rake, direction: increase, magnitude: "+2 mm AR", confidence: high, side_effects: "HY : sensibilité ; LMP2 : idem", conflicts: [PLT-BOTTOM-01]}
+      - {prio: 3, param: aero.front_flap, direction: increase, magnitude: "1 cran", confidence: high, side_effects: "traînée", conflicts: []}
+      - {prio: 4, param: susp.arb_front, direction: decrease, magnitude: "1 cran", confidence: medium, side_effects: "roulis, plateforme", conflicts: []}
+      - {prio: 5, param: susp.third_rear, direction: increase, magnitude: "1 cran (prototypes)", confidence: medium, side_effects: "AR tenu plus haut en appui → rake dynamique +, mais moins de compliance AR", conflicts: [PLT-BUMPY-01]}
+      - {prio: 6, param: susp.spring_rear, direction: increase, magnitude: "1 cran (GT3)", confidence: medium, side_effects: "moins de motricité sur bosses", conflicts: [TRC-BOTH-01]}
+    justification: "À haute vitesse, l'équilibre est dicté par la répartition d'appui et l'assiette dynamique."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+    brief_section: "C.1"
+
+  - id: US-EXIT-SLOW-01
+    symptom: US_EXIT_SLOW
+    family: understeer
+    phase: exit
+    corner_speed: slow
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "balance[exit][slow] > +0.3 avec throttle > 0.5 ; κ_R faible"
+      diagnostics: [D-BAL-01, D-TRC-01]
+      feel: [FEEL_PUSH_ON_THROTTLE]
+    changes:
+      - {prio: 1, param: diff.power, direction: decrease, magnitude: "1 cran", confidence: high, side_effects: "patinage intérieur, moins de stabilité à la remise des gaz", conflicts: [TRC-INNER-01]}
+      - {prio: 2, param: diff.preload, direction: decrease, magnitude: "15 Nm", confidence: medium, side_effects: "idem, voiture plus libre partout", conflicts: [OS-EXIT-SLOW-01]}
+      - {prio: 3, param: elec.motor_map, direction: decrease, magnitude: "10–20 kW (LMH uniquement, si V > 150/190 km/h)", confidence: high, side_effects: "moins de déploiement = batterie se remplit → perte de régén", conflicts: [HYB-SOC-FULL-01]}
+      - {prio: 4, param: susp.arb_rear, direction: increase, magnitude: "1 cran", confidence: medium, side_effects: "patinage intérieur", conflicts: [TRC-INNER-01]}
+      - {prio: 5, param: susp.srebound_front, direction: decrease, magnitude: "2 clics", confidence: medium, side_effects: "AV garde plus de charge à l'accélération → plus de rotation ; trop = AV qui remonte vite", conflicts: []}
+      - {prio: 6, param: geo.toe_rear, direction: decrease, magnitude: "0.05° (moins de pince)", confidence: medium, side_effects: "AR moins stable en entrée", conflicts: [OS-ENTRY-SLOW-01]}
+    justification: "Le sous-virage à la réaccélération vient d'un différentiel trop fermé (effet 'pousse-avant') ou, sur LMH, du déploiement sur l'essieu avant."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/hypercar-electric-motor-maps-in-le-mans-ultimate-explained/"
+      - "https://lemansultimate.wiki.gg/wiki/Setup_Guide"
+    brief_section: "C.1"
+
+  - id: US-EXIT-FAST-01
+    symptom: US_EXIT_FAST
+    family: understeer
+    phase: exit
+    corner_speed: fast
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "balance[exit][fast] > +0.3"
+      diagnostics: [D-BAL-01]
+      feel: [FEEL_PUSH_ON_THROTTLE]
+    changes:
+      - {prio: 1, param: aero.rake, direction: increase, magnitude: "+1–2 mm AR", confidence: medium, side_effects: "squat réduit l'effet ; vérifier hauteur AR mini", conflicts: []}
+      - {prio: 2, param: susp.spring_rear, direction: increase, magnitude: "1 cran", confidence: medium, side_effects: "moins de squat → garde l'appui AV ; motricité sur bosses −", conflicts: [TRC-BOTH-01]}
+      - {prio: 3, param: susp.sbump_rear, direction: increase, magnitude: "2 clics", confidence: medium, side_effects: "même mécanisme en transitoire", conflicts: [PLT-KERB-01]}
+      - {prio: 4, param: aero.rear_wing, direction: decrease, magnitude: "1 cran", confidence: medium, side_effects: "stabilité", conflicts: [OS-EXIT-FAST-01]}
+      - {prio: 5, param: diff.power, direction: decrease, magnitude: "1 cran", confidence: medium, side_effects: "stabilité", conflicts: []}
+    justification: "En sortie rapide, le squat déplace l'équilibre aéro vers l'arrière ; on contrôle l'assiette avant de toucher le diff."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+    brief_section: "C.1"
+
+  - id: OS-ENTRY-SLOW-01
+    symptom: OS_ENTRY_SLOW
+    family: oversteer
+    phase: entry
+    corner_speed: slow
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "balance[entry][slow] < −0.3 pendant brake décroissant ; corrections volant > 15°"
+      diagnostics: [D-BAL-01, D-BRK-05]
+      feel: [FEEL_REAR_LOOSE_ON_BRAKES, FEEL_REAR_STEPS_OUT_TURN_IN]
+    changes:
+      - {prio: 1, param: brake.bias_front, direction: increase, magnitude: "0.5–1 %", confidence: high, side_effects: "sous-virage d'entrée, blocages AV", conflicts: [US-ENTRY-SLOW-01, BRK-LOCK-FRONT-01]}
+      - {prio: 2, param: diff.coast, direction: increase, magnitude: "1 cran", confidence: high, side_effects: "moins de rotation au lâcher, sous-virage d'entrée", conflicts: [US-ENTRY-SLOW-01]}
+      - {prio: 3, param: susp.srebound_rear, direction: decrease, magnitude: "2 clics", confidence: medium, side_effects: "AR garde sa charge à la plongée ; trop mou = AR qui 'pompe'", conflicts: []}
+      - {prio: 4, param: susp.sbump_front, direction: decrease, magnitude: "2 clics", confidence: medium, side_effects: "bite AV moins brutal", conflicts: [US-ENTRY-SLOW-01]}
+      - {prio: 5, param: geo.toe_rear, direction: increase, magnitude: "0.05–0.10°", confidence: high, side_effects: "usure/chauffe AR, légère traînée ; stabilise aussi la sortie", conflicts: [US-EXIT-SLOW-01]}
+      - {prio: 6, param: susp.arb_rear, direction: decrease, magnitude: "1 cran", confidence: high, side_effects: "sous-virage milieu, plus de roulis AR", conflicts: [US-MID-SLOW-01]}
+      - {prio: 7, param: diff.preload, direction: increase, magnitude: "15 Nm", confidence: medium, side_effects: "sous-virage d'entrée/milieu", conflicts: [US-MID-SLOW-01]}
+      - {prio: 8, param: brake.migration, direction: increase, magnitude: "0.5 (HY)", confidence: medium, side_effects: "plus avant à pleine pédale : moins de rotation en trail", conflicts: []}
+      - {prio: 9, param: elec.regen, direction: check, magnitude: "si SOC ≥ 98 % : baisser motor_map, pas le setup", confidence: high, side_effects: null, conflicts: []}
+    justification: "L'arrière se délestant au freinage, on le stabilise par la répartition, le coast, la pince AR et l'amortissement transitoire."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/lmu-porsche-963-guide-the-inside-line/"
+      - "https://lemansultimate.com/?p=3955"
+      - "https://traxion.gg/le-mans-ultimate-how-to-master-hypercar-braking/"
+    brief_section: "C.2"
+
+  - id: OS-ENTRY-FAST-01
+    symptom: OS_ENTRY_FAST
+    family: oversteer
+    phase: entry
+    corner_speed: fast
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "balance[entry][fast] < −0.3 ; |ψ̈| élevé"
+      diagnostics: [D-BAL-01, D-BAL-02]
+      feel: [FEEL_REAR_LOOSE_ON_BRAKES, FEEL_SNAP_HIGH_SPEED]
+    changes:
+      - {prio: 1, param: aero.rear_wing, direction: increase, magnitude: "1 cran", confidence: high, side_effects: "Vmax −, sous-virage rapide", conflicts: [US-MID-FAST-01, STR-TOPSPEED-01]}
+      - {prio: 2, param: aero.rake, direction: decrease, magnitude: "−1–2 mm AR (ou +1 mm AV)", confidence: high, side_effects: "moins d'appui AV", conflicts: [US-ENTRY-FAST-01]}
+      - {prio: 3, param: brake.bias_front, direction: increase, magnitude: "0.5 %", confidence: medium, side_effects: "blocages AV", conflicts: []}
+      - {prio: 4, param: susp.packer_rear, direction: increase, magnitude: "2 mm (ou 3e élément AR +1)", confidence: medium, side_effects: "AR tenu en appui ; dur si trop", conflicts: [PLT-BUMPY-01]}
+      - {prio: 5, param: susp.spring_rear, direction: increase, magnitude: "1 cran", confidence: medium, side_effects: "motricité", conflicts: [TRC-BOTH-01]}
+      - {prio: 6, param: susp.srebound_rear, direction: decrease, magnitude: "2 clics", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 7, param: geo.toe_rear, direction: increase, magnitude: "0.05°", confidence: medium, side_effects: null, conflicts: []}
+    justification: "CDA 963 : « rear ride height plus bas + ressorts AR plus raides + packers AR » pour la stabilité haute vitesse ; l'aileron reste le premier levier."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/lmu-porsche-963-guide-the-inside-line/"
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+    brief_section: "C.2"
+
+  - id: OS-MID-SLOW-01
+    symptom: OS_MID_SLOW
+    family: oversteer
+    phase: mid
+    corner_speed: slow
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "balance[mid][slow] < −0.3 ; ΔG < −0.15"
+      diagnostics: [D-BAL-01]
+      feel: [FEEL_REAR_LOOSE_MID]
+    changes:
+      - {prio: 1, param: susp.arb_rear, direction: decrease, magnitude: "1 cran", confidence: high, side_effects: "réponse plus lente, sous-virage si trop", conflicts: [US-MID-SLOW-01]}
+      - {prio: 2, param: susp.arb_front, direction: increase, magnitude: "1 cran", confidence: high, side_effects: "sous-virage d'entrée", conflicts: [US-ENTRY-SLOW-01]}
+      - {prio: 3, param: susp.spring_rear, direction: decrease, magnitude: "1 cran", confidence: medium, side_effects: "plus de squat, hauteur AR dynamique plus basse", conflicts: [PLT-BOTTOM-01]}
+      - {prio: 4, param: tyre.pressure_rear, direction: decrease, magnitude: "3 kPa", confidence: medium, side_effects: "chauffe AR", conflicts: [TYR-HOT-REAR-01]}
+      - {prio: 5, param: geo.camber_rear, direction: increase, magnitude: "0.2°", confidence: medium, side_effects: "motricité en ligne un peu moindre, intérieur AR chaud", conflicts: []}
+      - {prio: 6, param: diff.preload, direction: increase, magnitude: "15 Nm", confidence: medium, side_effects: null, conflicts: []}
+    justification: "Répartition de raideur en roulis vers l'avant pour recharger l'AR."
+    sources:
+      - "https://lemansultimate.wiki.gg/wiki/Setup_Guide"
+      - "Carroll Smith, Tune to Win"
+    brief_section: "C.2"
+
+  - id: OS-MID-FAST-01
+    symptom: OS_MID_FAST
+    family: oversteer
+    phase: mid
+    corner_speed: fast
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "balance[mid][fast] < −0.3"
+      diagnostics: [D-BAL-01]
+      feel: [FEEL_REAR_LOOSE_MID, FEEL_SNAP_HIGH_SPEED]
+    changes:
+      - {prio: 1, param: aero.rear_wing, direction: increase, magnitude: "1 cran", confidence: high, side_effects: Vmax, conflicts: [STR-TOPSPEED-01]}
+      - {prio: 2, param: aero.rake, direction: decrease, magnitude: "−2 mm AR", confidence: high, side_effects: null, conflicts: [US-MID-FAST-01]}
+      - {prio: 3, param: aero.front_flap, direction: decrease, magnitude: "1 cran", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 4, param: susp.third_rear, direction: decrease, magnitude: "1 cran (prototypes)", confidence: medium, side_effects: "AR descend plus en appui → moins de rake dynamique", conflicts: [PLT-BOTTOM-01]}
+      - {prio: 5, param: susp.arb_rear, direction: decrease, magnitude: "1 cran", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 6, param: susp.spring_rear, direction: increase, magnitude: "1 cran (HY si plateforme instable)", confidence: low, side_effects: "contre-intuitif : moins de variation d'assiette = appui AR plus constant", conflicts: [OS-MID-SLOW-01]}
+    justification: "Survirage rapide = déficit d'appui AR ou assiette qui bascule ; v1.2 a d'ailleurs reculé l'équilibre aéro GT3 pour réduire les glissades sèches."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-complete-guide-to-the-lmgt3-cars-in-le-mans-ultimate/"
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+    brief_section: "C.2"
+
+  - id: OS-EXIT-SLOW-01
+    symptom: OS_EXIT_SLOW
+    family: oversteer
+    phase: exit
+    corner_speed: slow
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "balance[exit][slow] < −0.3 dans 0.5 s après throttle > 0.3 ; κ_R > 0.1"
+      diagnostics: [D-BAL-01, D-TRC-01]
+      feel: [FEEL_REAR_SLIDES_ON_THROTTLE, FEEL_WHEELSPIN]
+    changes:
+      - {prio: 1, param: elec.tc, direction: increase, magnitude: "1 (et/ou tc_cut +1, tc_slip −1)", confidence: high, side_effects: "perte de perf si trop, chauffe moins les AR", conflicts: [TRC-TC-INTRUSIVE-01]}
+      - {prio: 2, param: diff.power, direction: increase, magnitude: "1 cran", confidence: high, side_effects: "sous-virage à la remise des gaz", conflicts: [US-EXIT-SLOW-01]}
+      - {prio: 3, param: diff.preload, direction: increase, magnitude: "15 Nm", confidence: medium, side_effects: null, conflicts: [US-MID-SLOW-01]}
+      - {prio: 4, param: susp.arb_rear, direction: decrease, magnitude: "1 cran", confidence: high, side_effects: "sous-virage milieu", conflicts: [US-MID-SLOW-01]}
+      - {prio: 5, param: susp.spring_rear, direction: decrease, magnitude: "1 cran", confidence: medium, side_effects: "squat, hauteur AR", conflicts: []}
+      - {prio: 6, param: susp.srebound_front, direction: increase, magnitude: "2 clics", confidence: medium, side_effects: "délestage AV transitoire = moins de rotation sous gaz ; trop = AV qui 'colle' au sol et sous-vire", conflicts: [US-EXIT-SLOW-01]}
+      - {prio: 7, param: susp.sbump_rear, direction: decrease, magnitude: "2 clics si perte sur bosses/vibreurs ; +2 si asphalte lisse", confidence: low, side_effects: "voir B.6 : confirmer par histogramme", conflicts: []}
+      - {prio: 8, param: geo.toe_rear, direction: increase, magnitude: "0.05°", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 9, param: tyre.pressure_rear, direction: decrease, magnitude: "3 kPa", confidence: medium, side_effects: null, conflicts: [TYR-HOT-REAR-01]}
+      - {prio: 10, param: geo.camber_rear, direction: decrease, magnitude: "0.2° (moins négatif)", confidence: medium, side_effects: "moins de grip latéral AR milieu", conflicts: [OS-MID-SLOW-01]}
+      - {prio: 11, param: elec.motor_map, direction: decrease, magnitude: "5 kW (LMDh : couple AR instantané dès 0 km/h)", confidence: medium, side_effects: "batterie se remplit", conflicts: [HYB-SOC-FULL-01]}
+    justification: "Le survirage de puissance se traite d'abord par l'électronique et le différentiel, puis par la répartition de raideur, enfin par la géométrie/pressions."
+    sources:
+      - "https://simracingcockpit.gg/le-mans-ultimate-how-to-drive-the-lmgt3-and-hypercar/"
+      - "https://arnouthoekstra.substack.com/p/confused-by-tc-you-should-be"
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+    brief_section: "C.2"
+
+  - id: OS-EXIT-FAST-01
+    symptom: OS_EXIT_FAST
+    family: oversteer
+    phase: exit
+    corner_speed: fast
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "balance[exit][fast] < −0.3"
+      diagnostics: [D-BAL-01]
+      feel: [FEEL_REAR_SLIDES_ON_THROTTLE, FEEL_SNAP_HIGH_SPEED]
+    changes:
+      - {prio: 1, param: aero.rear_wing, direction: increase, magnitude: "1 cran", confidence: high, side_effects: Vmax, conflicts: [STR-TOPSPEED-01]}
+      - {prio: 2, param: susp.spring_rear, direction: decrease, magnitude: "1 cran", confidence: medium, side_effects: "squat = moins d'appui AV (sous-virage sortie rapide)", conflicts: [US-EXIT-FAST-01]}
+      - {prio: 3, param: diff.power, direction: increase, magnitude: "1 cran", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 4, param: elec.tc_slip, direction: decrease, magnitude: "1", confidence: medium, side_effects: "intervention plus tôt", conflicts: []}
+      - {prio: 5, param: aero.rake, direction: decrease, magnitude: "−1 mm AR", confidence: medium, side_effects: null, conflicts: []}
+    justification: "Même logique que OS-MID-FAST avec le diff en appui."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+    brief_section: "C.2"
+
+  - id: BRK-UNSTABLE-01
+    symptom: BRK_UNSTABLE_STRAIGHT
+    family: braking
+    phase: braking
+    corner_speed: any
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "D-BRK-05 : corrections volant > 10° répétées en freinage droit ; std(ψ̇) élevé"
+      diagnostics: [D-BRK-05]
+      feel: [FEEL_UNSTABLE_BRAKING, FEEL_REAR_WANDERS_BRAKING]
+    changes:
+      - {prio: 1, param: brake.bias_front, direction: increase, magnitude: "1 %", confidence: high, side_effects: "blocages AV, sous-virage d'entrée", conflicts: [BRK-LOCK-FRONT-01]}
+      - {prio: 2, param: geo.toe_rear, direction: increase, magnitude: "0.05–0.10°", confidence: high, side_effects: "chauffe AR", conflicts: []}
+      - {prio: 3, param: diff.coast, direction: increase, magnitude: "1 cran", confidence: medium, side_effects: "moins de rotation d'entrée", conflicts: [US-ENTRY-SLOW-01]}
+      - {prio: 4, param: susp.srebound_rear, direction: decrease, magnitude: "2 clics", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 5, param: susp.sbump_front, direction: decrease, magnitude: "2 clics", confidence: medium, side_effects: "plongée plus rapide", conflicts: []}
+      - {prio: 6, param: geo.toe_front, direction: increase, magnitude: "0.05° (si toe-out marqué)", confidence: medium, side_effects: "turn-in moins vif", conflicts: [US-ENTRY-SLOW-01]}
+      - {prio: 7, param: brake.migration, direction: increase, magnitude: "0.5 (HY)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 8, param: elec.engine_map, direction: check, magnitude: "frein moteur/rétrogradages : rétrograder plus tard", confidence: low, side_effects: null, conflicts: []}
+    justification: "Instabilité en ligne droite = AR trop délesté ou trop freiné ; pince AR et répartition sont les remèdes classiques (Smith : 'rear toe-in too little → unstable')."
+    sources:
+      - "https://www.sau.com.au/forums/topic/302303-car-set-up-cause-and-effect-by-carroll-smith"
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+    brief_section: "C.3"
+
+  - id: BRK-LOCK-FRONT-01
+    symptom: BRK_LOCK_FRONT
+    family: braking
+    phase: braking
+    corner_speed: any
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "D-BRK-03 : blocages AV ≫ AR, surtout en fin de freinage (basse vitesse, appui faible)"
+      diagnostics: [D-BRK-03]
+      feel: [FEEL_FRONT_LOCKS]
+    changes:
+      - {prio: 1, param: brake.bias_front, direction: decrease, magnitude: "0.5–1 %", confidence: high, side_effects: "instabilité/blocages AR", conflicts: [BRK-UNSTABLE-01]}
+      - {prio: 2, param: brake.migration, direction: decrease, magnitude: "0.5 (HY)", confidence: high, side_effects: "moins de charge AV à pleine pédale", conflicts: []}
+      - {prio: 3, param: brake.pressure, direction: decrease, magnitude: "3–5 %", confidence: medium, side_effects: "pédale plus longue, moins de modulation fine", conflicts: []}
+      - {prio: 4, param: brake.abs_map, direction: increase, magnitude: "1 (GT3)", confidence: medium, side_effects: "distances un peu plus longues", conflicts: []}
+      - {prio: 5, param: geo.camber_front, direction: decrease, magnitude: "0.2° (moins négatif)", confidence: medium, side_effects: "moins de grip latéral AV", conflicts: [US-MID-SLOW-01]}
+      - {prio: 6, param: susp.sbump_front, direction: decrease, magnitude: "2 clics", confidence: low, side_effects: "plongée plus souple = moins de pic de charge", conflicts: []}
+      - {prio: 7, param: tyre.pressure_front, direction: decrease, magnitude: "3 kPa", confidence: low, side_effects: null, conflicts: []}
+    justification: "Le blocage AV en fin de freinage est le cas standard Hypercar quand l'appui s'effondre ; migration et répartition sont faits pour ça. Vérifier SOC batterie (LMDh bloque l'AV à 100 %)."
+    sources:
+      - "https://traxion.gg/le-mans-ultimate-how-to-master-hypercar-braking/"
+      - "https://simracingcockpit.gg/le-mans-ultimate-how-to-drive-the-lmgt3-and-hypercar/"
+    brief_section: "C.3"
+
+  - id: BRK-LOCK-REAR-01
+    symptom: BRK_LOCK_REAR
+    family: braking
+    phase: braking
+    corner_speed: any
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "blocages AR, souvent au rétrogradage ou en trail braking"
+      diagnostics: [D-BRK-03]
+      feel: [FEEL_REAR_LOCKS]
+    changes:
+      - {prio: 1, param: brake.bias_front, direction: increase, magnitude: "0.5–1 %", confidence: high, side_effects: "sous-virage d'entrée", conflicts: [US-ENTRY-SLOW-01]}
+      - {prio: 2, param: brake.migration, direction: increase, magnitude: "0.5 (HY)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 3, param: diff.coast, direction: increase, magnitude: "1 cran", confidence: medium, side_effects: null, conflicts: [US-ENTRY-SLOW-01]}
+      - {prio: 4, param: elec.motor_map, direction: increase, magnitude: "si SOC ≥ 98 % (LMH : régén coupée = AR bloque)", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 5, param: susp.srebound_rear, direction: decrease, magnitude: "2 clics", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 6, param: brake.duct_rear, direction: either, magnitude: "selon T° : AR froids → fermer 1 ; AR en fade → ouvrir 1", confidence: medium, side_effects: null, conflicts: []}
+    justification: "Blocage AR = répartition trop arrière ou AR délesté ; sur LMH, perte de régén à batterie pleine."
+    sources:
+      - "https://traxion.gg/le-mans-ultimate-how-to-master-hypercar-braking/"
+      - "https://traxion.gg/how-to-manage-virtual-energy-in-le-mans-ultimate/"
+    brief_section: "C.3"
+
+  - id: BRK-LOCK-INNER-01
+    symptom: BRK_LOCK_INNER_FRONT
+    family: braking
+    phase: entry
+    corner_speed: slow
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "blocage de la roue AV intérieure seule en trail braking ; charge intérieure faible"
+      diagnostics: [D-BRK-03]
+      feel: [FEEL_INNER_FRONT_LOCKS]
+    changes:
+      - {prio: 1, param: susp.arb_front, direction: decrease, magnitude: "1 cran", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 2, param: susp.srebound_front, direction: decrease, magnitude: "2 clics (roue intérieure se détend plus vite = garde du contact)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 3, param: brake.bias_front, direction: decrease, magnitude: "0.5 %", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 4, param: geo.camber_front, direction: decrease, magnitude: "0.2°", confidence: low, side_effects: null, conflicts: []}
+      - {prio: 5, param: brake.abs_map, direction: increase, magnitude: "1 (GT3)", confidence: medium, side_effects: null, conflicts: []}
+    justification: "Smith : trop de rebound 'pulls the inside wheel off the road' ; un peu moins de raideur en roulis AV recharge l'intérieure."
+    sources:
+      - "https://www.sau.com.au/forums/topic/302303-car-set-up-cause-and-effect-by-carroll-smith"
+    brief_section: "C.3"
+
+  - id: BRK-COLD-01
+    symptom: BRK_COLD
+    family: braking
+    phase: braking
+    corner_speed: any
+    surface: any
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "D-BRK-02 : T° disque sous la fenêtre au 1er freinage ; décélération max faible à froid"
+      diagnostics: [D-BRK-02, D-BRK-01]
+      feel: [FEEL_NO_BRAKES_COLD, FEEL_LONG_PEDAL]
+    changes:
+      - {prio: 1, param: brake.duct_front, direction: decrease, magnitude: "1 cran (et AR si concerné)", confidence: high, side_effects: "risque de surchauffe en fin de relais / jour", conflicts: [BRK-HOT-01]}
+      - {prio: 2, param: brake.bias_front, direction: increase, magnitude: "1 % au 1er tour puis revenir (réglage en roulant)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 3, param: brake.pressure, direction: increase, magnitude: "3 %", confidence: low, side_effects: null, conflicts: []}
+    justification: "v1.4 : courbes friction/température des plaquettes ; BMW M Hybrid : freins 'très sensibles à la température, mauvais à froid' (CDA)."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/lmu-bmw-m-hybrid-v8-guide-the-inside-line/"
+      - "https://traxion.gg/latest-le-mans-ultimate-update-to-improve-hypercar-cold-tyre-performance-patch-notes-released/"
+    brief_section: "C.3"
+
+  - id: BRK-HOT-01
+    symptom: BRK_OVERHEAT
+    family: braking
+    phase: braking
+    corner_speed: any
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "T° disque max > seuil chaud ; décélération qui décroît tour après tour (fade) ; LMH : répartition qui glisse vers l'AR en fin de relais"
+      diagnostics: [D-BRK-01]
+      feel: [FEEL_BRAKES_FADE]
+    changes:
+      - {prio: 1, param: brake.duct_front, direction: increase, magnitude: "1 cran", confidence: high, side_effects: "traînée (faible), pneus/jantes plus froids", conflicts: [BRK-COLD-01, TYR-COLD-FRONT-01]}
+      - {prio: 2, param: brake.migration, direction: decrease, magnitude: "0.5 (HY, si migration > 2.0)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 3, param: elec.regen, direction: set, value: max, magnitude: "s'assurer regen max et SOC < 90 % (régén = moins de travail frein)", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 4, param: brake.bias_front, direction: decrease, magnitude: "0.5 % si AV seuls chauffent", confidence: medium, side_effects: null, conflicts: []}
+    justification: "Traxion : trop de migration peut surchauffer les freins ; CDA : fade AV LMH en long relais."
+    sources:
+      - "https://traxion.gg/le-mans-ultimate-how-to-master-hypercar-braking/"
+      - "https://simracingcockpit.gg/le-mans-ultimate-how-to-drive-the-lmgt3-and-hypercar/"
+    brief_section: "C.3"
+
+  - id: BRK-ABS-01
+    symptom: ABS_TOO_ACTIVE
+    family: braking
+    phase: braking
+    corner_speed: any
+    surface: dry
+    classes: [gt3]
+    philosophy: both
+    trigger:
+      telemetry: "D-BRK-04 : ABS actif > 30 % du temps de freinage"
+      diagnostics: [D-BRK-04]
+      feel: [FEEL_ABS_PULSING, FEEL_LONG_BRAKING]
+    changes:
+      - {prio: 1, param: brake.abs_map, direction: decrease, magnitude: "1 (agressif) / +1 (sûr, si le pilote 'attaque' l'ABS en permanence)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 2, param: brake.bias_front, direction: either, magnitude: "0.5 % vers l'essieu qui ne déclenche pas", confidence: medium, side_effects: "ne pas changer ABS et répartition en même temps", conflicts: []}
+      - {prio: 3, param: brake.pressure, direction: decrease, magnitude: "3 %", confidence: low, side_effects: null, conflicts: []}
+    justification: "Guide officiel : choisir la map ABS puis ajuster la répartition ; freiner à la limite sans déclencher régulièrement."
+    sources:
+      - "https://guide.lemansultimate.com/hc/en-gb/articles/13211078435983-ABS-Anti-Lock-Braking-System-for-LMGT3-Cars"
+    brief_section: "C.3"
+
+  - id: TRC-BOTH-01
+    symptom: TRC_WHEELSPIN_BOTH
+    family: traction
+    phase: exit
+    corner_speed: slow
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "D-TRC-01 : κ_RL ≈ κ_RR > 0.1 ; TC_cut fort"
+      diagnostics: [D-TRC-01, D-TRC-03]
+      feel: [FEEL_WHEELSPIN, FEEL_NO_TRACTION]
+    changes:
+      - {prio: 1, param: elec.tc, direction: increase, magnitude: "1", confidence: high, side_effects: null, conflicts: [TRC-TC-INTRUSIVE-01]}
+      - {prio: 2, param: susp.arb_rear, direction: decrease, magnitude: "1 cran", confidence: high, side_effects: "sous-virage milieu", conflicts: [US-MID-SLOW-01]}
+      - {prio: 3, param: susp.spring_rear, direction: decrease, magnitude: "1 cran", confidence: medium, side_effects: squat, conflicts: [US-EXIT-FAST-01]}
+      - {prio: 4, param: tyre.pressure_rear, direction: decrease, magnitude: "3 kPa", confidence: medium, side_effects: chauffe, conflicts: []}
+      - {prio: 5, param: geo.camber_rear, direction: decrease, magnitude: "0.2°", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 6, param: susp.fbump_rear, direction: decrease, magnitude: "2 clics (si perte sur bosses)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 7, param: elec.engine_map, direction: decrease, magnitude: "1 (map plus douce)", confidence: low, side_effects: perf, conflicts: []}
+      - {prio: 8, param: aero.rear_wing, direction: increase, magnitude: "1 cran (si la perte est en sortie moyenne/rapide)", confidence: medium, side_effects: null, conflicts: []}
+    justification: "Les deux roues patinent : pas un problème de différentiel mais de charge/grip AR et de couple."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+    brief_section: "C.4"
+
+  - id: TRC-INNER-01
+    symptom: TRC_WHEELSPIN_INNER
+    family: traction
+    phase: exit
+    corner_speed: slow
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "D-TRC-02 : |κ_RL − κ_RR| > 0.08 ; charge intérieure < 10 %"
+      diagnostics: [D-TRC-02, D-TRC-01]
+      feel: [FEEL_INNER_WHEELSPIN]
+    changes:
+      - {prio: 1, param: diff.power, direction: increase, magnitude: "1 cran", confidence: high, side_effects: "pousse-avant à la remise des gaz", conflicts: [US-EXIT-SLOW-01]}
+      - {prio: 2, param: diff.preload, direction: increase, magnitude: "15 Nm", confidence: high, side_effects: null, conflicts: [US-MID-SLOW-01]}
+      - {prio: 3, param: susp.arb_rear, direction: decrease, magnitude: "1 cran", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 4, param: susp.srebound_rear, direction: decrease, magnitude: "2 clics (roue intérieure suit le sol)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 5, param: elec.tc_slip, direction: decrease, magnitude: "1", confidence: medium, side_effects: null, conflicts: []}
+    justification: "Smith : 'inside wheelspin → rear bar too stiff' + diff ; sur GT3 précharge seule parfois disponible."
+    sources:
+      - "https://www.sau.com.au/forums/topic/302303-car-set-up-cause-and-effect-by-carroll-smith"
+      - "https://lemansultimate.com/?p=3955"
+    brief_section: "C.4"
+
+  - id: TRC-TC-INTRUSIVE-01
+    symptom: TC_TOO_INTRUSIVE
+    family: traction
+    phase: exit
+    corner_speed: any
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: aggressive
+    trigger:
+      telemetry: "D-TRC-03 : TC_cut > 25 % du temps de sortie alors que κ_R < 0.05 (pas de vrai patinage)"
+      diagnostics: [D-TRC-03, D-TRC-01]
+      feel: [FEEL_TC_CUTS_POWER, FEEL_SLUGGISH_EXIT]
+    changes:
+      - {prio: 1, param: elec.tc_cut, direction: decrease, magnitude: "1–2", confidence: medium, side_effects: "moins de coupure quand ça intervient", conflicts: []}
+      - {prio: 2, param: elec.tc_slip, direction: increase, magnitude: "1", confidence: medium, side_effects: "intervient plus tard", conflicts: []}
+      - {prio: 3, param: elec.tc, direction: decrease, magnitude: "1 (jamais < 6-6-6 sans test)", confidence: medium, side_effects: "tête-à-queue en virage lent", conflicts: []}
+    justification: "Hoekstra : 7-7-7 base, 6-6-6 perf ; sous ~7 on perd plus qu'on ne gagne. Hypercar : TC & slip 9–11 avec cut 1–2 (lecture simracingcockpit)."
+    sources:
+      - "https://arnouthoekstra.substack.com/p/confused-by-tc-you-should-be"
+      - "https://simracingcockpit.gg/le-mans-ultimate-how-to-drive-the-lmgt3-and-hypercar/"
+    brief_section: "C.4"
+
+  - id: HYB-SOC-FULL-01
+    symptom: HYB_SOC_FULL
+    family: hybrid
+    phase: any
+    corner_speed: any
+    surface: any
+    classes: [hypercar]
+    philosophy: both
+    trigger:
+      telemetry: "D-CON-03 : temps à SOC ≥ 98 % > 5 % du tour ; blocages corrélés"
+      diagnostics: [D-CON-03, D-BRK-03]
+      feel: [FEEL_BRAKES_CHANGE_MID_STINT, FEEL_REAR_LOCKS]
+    changes:
+      - {prio: 1, param: elec.motor_map, direction: increase, magnitude: "10 kW LMH / 5 kW LMDh", confidence: high, side_effects: "énergie virtuelle consommée via batterie (ratio)", conflicts: []}
+      - {prio: 2, param: energy.fuel_ratio, direction: decrease, magnitude: "0.01 (plus d'énergie prévue par la batterie)", confidence: medium, side_effects: "moins de carburant embarqué", conflicts: []}
+    justification: "Batterie pleine = régén coupée = perte de freinage et snaps ; cible 60–75 % en relais."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/hypercar-electric-motor-maps-in-le-mans-ultimate-explained/"
+      - "https://www.trophi.ai/post/how-to-make-the-most-of-le-mans-ultimates-hybrid-systems"
+    brief_section: "C.4"
+
+  - id: HYB-SOC-EMPTY-01
+    symptom: HYB_SOC_EMPTY
+    family: hybrid
+    phase: any
+    corner_speed: any
+    surface: any
+    classes: [hypercar]
+    philosophy: both
+    trigger:
+      telemetry: "SOC ≤ 5 % > 5 % du tour ; LMDh : perte de couple bas régime"
+      diagnostics: [D-CON-03]
+      feel: [FEEL_NO_BOOST]
+    changes:
+      - {prio: 1, param: elec.motor_map, direction: decrease, magnitude: "10 kW LMH / 5 kW LMDh", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 2, param: elec.regen, direction: set, value: max, magnitude: null, confidence: high, side_effects: null, conflicts: []}
+    justification: "LMDh ne repart pas des stands à 0 % ; LMH perd le 4RM."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/hypercar-electric-motor-maps-in-le-mans-ultimate-explained/"
+    brief_section: "C.4"
+
+  - id: PLT-BOTTOM-01
+    symptom: PLT_BOTTOMING
+    family: platform
+    phase: any
+    corner_speed: fast
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "D-PLT-01 : > 2 talonnages/tour hors vibreurs ; hauteur mini < 3 mm"
+      diagnostics: [D-PLT-01]
+      feel: [FEEL_BOTTOMING, FEEL_SPARKS_UNSETTLE]
+    changes:
+      - {prio: 1, param: aero.rh_front, direction: increase, magnitude: "1–2 mm (ou AR selon l'extrémité qui touche)", confidence: high, side_effects: "perte d'appui (HY : importante)", conflicts: [US-ENTRY-FAST-01]}
+      - {prio: 2, param: susp.packer_front, direction: increase, magnitude: "2 mm", confidence: high, side_effects: "butée dure plus tôt : perte de grip si on la touche en appui", conflicts: [PLT-BUMPY-01]}
+      - {prio: 3, param: susp.third_front, direction: increase, magnitude: "1 cran (prototypes)", confidence: high, side_effects: "moins de compliance en heave", conflicts: []}
+      - {prio: 4, param: susp.spring_front, direction: increase, magnitude: "1 cran (GT3)", confidence: medium, side_effects: "moins de grip mécanique", conflicts: [US-MID-SLOW-01]}
+      - {prio: 5, param: susp.sbump_front, direction: increase, magnitude: "2 clics", confidence: medium, side_effects: "plus sec", conflicts: []}
+    justification: "LMP3 guide CDA : « packers pour empêcher le talonnage sans changer la hauteur statique » ; HY : « trop bas = talonnage en zone rapide »."
+    sources:
+      - "https://lemansultimate.com/?p=3955"
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+    brief_section: "C.5"
+
+  - id: PLT-STALL-01
+    symptom: PLT_FLOOR_STALL
+    family: platform
+    phase: any
+    corner_speed: fast
+    surface: dry
+    classes: [hypercar, lmp2]
+    philosophy: both
+    trigger:
+      telemetry: "chute > 20 % de mFrontDownforce en < 0.2 s à vitesse quasi constante ; hauteur AV très basse ; perte soudaine d'équilibre"
+      diagnostics: [D-PLT-01]
+      feel: [FEEL_SUDDEN_LOSS_HIGH_SPEED, FEEL_BALANCE_SHIFT_UNPREDICTABLE]
+    changes:
+      - {prio: 1, param: aero.rh_front, direction: increase, magnitude: "1–2 mm", confidence: high, side_effects: appui, conflicts: []}
+      - {prio: 2, param: susp.third_front, direction: increase, magnitude: "1 cran", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 3, param: susp.spring_front, direction: increase, magnitude: "1 cran", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 4, param: susp.srebound_front, direction: increase, magnitude: "2 clics (maintien d'assiette, cf. B.6 exception aéro)", confidence: medium, side_effects: null, conflicts: []}
+    justification: "CDA : « suspension trop souple → floor stalls ou bascules d'équilibre imprévisibles » (Hypercar)."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+    brief_section: "C.5"
+
+  - id: PLT-KERB-01
+    symptom: PLT_KERB_UNSETTLED
+    family: platform
+    phase: any
+    corner_speed: any
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "S-04 : pics |a_z| et ψ̈ après mSurfaceType==5 ; perte de ψ̇ contrôlé"
+      diagnostics: [S-04, D-BAL-02]
+      feel: [FEEL_JUMPS_ON_KERBS, FEEL_KERBS_KICK_REAR]
+    changes:
+      - {prio: 1, param: susp.fbump_rear, direction: decrease, magnitude: "2 clics (et AV si concerné)", confidence: high, side_effects: "plus de mouvement sur gros chocs", conflicts: []}
+      - {prio: 2, param: susp.frebound_rear, direction: decrease, magnitude: "2 clics", confidence: medium, side_effects: "roue qui 'rebondit' si trop mou", conflicts: []}
+      - {prio: 3, param: susp.arb_rear, direction: decrease, magnitude: "1 cran", confidence: high, side_effects: "CDA : barre AR raide = AR imprévisible sur vibreurs", conflicts: [US-MID-SLOW-01]}
+      - {prio: 4, param: susp.packer_rear, direction: decrease, magnitude: "2 mm (plus de course)", confidence: medium, side_effects: talonnage, conflicts: [PLT-BOTTOM-01]}
+      - {prio: 5, param: susp.spring_rear, direction: decrease, magnitude: "1 cran", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 6, param: aero.rh_rear, direction: increase, magnitude: "2 mm", confidence: medium, side_effects: appui, conflicts: []}
+      - {prio: 7, param: diff.preload, direction: increase, magnitude: "15 Nm (si le kick vient d'un délestage d'une roue motrice)", confidence: low, side_effects: null, conflicts: []}
+    justification: "Vibreurs = hautes vitesses d'amortisseur : agir sur fast bump/rebound, puis sur la raideur en roulis."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+      - "https://www.hpacademy.com/courses/professional-motorsport-data-analysis/damper-analysis-damping-histogram/"
+    brief_section: "C.5"
+
+  - id: PLT-BUMPY-01
+    symptom: PLT_BUMPY_LOSS
+    family: platform
+    phase: any
+    corner_speed: any
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "pct_fast élevé (B.6) ; grip fraction qui oscille avec a_z ; circuits type Sebring/Interlagos"
+      diagnostics: [D-DMP-01]
+      feel: [FEEL_SKIPS_OVER_BUMPS, FEEL_LOSES_GRIP_ON_BUMPS]
+    changes:
+      - {prio: 1, param: susp.fbump_front, direction: decrease, magnitude: "2 clics (+ AR)", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 2, param: susp.spring_front, direction: decrease, magnitude: "1 cran (+ AR)", confidence: medium, side_effects: "talonnage, plateforme aéro", conflicts: [PLT-BOTTOM-01, PLT-STALL-01]}
+      - {prio: 3, param: susp.frebound_front, direction: decrease, magnitude: "2 clics", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 4, param: aero.rh_front, direction: increase, magnitude: "2 mm (+ AR)", confidence: medium, side_effects: appui, conflicts: []}
+      - {prio: 5, param: susp.arb_front, direction: decrease, magnitude: "1 cran (+ AR)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 6, param: tyre.pressure_front, direction: decrease, magnitude: "3 kPa (+ AR)", confidence: medium, side_effects: null, conflicts: []}
+    justification: "Steam/communauté : « softer front fast bump adds grip on tight/bumpy tracks » ; Smith : 'too much high-speed bump → tyres hop over ripples'."
+    sources:
+      - "https://steamcommunity.com/app/2399420/discussions/0/4853281047676507449"
+      - "https://www.sau.com.au/forums/topic/302303-car-set-up-cause-and-effect-by-carroll-smith"
+    brief_section: "C.5"
+
+  - id: PLT-FLOATY-01
+    symptom: PLT_FLOATY
+    family: platform
+    phase: any
+    corner_speed: any
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "histogramme large/plat ; oscillations de hauteur après bosse > 1 cycle ; pct_slow faible"
+      diagnostics: [D-DMP-01]
+      feel: [FEEL_WALLOWS, FEEL_FLOATY, FEEL_SLOW_TO_SETTLE]
+    changes:
+      - {prio: 1, param: susp.srebound_front, direction: increase, magnitude: "2 clics (+ AR)", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 2, param: susp.sbump_front, direction: increase, magnitude: "2 clics (+ AR)", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 3, param: susp.spring_front, direction: increase, magnitude: "1 cran (+ AR)", confidence: medium, side_effects: null, conflicts: [PLT-BUMPY-01]}
+    justification: "CDA : « soft dampers → the car wallows » ; Smith : 'too little overall → floating, oscillation'."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+    brief_section: "C.5"
+
+  - id: PLT-NERVOUS-01
+    symptom: PLT_NERVOUS
+    family: platform
+    phase: any
+    corner_speed: any
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: safe
+    trigger:
+      telemetry: "S-03 : volant nerveux ; |ψ̈| élevé ; histogramme très pointu"
+      diagnostics: [S-03, D-DMP-01, D-BAL-02]
+      feel: [FEEL_SKITTISH, FEEL_NERVOUS, FEEL_TOO_POINTY]
+    changes:
+      - {prio: 1, param: susp.sbump_front, direction: decrease, magnitude: "2 clics (+ AR)", confidence: high, side_effects: null, conflicts: [PLT-FLOATY-01]}
+      - {prio: 2, param: susp.srebound_front, direction: decrease, magnitude: "2 clics (+ AR)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 3, param: susp.arb_front, direction: decrease, magnitude: "1 cran (+ AR)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 4, param: geo.toe_front, direction: increase, magnitude: "0.05° (réduire l'ouverture)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 5, param: steer.lock, direction: decrease, magnitude: "1 cran", confidence: low, side_effects: null, conflicts: []}
+    justification: "CDA : « stiff dampers → nervous, skittish » ; Smith : 'too much low-speed bump → reactions too sudden'."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+    brief_section: "C.5"
+
+  - id: STR-LAZY-01
+    symptom: STR_SLOW_DIRECTION_CHANGE
+    family: straightline_and_response
+    phase: any
+    corner_speed: medium
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: aggressive
+    trigger:
+      telemetry: "retard ψ̇ vs SWA > 150 ms en chicane ; roulis élevé"
+      diagnostics: [D-STR-02]
+      feel: [FEEL_LAZY, FEEL_SLOW_IN_CHICANES]
+    changes:
+      - {prio: 1, param: susp.arb_front, direction: increase, magnitude: "1 cran (+ AR)", confidence: high, side_effects: "sous-virage si AV seul", conflicts: [US-MID-SLOW-01]}
+      - {prio: 2, param: susp.sbump_front, direction: increase, magnitude: "2 clics (+ AR)", confidence: medium, side_effects: null, conflicts: [PLT-NERVOUS-01]}
+      - {prio: 3, param: susp.spring_front, direction: increase, magnitude: "1 cran (+ AR)", confidence: medium, side_effects: null, conflicts: [PLT-BUMPY-01]}
+      - {prio: 4, param: tyre.pressure_front, direction: increase, magnitude: "3 kPa", confidence: medium, side_effects: "moins de grip mécanique", conflicts: []}
+      - {prio: 5, param: geo.toe_front, direction: decrease, magnitude: "0.05°", confidence: medium, side_effects: null, conflicts: [BRK-UNSTABLE-01]}
+    justification: "Smith : 'bars too soft → lazy, reluctant to change direction in chicanes'."
+    sources:
+      - "https://www.sau.com.au/forums/topic/302303-car-set-up-cause-and-effect-by-carroll-smith"
+    brief_section: "C.5"
+
+  - id: STR-TOPSPEED-01
+    symptom: STR_TOP_SPEED_LOW
+    family: straightline_and_response
+    phase: straight
+    corner_speed: any
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "Vmax < référence − 3 km/h ; mDrag élevé à V donnée ; régime max non atteint"
+      diagnostics: [D-STR-01]
+      feel: [FEEL_SLOW_ON_STRAIGHTS]
+    changes:
+      - {prio: 1, param: aero.rear_wing, direction: decrease, magnitude: "1 cran (GT3 : respecter l'angle mini BoP)", confidence: high, side_effects: "stabilité rapide, freinage", conflicts: [OS-MID-FAST-01, OS-ENTRY-FAST-01]}
+      - {prio: 2, param: aero.front_flap, direction: decrease, magnitude: "1 cran (pour garder l'équilibre)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 3, param: aero.rake, direction: decrease, magnitude: "−1 mm AR", confidence: medium, side_effects: "moins d'appui AV", conflicts: []}
+      - {prio: 4, param: brake.duct_front, direction: decrease, magnitude: "1 cran si freins froids", confidence: low, side_effects: null, conflicts: [BRK-HOT-01]}
+      - {prio: 5, param: elec.motor_map, direction: increase, magnitude: "LMDh : 50 kW ; LMH : déploiement > 190 km/h", confidence: medium, side_effects: batterie, conflicts: []}
+    justification: "Hoekstra : setups bas appui (< 30 % d'aile) 'crazy fast' sur circuits à longues lignes droites ; BoP fixe l'angle mini GT3."
+    sources:
+      - "https://arnouthoekstra.substack.com/p/fixed-setups-are-a-blessing-in-lmu"
+      - "https://traxion.gg/widespread-bop-adjustments-nerf-bmw-lmgt3-and-alpine-a424-in-new-le-mans-ultimate-update/"
+    brief_section: "C.5"
+
+  - id: TYR-HOT-FRONT-01
+    symptom: TYR_HOT_FRONT
+    family: tyres
+    phase: any
+    corner_speed: any
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "D-TYR-03 : T_core AV > T_opt + 8 ; D-TYR-05 : T_front − T_rear > 8"
+      diagnostics: [D-TYR-03, D-TYR-05]
+      feel: [FEEL_FRONT_TYRES_OVERHEAT, FEEL_FRONT_GOES_OFF]
+    changes:
+      - {prio: 1, param: tyre.pressure_front, direction: increase, magnitude: "3 kPa", confidence: medium, side_effects: "moins de grip mécanique AV (sous-virage)", conflicts: [US-MID-SLOW-01]}
+      - {prio: 2, param: meta.balance, direction: meta, value: reduce_understeer, magnitude: "appliquer US-MID-* (le pneu AV surchauffe parce qu'il glisse)", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 3, param: brake.duct_front, direction: increase, magnitude: "1 cran (si T° frein élevée : chaleur jante → pneu)", confidence: medium, side_effects: null, conflicts: [BRK-COLD-01]}
+      - {prio: 4, param: geo.camber_front, direction: decrease, magnitude: "0.2° si intérieur ≫ extérieur", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 5, param: geo.toe_front, direction: toward_zero, magnitude: "réduire |toe| de 0.05°", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 6, param: aero.front_flap, direction: increase, magnitude: "1 cran (moins de glissement AV en rapide)", confidence: low, side_effects: null, conflicts: []}
+      - {prio: 7, param: tyre.compound, direction: set, value: harder, magnitude: "si allocation", confidence: high, side_effects: "chauffe plus longue (3–5 tours)", conflicts: []}
+    justification: "Un pneu qui surchauffe est un pneu qui glisse : corriger l'équilibre d'abord, puis la pression ; la pince/le carrossage ajoutent de la chaleur parasite."
+    sources:
+      - "https://lemansultimate.wiki.gg/wiki/Setup_Guide"
+      - "https://coachdaveacademy.com/tutorials/understanding-tire-pressures-in-iracing/"
+    brief_section: "C.6"
+
+  - id: TYR-HOT-REAR-01
+    symptom: TYR_HOT_REAR
+    family: tyres
+    phase: any
+    corner_speed: any
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "T_core AR > T_opt + 8 ; pics surface AR en sortie"
+      diagnostics: [D-TYR-03]
+      feel: [FEEL_REAR_TYRES_OVERHEAT, FEEL_REAR_GOES_OFF]
+    changes:
+      - {prio: 1, param: elec.tc, direction: increase, magnitude: "1", confidence: high, side_effects: null, conflicts: [TRC-TC-INTRUSIVE-01]}
+      - {prio: 2, param: tyre.pressure_rear, direction: increase, magnitude: "3 kPa", confidence: medium, side_effects: "motricité", conflicts: [TRC-BOTH-01]}
+      - {prio: 3, param: meta.balance, direction: meta, value: reduce_oversteer, magnitude: "appliquer OS-EXIT-* / OS-MID-*", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 4, param: geo.toe_rear, direction: decrease, magnitude: "0.05° (si pince > 0.2°)", confidence: medium, side_effects: "stabilité", conflicts: [BRK-UNSTABLE-01]}
+      - {prio: 5, param: geo.camber_rear, direction: decrease, magnitude: "0.2°", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 6, param: aero.rear_wing, direction: increase, magnitude: "1 cran", confidence: medium, side_effects: Vmax, conflicts: []}
+      - {prio: 7, param: elec.engine_map, direction: decrease, magnitude: "1", confidence: low, side_effects: null, conflicts: []}
+    justification: "Hypercar : TC plus haut = moins de patinage = moins d'usure AR (simracingcockpit) ; v1.4 a réduit l'usure AR Hypercar."
+    sources:
+      - "https://simracingcockpit.gg/le-mans-ultimate-how-to-drive-the-lmgt3-and-hypercar/"
+      - "https://traxion.gg/latest-le-mans-ultimate-update-to-improve-hypercar-cold-tyre-performance-patch-notes-released/"
+    brief_section: "C.6"
+
+  - id: TYR-COLD-FRONT-01
+    symptom: TYR_COLD
+    family: tyres
+    phase: any
+    corner_speed: any
+    surface: any
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "D-TYR-08 : > 3 tours pour atteindre T_opt − 5 ; T_core < T_opt − 8 en régime"
+      diagnostics: [D-TYR-08, D-TYR-03]
+      feel: [FEEL_NO_GRIP_COLD, FEEL_TAKES_LAPS_TO_COME_IN]
+    changes:
+      - {prio: 1, param: tyre.pressure_front, direction: increase, magnitude: "3–5 kPa (+ AR) — chauffe plus vite, moins de flexion", confidence: medium, side_effects: "moins de grip chaud ; note : certains recommandent au contraire de baisser pour plus de flexion — tester", conflicts: []}
+      - {prio: 2, param: brake.duct_front, direction: decrease, magnitude: "1 cran (+ AR)", confidence: medium, side_effects: "freins chauds", conflicts: [BRK-HOT-01]}
+      - {prio: 3, param: elec.tc, direction: decrease, magnitude: "1 pendant la chauffe (en roulant)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 4, param: geo.toe_front, direction: decrease, magnitude: "0.05° (plus d'ouverture = scrub = chaleur)", confidence: low, side_effects: usure, conflicts: []}
+      - {prio: 5, param: geo.camber_front, direction: increase, magnitude: "0.2°", confidence: low, side_effects: null, conflicts: []}
+      - {prio: 6, param: susp.sbump_front, direction: increase, magnitude: "2 clics (travail de carcasse)", confidence: low, side_effects: null, conflicts: []}
+      - {prio: 7, param: tyre.compound, direction: set, value: softer, magnitude: "si allocation", confidence: high, side_effects: usure, conflicts: []}
+      - {prio: 8, param: brake.bias_front, direction: increase, magnitude: "1 % au 1er tour (GT3 : avancer puis reculer)", confidence: medium, side_effects: null, conflicts: []}
+    justification: "Communauté LMU pneus froids : fermer conduits, monter pression, baisser TC/ABS, pilotage plus agressif en out-lap ; GT3 : répartition plus avant jusqu'à température."
+    sources:
+      - "https://steamcommunity.com/app/2399420/discussions/0/777534074828971181"
+      - "https://simracingcockpit.gg/le-mans-ultimate-how-to-drive-the-lmgt3-and-hypercar/"
+    brief_section: "C.6"
+
+  - id: TYR-HOT-INNER-01
+    symptom: TYR_HOT_INNER
+    family: tyres
+    phase: any
+    corner_speed: any
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "D-TYR-01 : ΔIO > +15 °C sur la roue extérieure en milieu de virage"
+      diagnostics: [D-TYR-01]
+      feel: []
+    changes:
+      - {prio: 1, param: geo.camber_front, direction: decrease, magnitude: "0.2–0.3° (moins négatif) sur l'essieu concerné", confidence: high, side_effects: "moins de grip latéral en appui", conflicts: [US-MID-SLOW-01]}
+      - {prio: 2, param: geo.toe_front, direction: toward_zero, magnitude: "0.05°", confidence: medium, side_effects: null, conflicts: []}
+    justification: "Règle pyromètre : intérieur un peu plus chaud (sim : +5–12 °C) ; au-delà, trop de carrossage."
+    sources:
+      - "https://www.sau.com.au/forums/topic/302303-car-set-up-cause-and-effect-by-carroll-smith"
+      - "https://lemansultimate.wiki.gg/wiki/Setup_Guide"
+    brief_section: "C.6"
+
+  - id: TYR-HOT-OUTER-01
+    symptom: TYR_HOT_OUTER
+    family: tyres
+    phase: any
+    corner_speed: any
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "ΔIO < +2 °C (ou négatif) sur la roue extérieure"
+      diagnostics: [D-TYR-01]
+      feel: []
+    changes:
+      - {prio: 1, param: geo.camber_front, direction: increase, magnitude: "0.2–0.3° (plus négatif) sur l'essieu concerné", confidence: high, side_effects: "freinage/motricité en ligne légèrement moindres", conflicts: []}
+      - {prio: 2, param: susp.arb_front, direction: increase, magnitude: "1 cran (moins de roulis = moins de perte de carrossage)", confidence: medium, side_effects: "équilibre", conflicts: [US-MID-SLOW-01]}
+      - {prio: 3, param: geo.caster, direction: increase, magnitude: "0.5° (AV uniquement)", confidence: medium, side_effects: null, conflicts: []}
+    justification: "Extérieur chaud = pas assez de carrossage négatif pour le roulis présent."
+    sources:
+      - "https://www.sau.com.au/forums/topic/302303-car-set-up-cause-and-effect-by-carroll-smith"
+    brief_section: "C.6"
+
+  - id: TYR-HOT-MIDDLE-01
+    symptom: TYR_HOT_MIDDLE
+    family: tyres
+    phase: any
+    corner_speed: any
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "D-TYR-02 : ΔM > +3 °C"
+      diagnostics: [D-TYR-02]
+      feel: []
+    changes:
+      - {prio: 1, param: tyre.pressure_front, direction: decrease, magnitude: "3 kPa (essieu concerné, si > mini)", confidence: medium, side_effects: null, conflicts: []}
+    justification: "Centre plus chaud que les bords = surgonflé (bombé)."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/understanding-tire-pressures-in-iracing/"
+    brief_section: "C.6"
+
+  - id: TYR-COLD-MIDDLE-01
+    symptom: TYR_COLD_MIDDLE
+    family: tyres
+    phase: any
+    corner_speed: any
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "ΔM < −3 °C"
+      diagnostics: [D-TYR-02]
+      feel: []
+    changes:
+      - {prio: 1, param: tyre.pressure_front, direction: increase, magnitude: "3 kPa (essieu concerné)", confidence: medium, side_effects: null, conflicts: []}
+    justification: "Bords plus chauds que le centre = sous-gonflé."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/understanding-tire-pressures-in-iracing/"
+    brief_section: "C.6"
+
+  - id: TYR-WEAR-01
+    symptom: TYR_WEAR_FAST
+    family: tyres
+    phase: any
+    corner_speed: any
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: safe
+    trigger:
+      telemetry: "D-TYR-06 : pente > 0.08 s/tour ou roue > 1.3× l'usure moyenne"
+      diagnostics: [D-TYR-06]
+      feel: [FEEL_TYRES_DROP_OFF, FEEL_CANT_DOUBLE_STINT]
+    changes:
+      - {prio: 1, param: meta.balance, direction: meta, value: neutralise_balance, magnitude: "corriger l'essieu qui glisse (US-*/OS-*)", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 2, param: elec.tc, direction: increase, magnitude: "1 (si AR)", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 3, param: tyre.pressure_front, direction: increase, magnitude: "2–3 kPa sur l'essieu concerné", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 4, param: geo.camber_front, direction: decrease, magnitude: "0.2° si usure intérieure", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 5, param: geo.toe_front, direction: toward_zero, magnitude: "0.05°", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 6, param: aero.rear_wing, direction: increase, magnitude: "1 cran (moins de glissement)", confidence: medium, side_effects: Vmax, conflicts: [STR-TOPSPEED-01]}
+      - {prio: 7, param: susp.arb_front, direction: decrease, magnitude: "1 cran (+ AR : 'softer bars = friendlier for endurance')", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 8, param: tyre.compound, direction: set, value: harder, magnitude: null, confidence: high, side_effects: null, conflicts: []}
+    justification: "CDA : endurance = moins agressif, préserver les pneus ; Porsche GT3 : usure 'extrême'."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+      - "https://coachdaveacademy.com/tutorials/the-complete-guide-to-the-lmgt3-cars-in-le-mans-ultimate/"
+    brief_section: "C.6"
+
+  - id: WET-PACK-01
+    symptom: WET_BASELINE
+    family: wet
+    phase: any
+    corner_speed: any
+    surface: wet
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "mRaining > 0.2 ou mAvgPathWetness > 0.3 ; pneus Wet montés"
+      diagnostics: [D-WET-01]
+      feel: []
+    changes:
+      - {prio: 1, param: tyre.compound, direction: set, value: wet, magnitude: null, confidence: high, side_effects: null, conflicts: []}
+      - {prio: 2, param: aero.rear_wing, direction: increase, magnitude: "1–2 crans", confidence: high, side_effects: "Vmax (peu pertinent sous la pluie)", conflicts: []}
+      - {prio: 3, param: aero.rh_front, direction: increase, magnitude: "+3–5 mm (+ AR, garder le rake)", confidence: high, side_effects: "moins d'appui ; évite aquaplaning/talonnage dans les flaques", conflicts: []}
+      - {prio: 4, param: susp.arb_front, direction: decrease, magnitude: "1–2 crans (+ AR)", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 5, param: susp.spring_front, direction: decrease, magnitude: "1 cran (+ AR)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 6, param: susp.sbump_front, direction: decrease, magnitude: "2 clics (tous)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 7, param: brake.bias_front, direction: increase, magnitude: "1–2 %", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 8, param: brake.migration, direction: decrease, magnitude: "0.5 (HY)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 9, param: elec.tc, direction: increase, magnitude: "1–2 (cut +1, slip −1)", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 10, param: brake.abs_map, direction: increase, magnitude: "1 (GT3)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 11, param: diff.power, direction: decrease, magnitude: "1 cran ; preload −15 Nm", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 12, param: brake.duct_front, direction: decrease, magnitude: "1–2 crans (+ AR)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 13, param: tyre.pressure_front, direction: increase, magnitude: "0 à +5 kPa (pneus pluie : besoin de chaleur ; cible ≈ 60–80 °C)", confidence: low, side_effects: null, conflicts: []}
+      - {prio: 14, param: geo.camber_front, direction: decrease, magnitude: "0.3° (moins négatif : surface de contact en ligne)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 15, param: elec.engine_map, direction: decrease, magnitude: "1 (couple plus doux)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 16, param: elec.motor_map, direction: decrease, magnitude: "LMDh 5–10 kW (couple AR) ; LMH : couper le déploiement AV si sous-virage sous la pluie", confidence: medium, side_effects: null, conflicts: []}
+    justification: "Transposition des pratiques GT3/F1 sim (plus haut, plus souple, plus d'aile, plus avant, plus de TC) ; GO Setups : pluie = 'ajustements de TC, aéro et pressions'."
+    sources:
+      - "https://gosetups.gg/blog/lmu-setups-bmw-m4-and-wet-setups/"
+      - "https://simracingsetup.com/f1-2020-news-guides/f1-2020-convert-dry-setup-to-wet-setup/"
+      - "https://www.bsimracing.com/le-mans-ultimate-update-2-patch-4-deployed/"
+    brief_section: "C.7"
+
+  - id: WET-OS-EXIT-01
+    symptom: OS_EXIT_SLOW
+    family: wet
+    phase: exit
+    corner_speed: slow
+    surface: wet
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "idem OS-EXIT-SLOW-01 sous pluie"
+      diagnostics: [D-WET-01]
+      feel: [FEEL_REAR_SLIDES_ON_THROTTLE]
+    changes:
+      - {prio: 1, param: elec.tc, direction: increase, magnitude: "1 (cut +1)", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 2, param: diff.power, direction: decrease, magnitude: "1 cran (pluie : diff plus ouvert = plus progressif)", confidence: medium, side_effects: "note : inverse du sec", conflicts: []}
+      - {prio: 3, param: susp.arb_rear, direction: decrease, magnitude: "1 cran", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 4, param: elec.engine_map, direction: decrease, magnitude: "1", confidence: medium, side_effects: null, conflicts: []}
+    justification: "Sous la pluie on cherche la progressivité : moins de verrouillage, plus d'électronique."
+    sources:
+      - "https://gosetups.gg/blog/lmu-setups-bmw-m4-and-wet-setups/"
+    brief_section: "C.7"
+
+  - id: WET-US-01
+    symptom: US_MID_SLOW
+    family: wet
+    phase: mid
+    corner_speed: any
+    surface: wet
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "balance > +0.3 sous pluie"
+      diagnostics: [D-BAL-01, D-WET-01]
+      feel: [FEEL_FRONT_WONT_TURN]
+    changes:
+      - {prio: 1, param: susp.arb_front, direction: decrease, magnitude: "1 cran", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 2, param: brake.bias_front, direction: decrease, magnitude: "0.5 % (rester plus avant qu'au sec)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 3, param: aero.front_flap, direction: increase, magnitude: "1 cran / rake +2 mm", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 4, param: tyre.pressure_front, direction: decrease, magnitude: "3 kPa", confidence: low, side_effects: null, conflicts: []}
+      - {prio: 5, param: elec.motor_map, direction: decrease, magnitude: "LMH : couper déploiement AV", confidence: medium, side_effects: null, conflicts: []}
+    justification: "Même logique qu'au sec, mais en gardant la sécurité au freinage."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/hypercar-electric-motor-maps-in-le-mans-ultimate-explained/"
+    brief_section: "C.7"
+
+  - id: WET-NOTEMP-01
+    symptom: WET_NO_TEMP
+    family: wet
+    phase: any
+    corner_speed: any
+    surface: wet
+    classes: [hypercar, lmp2, gt3]
+    philosophy: both
+    trigger:
+      telemetry: "T_core wet < 55 °C en régime ; piste s'asséchant (mAvgPathWetness < 0.2) avec pneus pluie"
+      diagnostics: [D-TYR-03, D-WET-01]
+      feel: [FEEL_NO_GRIP_COLD]
+    changes:
+      - {prio: 1, param: brake.duct_front, direction: decrease, magnitude: "1 cran (+ AR)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 2, param: tyre.pressure_front, direction: increase, magnitude: "3 kPa (+ AR)", confidence: low, side_effects: null, conflicts: []}
+      - {prio: 3, param: tyre.compound, direction: set, value: slick, magnitude: "si piste séchante : passer en slick (wets surchauffent sur sec)", confidence: high, side_effects: null, conflicts: []}
+    justification: "Pneus pluie : fenêtre ≈ 60–80 °C (communauté) ; surchauffent vite sur ligne sèche."
+    sources:
+      - "https://steamcommunity.com/app/2399420/discussions/0/4637113154621450877"
+    brief_section: "C.7"
+
+  - id: PHI-AGGRESSIVE-01
+    symptom: PHILOSOPHY_AGGRESSIVE
+    family: philosophy
+    phase: any
+    corner_speed: any
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: aggressive
+    trigger:
+      telemetry: "mode sprint / qualif / pilote régulier (σ laps faible, S-07 ≥ 0.6)"
+      diagnostics: [S-07, D-CON-01]
+      feel: [FEEL_WANT_MORE_ROTATION, FEEL_TOO_SAFE]
+    changes:
+      - {prio: 1, param: brake.bias_front, direction: decrease, magnitude: "0.5–1 % vs base", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 2, param: elec.tc, direction: decrease, magnitude: "1 (6-6-6 GT3/LMP2 ; HY : cut 1–2, slip 9–11)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 3, param: susp.arb_rear, direction: increase, magnitude: "1 cran (ou arb_front −1)", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 4, param: diff.coast, direction: decrease, magnitude: "1 cran ; preload −15 Nm", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 5, param: aero.rear_wing, direction: decrease, magnitude: "1 cran (circuits rapides) ; rake +1 mm", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 6, param: aero.rh_front, direction: decrease, magnitude: "1–2 mm (moins de carburant en sprint)", confidence: medium, side_effects: talonnage, conflicts: [PLT-BOTTOM-01]}
+      - {prio: 7, param: tyre.pressure_front, direction: decrease, magnitude: "au mini (+ AR)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 8, param: geo.toe_front, direction: decrease, magnitude: "0.05° ; toe_rear −0.05°", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 9, param: susp.sbump_front, direction: increase, magnitude: "2 clics (+ AR) : voiture plus 'pointue'", confidence: medium, side_effects: null, conflicts: [PLT-NERVOUS-01]}
+      - {prio: 10, param: brake.migration, direction: increase, magnitude: "2.5F (HY) : freinage max", confidence: medium, side_effects: "blocages AV si pilote agressif", conflicts: []}
+      - {prio: 11, param: elec.engine_map, direction: increase, magnitude: "map perf", confidence: medium, side_effects: consommation, conflicts: []}
+    justification: "CDA : sprint = moins de carburant, hauteurs plus basses, setup plus agressif, usure acceptée."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+      - "https://traxion.gg/le-mans-ultimate-how-to-master-hypercar-braking/"
+    brief_section: "C.8"
+
+  - id: PHI-SAFE-01
+    symptom: PHILOSOPHY_SAFE
+    family: philosophy
+    phase: any
+    corner_speed: any
+    surface: dry
+    classes: [hypercar, lmp2, gt3]
+    philosophy: safe
+    trigger:
+      telemetry: "relais longs / endurance / pilote irrégulier (σ laps élevé, corrections volant élevées, S-07 < 0.5)"
+      diagnostics: [S-07, D-BRK-05, D-CON-01]
+      feel: [FEEL_WANT_STABILITY, FEEL_TIRING_TO_DRIVE]
+    changes:
+      - {prio: 1, param: brake.bias_front, direction: increase, magnitude: "0.5–1 % vs base", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 2, param: elec.tc, direction: increase, magnitude: "1–2 (8-8-8 / 9-9-9)", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 3, param: susp.arb_rear, direction: decrease, magnitude: "1 cran (+ arb_front −1 : 'softer bars friendlier')", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 4, param: diff.power, direction: increase, magnitude: "1 cran ; preload +15 Nm", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 5, param: aero.rear_wing, direction: increase, magnitude: "1 cran", confidence: high, side_effects: Vmax, conflicts: []}
+      - {prio: 6, param: aero.rh_front, direction: increase, magnitude: "+1–2 mm (plein de carburant, pas de talonnage)", confidence: high, side_effects: null, conflicts: []}
+      - {prio: 7, param: geo.toe_rear, direction: increase, magnitude: "0.05–0.10°", confidence: high, side_effects: "chauffe AR", conflicts: []}
+      - {prio: 8, param: susp.sbump_front, direction: decrease, magnitude: "2 clics (+ AR) ; fbump −2", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 9, param: tyre.pressure_front, direction: increase, magnitude: "2–3 kPa au-dessus du mini (+ AR) : moins de pic thermique sur relais long", confidence: low, side_effects: null, conflicts: []}
+      - {prio: 10, param: brake.migration, direction: decrease, magnitude: "1.5–2.0F (HY)", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 11, param: elec.engine_map, direction: decrease, magnitude: "map éco ; fuel_ratio adapté à lift & coast", confidence: medium, side_effects: null, conflicts: []}
+      - {prio: 12, param: geo.camber_front, direction: decrease, magnitude: "0.2° (usure plus homogène)", confidence: medium, side_effects: null, conflicts: []}
+    justification: "CDA : endurance = plus de carburant, plus de stabilité, moins agressif ; TC plus haut réduit l'usure."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+      - "https://arnouthoekstra.substack.com/p/confused-by-tc-you-should-be"
+    brief_section: "C.8"

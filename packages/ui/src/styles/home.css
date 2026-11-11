@@ -1,0 +1,833 @@
+/* ------------------------------------------------------------ home page */
+.home-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.home-page p,
+.guide p {
+  margin: 0;
+}
+.home-page .link,
+.guide .link {
+  font-size: 12.5px;
+}
+button.link {
+  cursor: pointer;
+}
+button.link:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.home-page sup {
+  font-size: 0.68em;
+  line-height: 0;
+  vertical-align: 0.45em;
+  margin-left: 0.04em;
+}
+
+/* The page's own buttons: larger than the chrome's .btn, and out of reach of the rules that
+   shrink every .btn to an icon square on a phone. */
+.home-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 18px;
+  border-radius: 4px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel-raised);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color 120ms,
+    border-color 120ms;
+}
+.home-btn:hover {
+  border-color: var(--accent);
+}
+.home-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.home-btn svg {
+  width: 16px;
+  height: 16px;
+  color: var(--accent);
+}
+.home-btn.is-primary {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.home-btn.is-primary:hover {
+  filter: brightness(1.07);
+}
+
+/* ---- status: the one loud element of the page ------------------------------ */
+.home-status {
+  --state: var(--line-strong);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px 22px 20px 25px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.home-status::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--state);
+}
+.home-status.is-track {
+  --state: var(--optimal);
+}
+.home-status.is-garage,
+.home-status.is-menu {
+  --state: var(--accent);
+}
+.home-status.is-offline {
+  --state: var(--hot);
+}
+.home-status.is-demo {
+  --state: var(--best);
+}
+
+@keyframes home-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* the chain of lights: server → game → session → on track → recording */
+.chain {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 0;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+.chain-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+.chain-step + .chain-step::before {
+  content: "";
+  width: 22px;
+  height: 1px;
+  margin: 0 10px;
+  background: var(--line-strong);
+}
+.chain-light {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-strong);
+  flex: none;
+}
+.chain-step.is-on {
+  color: var(--text-dim);
+}
+.chain-step.is-on .chain-light {
+  border-color: var(--optimal);
+  background: var(--optimal);
+}
+.chain-step.is-on + .chain-step::before {
+  background: rgba(55, 208, 138, 0.55);
+}
+.chain-step.is-wait {
+  color: var(--text);
+}
+.chain-step.is-wait .chain-light {
+  border-color: var(--warm);
+  background: rgba(242, 182, 60, 0.3);
+  animation: home-pulse 1.6s ease-in-out infinite;
+}
+.chain-step.is-error {
+  color: var(--slower);
+}
+.chain-step.is-error .chain-light {
+  border-color: var(--hot);
+  background: var(--hot);
+}
+.chain-step.is-rec {
+  color: var(--text-dim);
+}
+.chain-step.is-rec .chain-light {
+  border-color: var(--hot);
+  background: var(--hot);
+  box-shadow: 0 0 8px var(--hot);
+  animation: home-pulse 1.6s ease-in-out infinite;
+}
+
+.home-status-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 28px;
+  flex-wrap: wrap;
+}
+.home-status-text {
+  min-width: 0;
+  flex: 1 1 420px;
+}
+.home-headline {
+  font-family: var(--font-num);
+  font-size: clamp(27px, 2.6vw, 40px);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.005em;
+  text-wrap: balance;
+}
+.home-headline-detail {
+  font-weight: 500;
+  color: var(--text-dim);
+}
+.home-page .home-hint {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.45;
+  max-width: 72ch;
+  text-wrap: pretty;
+}
+.home-status-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.home-facts {
+  gap: 8px 30px;
+}
+
+/* recorder line: the foot of the status card */
+.home-rec {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 4px -22px -20px -25px;
+  padding: 10px 22px 10px 25px;
+  border-top: 1px solid var(--line);
+  background: rgba(11, 14, 18, 0.45);
+  font-size: 13px;
+}
+.home-rec-text {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.home-rec-state {
+  font-weight: 600;
+}
+.home-rec-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  flex: none;
+}
+.home-rec.is-live .home-rec-dot {
+  background: var(--hot);
+  box-shadow: 0 0 8px var(--hot);
+  animation: home-pulse 1.6s ease-in-out infinite;
+}
+.home-rec.is-idle .home-rec-dot,
+.home-rec.is-armed .home-rec-dot {
+  background: var(--warm);
+}
+.home-rec.is-error {
+  color: var(--slower);
+}
+.home-rec.is-error .home-rec-dot {
+  background: var(--slower);
+}
+
+/* ---- the three cards -------------------------------------------------------- */
+.home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  gap: 14px;
+  align-items: start;
+}
+.home-last {
+  grid-row: span 2;
+}
+.card.home-card {
+  padding: 16px 20px 18px;
+}
+.home-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 16px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.home-card-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+.home-when {
+  font-size: 13px;
+}
+.home-card-empty {
+  font-size: 13.5px;
+  line-height: 1.5;
+  max-width: 52ch;
+  text-wrap: pretty;
+}
+
+/* last session */
+.home-last-id {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 24px;
+  flex-wrap: wrap;
+}
+.home-last-what {
+  min-width: 0;
+}
+.home-last-track {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+.home-last-track .livetag {
+  margin-left: 0;
+}
+.home-page .home-last-car {
+  margin-top: 5px;
+  font-size: 13.5px;
+}
+.home-result {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 4px 12px 5px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  color: var(--text-dim);
+  font-size: 13.5px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.home-result:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.home-result-pos {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text);
+}
+.home-result.is-podium .home-result-pos {
+  color: var(--accent);
+}
+.home-result.is-out .home-result-pos {
+  color: var(--slower);
+  font-size: 18px;
+}
+.home-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 16px 0 8px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.home-stat {
+  padding: 11px 16px 10px 0;
+  min-width: 0;
+}
+.home-stat + .home-stat {
+  padding-left: 16px;
+  border-left: 1px solid var(--line);
+}
+.home-stat-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.home-stat-value {
+  margin: 4px 0 0;
+  font-size: 27px;
+  font-weight: 600;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.home-stat-value.is-best {
+  color: var(--best);
+}
+.home-stat-unit {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+.home-stat-hint {
+  margin: 3px 0 0;
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.laptimes.is-compact {
+  pointer-events: none;
+}
+.home-last-nolaps {
+  padding: 18px 0 10px;
+  font-size: 13.5px;
+}
+.home-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+/* empty state: the three things that will fill this card */
+.home-empty-lead {
+  font-size: 19px;
+  font-weight: 500;
+  line-height: 1.35;
+  max-width: 34ch;
+  text-wrap: balance;
+}
+.home-steps {
+  list-style: none;
+  counter-reset: step;
+  margin: 22px 0 6px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+}
+.home-step {
+  counter-increment: step;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 18px 4px 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.home-step + .home-step {
+  padding-left: 18px;
+  border-left: 1px solid var(--line);
+}
+.home-step::before {
+  content: counter(step);
+  font-family: var(--font-num);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.home-step-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+.home-step-hint {
+  text-wrap: pretty;
+}
+
+/* last races */
+.home-races {
+  list-style: none;
+  margin: -4px -8px -6px;
+  padding: 0;
+}
+.home-race + .home-race {
+  border-top: 1px solid var(--line);
+}
+.home-race-link {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 8px;
+  border-radius: 4px;
+  color: inherit;
+  text-decoration: none;
+}
+.home-race-link:hover {
+  background: var(--panel-raised);
+}
+.home-race-pos {
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+.home-race-of {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-faint);
+}
+.home-race-pos.is-podium {
+  color: var(--accent);
+}
+.home-race-pos.is-out {
+  color: var(--slower);
+  font-size: 15px;
+}
+.home-race-main,
+.home-race-side {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.home-race-track {
+  font-size: 14px;
+  font-weight: 500;
+}
+.home-race-track,
+.home-race-car {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-race-car,
+.home-race-date {
+  font-size: 12px;
+}
+.home-race-side {
+  align-items: flex-end;
+}
+.home-race-best {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--best);
+}
+
+/* phone */
+.home-phone-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.home-phone-lead {
+  max-width: 56ch;
+  text-wrap: pretty;
+}
+.home-phone-on {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+}
+.qr {
+  width: 132px;
+  height: 132px;
+  flex: none;
+  display: block;
+  border-radius: 4px;
+}
+.home-phone-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.home-url {
+  font-size: clamp(20px, 1.75vw, 26px);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0.005em;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.home-url-scheme {
+  font-weight: 500;
+  color: var(--text-faint);
+}
+.home-phone-others {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  font-size: 12.5px;
+}
+.home-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 180, 84, 0.4);
+  border-radius: 4px;
+  background: var(--accent-soft);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.home-notice-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.home-restart {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.home-restart-how {
+  font-weight: 500;
+}
+
+/* foot */
+.home-foot {
+  gap: 6px 18px;
+  padding-top: 10px;
+}
+.home-foot-data {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+.home-foot-guide {
+  margin-left: auto;
+}
+
+/* ---- quick-start guide -------------------------------------------------------- */
+dialog.sheet.guide {
+  width: min(540px, calc(100vw - 24px));
+}
+.guide-intro {
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.guide-steps {
+  list-style: none;
+  counter-reset: gstep;
+  margin: 14px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.guide-step {
+  counter-increment: gstep;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 0 9px 34px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.guide-step::before {
+  content: counter(gstep);
+  position: absolute;
+  left: 2px;
+  top: 8px;
+  font-family: var(--font-num);
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.guide-step-title,
+.guide-trouble-title {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.guide-trouble {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 4px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.guide .guide-options {
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+/* ---- settings dialog: sections added with the desktop app --------------------- */
+.sheet-section {
+  margin: 4px 0 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.field.is-switches {
+  gap: 10px;
+}
+.switch.is-wrap {
+  align-items: flex-start;
+  line-height: 1.35;
+}
+.switch-toggle:disabled {
+  opacity: 0.5;
+}
+.field .hint.is-error {
+  color: var(--slower);
+}
+.sheet-app-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ---- narrower screens ----------------------------------------------------------- */
+@media (max-width: 1100px) {
+  .home-grid {
+    grid-template-columns: 1fr;
+  }
+  .home-last {
+    grid-row: auto;
+  }
+}
+@media (max-width: 699px) {
+  /* the dashboard's phone rule shrinks every .btn to an icon square: not inside a dialog */
+  dialog.sheet .btn {
+    width: auto;
+    padding: 0 12px;
+  }
+  .home-status {
+    gap: 14px;
+    padding: 14px 14px 16px 17px;
+  }
+  .home-rec {
+    margin: 2px -14px -16px -17px;
+    padding: 10px 14px 10px 17px;
+  }
+  .chain {
+    justify-content: space-between;
+    font-size: 11px;
+  }
+  .chain-step {
+    gap: 5px;
+  }
+  .chain-step + .chain-step::before {
+    display: none;
+  }
+  .chain-light {
+    width: 9px;
+    height: 9px;
+  }
+  .home-btn {
+    height: 40px;
+  }
+  .home-status-actions,
+  .home-status-actions .home-btn,
+  .home-phone-enable {
+    width: 100%;
+  }
+  /* « En piste » on one line, the circuit and session under it */
+  .home-headline-detail {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.78em;
+  }
+  .home-headline-dash {
+    display: none;
+  }
+  .home-stat-hint {
+    white-space: normal;
+  }
+  .home-facts {
+    gap: 8px 22px;
+  }
+  .card.home-card {
+    padding: 14px 14px 16px;
+  }
+  .home-last-track {
+    font-size: 21px;
+  }
+  .home-stat {
+    padding-right: 10px;
+  }
+  .home-stat + .home-stat {
+    padding-left: 10px;
+  }
+  .home-stat-value {
+    font-size: 22px;
+  }
+  .home-actions .home-btn {
+    flex: 1 1 0;
+  }
+  .home-steps {
+    grid-template-columns: 1fr;
+  }
+  .home-step {
+    position: relative;
+    padding: 12px 0 12px 34px;
+  }
+  .home-step + .home-step {
+    padding-left: 34px;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+  .home-step::before {
+    position: absolute;
+    left: 2px;
+    top: 11px;
+  }
+  .home-foot-guide {
+    margin-left: 0;
+  }
+}
+@media (max-width: 420px) {
+  .home-phone-on {
+    flex-direction: column;
+    align-items: center;
+    align-self: stretch;
+  }
+  .home-phone-on .qr {
+    width: 168px;
+    height: 168px;
+  }
+  .home-phone-text {
+    align-items: center;
+    text-align: center;
+  }
+  .home-race-link {
+    grid-template-columns: 54px minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+}

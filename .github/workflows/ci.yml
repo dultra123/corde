@@ -1,0 +1,404 @@
+# CI Corde — Linux + Windows.
+#
+# web        : types TS générés depuis le protocole Rust, typecheck, tests, build du dashboard (artefact ui-dist)
+# rust       : fmt, clippy (toléré), tests, build release des binaires (corde-server, lmu-probe, corde-sim, corde-store),
+#              artefacts corde-linux / corde-windows (binaires + ui/ + docs/TESTING-ON-PC.md)
+# desktop    : application de bureau (coquille Tauri 2, apps/desktop — workspace Cargo à part) sur windows-latest :
+#              installeur NSIS, artefact corde-setup (Corde_<version>_x64-setup.exe). C'est le seul endroit où la
+#              coquille est compilée.
+# continuous : sur push main seulement, pré-release glissante étiquetée `continuous` (« Corde — dernière version ») :
+#              installeur + zip portable, anciens fichiers remplacés
+# release    : sur tag v*, zip Windows + tar.gz Linux + installeur attachés à une GitHub Release
+
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+    # Une poussée qui ne touche que la documentation ne reconstruit rien (les minutes Windows
+    # comptent double sur un dépôt privé). `knowledge/` n'est PAS ignoré : ses YAML sont
+    # compilés dans corde-engineer.
+    paths-ignore: ["docs/**", "**/*.md"]
+  pull_request:
+    paths-ignore: ["docs/**", "**/*.md"]
+
+permissions:
+  contents: read
+
+concurrency:
+  # L'événement fait partie du groupe : pour une PR déjà fusionnée, github.ref vaut la branche de
+  # base (refs/heads/main), et son run « pull_request » annulait le run « push » de main — donc la
+  # publication de la version continue.
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  web:
+    name: Web (protocole TS + dashboard)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # Les types de @corde/protocol sont générés par ts-rs et ignorés par git :
+      # il faut Rust ici aussi.
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: web
+
+      - name: Générer les types TypeScript (ts-rs)
+        run: cargo test -p corde-protocol
+
+      # Version de pnpm lue dans le champ `packageManager` de package.json (pnpm@10.x) :
+      # ne pas ajouter `version:` ici, l'action refuse les deux à la fois.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Installer les dépendances
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm install --frozen-lockfile
+          else
+            pnpm install
+          fi
+
+      - name: Typecheck
+        run: pnpm -r typecheck
+
+      - name: Tests
+        run: pnpm -r test
+
+      - name: Build
+        run: pnpm -r build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ui-dist
+          path: packages/ui/dist
+          if-no-files-found: error
+          retention-days: 14
+
+  rust:
+    name: Rust (${{ matrix.name }})
+    needs: web
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: linux
+            ext: ""
+          - os: windows-latest
+            name: windows
+            ext: ".exe"
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: rust-${{ matrix.name }}
+
+      - name: Format
+        run: cargo fmt --all --check
+
+      - name: Clippy (toléré pour l'instant)
+        continue-on-error: true
+        run: cargo clippy --workspace --all-targets
+
+      - name: Tests
+        run: cargo test --workspace
+
+      - name: Build release (corde-server, lmu-probe, corde-sim, corde-store)
+        run: cargo build --release -p corde-server -p corde-lmu -p corde-sim -p corde-store --bins
+
+      - name: Récupérer le dashboard construit
+        uses: actions/download-artifact@v4
+        with:
+          name: ui-dist
+          path: ui-dist
+
+      - name: Assembler l'archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf dist
+          mkdir -p dist/ui dist/docs
+          for bin in corde-server lmu-probe corde-sim corde-store; do
+            cp "target/release/${bin}${{ matrix.ext }}" dist/
+          done
+          cp -r ui-dist/. dist/ui/
+          cp docs/TESTING-ON-PC.md dist/docs/
+          cp README.md dist/
+          ls -R dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: corde-${{ matrix.name }}
+          path: dist
+          if-no-files-found: error
+          retention-days: 30
+
+  desktop:
+    name: Application de bureau (installeur Windows)
+    needs: web
+    runs-on: windows-latest
+    env:
+      # Version de la CLI Tauri (npm @tauri-apps/cli) : à faire suivre celle du crate `tauri`
+      # de apps/desktop/src-tauri/Cargo.lock.
+      TAURI_CLI_VERSION: "2.12.4"
+      # Signature de code OPTIONNELLE (Azure Artifact Signing, voir docs/adr/0007) : tant que ces
+      # secrets et variables n'existent pas dans le dépôt, les étapes de signature sont sautées et
+      # l'installeur est construit non signé.
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARTIFACT_SIGNING_ENDPOINT: ${{ vars.ARTIFACT_SIGNING_ENDPOINT }}
+      ARTIFACT_SIGNING_ACCOUNT: ${{ vars.ARTIFACT_SIGNING_ACCOUNT }}
+      ARTIFACT_SIGNING_PROFILE: ${{ vars.ARTIFACT_SIGNING_PROFILE }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      # Le crate de la coquille est un workspace à part : son propre dossier target.
+      # cache-on-failure : une erreur de compilation dans notre code ne fait pas perdre les
+      # dépendances déjà compilées (Tauri, arrow, parquet…).
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+          shared-key: desktop-windows
+          cache-on-failure: true
+
+      - uses: pnpm/action-setup@v4
+
+      # Pas de cache pnpm ici : ce job ne fait pas de `pnpm install` (seulement `pnpm dlx`),
+      # le dossier à mettre en cache n'existe donc pas et l'étape « Post » échouerait.
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      # L'UI web construite par le job `web` est embarquée comme ressource (bundle.resources → ui/).
+      - name: Récupérer le dashboard construit
+        uses: actions/download-artifact@v4
+        with:
+          name: ui-dist
+          path: packages/ui/dist
+
+      - name: Format (coquille)
+        run: cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml --check
+
+      - name: Préparer la signature de code (optionnelle, inactive sans secrets)
+        if: env.AZURE_CLIENT_ID != '' && env.ARTIFACT_SIGNING_ACCOUNT != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo install artifact-signing-cli --locked
+          # Surcouche de configuration Tauri : la commande signe Corde.exe, l'installeur et le
+          # désinstalleur (%1 = fichier à signer). Fichier ignoré par git.
+          cat > apps/desktop/tauri.sign.conf.json <<EOF
+          {
+            "bundle": {
+              "windows": {
+                "signCommand": "artifact-signing-cli -e ${ARTIFACT_SIGNING_ENDPOINT} -a ${ARTIFACT_SIGNING_ACCOUNT} -c ${ARTIFACT_SIGNING_PROFILE} -d Corde %1"
+              }
+            }
+          }
+          EOF
+          echo "TAURI_SIGN_ARGS=--config tauri.sign.conf.json" >> "$GITHUB_ENV"
+
+      - name: Construire l'installeur (Tauri → NSIS)
+        shell: bash
+        working-directory: apps/desktop
+        run: pnpm dlx "@tauri-apps/cli@${TAURI_CLI_VERSION}" build --ci ${TAURI_SIGN_ARGS:-}
+
+      - name: Contrôler l'installeur
+        shell: bash
+        run: |
+          set -euo pipefail
+          dir=apps/desktop/src-tauri/target/release/bundle/nsis
+          ls -l "$dir"
+          count=$(ls "$dir"/*-setup.exe | wc -l)
+          if [ "$count" -ne 1 ]; then
+            echo "::error::un seul installeur attendu dans $dir, trouvé : $count"
+            exit 1
+          fi
+          setup=$(ls "$dir"/*-setup.exe)
+          size=$(stat -c %s "$setup")
+          echo "Installeur : $(basename "$setup") — $size octets"
+          # Corde.exe embarque le serveur (arrow, parquet, sqlite) : un installeur de moins de
+          # 5 Mo serait forcément incomplet.
+          if [ "$size" -lt 5000000 ]; then
+            echo "::error::installeur anormalement petit ($size octets)"
+            exit 1
+          fi
+          {
+            echo "### Installeur Windows"
+            echo ""
+            echo "\`$(basename "$setup")\` — $((size / 1024 / 1024)) Mo ($size octets)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Contrôler la signature (si signé)
+        if: env.AZURE_CLIENT_ID != '' && env.ARTIFACT_SIGNING_ACCOUNT != ''
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem apps/desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
+          $signature = Get-AuthenticodeSignature $setup.FullName
+          $signature | Format-List Status, StatusMessage, SignerCertificate
+          if ($signature.Status -ne 'Valid') { throw "signature invalide : $($signature.Status)" }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: corde-setup
+          path: apps/desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
+          if-no-files-found: error
+          retention-days: 30
+
+  continuous:
+    name: Version continue (pré-release « continuous »)
+    # Uniquement quand `main` avance : jamais sur une branche, une PR ou un tag.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [rust, desktop]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: continuous
+    steps:
+      # Pour la liste des derniers commits dans les notes.
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 20
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: corde-setup
+          path: release
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: corde-windows
+          path: corde-windows
+
+      - name: Préparer les fichiers et les notes
+        run: |
+          set -euo pipefail
+          (cd corde-windows && zip -qr ../release/corde-portable-windows.zip .)
+          ls -l release
+          setup=$(basename release/*-setup.exe)
+          short=${GITHUB_SHA::7}
+          when=$(TZ=Europe/Paris date '+%d/%m/%Y à %H:%M')
+          docs="https://github.com/${GITHUB_REPOSITORY}/blob/main/docs"
+          {
+            echo "Version de développement de Corde, reconstruite automatiquement à chaque modification."
+            echo "Celle-ci date du **${when}** (commit \`${short}\`)."
+            echo ""
+            echo "## Installer ou mettre à jour"
+            echo ""
+            echo "1. Télécharge **\`${setup}\`** tout en bas de cette page (section *Assets*)."
+            echo "2. Lance-le. Windows affiche « Windows a protégé votre ordinateur » : clique sur **Informations complémentaires**, puis sur **Exécuter quand même** (explication ci-dessous)."
+            echo "3. Suis l'installeur — il ne demande pas de droits administrateur — puis lance **Corde** depuis le menu Démarrer."
+            echo ""
+            echo "Pour mettre à jour, fais exactement la même chose : le nouvel installeur remplace l'ancienne version. Tes sessions, tes dispositions et tes réglages (\`%LOCALAPPDATA%\\Corde\`) sont conservés. Quitte Corde avant (clic droit sur l'icône près de l'horloge → Quitter)."
+            echo ""
+            echo "Tu avais l'ancienne version (avant 0.3.0, logo « M ») ? Quitte-la, installe Corde : au premier lancement, Corde reprend toutes tes données. Ensuite, désinstalle l'ancienne version. Détails : [passer de l'ancienne version à Corde](${docs}/TESTING-ON-PC.md#passer-de-lancienne-version-avant-030-logo--m--à-corde)."
+            echo ""
+            echo "Guide complet : [Installer Corde sur ton PC](${docs}/TESTING-ON-PC.md)."
+            echo ""
+            echo "## Ce qui change"
+            echo ""
+            git log -15 --pretty='- %s (`%h`)'
+            echo ""
+            echo "## Fichiers"
+            echo ""
+            echo "| Fichier | À quoi il sert |"
+            echo "|---|---|"
+            echo "| \`${setup}\` | **L'application Corde** : une icône, une fenêtre, pas de console. C'est celui qu'il te faut. |"
+            echo "| \`corde-portable-windows.zip\` | Mode console (\`corde-server.exe\`, \`lmu-probe.exe\`…) : pour le diagnostic, ou sans installation. |"
+            echo ""
+            echo "## Pourquoi Windows affiche un avertissement"
+            echo ""
+            echo "Corde n'est pas encore **signé numériquement** : Windows SmartScreen ne connaît donc pas son éditeur et affiche « Windows a protégé votre ordinateur » au premier lancement d'un fichier téléchargé. Ce n'est pas une détection de virus. L'avertissement revient à chaque nouvel installeur téléchargé tant que Corde n'est pas signé ; une fois installé, Corde se lance normalement. Les options pour le faire disparaître sont décrites dans [l'ADR 0007](${docs}/adr/0007-windows-smartscreen-signature.md)."
+          } > notes.md
+          cat notes.md
+
+      # Pré-release « glissante » : on supprime l'ancienne (fichiers et étiquette compris) et on la
+      # recrée sur le commit courant — la page porte ainsi la date du dernier build et ne garde
+      # jamais d'ancien installeur.
+      - name: Publier la pré-release « continuous »
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release delete "$TAG" --cleanup-tag --yes
+          fi
+          for attempt in 1 2 3; do
+            if gh release create "$TAG" release/* \
+              --target "$GITHUB_SHA" \
+              --prerelease \
+              --title "Corde — dernière version" \
+              --notes-file notes.md; then
+              exit 0
+            fi
+            echo "création refusée (tentative $attempt), nouvel essai dans 10 s"
+            sleep 10
+          done
+          exit 1
+
+  release:
+    name: Release GitHub
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [rust, desktop]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: corde-windows
+          path: corde-windows
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: corde-linux
+          path: corde-linux
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: corde-setup
+          path: corde-setup
+
+      - name: Créer les archives
+        run: |
+          set -euo pipefail
+          VERSION="${{ github.ref_name }}"
+          (cd corde-windows && zip -r "../corde-${VERSION}-windows.zip" \
+            corde-server.exe lmu-probe.exe corde-sim.exe corde-store.exe ui docs/TESTING-ON-PC.md README.md)
+          tar -C corde-linux -czf "corde-${VERSION}-linux.tar.gz" .
+          ls -l corde-*.zip corde-*.tar.gz corde-setup
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            corde-setup/*-setup.exe
+            corde-*-windows.zip
+            corde-*-linux.tar.gz
+          generate_release_notes: true
+          fail_on_unmatched_files: true

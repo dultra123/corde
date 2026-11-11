@@ -1,0 +1,216 @@
+/* ------------------------------------------------------------ profile page */
+.profile-page,
+.result-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.profile-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 14px;
+  align-items: start;
+}
+.track-venue {
+  font-size: 12px;
+}
+.is-podium {
+  color: var(--accent);
+  font-weight: 600;
+}
+.tbl .is-dnf {
+  color: var(--slower);
+}
+.tracks-tbl tbody tr.is-selected td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.chart-select {
+  height: 26px;
+  width: auto;
+  min-width: 180px;
+  max-width: 320px;
+  font-size: 12.5px;
+  padding: 0 26px 0 8px;
+}
+
+/* best-lap progression chart */
+.bestlap-hover {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 12.5px;
+  padding: 6px 4px 0;
+  min-height: 22px;
+}
+.lg-dot.is-race {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* import footer */
+.import-foot {
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+.import-foot-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  flex: 1 1 320px;
+  min-width: 0;
+}
+.import-foot-main .page-foot-path {
+  max-width: min(100%, 520px);
+}
+.import-foot-actions {
+  margin-left: auto;
+}
+.import-foot-error {
+  flex-basis: 100%;
+  margin: 0;
+}
+.import-skipped {
+  flex-basis: 100%;
+  font-size: 12px;
+}
+.import-skipped summary {
+  cursor: pointer;
+  color: var(--text-dim);
+}
+.import-skipped ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  line-height: 1.5;
+}
+.import-hint {
+  display: block;
+  text-align: left;
+  font:
+    12px / 1.5 ui-monospace,
+    "Cascadia Mono",
+    Consolas,
+    monospace;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  color: var(--text-dim);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-width: 720px;
+}
+
+/* ------------------------------------------------------------ result page */
+.classtag {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 7px;
+  border-radius: 9px;
+  border: 1px solid currentColor;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.driver-team {
+  font-size: 12px;
+}
+.tbl small {
+  font-size: 11px;
+}
+.pill.is-faint {
+  background: var(--panel-raised);
+  color: var(--text-dim);
+  border: 1px solid var(--line-strong);
+}
+.tbl tbody tr.is-me td {
+  background: var(--accent-soft);
+}
+.tbl tbody tr.is-me td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.result-file {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 320px;
+}
+.link {
+  color: var(--accent);
+  text-decoration: none;
+}
+.link:hover {
+  text-decoration: underline;
+}
+
+/* incidents list */
+.events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.event {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 6px 2px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+.event:last-child {
+  border-bottom: 0;
+}
+.event-time {
+  min-width: 48px;
+  text-align: right;
+}
+.event-lap {
+  min-width: 56px;
+  font-size: 12px;
+}
+.event.is-contact .event-text {
+  color: var(--warm);
+}
+.event.is-penalty .event-text {
+  color: var(--slower);
+}
+
+/* ------------------------------------------------------------ mobile */
+@media (max-width: 1100px) {
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 420px) {
+  .profile-page,
+  .result-page {
+    gap: 10px;
+  }
+  .chart-select {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .card-head .seg {
+    flex-wrap: wrap;
+  }
+  .import-foot-actions {
+    margin-left: 0;
+  }
+  .result-file {
+    max-width: 220px;
+  }
+  .event {
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+  .event-lap {
+    min-width: 0;
+  }
+  .driver-team {
+    display: none;
+  }
+}

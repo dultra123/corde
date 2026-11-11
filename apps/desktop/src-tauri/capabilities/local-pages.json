@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "local-pages",
+  "description": "Pages locales de la coquille (apps/desktop/dist : démarrage, erreur). Elles lisent l'état du démarrage et peuvent relancer l'application ; rien d'autre.",
+  "windows": ["main"],
+  "local": true,
+  "permissions": ["allow-boot-status", "allow-restart-app", "allow-app-version"]
+}

@@ -1,0 +1,55 @@
+/* Design tokens. Canvas widgets duplicate the colours in src/lib/color.ts — keep both in sync. */
+:root {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --bg: #0b0e12;
+  --panel: #131920;
+  --panel-raised: #1a212b;
+  --line: #242c36;
+  --line-strong: #344050;
+
+  /* Text */
+  --text: #e9edf2;
+  --text-dim: #93a0ae;
+  --text-faint: #5d6977;
+
+  /* Accent: "me", interactive, focus */
+  --accent: #ffb454;
+  --accent-soft: rgba(255, 180, 84, 0.16);
+
+  /* Semantic */
+  --cold: #4ea1e6;
+  --optimal: #37d08a;
+  --warm: #f2b63c;
+  --hot: #f0503c;
+  --faster: #28d17c;
+  --slower: #ff5a5a;
+  --best: #b982ff;
+  --neutral: #93a0ae;
+
+  /* Classes */
+  --class-hypercar: #e23b3f;
+  --class-lmp2: #3d7fe8;
+  --class-lmp3: #c35ad6;
+  --class-gte: #2bb673;
+  --class-gt3: #f29b1d;
+  --class-pace: #9aa5b1;
+  --class-unknown: #6f7b88;
+
+  /* Type */
+  --font-ui: "Barlow", system-ui, sans-serif;
+  --font-num: "Barlow Semi Condensed", "Barlow", system-ui, sans-serif;
+
+  /* Shape */
+  --radius: 6px;
+  --radius-sm: 3px;
+  --gutter: 6px;
+  --topbar-h: 38px;
+
+  /* Safe areas (notch) */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}

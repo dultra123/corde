@@ -1,0 +1,971 @@
+# knowledge/diagnostics.yaml — catalogue des diagnostics calculables par Corde à partir de la
+# télémétrie normalisée (crates/corde-protocol : TelemetryFrame, PlayerTelemetry, Wheel, LapRecord).
+#
+# Source : docs/research/02-ingenieur-de-course.md, section B (B.1 prétraitement, B.2–B.9 diagnostics),
+# complétée par les déclencheurs des règles de la section C (D-STR-01, D-STR-02, D-WET-01, D-BAL-02…05).
+# Schéma décrit dans knowledge/README.md.
+#
+# Conventions :
+#   * `inputs` nomme les champs RÉELS du protocole, chemin depuis TelemetryFrame
+#     (ex. `player.wheels[i].temp_c[0..2]`, `player.motion.yaw_rate_dps`, `session.weather.rain`).
+#     Roues : i = 0 FL, 1 FR, 2 RL, 3 RR. `temp_c[3]` = gauche / centre / droite de la bande (convention
+#     rFactor), PAS intérieur/extérieur : intérieur = index 2 pour les roues gauches (FL, RL), index 0
+#     pour les roues droites (FR, RR). Cette orientation est À CONFIRMER sur capture (brief 02, F.2).
+#   * `inputs_external` : données hors mémoire partagée (API REST LMU, DuckDB natif, fichiers .svm).
+#   * `derived_missing` : grandeurs utiles qui ne sont PAS dans le protocole v1 et doivent être dérivées
+#     (ou proposées en amendement du protocole).
+#   * `confidence` : `method` (la méthode est-elle établie ?) et `thresholds` (les seuils sont-ils fiables ?),
+#     valeurs high / medium / low reprises du brief (C=H/M/L). Les seuils sont indicatifs : à calibrer
+#     par classe et par circuit (voir `calibration`).
+#   * `corde_phase` : phase de la feuille de route (docs/ARCHITECTURE.md §6) où le diagnostic est prévu.
+#   * `symptoms` : symptômes de knowledge/setup-rules.yaml que le diagnostic peut déclencher.
+
+schema_version: 1
+source: "docs/research/02-ingenieur-de-course.md"
+
+# ---------------------------------------------------------------------------------------------------
+# Prétraitement commun (B.1) — préalable à tout diagnostic d'analyse.
+# ---------------------------------------------------------------------------------------------------
+preprocessing:
+  segmentation_laps:
+    description: "Découper par tour, rejeter in-lap / out-lap, tours invalides, tours sous drapeau jaune, tours hors piste."
+    inputs:
+      - player.lap.lap_number
+      - player.lap.lap_invalidated
+      - player.lap.in_pit_lane
+      - session.yellow_flag
+      - session.phase
+      - player.wheels[i].surface
+    rule: "Tour « propre » si valid, pas in/out-lap, pas de drapeau jaune, et surface ∉ {dry, wet, rumble} pendant moins de 2 % du temps du tour."
+    confidence: {method: high}
+  segmentation_corners:
+    description: "Virage = segment où |g_lat| > 0,25 g (prototypes : 0,35 g) pendant > 0,4 s ; fusion si écart < 0,3 s ; apex = minimum de vitesse."
+    inputs:
+      - player.motion.g_lat
+      - player.motion.speed_kmh
+      - player.lap.lap_dist_m
+    corner_speed_classes: "lent : V_apex < 110 km/h ; moyen : 110–180 ; rapide : > 180 (Hypercar / LMP2 : décaler de +20 km/h)."
+    confidence: {method: medium, thresholds: medium}
+    calibration: "Seuils à calibrer par classe."
+  phases:
+    description: "Phases par virage."
+    inputs:
+      - player.inputs.brake
+      - player.inputs.throttle
+      - player.motion.g_lat
+      - player.inputs.steering_angle_deg
+    entry: "du début de freinage (brake > 0,05) jusqu'à brake < 0,05 ou apex, avec braquage croissant"
+    mid: "autour de l'apex : throttle < 0,2, brake < 0,05, |g_lat| ≥ 90 % de son maximum"
+    exit: "de la première remontée de gaz (throttle > 0,2) jusqu'à |g_lat| < 0,25 g ou volant < 20 % de son max"
+    confidence: {method: medium}
+  filtering:
+    description: "Passe-bas 5–10 Hz pour vitesses et accélérations, 2–3 Hz pour les températures ; dérivée centrale pour les vitesses d'amortisseur."
+    confidence: {method: high}
+  frame_signs:
+    description: "Vérifier les signes du repère véhicule à la première capture (en ligne droite, −local_vel[2] > 0) ; stocker une table de signes par version du jeu."
+    inputs: [player.motion.local_vel, player.motion.local_accel, player.motion.local_rot]
+    confidence: {method: high}
+    note: "Le protocole expose déjà g_lat / g_long / yaw_rate_dps convertis par l'adaptateur ; cette vérification appartient à corde-lmu."
+
+# ---------------------------------------------------------------------------------------------------
+# Diagnostics
+# ---------------------------------------------------------------------------------------------------
+diagnostics:
+
+  # ----- Pneus (B.2) ---------------------------------------------------------------------------------
+  - id: D-TYR-01
+    name_fr: "Répartition intérieur / milieu / extérieur → carrossage"
+    category: tyres
+    corde_phase: 2
+    inputs:
+      - player.wheels[i].temp_c[0..2]
+      - player.wheels[i].temp_inner_c[0..2]
+      - player.motion.g_lat
+    method: "Sur les phases « mid » des virages où la roue est extérieure, moyenner T_in, T_mid, T_out (surface ou couche interne) ; ΔIO = T_in − T_out."
+    thresholds:
+      target: "ΔIO ∈ [+5, +12] °C (intérieur légèrement plus chaud)"
+      too_much_camber: "ΔIO > +15 °C"
+      not_enough_camber: "ΔIO < +2 °C ou négatif"
+    outputs: [delta_io_c_per_wheel]
+    symptoms: [TYR_HOT_INNER, TYR_HOT_OUTER]
+    confidence: {method: medium, thresholds: medium}
+    calibration: "Orientation des index temp_c[0..2] par côté à vérifier sur capture."
+    sources:
+      - "https://www.sau.com.au/forums/topic/302303-car-set-up-cause-and-effect-by-carroll-smith"
+      - "https://www.overtake.gg/threads/optimal-camber-my-thought-process-on-tyre-workloads.195866/"
+
+  - id: D-TYR-02
+    name_fr: "Milieu vs bords de bande → pression"
+    category: tyres
+    corde_phase: 2
+    inputs:
+      - player.wheels[i].temp_c[0..2]
+    method: "ΔM = T_mid − (T_in + T_out) / 2 sur tour complet."
+    thresholds:
+      over_inflated: "ΔM > +3 °C"
+      under_inflated: "ΔM < −3 °C"
+    outputs: [delta_mid_c_per_wheel]
+    symptoms: [TYR_HOT_MIDDLE, TYR_COLD_MIDDLE]
+    confidence: {method: medium, thresholds: medium}
+    calibration: "Effet faible dans le modèle rF2 : pondérer avec D-TYR-04."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/understanding-tire-pressures-in-iracing/"
+
+  - id: D-TYR-03
+    name_fr: "Niveau thermique de carcasse vs fenêtre optimale"
+    category: tyres
+    corde_phase: 1
+    inputs:
+      - player.wheels[i].carcass_c
+      - player.wheels[i].optimal_temp_c
+      - player.wheels[i].temp_c[0..2]
+    inputs_external:
+      - "REST : température optimale par composé (repli si optimal_temp_c est None)"
+    method: "T_core = carcass_c moyenné sur les secteurs roulants ; comparer à T_opt ± tolérance."
+    thresholds:
+      cold: "T_core < T_opt − 8 °C"
+      hot: "T_core > T_opt + 8 °C"
+      overheat: "surface > 115 °C pendant > 20 % du tour"
+    outputs: [core_temp_c_per_wheel, window_state_per_wheel]
+    symptoms: [TYR_COLD, TYR_HOT_FRONT, TYR_HOT_REAR]
+    confidence: {method: medium, thresholds: medium}
+    note: "Le grip rF2/LMU dépend surtout de la température de carcasse ; les surfaces montent à plusieurs centaines de degrés lors d'un blocage et redescendent en un tour : les utiliser pour la répartition, pas pour le niveau absolu. Utilisable en live (widget pneus) dès la phase 1."
+    sources:
+      - "https://overtake.gg/threads/not-a-popular-question-but-needs-answering-none-the-less.190351"
+      - "https://github.com/Keenny38/ModernTinyPedals/wiki/Game-Setup"
+
+  - id: D-TYR-04
+    name_fr: "Pression à chaud cible et dérive"
+    category: tyres
+    corde_phase: 2
+    inputs:
+      - player.wheels[i].pressure_kpa
+      - player.lap.lap_number
+    inputs_external:
+      - "Pression à froid réglée : .svm PressureSetting ou REST garage"
+    method: "p_hot(t) par roue, dérive dp/dt sur le relais ; comparer p_hot_mean AV/AR et G/D ; p_cold_new = p_cold × (p_target / p_hot_mean). Loi des gaz : p_chaud ≈ p_froid × (T_chaud + 273,15) / (T_froid + 273,15) (pressions absolues)."
+    thresholds:
+      lr_asymmetry: "écart G/D > 4 kPa à pression froide identique ⇒ asymétrie de charge (circuit tournant d'un côté) : tolérer"
+    outputs: [hot_pressure_kpa_per_wheel, pressure_drift_kpa_per_lap]
+    symptoms: []
+    confidence: {method: medium, thresholds: medium}
+    calibration: "Fidélité de la loi des gaz dans le modèle pneu LMU 1.4 à vérifier (brief 02, F.8)."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/understanding-tire-pressures-in-iracing/"
+
+  - id: D-TYR-05
+    name_fr: "Gradient thermique avant / arrière"
+    category: tyres
+    corde_phase: 2
+    inputs:
+      - player.wheels[i].carcass_c
+    method: "T_front − T_rear (moyennes de carcasse des deux essieux)."
+    thresholds:
+      front_overworked: "> +8 °C (sous-virage, trop d'appui arrière ou pressions avant basses)"
+      rear_overworked: "< −8 °C (survirage, patinage)"
+    outputs: [front_rear_temp_gradient_c]
+    symptoms: [TYR_HOT_FRONT, TYR_HOT_REAR, US_MID_SLOW]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  - id: D-TYR-06
+    name_fr: "Dégradation par relais"
+    category: tyres
+    corde_phase: 2
+    inputs:
+      - LapRecord.lap_time_s
+      - LapRecord.valid
+      - LapRecord.fuel_used_l
+      - LapRecord.wear_remaining_end[0..3]
+      - player.energy.fuel_l
+    method: "Régression laptime_corr = f(lap) après correction carburant laptime_corr = laptime − k_fuel × fuel_L (k ≈ 0,03 s/L, à calibrer par classe) ; pente en s/tour ; Δwear/lap par roue."
+    thresholds:
+      high_degradation_gt3: "pente > 0,08 s/tour"
+      limiting_tyre: "roue dont l'usure est > 1,3 × la moyenne des trois autres"
+    outputs: [degradation_s_per_lap, wear_per_lap_per_wheel, limiting_wheel]
+    symptoms: [TYR_WEAR_FAST]
+    confidence: {method: medium, thresholds: medium}
+    calibration: "k_fuel par classe ; wear_remaining n'est pas linéaire avec la perte de grip."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-complete-guide-to-the-lmgt3-cars-in-le-mans-ultimate/"
+
+  - id: D-TYR-07
+    name_fr: "Surchauffe par glissement"
+    category: tyres
+    corde_phase: 2
+    inputs:
+      - player.wheels[i].temp_c[0..2]
+      - player.wheels[i].temp_inner_c[0..2]
+      - player.wheels[i].grip_fract
+      - player.wheels[i].slip_ratio
+    method: "Corrélation entre pics de surface (T_surface − T_inner) et grip_fract / slip_ratio, par phase."
+    thresholds:
+      rear_exit: "pics > +25 °C répétés sur l'essieu arrière en sortie ⇒ motricité"
+      front_entry: "pics sur l'essieu avant en entrée ⇒ blocages / sous-virage"
+    outputs: [surface_spike_events_per_wheel]
+    symptoms: [TYR_HOT_REAR, TYR_HOT_FRONT, TRC_WHEELSPIN_BOTH]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "https://coachdaveacademy.com/announcements/the-latest-le-mans-ultimate-hypercar-setup-guide"
+
+  - id: D-TYR-08
+    name_fr: "Pneus froids en début de relais"
+    category: tyres
+    corde_phase: 2
+    inputs:
+      - player.wheels[i].carcass_c
+      - player.wheels[i].optimal_temp_c
+      - player.lap.lap_number
+      - player.tyres.front_compound
+    method: "Nombre de tours avant T_core ≥ T_opt − 5 °C."
+    thresholds:
+      too_slow: "> 3 tours (attendu : Hypercar hard 3–5, soft 2–3)"
+    outputs: [laps_to_window]
+    symptoms: [TYR_COLD]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  # ----- Freins (B.3) --------------------------------------------------------------------------------
+  - id: D-BRK-01
+    name_fr: "Fenêtre thermique des freins → conduits"
+    category: brakes
+    corde_phase: 1
+    inputs:
+      - player.wheels[i].brake_temp_c
+      - player.inputs.brake
+    method: "Par roue : T° max par tour, T° min (fin de ligne droite), T° moyenne en phase de freinage."
+    thresholds:
+      gt3_steel: "optimum ≈ 350–650 °C avant ; froid < 250 ; chaud > 750"
+      prototype_carbon: "optimum ≈ 400–800 °C ; froid < 300 ; fade > 1000"
+    outputs: [brake_temp_window_per_wheel]
+    symptoms: [BRK_COLD, BRK_OVERHEAT]
+    confidence: {method: medium, thresholds: low}
+    calibration: "Depuis LMU 1.4 les plaquettes ont des courbes friction/température réalistes : calibrer sur la couleur du HUD du jeu. Utilisable en live (widget freins). Corde (S2, nov. 2026) juge le pic typique par tour (médiane des maxima de chaque tour) : froid sous le bas de l'optimum (GT3 350, proto 400 °C), chaud au-dessus de « chaud » / « fade » (GT3 750, proto 1000 °C). Vérifié sur 5 sessions GT3 réelles (pics typiques avant 665–805 °C, arrière 580–716 °C) : la borne haute 650 °C déclenchait sur 4 sessions sur 5 ; fenêtre carbone non vérifiée faute de session prototype (docs/ENGINEER.md § 3)."
+    sources:
+      - "https://traxion.gg/latest-le-mans-ultimate-update-to-improve-hypercar-cold-tyre-performance-patch-notes-released/"
+
+  - id: D-BRK-02
+    name_fr: "Freins froids en début de relais / de nuit"
+    category: brakes
+    corde_phase: 2
+    inputs:
+      - player.wheels[i].brake_temp_c
+      - session.weather.ambient_c
+      - session.weather.time_of_day_s
+    method: "T° au premier freinage de chaque tour, comparée au seuil froid de D-BRK-01."
+    thresholds:
+      cold: "sous le seuil froid de la classe ⇒ fermer les conduits d'un cran, avancer la répartition au 1er tour"
+    outputs: [first_braking_temp_c_per_lap]
+    symptoms: [BRK_COLD]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "https://coachdaveacademy.com/tutorials/lmu-bmw-m-hybrid-v8-guide-the-inside-line/"
+
+  - id: D-BRK-03
+    name_fr: "Blocage de roue"
+    category: brakes
+    corde_phase: 1
+    inputs:
+      - player.wheels[i].slip_ratio
+      - player.wheels[i].rotation_rads
+      - player.wheels[i].longitudinal_patch_vel
+      - player.wheels[i].longitudinal_ground_vel
+      - player.inputs.brake_raw
+      - player.motion.speed_kmh
+      - player.motion.g_lat
+    method: "κ_i = slip_ratio (négatif au freinage). Blocage si κ_i < −0,25 pendant > 80 ms avec brake_raw > 0,3 et V > 40 km/h ; blocage total si |rotation_rads| < 2 rad/s. Compter par roue et par phase (ligne droite / entrée en courbe)."
+    thresholds:
+      front_dominant: "blocages AV ≫ AR ⇒ répartition trop avant (ou migration trop forte)"
+      rear_dominant: "blocages AR ≫ AV ⇒ répartition trop arrière"
+      inner_front_only: "roue intérieure seule en entrée ⇒ trail braking appuyé, rebound AV trop fort ou trop de carrossage"
+    outputs: [lock_events_per_wheel_per_phase]
+    symptoms: [BRK_LOCK_FRONT, BRK_LOCK_REAR, BRK_LOCK_INNER_FRONT]
+    confidence: {method: high, thresholds: medium}
+    note: "Événement affichable en live (compteur de blocages) dès la phase 1."
+    sources:
+      - "https://traxion.gg/le-mans-ultimate-how-to-master-hypercar-braking/"
+
+  - id: D-BRK-04
+    name_fr: "Activité ABS (LMGT3)"
+    category: brakes
+    corde_phase: 1
+    inputs:
+      - player.inputs.brake_raw
+      - player.inputs.brake
+      - player.electronics.abs_active
+      - player.electronics.abs
+    method: "ABS_act = brake_raw − brake (pédale non filtrée − filtrée) ; % du temps de freinage avec ABS_act > 0,05 (ou abs_active vrai)."
+    thresholds:
+      too_active: "> 30 % du temps de freinage"
+    outputs: [abs_activity_pct]
+    symptoms: [ABS_TOO_ACTIVE]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "https://guide.lemansultimate.com/hc/en-gb/articles/13211078435983-ABS-Anti-Lock-Braking-System-for-LMGT3-Cars"
+
+  - id: D-BRK-05
+    name_fr: "Stabilité au freinage"
+    category: brakes
+    corde_phase: 2
+    inputs:
+      - player.motion.yaw_rate_dps
+      - player.inputs.steering_angle_deg
+      - player.motion.g_lat
+      - player.motion.g_long
+      - player.inputs.brake
+    method: "En freinage ligne droite (|g_lat| < 0,2 g) : écart-type de yaw_rate_dps et des corrections de volant ; en entrée : sur-rotation yaw_rate − yaw_rate_ackermann > 0."
+    thresholds:
+      unstable: "corrections de volant > 10° répétées en freinage droit"
+    outputs: [braking_yaw_std, steering_correction_count]
+    symptoms: [BRK_UNSTABLE_STRAIGHT]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "https://www.sau.com.au/forums/topic/302303-car-set-up-cause-and-effect-by-carroll-smith"
+
+  - id: D-BRK-06
+    name_fr: "Cohérence régénération / batterie (Hypercar)"
+    category: brakes
+    corde_phase: 2
+    inputs:
+      - player.energy.battery_soc
+      - player.energy.regen_kw
+      - player.energy.motor_state
+      - player.motion.g_long
+    method: "Marquer les freinages où battery_soc ≥ 0,98 ; comparer décélération max et blocages (D-BRK-03) à ceux où SOC < 0,9."
+    thresholds:
+      soc_full_effect: "perte de décélération ou blocages spécifiques à SOC plein ⇒ problème de motor map, pas de setup"
+    outputs: [soc_full_braking_events]
+    symptoms: [HYB_SOC_FULL]
+    confidence: {method: high, thresholds: high}
+    sources:
+      - "https://coachdaveacademy.com/tutorials/hypercar-electric-motor-maps-in-le-mans-ultimate-explained/"
+
+  # ----- Équilibre (B.4) ------------------------------------------------------------------------------
+  - id: D-BAL-01
+    name_fr: "Matrice d'équilibre sous-virage / survirage par phase et vitesse"
+    category: balance
+    corde_phase: 2
+    inputs:
+      - player.inputs.steering_angle_deg
+      - player.motion.yaw_rate_dps
+      - player.motion.speed_ms
+      - player.motion.g_lat
+      - player.wheels[i].slip_angle_deg
+      - player.wheels[i].lateral_patch_vel
+      - player.wheels[i].longitudinal_ground_vel
+      - player.wheels[i].load_n
+      - player.wheels[i].grip_fract
+      - player.inputs.steering_torque_nm
+    method: >-
+      Trois estimateurs indépendants fusionnés par vote pondéré, agrégés (médiane sur ≥ 3 tours propres)
+      par (virage, phase) :
+      (a) angle de sous-virage cinématique US = δ − L·ψ̇/V avec δ = angle volant / rapport de direction
+      (rapport estimé en régime établi sur virages lents à faible g), L = empattement (≈ 3,1 m Hypercar,
+      3,0 m LMP2, 2,6–2,8 m GT3), normalisé K = US / g_lat en °/g ;
+      (b) écart d'angles de dérive essieux Δα = |α_F| − |α_R| (α_i = slip_angle_deg, ou
+      atan2(lateral_patch_vel, |longitudinal_ground_vel|), pondération possible par load_n) ;
+      (c) saturation ΔG = moyenne(grip_fract FL, FR) − moyenne(grip_fract RL, RR), complété par une chute de
+      steering_torque_nm alors que le volant augmente (pic de pneumatic trail dépassé).
+      Sortie : balance[phase ∈ {entry, mid, exit}][speed ∈ {slow, medium, fast}] ∈ [−1, +1]
+      (+1 sous-virage fort, −1 survirage fort), consommée par les règles US-* / OS-*.
+    thresholds:
+      gradient_neutral: "|K| < 1 °/g"
+      gradient_understeer: "K > 3 °/g"
+      gradient_oversteer: "K < −1 °/g"
+      slip_angle_delta: "Δα > +1° sous-virage, < −1° survirage (0,5° en virage rapide)"
+      grip_delta: "ΔG > +0,15 sous-virage, < −0,15 survirage"
+      rule_trigger: "les règles se déclenchent à |balance| > 0,3"
+    outputs: [balance_matrix, estimator_agreement]
+    symptoms: [US_ENTRY_SLOW, US_ENTRY_FAST, US_MID_SLOW, US_MID_FAST, US_EXIT_SLOW, US_EXIT_FAST, OS_ENTRY_SLOW, OS_ENTRY_FAST, OS_MID_SLOW, OS_MID_FAST, OS_EXIT_SLOW, OS_EXIT_FAST]
+    confidence: {method: high, thresholds: medium}
+    calibration: "Empattement par voiture et rapport de direction à estimer ; seuils par classe."
+    sources:
+      - "Milliken & Milliken, Race Car Vehicle Dynamics, chap. 5 (gradient de sous-virage)"
+      - "Carroll Smith, Tune to Win (Understeer and oversteer)"
+      - "https://github.com/coasting-nc/LMUFFB"
+
+  - id: D-BAL-02
+    name_fr: "Signature « snap oversteer » (décrochage brutal)"
+    category: balance
+    corde_phase: 2
+    inputs:
+      - player.motion.yaw_rate_dps
+      - player.inputs.steering_angle_deg
+    derived_missing:
+      - "accélération de lacet (dérivée de yaw_rate_dps ; le champ mLocalRotAccel du jeu n'est pas dans le protocole v1)"
+    method: "|ψ̈| > seuil (ex. 1,5 rad/s²) avec correction de volant > 40° en < 200 ms."
+    thresholds:
+      snap: "ψ̈ > 1,5 rad/s² et correction > 40° en < 200 ms"
+    outputs: [snap_events]
+    symptoms: [OS_ENTRY_FAST, OS_MID_FAST, PLT_NERVOUS, PLT_KERB_UNSETTLED]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  - id: D-BAL-03
+    name_fr: "Survirage à la remise des gaz (puissance vs appui)"
+    category: balance
+    corde_phase: 2
+    inputs:
+      - player.inputs.throttle
+      - player.wheels[2].slip_ratio
+      - player.wheels[3].slip_ratio
+      - player.wheels[2].slip_angle_deg
+      - player.wheels[3].slip_angle_deg
+      - player.motion.yaw_rate_dps
+    method: "US < 0 (D-BAL-01) dans les 0,5 s suivant throttle > 0,3 ; si κ_RL ≠ κ_RR ⇒ roue intérieure qui patine (différentiel / power) ; si les deux ⇒ TC / rigidité AR / appui. Si κ_R faible mais α_R élevé ⇒ manque de grip latéral AR (aéro, barre, ressorts, pressions)."
+    thresholds:
+      power_oversteer: "κ_R > 0,1 pendant l'excès de lacet"
+    outputs: [power_oversteer_events, oversteer_kind]
+    symptoms: [OS_EXIT_SLOW, OS_EXIT_FAST, TRC_WHEELSPIN_INNER, TRC_WHEELSPIN_BOTH]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  - id: D-BAL-04
+    name_fr: "Survirage au lâcher de frein / en entrée"
+    category: balance
+    corde_phase: 2
+    inputs:
+      - player.inputs.brake
+      - player.motion.g_long
+      - player.motion.yaw_rate_dps
+      - player.inputs.steering_angle_deg
+    method: "US < 0 (D-BAL-01) pendant que brake décroît et que g_long reste négatif ⇒ transfert de charge, coast du différentiel, rebound AV trop fort / bump AR, migration de frein."
+    thresholds: {}
+    outputs: [lift_off_oversteer_events]
+    symptoms: [OS_ENTRY_SLOW, OS_ENTRY_FAST]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "https://coachdaveacademy.com/tutorials/lmu-porsche-963-guide-the-inside-line/"
+
+  - id: D-BAL-05
+    name_fr: "Sous-virage de sortie lié au déploiement avant (LMH)"
+    category: balance
+    corde_phase: 2
+    inputs:
+      - player.vehicle_class
+      - player.vehicle_model
+      - player.motion.speed_kmh
+      - player.energy.motor_torque_nm
+      - player.energy.motor_state
+      - player.electronics.motor_map
+      - player.inputs.throttle
+    method: "Sous-virage de sortie (D-BAL-01) apparaissant uniquement au-dessus du seuil de déploiement du MGU avant (190 km/h Ferrari/Toyota, 150 km/h Peugeot) avec motor_state = propulsion ⇒ motor map, pas suspension."
+    thresholds: {}
+    outputs: [front_deploy_understeer_flag]
+    symptoms: [US_EXIT_SLOW, US_EXIT_FAST]
+    confidence: {method: high, thresholds: high}
+    sources:
+      - "https://coachdaveacademy.com/tutorials/hypercar-electric-motor-maps-in-le-mans-ultimate-explained/"
+
+  # ----- Plateforme (B.5) -----------------------------------------------------------------------------
+  - id: D-PLT-01
+    name_fr: "Talonnage et décrochage de fond plat"
+    category: platform
+    corde_phase: 2
+    inputs:
+      - player.wheels[i].ride_height_m
+      - player.wheels[i].susp_deflection_m
+      - player.motion.g_vert
+      - player.aero.front_downforce_n
+      - player.aero.rear_downforce_n
+      - player.aero.front_ride_height_mm
+      - player.aero.rear_ride_height_mm
+      - player.motion.speed_kmh
+      - player.lap.lap_dist_m
+      - player.wheels[i].surface
+    method: "Événement si ride_height_m < h_min (ex. 3 mm) OU susp_deflection_m ≥ 98 % de la course max observée + pic |g_vert| > 1,5 g sur < 50 ms ; compter par tour et localiser par lap_dist_m, hors vibreurs. Hypercar : chute brutale de front_downforce_n (> 20 % en < 0,2 s à vitesse quasi constante) = décrochage de fond plat."
+    thresholds:
+      bottoming: "> 2 événements/tour hors vibreurs ⇒ hauteur +2 mm, packers +2 mm, 3e élément / ressorts plus raides"
+      floor_stall: "chute > 20 % de l'appui avant en < 0,2 s"
+    outputs: [bottoming_events_per_lap, floor_stall_events, bottoming_locations]
+    symptoms: [PLT_BOTTOMING, PLT_FLOOR_STALL]
+    confidence: {method: medium, thresholds: medium}
+    note: "Réactivé automatiquement par la règle d'arbitrage ARB-04 après toute modification de hauteur ou d'aileron sur Hypercar."
+    sources:
+      - "https://lemansultimate.com/?p=3955"
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  - id: D-PLT-02
+    name_fr: "Rake dynamique"
+    category: platform
+    corde_phase: 2
+    inputs:
+      - player.aero.front_ride_height_mm
+      - player.aero.rear_ride_height_mm
+      - player.motion.speed_kmh
+      - player.motion.g_long
+      - player.motion.g_lat
+    method: "rake(t) = rear_ride_height_mm − front_ride_height_mm ; moyennes en ligne droite à V max, en freinage max, en appui max."
+    thresholds:
+      inverted_under_braking: "rake < 0 en freinage ⇒ avant qui plonge trop (bump lent AV, ressorts AV, 3e élément AV)"
+      rising_on_exit: "rake qui grimpe en sortie ⇒ squat arrière"
+    outputs: [rake_mm_straight, rake_mm_braking, rake_mm_cornering]
+    symptoms: [US_ENTRY_FAST, US_EXIT_FAST, OS_ENTRY_FAST]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  - id: D-PLT-03
+    name_fr: "Utilisation de la course de suspension"
+    category: platform
+    corde_phase: 2
+    inputs:
+      - player.wheels[i].susp_deflection_m
+    method: "Histogramme de susp_deflection_m par roue ; % du temps sur packer / butée."
+    thresholds:
+      on_bumpstops: "> 10 % du tour sur butée ⇒ packer trop court ou ressort trop mou"
+    outputs: [travel_histogram_per_wheel, pct_on_bumpstop]
+    symptoms: [PLT_BOTTOMING, PLT_BUMPY_LOSS]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "https://lemansultimate.com/?p=3955"
+
+  - id: D-PLT-04
+    name_fr: "Roulis et répartition avant / arrière du roulis"
+    category: platform
+    corde_phase: 2
+    inputs:
+      - player.wheels[i].susp_deflection_m
+      - player.motion.g_lat
+    method: "φ ≈ (defl_gauche − defl_droite) / voie par essieu ; roll_ratio = φ_F / φ_R."
+    thresholds:
+      imbalance: "écart AV/AR important ⇒ barres déséquilibrées ; roulis total élevé en virage rapide ⇒ perte d'appui (Hypercar)"
+    outputs: [roll_front_deg, roll_rear_deg, roll_ratio]
+    symptoms: [US_MID_SLOW, OS_MID_SLOW]
+    confidence: {method: medium, thresholds: medium}
+    note: "La règle PLT-ROLL-01 référencée dans setup-rules.yaml n'existe pas encore ; ce diagnostic en est le préalable."
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  - id: D-PLT-05
+    name_fr: "Transfert de charge, roue intérieure délestée"
+    category: platform
+    corde_phase: 2
+    inputs:
+      - player.wheels[i].load_n
+      - player.motion.g_lat
+    method: "load_n de la roue intérieure < 10 % de la charge statique pendant > 0,3 s."
+    thresholds:
+      inner_front_unloaded_mid: "⇒ barre AV trop raide / ressort AV"
+      inner_rear_unloaded_exit: "⇒ patinage intérieur ⇒ barre AR trop raide, diff power, précharge"
+    outputs: [inner_wheel_unload_events]
+    symptoms: [BRK_LOCK_INNER_FRONT, TRC_WHEELSPIN_INNER]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "https://www.sau.com.au/forums/topic/302303-car-set-up-cause-and-effect-by-carroll-smith"
+
+  # ----- Amortisseurs (B.6) --------------------------------------------------------------------------
+  - id: D-DMP-01
+    name_fr: "Histogramme de vitesse d'amortisseur"
+    category: dampers
+    corde_phase: 2
+    inputs:
+      - player.wheels[i].susp_deflection_m
+      - player.aero.third_front_mm
+      - player.aero.third_rear_mm
+    method: >-
+      v_damper = d(susp_deflection_m)/dt (dérivée centrale, lissage 3 points, + = compression / bump,
+      − = détente / rebound) ; histogramme en % du temps du tour, bins de 10–20 mm/s, plage ±250 mm/s,
+      tours complets et rapides seulement. Bandes : 0–5 mm/s friction ; 5–25 mm/s zone lente (plateforme,
+      crans slow) ; 25–200 mm/s bosses ; > 200 mm/s vibreurs / chocs (crans fast). Indicateurs :
+      skew = %bump − %rebound dans la bande lente ; pct_slow = % temps |v| < 25 mm/s ;
+      pct_fast = % temps |v| > 100 mm/s.
+    thresholds:
+      skew_target: "|skew| < 5 points"
+      over_damped: "pointe étroite et haute dans 0–25 mm/s avec plateau faible (voiture nerveuse)"
+      under_damped: "distribution large et plate (voiture qui flotte)"
+      change_visibility: "un changement doit déplacer visiblement l'histogramme au-delà du bruit tour à tour, sinon il est trop petit"
+    outputs: [damper_histogram_per_wheel, skew_slow, pct_slow, pct_fast]
+    symptoms: [PLT_FLOATY, PLT_NERVOUS, PLT_BUMPY_LOSS, PLT_KERB_UNSETTLED]
+    confidence: {method: high, thresholds: medium}
+    calibration: "Seuil lent/rapide par voiture (≈ 25–50 mm/s) inconnu : utiliser 25 mm/s par défaut et mesurer."
+    sources:
+      - "https://www.hpacademy.com/courses/professional-motorsport-data-analysis/damper-analysis-damping-histogram/"
+
+  # ----- Motricité (B.7) -----------------------------------------------------------------------------
+  - id: D-TRC-01
+    name_fr: "Patinage en sortie"
+    category: traction
+    corde_phase: 1
+    inputs:
+      - player.wheels[2].slip_ratio
+      - player.wheels[3].slip_ratio
+      - player.inputs.throttle
+    method: "κ_RL, κ_RR > +0,10 pendant que throttle > 0,5 en phase de sortie ; durée cumulée par tour."
+    thresholds:
+      insufficient_traction: "> 0,5 s/tour cumulée"
+    outputs: [wheelspin_time_s_per_lap]
+    symptoms: [TRC_WHEELSPIN_BOTH, OS_EXIT_SLOW]
+    confidence: {method: high, thresholds: medium}
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  - id: D-TRC-02
+    name_fr: "Patinage de la roue intérieure seule (différentiel ouvert)"
+    category: traction
+    corde_phase: 2
+    inputs:
+      - player.wheels[2].slip_ratio
+      - player.wheels[3].slip_ratio
+      - player.wheels[2].load_n
+      - player.wheels[3].load_n
+    method: "|κ_RL − κ_RR| > 0,08 avec charge intérieure faible."
+    thresholds:
+      inner_spin: "|κ_RL − κ_RR| > 0,08"
+    outputs: [inner_wheelspin_events]
+    symptoms: [TRC_WHEELSPIN_INNER]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "https://www.sau.com.au/forums/topic/302303-car-set-up-cause-and-effect-by-carroll-smith"
+
+  - id: D-TRC-03
+    name_fr: "Taux d'intervention du contrôle de traction"
+    category: traction
+    corde_phase: 1
+    inputs:
+      - player.inputs.throttle_raw
+      - player.inputs.throttle
+      - player.electronics.tc_active
+      - player.electronics.tc
+      - player.electronics.tc_cut
+      - player.electronics.tc_slip
+    method: "TC_cut = throttle_raw − throttle ; % du temps de sortie avec TC_cut > 0,05 (ou tc_active) et énergie coupée ∫TC_cut dt."
+    thresholds:
+      intrusive_or_spinning: "> 25 % du temps de sortie ⇒ TC trop intrusif OU vraie perte de motricité (trancher avec D-TRC-01)"
+    outputs: [tc_activity_pct, tc_energy_cut]
+    symptoms: [TC_TOO_INTRUSIVE, TRC_WHEELSPIN_BOTH]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "https://arnouthoekstra.substack.com/p/confused-by-tc-you-should-be"
+
+  - id: D-TRC-04
+    name_fr: "Survirage de puissance vs survirage d'appui"
+    category: traction
+    corde_phase: 2
+    inputs:
+      - player.wheels[2].slip_ratio
+      - player.wheels[3].slip_ratio
+      - player.wheels[2].slip_angle_deg
+      - player.wheels[3].slip_angle_deg
+      - player.motion.yaw_rate_dps
+    method: "Si l'excès de lacet apparaît avec κ_R élevé ⇒ puissance ; si κ_R faible mais α_R élevé ⇒ manque de grip latéral arrière (aéro, barre, ressorts, pressions)."
+    thresholds: {}
+    outputs: [oversteer_kind]
+    symptoms: [OS_EXIT_SLOW, OS_EXIT_FAST, TRC_WHEELSPIN_BOTH]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  - id: D-TRC-05
+    name_fr: "Effet du déploiement hybride sur la motricité"
+    category: traction
+    corde_phase: 2
+    inputs:
+      - player.energy.motor_torque_nm
+      - player.energy.motor_state
+      - player.wheels[2].slip_ratio
+      - player.wheels[3].slip_ratio
+      - player.motion.yaw_rate_dps
+      - player.motion.speed_kmh
+    method: "Corréler patinage / variation de lacet à motor_torque_nm (LMDh : à-coup de couple arrière dès 0 km/h ; LMH : sous-virage au-dessus de 150/190 km/h)."
+    thresholds: {}
+    outputs: [hybrid_torque_correlation]
+    symptoms: [OS_EXIT_SLOW, US_EXIT_FAST]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "https://coachdaveacademy.com/tutorials/hypercar-electric-motor-maps-in-le-mans-ultimate-explained/"
+
+  # ----- Régularité, consommation, stratégie (B.8) -----------------------------------------------------
+  - id: D-CON-01
+    name_fr: "Régularité des temps au tour et par secteur"
+    category: consistency
+    corde_phase: 1
+    inputs:
+      - LapRecord.lap_time_s
+      - LapRecord.s1
+      - LapRecord.s2
+      - LapRecord.s3
+      - LapRecord.valid
+    method: "σ(laptime) sur tours propres, σ par secteur, indice CV = σ / moyenne."
+    thresholds:
+      difficult_sector: "CV d'un secteur > 2 × les autres ⇒ secteur « difficile » (lier aux virages)"
+    outputs: [lap_std_s, sector_cv, difficult_sector]
+    symptoms: [PHILOSOPHY_SAFE, PHILOSOPHY_AGGRESSIVE]
+    confidence: {method: high, thresholds: high}
+    sources:
+      - "docs/research/02-ingenieur-de-course.md §B.8"
+
+  - id: D-CON-02
+    name_fr: "Consommation carburant et énergie virtuelle"
+    category: strategy
+    corde_phase: 1
+    inputs:
+      - LapRecord.fuel_used_l
+      - LapRecord.virtual_energy_used
+      - player.energy.fuel_l
+      - player.energy.fuel_capacity_l
+      - player.energy.virtual_energy
+    inputs_external:
+      - "REST /rest/strategy/usage (historique d'énergie virtuelle par tour)"
+      - "BoP : MaxStintEnergy (MJ) par circuit"
+    method: "Médiane de fuel_used_l par tour, autonomie ; énergie virtuelle par tour ; ratio MJ/tour vs MaxStintEnergy ⇒ tours par relais ; comparer L/tour au ratio énergie ⇒ ajuster le fuel ratio."
+    thresholds: {}
+    outputs: [fuel_per_lap_l, ve_per_lap, laps_per_stint, fuel_ratio_hint]
+    symptoms: [ENERGY_SHORT]
+    confidence: {method: high, thresholds: high}
+    note: "Unité de player.energy.virtual_energy (fraction ou %) à confirmer sur le PC du client."
+    sources:
+      - "https://traxion.gg/how-to-manage-virtual-energy-in-le-mans-ultimate/"
+
+  - id: D-CON-03
+    name_fr: "Gestion hybride : état de charge"
+    category: strategy
+    corde_phase: 1
+    inputs:
+      - player.energy.battery_soc
+      - player.electronics.motor_map
+      - player.energy.regen_kw
+      - player.lap.lap_number
+    method: "SOC min / max par tour ; temps à SOC ≥ 98 % (perte de régénération) ; temps à SOC ≤ 5 %."
+    thresholds:
+      target_start: "démarrer le relais ≈ 60–75 %"
+      target_band: "rester entre 20 et 90 %"
+      full: "temps à SOC ≥ 98 % > 5 % du tour"
+      empty: "temps à SOC ≤ 5 % > 5 % du tour"
+    outputs: [soc_min, soc_max, pct_time_full, pct_time_empty]
+    symptoms: [HYB_SOC_FULL, HYB_SOC_EMPTY]
+    confidence: {method: high, thresholds: high}
+    sources:
+      - "https://coachdaveacademy.com/tutorials/hypercar-electric-motor-maps-in-le-mans-ultimate-explained/"
+      - "https://www.trophi.ai/post/how-to-make-the-most-of-le-mans-ultimates-hybrid-systems"
+
+  - id: D-CON-04
+    name_fr: "Usure projetée en fin de relais"
+    category: strategy
+    corde_phase: 1
+    inputs:
+      - player.wheels[i].wear_remaining
+      - LapRecord.wear_remaining_end[0..3]
+      - session.time_remaining_s
+      - session.max_laps
+    method: "wear_end = wear_now − Δwear/lap × laps_restants par roue."
+    thresholds:
+      alert: "wear_end < seuil (ex. 0,2)"
+    outputs: [projected_wear_per_wheel]
+    symptoms: [TYR_WEAR_FAST]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "docs/research/02-ingenieur-de-course.md §B.8"
+
+  # ----- Style de pilotage (B.9) ----------------------------------------------------------------------
+  - id: S-01
+    name_fr: "Agressivité au freinage"
+    category: driving_style
+    corde_phase: 2
+    inputs:
+      - player.inputs.brake_raw
+    method: "Pic de brake_raw ; temps de montée 10 → 90 % (ms) ; pente maximale (1/s)."
+    thresholds:
+      hard_attack: "pic > 0,95 et montée < 150 ms ⇒ voiture sensible aux blocages : migration plus faible, répartition plus avant, ABS plus intrusif"
+    outputs: [brake_peak, brake_rise_ms, brake_slope]
+    symptoms: [BRK_LOCK_FRONT]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "docs/research/02-ingenieur-de-course.md §B.9"
+
+  - id: S-02
+    name_fr: "Trail braking"
+    category: driving_style
+    corde_phase: 2
+    inputs:
+      - player.inputs.brake
+      - player.motion.g_lat
+      - player.inputs.steering_angle_deg
+    method: "% de la phase d'entrée avec brake > 0,05 ET |g_lat| > 0,3 g ; chevauchement frein / volant ; frein résiduel à l'apex."
+    thresholds:
+      interpretation: "trail braking marqué ⇒ le pilote tourne la voiture au frein et accepte un peu de survirage d'entrée ; peu de trail ⇒ il a besoin d'une voiture qui tourne seule (barre AR, coast ouvert)"
+    outputs: [trail_braking_pct, brake_at_apex]
+    symptoms: [OS_ENTRY_SLOW, US_ENTRY_SLOW]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "docs/research/02-ingenieur-de-course.md §B.9"
+
+  - id: S-03
+    name_fr: "Lissage du volant"
+    category: driving_style
+    corde_phase: 2
+    inputs:
+      - player.inputs.steering_angle_deg
+      - player.inputs.steering_torque_nm
+    method: "RMS de d(steering_angle_deg)/dt en milieu de virage ; énergie spectrale > 2 Hz ; nombre d'inversions de signe du couple volant par virage."
+    thresholds:
+      nervous: "volant « nerveux » ⇒ voiture trop pointue ou pilote qui cherche le grip ⇒ setup sûr"
+    outputs: [steering_rms, steering_hf_energy, torque_sign_changes]
+    symptoms: [PLT_NERVOUS, PHILOSOPHY_SAFE]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "docs/research/02-ingenieur-de-course.md §B.9"
+
+  - id: S-04
+    name_fr: "Usage des vibreurs"
+    category: driving_style
+    corde_phase: 2
+    inputs:
+      - player.wheels[i].surface
+      - player.motion.g_vert
+      - player.motion.yaw_rate_dps
+    method: "% du temps avec surface = rumble par tour ; pics |g_vert| associés ; perte de stabilité (dérivée du lacet) après vibreur."
+    thresholds:
+      heavy_use: "⇒ amortissement rapide plus souple, packers plus longs, ressorts moins raides, hauteur un peu plus haute"
+    outputs: [kerb_time_pct, kerb_g_peaks, post_kerb_instability]
+    symptoms: [PLT_KERB_UNSETTLED]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "docs/research/02-ingenieur-de-course.md §B.9"
+
+  - id: S-05
+    name_fr: "Application des gaz"
+    category: driving_style
+    corde_phase: 2
+    inputs:
+      - player.inputs.throttle_raw
+      - player.motion.speed_kmh
+    method: "Temps apex → 100 % gaz ; linéarité ; nombre de relâchements partiels (« pumping »)."
+    thresholds:
+      brutal: "gaz brutaux ⇒ TC plus haut, diff power plus fermé, barre AR plus souple"
+    outputs: [throttle_apex_to_full_ms, throttle_linearity, throttle_pumping_count]
+    symptoms: [TRC_WHEELSPIN_BOTH, OS_EXIT_SLOW]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "docs/research/02-ingenieur-de-course.md §B.9"
+
+  - id: S-06
+    name_fr: "Chevauchement frein / gaz et rétrogradages"
+    category: driving_style
+    corde_phase: 2
+    inputs:
+      - player.engine.gear
+      - player.engine.rpm
+      - player.inputs.brake
+      - player.wheels[2].slip_ratio
+      - player.wheels[3].slip_ratio
+    method: "Rétrogradage pendant un blocage ; régime à l'entrée."
+    thresholds:
+      rear_lock_on_downshift: "blocages arrière aux rétrogradages ⇒ frein moteur / coast / map"
+    outputs: [downshift_lock_events]
+    symptoms: [BRK_LOCK_REAR]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "docs/research/02-ingenieur-de-course.md §B.9"
+
+  - id: S-07
+    name_fr: "Marge au grip"
+    category: driving_style
+    corde_phase: 2
+    inputs:
+      - player.wheels[i].grip_fract
+    method: "Moyenne de grip_fract en milieu de virage."
+    thresholds:
+      at_limit: "0,6–0,8"
+      under_exploited: "< 0,4 ⇒ pilote loin de la limite : données d'équilibre peu fiables, pondérer le ressenti (voir methodology.md)"
+    outputs: [grip_margin]
+    symptoms: [PHILOSOPHY_AGGRESSIVE, PHILOSOPHY_SAFE]
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "docs/research/02-ingenieur-de-course.md §B.9"
+
+  - id: S-08
+    name_fr: "Profil de vitesse minimale"
+    category: driving_style
+    corde_phase: 2
+    inputs:
+      - player.motion.speed_kmh
+      - player.lap.lap_dist_m
+      - LapRecord.lap_time_s
+    method: "V_apex vs référence (meilleur tour du pilote / référence externe)."
+    thresholds:
+      driving_understeer: "entrée trop rapide ⇒ sous-virage « de pilotage » : ne pas corriger au setup"
+    outputs: [apex_speed_delta_per_corner]
+    symptoms: []
+    confidence: {method: medium, thresholds: medium}
+    sources:
+      - "docs/research/02-ingenieur-de-course.md §B.9"
+
+  - id: S-09
+    name_fr: "Roue libre (coasting)"
+    category: driving_style
+    corde_phase: 2
+    inputs:
+      - player.inputs.throttle
+      - player.inputs.brake
+      - player.motion.speed_kmh
+    method: "% des échantillons à plus de 60 km/h avec throttle < 0,05 et brake < 0,05 sur les tours propres."
+    thresholds:
+      high: "> 15 % ⇒ marge de temps au tour côté pilotage (freiner plus tard / réaccélérer plus tôt) avant de toucher au setup"
+    outputs: [coasting_pct]
+    symptoms: []
+    confidence: {method: high, thresholds: low}
+    note: "Implémenté dans corde-engineer (lot « ingénieur », 2026-11) : indicateur `DrivingStyle.coasting_pct`, constat informatif `S-09/coasting`. Ajouté au catalogue car absent du brief ; seuil indicatif."
+    sources:
+      - "docs/ENGINEER.md"
+
+  # ----- Ajoutés depuis les déclencheurs de règles (section C) ----------------------------------------
+  - id: D-STR-01
+    name_fr: "Vitesse de pointe vs référence"
+    category: straightline
+    corde_phase: 1
+    inputs:
+      - LapRecord.top_speed_kmh
+      - player.motion.speed_kmh
+      - player.aero.drag_n
+      - player.engine.rpm
+      - player.engine.max_rpm
+    method: "Vmax du tour vs référence (meilleur tour, autres voitures de la classe via standings[].speed_kmh) ; drag_n à vitesse donnée ; régime max atteint ou non."
+    thresholds:
+      slow: "Vmax < référence − 3 km/h"
+    outputs: [top_speed_delta_kmh, drag_at_speed, rev_limit_reached]
+    symptoms: [STR_TOP_SPEED_LOW]
+    confidence: {method: medium, thresholds: low}
+    sources:
+      - "https://arnouthoekstra.substack.com/p/fixed-setups-are-a-blessing-in-lmu"
+
+  - id: D-STR-02
+    name_fr: "Retard de réponse en lacet (changement de direction)"
+    category: response
+    corde_phase: 2
+    inputs:
+      - player.inputs.steering_angle_deg
+      - player.motion.yaw_rate_dps
+      - player.wheels[i].susp_deflection_m
+    method: "Retard entre le pic de braquage et le pic de yaw_rate_dps en chicane ; roulis (D-PLT-04) élevé."
+    thresholds:
+      lazy: "retard > 150 ms"
+    outputs: [yaw_lag_ms]
+    symptoms: [STR_SLOW_DIRECTION_CHANGE]
+    confidence: {method: medium, thresholds: low}
+    sources:
+      - "https://www.sau.com.au/forums/topic/302303-car-set-up-cause-and-effect-by-carroll-smith"
+
+  - id: D-WET-01
+    name_fr: "Conditions humides"
+    category: conditions
+    corde_phase: 0
+    inputs:
+      - session.weather.rain
+      - session.weather.wetness_avg
+      - session.weather.wetness_min
+      - player.wheels[i].compound_type
+      - player.wheels[i].surface
+    method: "Piste mouillée si rain > 0,2 ou wetness_avg > 0,3 ; pneus pluie montés si compound_type = wet ; piste séchante si wetness_avg < 0,2 avec pneus pluie."
+    thresholds:
+      wet: "rain > 0,2 ou wetness_avg > 0,3"
+      drying_on_wets: "wetness_avg < 0,2 avec compound_type = wet"
+    outputs: [surface_condition, wets_on_drying_track]
+    symptoms: [WET_BASELINE, WET_NO_TEMP]
+    confidence: {method: high, thresholds: medium}
+    sources:
+      - "https://gosetups.gg/blog/lmu-setups-bmw-m4-and-wet-setups/"

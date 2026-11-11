@@ -1,0 +1,966 @@
+# knowledge/setup-parameters.yaml — paramètres de setup de Le Mans Ultimate, par classe.
+#
+# Sources : docs/research/02-ingenieur-de-course.md (section A : tableaux A.1 Hypercar, A.2 LMP2,
+# A.3 LMGT3, A.4 fenêtres thermiques, A.5 BoP) et docs/research/01-telemetrie-lmu.md (§2 API REST,
+# §3 format des fichiers .svm lus sur de vrais fichiers). Schéma décrit dans knowledge/README.md.
+#
+# RÈGLE D'ARCHITECTURE (brief 02) : ne jamais coder en dur les bornes ni les pas. Les plages ci-dessous
+# sont INDICATIVES (confiance low/medium) et servent à des contrôles de vraisemblance ; la plage réelle
+# d'une voiture se lit à l'exécution dans `minValue` / `maxValue` de GET /rest/garage/getPlayerGarageData
+# (objets VM_*), ou dans `metadata.CarSetup` des fichiers DuckDB natifs, ou dans le fichier .svm.
+#
+# Conventions :
+#   * `id` = identifiant canonique utilisé par knowledge/setup-rules.yaml (`param`).
+#   * `svm` : section INI et clé du fichier UserData\player\Settings\<Circuit>\*.svm. La valeur stockée
+#     est un INDEX de cran ; la valeur affichée par le jeu suit après `//` (ex. `PressureSetting=12//130 kPa`).
+#     `per_wheel: true` = la clé existe dans [FRONTLEFT], [FRONTRIGHT], [REARLEFT], [REARRIGHT] ; une
+#     règle « front » s'applique aux deux roues avant (respecter `Symmetric=1` du [GENERAL]).
+#     `confidence` de la clé : high = lue dans un fichier réel (brief 01), medium = héritage rF2 probable.
+#   * `rest_key` : objet VM_* de getPlayerGarageData quand il est connu (snapshot figé au garage).
+#   * `live_field` : champ du protocole Corde quand la valeur courante est exposée en roulant par la
+#     mémoire partagée (LMU ≥ 1.3) ; `live_adjustable` = modifiable depuis le volant / MFD en roulant.
+#   * `classes` : valeurs de VehicleClass du protocole (hypercar, lmp2, lmp3, gt3) où le paramètre existe.
+#   * `bop_locked` : false | true | "partial: …" (le BoP contraint la plage sans la figer).
+#   * `typical_range` : ordres de grandeur par classe, avec la confiance du brief (H/M/L → high/medium/low).
+#   * `default_step` : « cran d'ingénieur » par défaut (brief 02 §C.0, confiance medium).
+#   * `svm.index_sign` (schéma v2) : sens de l'INDEX du fichier pour le « + » du paramètre (setup-rules.params[].sign) :
+#     +1 = index ↑ quand le paramètre augmente, −1 = l'inverse (carrossage : index ↑ = moins négatif ; répartition :
+#     index ↑ = plus à l'arrière ; écopes : index ↑ = plus fermé ; angle de braquage : index ↑ = plus de degrés),
+#     0 = valeur discrète ou sens inconnu (Corde ne la change pas). Constaté sur 6 fichiers réels (3 voitures).
+#   * `index_step` (schéma v2) : pas physique d'un cran par défaut {value, unit, confidence, source}, utilisé pour
+#     convertir une magnitude (« −3 kPa ») en crans quand la bibliothèque du pilote ne permet pas d'apprendre le pas
+#     de SA voiture ; seuls les pas de confiance medium/high servent, sinon « 1 cran » et une note.
+#   * `svm.label_is_index` (schéma v2) : le jeu affiche le numéro de l'index (cartographies TC : `8//8`) ; quand le
+#     libellé du fichier le confirme, Corde écrit le nouveau numéro comme libellé.
+#   * `svm_translation` (schéma v2) : paramètre logique sans clé (`aero.rake`) traduit en un paramètre réel.
+
+schema_version: 2
+sources:
+  - "docs/research/02-ingenieur-de-course.md"
+  - "docs/research/01-telemetrie-lmu.md"
+  - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+  - "https://lemansultimate.wiki.gg/wiki/Setup_Guide"
+  - "https://configuracion.patagoniasimracing.cl/en/setups/lmu"
+  - "https://github.com/seralaci/Le-Mans-Ultimate-Setups"
+
+# Structure d'un fichier .svm (brief 01 §3, vérifié sur fichier réel Hypercar BMW M Hybrid V8).
+svm_format:
+  location: "<install LMU>\\UserData\\player\\Settings\\<DossierCircuit>\\<nom>.svm (un dossier par circuit ; la voiture est encodée dans le fichier, pas dans le nom)"
+  header_lines:
+    - "VehicleClassSetting=\"<classe/voiture/saison, ordre des mots variable>\"  (obligatoire, doit correspondre à la voiture sinon le setup n'apparaît pas)"
+    - "UpgradeSetting=(a,b,c,d)"
+    - "//VEH=…  //UpgradeClass=  //Tyre Restrictions=  //AI Tweaks=  //Atmos Conditions=  (commentaires)"
+  sections: [GENERAL, LEFTFENDER, RIGHTFENDER, FRONTWING, REARWING, BODYAERO, SUSPENSION, CONTROLS, ENGINE, DRIVELINE, FRONTLEFT, FRONTRIGHT, REARLEFT, REARRIGHT, BASIC]
+  value_form: "<Clé>=<index>//<valeur affichée>   (« settings commented out if using the default »)"
+  encoding: "ASCII, fins de ligne CRLF (à confirmer sur le PC du client)"
+  reload: "bouton Refresh de l'écran setups du jeu ; pas de redémarrage"
+  class_differences: "jeu de clés identique entre classes (Gear7Setting disparaît sur GT3) ; ce qui change : libellés « N/A » / « Non-adjustable » et plages"
+  confidence: high
+
+parameters:
+
+  # ===== Aéro =========================================================================================
+  - id: aero.rear_wing
+    label_fr: "Aileron arrière"
+    group: aero
+    svm: {section: REARWING, key: RWSetting, per_wheel: false, confidence: high, index_sign: 1}
+    unit: "cran (Hypercar : P1…P20) ou degrés (LMGT3)"
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: "partial: LMGT3 angle minimum imposé par circuit (ex. Ferrari 296 3,85° à Monza, McLaren 720S 4,80° au Mans/Monza) ; Peugeot 9X8 2023 sans aile = pas de réglage"
+    live_adjustable: false
+    typical_range:
+      hypercar: {value: "selon voiture (ex. 1–10 crans)", confidence: medium}
+      lmp2: {value: "car-spécifique", confidence: medium}
+      gt3: {value: "car-spécifique, en degrés ; < 30 % d'aile = « très rapide » sur circuits à longues lignes droites", confidence: high}
+    default_step: "±1 cran (GT3 : ±0,5–1°)"
+    index_step: {value: 1.0, unit: deg, confidence: low, source: "Porsche 911 GT3 R : 3 ↔ 9.3 deg, 4 ↔ 10.3 deg (LMGT3 seulement ; Hypercar en crans P1…)"}
+    notes: "« Un seul cran change le caractère de la voiture » (Coach Dave). Paramètre n°1 de l'équilibre haute vitesse en GT3 (Hoekstra)."
+    confidence: high
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+      - "https://arnouthoekstra.substack.com/p/fixed-setups-are-a-blessing-in-lmu"
+      - "https://traxion.gg/widespread-bop-adjustments-nerf-bmw-lmgt3-and-alpine-a424-in-new-le-mans-ultimate-update/"
+
+  - id: aero.front_flap
+    label_fr: "Volet / flap avant, dive planes"
+    group: aero
+    svm: {section: FRONTWING, key: FWSetting, per_wheel: false, confidence: high, index_sign: 1}
+    unit: cran
+    classes: [hypercar, lmp2]
+    bop_locked: false
+    live_adjustable: false
+    typical_range:
+      hypercar: {value: "car-spécifique, parfois absent", confidence: low}
+      lmp2: {value: "présence à confirmer par l'API garage", confidence: low}
+      gt3: {value: "splitter / dive planes généralement fixes", confidence: medium}
+    default_step: "±1 cran"
+    notes: "À détecter voiture par voiture (libellé « N/A » / « Non-adjustable » dans le .svm ou minValue == maxValue en REST). Si absent, les règles utilisent aero.rake."
+    confidence: low
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  - id: aero.rh_front
+    label_fr: "Hauteur de caisse avant"
+    group: aero
+    svm: {section: "FRONTLEFT / FRONTRIGHT", key: RideHeightSetting, per_wheel: true, confidence: high, index_sign: 1}
+    unit: "mm (statique, sans carburant)"
+    live_field: player.aero.front_ride_height_mm
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: "partial: hauteur minimale possible par BoP en LMGT3 (cité par le wiki, non publié)"
+    live_adjustable: false
+    typical_range:
+      hypercar: {value: "≈ 40–80 mm", confidence: low}
+      lmp2: {value: "≈ 30–70 mm", confidence: low}
+      gt3: {value: "≈ 50–90 mm", confidence: low}
+    default_step: "±2 mm (Hypercar avant : ±1 mm)"
+    index_step: {value: 1.0, unit: mm, confidence: medium, source: "BMW M4 LMGT3 : 0 ↔ 5.0 cm, 3 ↔ 5.3 cm"}
+    notes: "Très sensible : « quelques mm » changent l'équilibre ; trop bas = talonnage / décrochage de fond plat en zone rapide (D-PLT-01) ; trop haut = grosse perte d'appui."
+    confidence: medium
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+      - "https://lemansultimate.wiki.gg/wiki/LMP2"
+
+  - id: aero.rh_rear
+    label_fr: "Hauteur de caisse arrière"
+    group: aero
+    svm: {section: "REARLEFT / REARRIGHT", key: RideHeightSetting, per_wheel: true, confidence: high, index_sign: 1}
+    unit: mm
+    live_field: player.aero.rear_ride_height_mm
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: "partial: voir aero.rh_front"
+    live_adjustable: false
+    typical_range:
+      hypercar: {value: "≈ 40–80 mm", confidence: low}
+      lmp2: {value: "≈ 30–70 mm", confidence: low}
+      gt3: {value: "≈ 50–90 mm", confidence: low}
+    default_step: "±2 mm"
+    index_step: {value: 1.0, unit: mm, confidence: medium, source: "BMW M4 LMGT3 : 15 ↔ 6.5 cm, 25 ↔ 7.5 cm ; Porsche 911 GT3 R : 20 ↔ 7.0 cm, 22 ↔ 7.2 cm"}
+    confidence: medium
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  - id: aero.rake
+    label_fr: "Rake (différence de hauteur arrière − avant)"
+    group: aero
+    svm: null
+    unit: "mm (dérivé : rh_rear − rh_front)"
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    derived_from: [aero.rh_front, aero.rh_rear]
+    default_step: "±1–2 mm"
+    svm_translation: {param: aero.rh_rear, note: "Le rake n'est pas une clé du fichier : Corde le règle par la hauteur arrière (rake + = arrière plus haut), l'avant ne bouge pas."}
+    notes: "Pseudo-paramètre des règles : « rake + » = monter l'arrière ou baisser l'avant. Toute modification sur Hypercar réactive la vérification de talonnage (ARB-04)."
+    confidence: high
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  # ===== Suspension ====================================================================================
+  - id: susp.spring_front
+    label_fr: "Ressorts avant"
+    group: suspension
+    svm: {section: "FRONTLEFT / FRONTRIGHT", key: SpringSetting, per_wheel: true, confidence: high, index_sign: 1}
+    unit: "N/mm (cran)"
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    typical_range:
+      hypercar: {value: "car-spécifique", confidence: medium}
+      gt3: {value: "car-spécifique", confidence: high}
+    default_step: "±1 cran (≈ ±5–10 %)"
+    notes: "Ressorts très mous sur Hypercar = « floor stall » et bascule d'équilibre imprévisible (Coach Dave). Clés voisines héritées de rF2 : TenderSpringSetting, TenderTravelSetting, SpringRubberSetting (probablement N/A)."
+    confidence: medium
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  - id: susp.spring_rear
+    label_fr: "Ressorts arrière"
+    group: suspension
+    svm: {section: "REARLEFT / REARRIGHT", key: SpringSetting, per_wheel: true, confidence: high, index_sign: 1}
+    unit: "N/mm (cran)"
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    default_step: "±1 cran (≈ ±5–10 %)"
+    confidence: medium
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  - id: susp.third_front
+    label_fr: "3e élément (heave) avant"
+    group: suspension
+    svm: {section: SUSPENSION, key: Front3rdSpringSetting, per_wheel: false, confidence: high, index_sign: 1}
+    related_svm_keys: [Front3rdPackerSetting, Front3rdTenderSpringSetting, Front3rdTenderTravelSetting, Front3rdSlowBumpSetting, Front3rdFastBumpSetting, Front3rdSlowReboundSetting, Front3rdFastReboundSetting]
+    unit: "N/mm (cran) ; packer en mm"
+    live_field: player.aero.third_front_mm
+    classes: [hypercar, lmp2, lmp3]
+    bop_locked: false
+    live_adjustable: false
+    default_step: "±1 cran"
+    notes: "Prototypes seulement (absent en général sur LMGT3). Présence réglable à vérifier voiture par voiture."
+    confidence: medium
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  - id: susp.third_rear
+    label_fr: "3e élément (heave) arrière"
+    group: suspension
+    svm: {section: SUSPENSION, key: Rear3rdSpringSetting, per_wheel: false, confidence: high, index_sign: 1}
+    related_svm_keys: [Rear3rdPackerSetting, Rear3rdSlowBumpSetting, Rear3rdFastBumpSetting, Rear3rdSlowReboundSetting, Rear3rdFastReboundSetting]
+    unit: "N/mm (cran)"
+    live_field: player.aero.third_rear_mm
+    classes: [hypercar, lmp2, lmp3]
+    bop_locked: false
+    live_adjustable: false
+    default_step: "±1 cran"
+    confidence: medium
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  - id: susp.packer_front
+    label_fr: "Packers / butées avant"
+    group: suspension
+    svm: {section: "FRONTLEFT / FRONTRIGHT", key: PackerSetting, per_wheel: true, confidence: high, index_sign: 1}
+    unit: mm
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    typical_range:
+      hypercar: {value: "0–30 mm", confidence: medium}
+    default_step: "±2 mm"
+    index_step: {value: 1.0, unit: mm, confidence: medium, source: "BMW M4 LMGT3 : 0 ↔ 0.0 cm, 4 ↔ 0.4 cm"}
+    notes: "Empêchent le talonnage sans changer la hauteur statique (guide LMP3 officiel). « Packer distances » = facteur n°2 de pilotabilité en GT3 (Hoekstra)."
+    confidence: medium
+    sources:
+      - "https://lemansultimate.com/?p=3955"
+      - "https://arnouthoekstra.substack.com/p/fixed-setups-are-a-blessing-in-lmu"
+
+  - id: susp.packer_rear
+    label_fr: "Packers / butées arrière"
+    group: suspension
+    svm: {section: "REARLEFT / REARRIGHT", key: PackerSetting, per_wheel: true, confidence: high, index_sign: 1}
+    unit: mm
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    default_step: "±2 mm"
+    index_step: {value: 1.0, unit: mm, confidence: medium, source: "BMW M4 LMGT3 / Porsche 911 GT3 R : 0 ↔ 0.0 cm, 6 ↔ 0.6 cm"}
+    notes: "« Rear packers » cités par Coach Dave pour stabiliser l'arrière de la Porsche 963."
+    confidence: medium
+    sources:
+      - "https://coachdaveacademy.com/tutorials/lmu-porsche-963-guide-the-inside-line/"
+
+  - id: susp.arb_front
+    label_fr: "Barre anti-roulis avant"
+    group: suspension
+    svm: {section: SUSPENSION, key: FrontAntiSwaySetting, per_wheel: false, confidence: high, index_sign: 1}
+    unit: "cran (ex. P1–P7), N/mm ou mm (LMP3)"
+    live_field: player.electronics.arb_front
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: "certaines Hypercars (barre réglable en roulant, champ ARB de la mémoire partagée)"
+    default_step: "±1 cran"
+    confidence: high
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  - id: susp.arb_rear
+    label_fr: "Barre anti-roulis arrière"
+    group: suspension
+    svm: {section: SUSPENSION, key: RearAntiSwaySetting, per_wheel: false, confidence: high, index_sign: 1}
+    unit: "cran, N/mm ou mm"
+    live_field: player.electronics.arb_rear
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: "certaines Hypercars"
+    default_step: "±1 cran"
+    notes: "Barre AR raide = arrière imprévisible sur vibreurs (Coach Dave)."
+    confidence: high
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  - id: susp.sbump_front
+    label_fr: "Amortisseur avant : compression lente (slow bump)"
+    group: dampers
+    svm: {section: "FRONTLEFT / FRONTRIGHT", key: SlowBumpSetting, per_wheel: true, confidence: high, index_sign: 1}
+    unit: clics
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    typical_range:
+      hypercar: {value: "1–20 ou 1–30 selon voiture", confidence: medium}
+    default_step: "±2 clics"
+    notes: "Seuil lent/rapide défini par voiture (≈ 25–50 mm/s, confiance low) ; valider par histogramme D-DMP-01."
+    confidence: medium
+    sources:
+      - "https://www.hpacademy.com/courses/professional-motorsport-data-analysis/damper-analysis-damping-histogram/"
+
+  - id: susp.sbump_rear
+    label_fr: "Amortisseur arrière : compression lente"
+    group: dampers
+    svm: {section: "REARLEFT / REARRIGHT", key: SlowBumpSetting, per_wheel: true, confidence: high, index_sign: 1}
+    unit: clics
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    default_step: "±2 clics"
+    confidence: medium
+    sources:
+      - "https://www.hpacademy.com/courses/professional-motorsport-data-analysis/damper-analysis-damping-histogram/"
+
+  - id: susp.srebound_front
+    label_fr: "Amortisseur avant : détente lente (slow rebound)"
+    group: dampers
+    svm: {section: "FRONTLEFT / FRONTRIGHT", key: SlowReboundSetting, per_wheel: true, confidence: high, index_sign: 1}
+    unit: clics
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    default_step: "±2 clics"
+    confidence: medium
+    sources:
+      - "https://www.hpacademy.com/courses/professional-motorsport-data-analysis/damper-analysis-damping-histogram/"
+
+  - id: susp.srebound_rear
+    label_fr: "Amortisseur arrière : détente lente"
+    group: dampers
+    svm: {section: "REARLEFT / REARRIGHT", key: SlowReboundSetting, per_wheel: true, confidence: high, index_sign: 1}
+    unit: clics
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    default_step: "±2 clics"
+    confidence: medium
+    sources:
+      - "https://www.hpacademy.com/courses/professional-motorsport-data-analysis/damper-analysis-damping-histogram/"
+
+  - id: susp.fbump_front
+    label_fr: "Amortisseur avant : compression rapide (fast bump)"
+    group: dampers
+    svm: {section: "FRONTLEFT / FRONTRIGHT", key: FastBumpSetting, per_wheel: true, confidence: high, index_sign: 1}
+    unit: clics
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    default_step: "±2 clics"
+    confidence: medium
+    sources:
+      - "https://steamcommunity.com/app/2399420/discussions/0/4853281047676507449"
+
+  - id: susp.fbump_rear
+    label_fr: "Amortisseur arrière : compression rapide"
+    group: dampers
+    svm: {section: "REARLEFT / REARRIGHT", key: FastBumpSetting, per_wheel: true, confidence: high, index_sign: 1}
+    unit: clics
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    default_step: "±2 clics"
+    confidence: medium
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  - id: susp.frebound_front
+    label_fr: "Amortisseur avant : détente rapide (fast rebound)"
+    group: dampers
+    svm: {section: "FRONTLEFT / FRONTRIGHT", key: FastReboundSetting, per_wheel: true, confidence: high, index_sign: 1}
+    unit: clics
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    default_step: "±2 clics"
+    confidence: medium
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  - id: susp.frebound_rear
+    label_fr: "Amortisseur arrière : détente rapide"
+    group: dampers
+    svm: {section: "REARLEFT / REARRIGHT", key: FastReboundSetting, per_wheel: true, confidence: high, index_sign: 1}
+    unit: clics
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    default_step: "±2 clics"
+    confidence: medium
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  # ===== Géométrie =====================================================================================
+  - id: geo.camber_front
+    label_fr: "Carrossage avant"
+    group: geometry
+    svm: {section: "FRONTLEFT / FRONTRIGHT", key: CamberSetting, per_wheel: true, confidence: high, index_sign: -1}
+    unit: "° (négatif)"
+    live_field: player.wheels[0..1].camber_deg
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    typical_range:
+      hypercar: {value: "−2,0 à −3,5°", confidence: low}
+      lmp2: {value: "−2,0 à −3,5°", confidence: low}
+      gt3: {value: "−2,5 à −4,0°", confidence: low}
+    default_step: "±0,2°"
+    index_step: {value: 0.0667, unit: deg, confidence: low, source: "BMW M4 LMGT3 : 22 ↔ −2.20 deg, 40 ↔ −1.00 deg (varie d'une voiture à l'autre)"}
+    notes: "Impact faible sur le chrono en LMU selon certains setupeurs ; régler d'après les températures intérieur/milieu/extérieur (D-TYR-01). Dans les règles, « + » = plus négatif."
+    confidence: low
+    sources:
+      - "https://arnouthoekstra.substack.com/p/fixed-setups-are-a-blessing-in-lmu"
+      - "https://www.overtake.gg/threads/optimal-camber-my-thought-process-on-tyre-workloads.195866/"
+
+  - id: geo.camber_rear
+    label_fr: "Carrossage arrière"
+    group: geometry
+    svm: {section: "REARLEFT / REARRIGHT", key: CamberSetting, per_wheel: true, confidence: high, index_sign: -1}
+    unit: "° (négatif)"
+    live_field: player.wheels[2..3].camber_deg
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    typical_range:
+      hypercar: {value: "−1,0 à −2,5°", confidence: low}
+      lmp2: {value: "−1,0 à −2,5°", confidence: low}
+      gt3: {value: "−1,5 à −3,0°", confidence: low}
+    default_step: "±0,2°"
+    index_step: {value: 0.0714, unit: deg, confidence: low, source: "BMW M4 LMGT3 : 21 ↔ −1.50 deg, 35 ↔ −0.50 deg"}
+    confidence: low
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  - id: geo.toe_front
+    label_fr: "Pince avant (toe)"
+    group: geometry
+    svm: {section: SUSPENSION, key: FrontToeInSetting, per_wheel: false, confidence: high, index_sign: 1}
+    related_svm_keys: [FrontToeOffsetSetting]
+    unit: "° ou mm (+ = pince / toe-in, − = ouverture)"
+    live_field: player.wheels[0..1].toe_deg
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    typical_range:
+      hypercar: {value: "−0,10 à +0,05°", confidence: low}
+    default_step: "±0,05°"
+    index_step: {value: 0.0625, unit: deg, confidence: low, source: "Porsche 911 GT3 R : 14 ↔ −0.125 deg, 16 ↔ 0.000 deg ; BMW M4 LMGT3 : 7 ↔ −0.117, 8 ↔ 0 (pas différent)"}
+    notes: "Régler « en petites étapes » (wiki). Compte peu pour le temps au tour (Hoekstra, GT3)."
+    confidence: low
+    sources:
+      - "https://lemansultimate.wiki.gg/wiki/Setup_Guide"
+
+  - id: geo.toe_rear
+    label_fr: "Pince arrière"
+    group: geometry
+    svm: {section: SUSPENSION, key: RearToeInSetting, per_wheel: false, confidence: high, index_sign: 1}
+    related_svm_keys: [RearToeOffsetSetting]
+    unit: "° ou mm"
+    live_field: player.wheels[2..3].toe_deg
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    typical_range:
+      hypercar: {value: "+0,05 à +0,30°", confidence: low}
+    default_step: "±0,05°"
+    notes: "Pince arrière positive = stabilité en sortie (Coach Dave, 963)."
+    confidence: low
+    sources:
+      - "https://coachdaveacademy.com/tutorials/lmu-porsche-963-guide-the-inside-line/"
+
+  - id: geo.caster
+    label_fr: "Chasse (caster)"
+    group: geometry
+    svm: {section: SUSPENSION, key: "LeftCasterSetting / RightCasterSetting", per_wheel: false, confidence: high, index_sign: 1}
+    unit: "°"
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    default_step: "±0,5°"
+    notes: "Plus de chasse = plus de retour volant et de gain de carrossage en braquage."
+    confidence: medium
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  # ===== Pneus =========================================================================================
+  - id: tyre.compound
+    label_fr: "Composé de pneu"
+    group: tyres
+    svm: {section: "FRONTLEFT … REARRIGHT", key: CompoundSetting, per_wheel: true, confidence: high, index_sign: 0}
+    rest_key: VM_FRONT_TIRE_COMPOUND
+    unit: "Soft / Medium / Hard / Wet"
+    live_field: player.tyres.front_compound
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: "partial: allocation par session (lire les pneus autorisés via REST TireManagement)"
+    live_adjustable: "aux arrêts aux stands"
+    notes: "Hypercar (Michelin) : Hard 3–5 tours de chauffe, Soft 2–3 ; pas de couvertures chauffantes. LMP2/LMGT3 : Goodyear, souvent un seul composé sec + Wet. Usure Porsche GT3 « extrême » (Coach Dave)."
+    confidence: high
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+      - "https://coachdaveacademy.com/tutorials/the-complete-guide-to-the-lmgt3-cars-in-le-mans-ultimate/"
+
+  - id: tyre.pressure_front
+    label_fr: "Pression à froid avant"
+    group: tyres
+    svm: {section: "FRONTLEFT / FRONTRIGHT", key: PressureSetting, per_wheel: true, confidence: high, index_sign: 1}
+    unit: "kPa (affichage possible en psi)"
+    live_field: player.wheels[0..1].pressure_kpa
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: "partial: minimum imposé par le jeu"
+    live_adjustable: "aux arrêts aux stands"
+    typical_range:
+      hypercar: {value: "≈ 165–195 kPa (réel Michelin : mini 26,1 psi AV / 27,6 psi AR ≈ 180/190 kPa)", confidence: low}
+      lmp2: {value: "≈ 150–185 kPa", confidence: low}
+      gt3: {value: "≈ 140–170 kPa", confidence: low}
+    default_step: "±3 kPa (≈ ±0,4 psi)"
+    index_step: {value: 1.0, unit: kPa, confidence: low, source: "héritage rF2, non vérifié (un seul libellé connu : 0 ↔ 136 kPa = minimum)"}
+    notes: "Recommandation répandue : rouler au minimum autorisé, sauf temps froid (monter pour accélérer la chauffe). Pression à chaud prédite par la loi des gaz (D-TYR-04)."
+    confidence: low
+    sources:
+      - "https://steamcommunity.com/app/2399420/discussions/0/777534074828971181"
+      - "https://a-e.li/news/motorsport/wec/michelin-le-mans-hypercar-tires/"
+
+  - id: tyre.pressure_rear
+    label_fr: "Pression à froid arrière"
+    group: tyres
+    svm: {section: "REARLEFT / REARRIGHT", key: PressureSetting, per_wheel: true, confidence: high, index_sign: 1}
+    unit: kPa
+    live_field: player.wheels[2..3].pressure_kpa
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: "partial: minimum imposé par le jeu"
+    live_adjustable: "aux arrêts aux stands"
+    typical_range:
+      hypercar: {value: "≈ 165–195 kPa", confidence: low}
+      lmp2: {value: "≈ 150–185 kPa", confidence: low}
+      gt3: {value: "≈ 140–170 kPa", confidence: low}
+    default_step: "±3 kPa"
+    index_step: {value: 1.0, unit: kPa, confidence: low, source: "héritage rF2, non vérifié"}
+    confidence: low
+    sources:
+      - "https://steamcommunity.com/app/2399420/discussions/0/777534074828971181"
+
+  # ===== Freins ========================================================================================
+  - id: brake.bias_front
+    label_fr: "Répartition de freinage (% avant)"
+    group: brakes
+    svm: {section: CONTROLS, key: RearBrakeSetting, per_wheel: false, confidence: high, index_sign: -1}
+    svm_display_example: "RearBrakeSetting=…//55.0:45.0"
+    rest_key: VM_BRAKE_BALANCE
+    unit: "% avant : % arrière"
+    live_field: player.electronics.brake_bias_rear
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: true
+    typical_range:
+      hypercar: {value: "52–58 % avant", confidence: medium}
+      lmp2: {value: "54–60 % avant", confidence: medium}
+      gt3: {value: "48–56 % avant (plus arrière possible grâce à l'ABS ; plus avant pneus froids)", confidence: medium}
+    default_step: "±0,5–1 %"
+    index_step: {value: 0.25, unit: "%", confidence: medium, source: "BMW M4 LMGT3 : 22 ↔ 51.5:48.5, 34 ↔ 48.5:51.5 (avant:arrière)"}
+    notes: "ATTENTION : le protocole expose la fraction ARRIÈRE (brake_bias_rear) ; le paramètre canonique des règles est le % AVANT. Exemple Coach Dave : 54:46 + migration 2,0F ⇒ 56:44 à 100 % de pédale."
+    confidence: high
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+      - "https://traxion.gg/le-mans-ultimate-how-to-master-hypercar-braking/"
+
+  - id: brake.migration
+    label_fr: "Brake migration (Hypercar)"
+    group: brakes
+    svm: {section: CONTROLS, key: BrakeMigrationSetting, per_wheel: false, confidence: high, index_sign: 1}
+    unit: "0 à 2,5 par pas de 0,5, direction F/R"
+    live_field: player.electronics.brake_migration
+    classes: [hypercar]
+    bop_locked: false
+    live_adjustable: true
+    typical_range:
+      hypercar: {value: "0–2,5 ; recommandation Traxion 2,5F", confidence: high}
+    default_step: "±0,5"
+    notes: "Décale la répartition vers l'avant quand la pédale approche 100 %, revient en relâchant (aide au trail braking). Non disponible en LMP2 (lié au MGU)."
+    confidence: high
+    sources:
+      - "https://traxion.gg/le-mans-ultimate-how-to-master-hypercar-braking/"
+
+  - id: brake.pressure
+    label_fr: "Pression de frein / force pédale max"
+    group: brakes
+    svm: {section: CONTROLS, key: BrakePressureSetting, per_wheel: false, confidence: high, index_sign: 1}
+    unit: "%"
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    typical_range:
+      hypercar: {value: "70–100 %", confidence: medium}
+      lmp3: {value: "85–91 % pour pédales de charge (Coach Dave)", confidence: medium}
+    default_step: "±3–5 %"
+    confidence: medium
+    sources:
+      - "https://lemansultimate.com/?p=3955"
+
+  - id: brake.duct_front
+    label_fr: "Conduits de frein avant"
+    group: brakes
+    svm: {section: BODYAERO, key: BrakeDuctSetting, per_wheel: false, confidence: high, index_sign: -1}
+    unit: "cran 0–6 (+ = plus ouvert = plus froid)"
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    default_step: "±1 cran"
+    notes: "Influence la T° de disque et (modèle rF2) la T° de jante / pneu."
+    confidence: medium
+    sources:
+      - "https://lemansultimate.com/?p=3955"
+
+  - id: brake.duct_rear
+    label_fr: "Conduits de frein arrière"
+    group: brakes
+    svm: {section: BODYAERO, key: BrakeDuctRearSetting, per_wheel: false, confidence: high, index_sign: -1}
+    unit: "cran"
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    default_step: "±1 cran"
+    confidence: medium
+    sources:
+      - "https://lemansultimate.com/?p=3955"
+
+  - id: brake.abs_map
+    label_fr: "Map ABS (LMGT3)"
+    group: brakes
+    svm: {section: CONTROLS, key: AntilockBrakeSystemMapSetting, per_wheel: false, confidence: high, index_sign: 1}
+    related_svm_keys: [ABSSetting]
+    rest_key: VM_ANTILOCKBRAKESYSTEMMAP
+    unit: "map (ex. « 6 (Balanced) ») ; 1–10 avant juin 2025"
+    live_field: player.electronics.abs
+    classes: [gt3]
+    bop_locked: false
+    live_adjustable: true
+    default_step: "±1"
+    notes: "Seule classe avec ABS natif. Consigne officielle : régler la map PUIS la répartition, jamais les deux à la fois. Hypercar : ABS = aide « pilote » pénalisée en poids (voir driver_aids)."
+    confidence: high
+    sources:
+      - "https://guide.lemansultimate.com/hc/en-gb/articles/13211078435983-ABS-Anti-Lock-Braking-System-for-LMGT3-Cars"
+
+  # ===== Différentiel ==================================================================================
+  - id: diff.preload
+    label_fr: "Précharge du différentiel"
+    group: differential
+    svm: {section: DRIVELINE, key: DiffPreloadSetting, per_wheel: false, confidence: high, index_sign: 1}
+    unit: "Nm (cran)"
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    typical_range:
+      hypercar: {value: "0–150 Nm", confidence: medium}
+    default_step: "±15 Nm"
+    index_step: {value: 1.0, unit: Nm, confidence: low, source: "Porsche 911 GT3 R : 90 ↔ 140 Nm, 120 ↔ 170 Nm"}
+    notes: "BMW M4 GT3 : précharge réglable depuis v1.4. Sur certaines GT3, seule la précharge est disponible."
+    confidence: medium
+    sources:
+      - "https://traxion.gg/latest-le-mans-ultimate-update-to-improve-hypercar-cold-tyre-performance-patch-notes-released/"
+
+  - id: diff.power
+    label_fr: "Verrouillage en charge (power)"
+    group: differential
+    svm: {section: DRIVELINE, key: DiffPowerSetting, per_wheel: false, confidence: high, index_sign: 1}
+    unit: "% ou ° de rampe (cran)"
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    typical_range:
+      hypercar: {value: "20–80 %", confidence: medium}
+    default_step: "±1 cran (≈ ±5–10 %)"
+    confidence: medium
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  - id: diff.coast
+    label_fr: "Verrouillage en retenue (coast)"
+    group: differential
+    svm: {section: DRIVELINE, key: DiffCoastSetting, per_wheel: false, confidence: high, index_sign: 1}
+    related_svm_keys: [DiffPumpSetting, FrontDiffPumpSetting, FrontDiffPowerSetting, FrontDiffCoastSetting, FrontDiffPreloadSetting, RearSplitSetting]
+    unit: "% (cran)"
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    typical_range:
+      hypercar: {value: "10–60 %", confidence: medium}
+    default_step: "±1 cran"
+    notes: "rF2 expose aussi parfois « pump » (visqueux) et un différentiel avant (héritage, probablement N/A en LMU)."
+    confidence: medium
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  # ===== Transmission (verrouillée) =====================================================================
+  - id: trans.ratio_set
+    label_fr: "Jeu de rapports de boîte"
+    group: transmission
+    svm: {section: DRIVELINE, key: RatioSetSetting, per_wheel: false, confidence: high, index_sign: 0}
+    related_svm_keys: [FinalDriveSetting, ReverseSetting, Gear1Setting, Gear2Setting, Gear3Setting, Gear4Setting, Gear5Setting, Gear6Setting, Gear7Setting, GearAutoUpShiftSetting, GearAutoDownShiftSetting]
+    unit: "choix d'un jeu fixe (« Standard », « Le Mans », …)"
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: true
+    live_adjustable: false
+    notes: "Rapports individuels verrouillés (jeux imposés par circuit). Oreca 07 : jeu « Le Mans » uniquement au Mans. Gear7Setting absent sur GT3. Hors périmètre des règles de setup."
+    confidence: high
+    sources:
+      - "https://coachdaveacademy.com/tutorials/complete-guide-to-the-lmp2-class-in-le-mans-ultimate/"
+
+  # ===== Électronique ==================================================================================
+  - id: elec.tc
+    label_fr: "Contrôle de traction (niveau principal)"
+    group: electronics
+    svm: {section: CONTROLS, key: TractionControlMapSetting, per_wheel: false, confidence: high, index_sign: 1, label_is_index: true}
+    related_svm_keys: [TCSetting]
+    rest_key: VM_TRACTIONCONTROLMAP
+    unit: "1–11"
+    live_field: player.electronics.tc
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: true
+    typical_range:
+      hypercar: {value: "base 7-7-7 ; Hypercar : TC et slip 9–11 avec power cut 1–2", confidence: medium}
+      gt3: {value: "3 niveaux affichés ; base 7, perf 6, sécurité 9 (lecture Hoekstra)", confidence: medium}
+      lmp2: {value: "présent (pas d'hybride)", confidence: high}
+    default_step: "±1"
+    notes: "Réglable au garage (Advanced Setup → Powertrain) et au MFD en roulant. Sous ~7 on perd plus qu'on ne gagne (Hoekstra). LMP2 : certaines sources disent « pas de TC/ABS (0) » dans le .svm — à vérifier sur le PC."
+    confidence: high
+    sources:
+      - "https://guide.lemansultimate.com/hc/en-gb/articles/13182869047311-How-do-I-configure-my-traction-control-in-Le-Mans-Ultimate"
+      - "https://arnouthoekstra.substack.com/p/confused-by-tc-you-should-be"
+
+  - id: elec.tc_cut
+    label_fr: "TC : coupure de puissance (power cut)"
+    group: electronics
+    svm: {section: CONTROLS, key: TCPowerCutMapSetting, per_wheel: false, confidence: high, index_sign: 1, label_is_index: true}
+    unit: "1–11"
+    live_field: player.electronics.tc_cut
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: true
+    default_step: "±1"
+    confidence: high
+    sources:
+      - "https://guide.lemansultimate.com/hc/en-gb/articles/13182869047311-How-do-I-configure-my-traction-control-in-Le-Mans-Ultimate"
+
+  - id: elec.tc_slip
+    label_fr: "TC : glissement / angle de dérive toléré (slip)"
+    group: electronics
+    svm: {section: CONTROLS, key: TCSlipAngleMapSetting, per_wheel: false, confidence: high, index_sign: 1, label_is_index: true}
+    unit: "1–11 (LMP3 : « Linked »)"
+    live_field: player.electronics.tc_slip
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: true
+    default_step: "±1"
+    notes: "Le guide officiel décrit « Slip Angle » comme la dérive latérale cible avant activation ; la communauté lit « slip toléré ». Dans les deux lectures, valeur basse = intervention plus tôt."
+    confidence: high
+    sources:
+      - "https://guide.lemansultimate.com/hc/en-gb/articles/13182869047311-How-do-I-configure-my-traction-control-in-Le-Mans-Ultimate"
+
+  - id: elec.motor_map
+    label_fr: "Motor map (déploiement électrique)"
+    group: electronics
+    svm: {section: ENGINE, key: ElectricMotorMapSetting, per_wheel: false, confidence: high, index_sign: 1}
+    svm_display_example: "ElectricMotorMapSetting=…//30kW"
+    unit: "kW (crans)"
+    live_field: player.electronics.motor_map
+    classes: [hypercar]
+    bop_locked: "partial: puissance totale combinée plafonnée à 500 kW ; LMH déploiement avant seulement > 190 km/h (Ferrari, Toyota) ou > 150 km/h (Peugeot)"
+    live_adjustable: true
+    typical_range:
+      hypercar: {value: "LMDh 0–50 kW (dès 0 km/h) ; LMH 0–200 kW (cible relais 40–100 kW)", confidence: high}
+    default_step: "±10 kW (LMH) / ±5 kW (LMDh)"
+    notes: "Batterie à 100 % = plus de régénération = perte de freinage (LMH bloque l'arrière, LMDh l'avant). Démarrer le relais ≈ 75 % avec déploiement élevé puis réduit (Coach Dave)."
+    confidence: high
+    sources:
+      - "https://coachdaveacademy.com/tutorials/hypercar-electric-motor-maps-in-le-mans-ultimate-explained/"
+
+  - id: elec.regen
+    label_fr: "Niveau de régénération"
+    group: electronics
+    svm: {section: ENGINE, key: RegenerationMapSetting, per_wheel: false, confidence: high, index_sign: 1}
+    svm_display_example: "RegenerationMapSetting=…//170kW"
+    unit: "kW (crans)"
+    live_field: player.energy.regen_kw
+    classes: [hypercar]
+    bop_locked: "partial: régén max LMDh 170 kW, LMH 200 kW"
+    live_adjustable: true
+    typical_range:
+      hypercar: {value: "max recommandé", confidence: high}
+    notes: "Soft-clipping batterie à 15 %. LMGT3 : régén 0 %."
+    confidence: high
+    sources:
+      - "https://coachdaveacademy.com/tutorials/hypercar-electric-motor-maps-in-le-mans-ultimate-explained/"
+
+  - id: elec.engine_map
+    label_fr: "Map moteur / mélange (mixture)"
+    group: electronics
+    svm: {section: ENGINE, key: EngineMixtureSetting, per_wheel: false, confidence: high, index_sign: 1}
+    related_svm_keys: [EngineBrakingMapSetting, EngineBoostSetting, RevLimitSetting]
+    rest_key: VM_ENGINE_MIXTURE
+    unit: "crans"
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: true
+    default_step: "±1"
+    notes: "Lean = économie, perte de performance ; baisser pour économiser (lift & coast). EngineBrakingMapSetting (frein moteur) existe aussi."
+    confidence: medium
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-complete-guide-to-the-lmgt3-cars-in-le-mans-ultimate/"
+
+  # ===== Énergie / carburant ===========================================================================
+  - id: energy.virtual_energy
+    label_fr: "Énergie virtuelle (NRG) chargée"
+    group: energy
+    svm: {section: GENERAL, key: VirtualEnergySetting, per_wheel: false, confidence: high, index_sign: 1}
+    svm_display_example: "VirtualEnergySetting=50//50% (12.5 laps)"
+    rest_key: VM_VIRTUAL_ENERGY
+    unit: "% du maximum par relais"
+    live_field: player.energy.virtual_energy
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: "partial: énergie max par relais fixée par BoP (MaxStintEnergy, MJ)"
+    live_adjustable: "aux arrêts aux stands"
+    typical_range:
+      hypercar: {value: "100 % par défaut ≈ 40–50 min de relais ; 0 % ⇒ stop & go 100 s", confidence: high}
+    notes: "Le système NRG s'applique à toutes les classes, sans part batterie hors Hypercar."
+    confidence: high
+    sources:
+      - "https://traxion.gg/how-to-manage-virtual-energy-in-le-mans-ultimate/"
+
+  - id: energy.fuel_ratio
+    label_fr: "Fuel ratio (part carburant / énergie virtuelle)"
+    group: energy
+    svm: {section: GENERAL, key: FuelSetting, per_wheel: false, confidence: medium, index_sign: 1}
+    svm_display_example: "FuelSetting=89//0.94  (la valeur affichée 0,94 est cohérente avec un ratio ≈ 0,90–1,00 ; interprétation à confirmer sur le PC)"
+    unit: "sans unité (≈ 0,90–1,00)"
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    typical_range:
+      hypercar: {value: "≈ 0,90–1,00 ; 0,96 ⇒ 4 % de l'énergie virtuelle vient de la batterie", confidence: high}
+    default_step: "±0,01"
+    notes: "Fixe la charge carburant réelle à partir de l'énergie virtuelle."
+    confidence: medium
+    sources:
+      - "https://traxion.gg/how-to-manage-virtual-energy-in-le-mans-ultimate/"
+
+  - id: fuel.load
+    label_fr: "Carburant embarqué"
+    group: energy
+    svm: {section: GENERAL, key: FuelCapacitySetting, per_wheel: false, confidence: medium, index_sign: 1}
+    svm_display_example: "FuelCapacitySetting=0//47.0L (13.3 laps)"
+    rest_key: VM_FUEL_LEVEL
+    unit: L
+    live_field: player.energy.fuel_l
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: "partial: capacité fixée"
+    live_adjustable: "aux arrêts aux stands"
+    notes: "Dérivé du ratio et de l'énergie virtuelle."
+    confidence: high
+    sources:
+      - "https://traxion.gg/how-to-manage-virtual-energy-in-le-mans-ultimate/"
+
+  - id: strategy.pitstops
+    label_fr: "Arrêts aux stands planifiés"
+    group: strategy
+    svm: {section: GENERAL, key: NumPitstopsSetting, per_wheel: false, confidence: high, index_sign: 0}
+    related_svm_keys: [Pitstop1Setting, Pitstop2Setting, Pitstop3Setting]
+    unit: "nombre + réglages par arrêt"
+    live_field: player.energy.scheduled_stops
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: true
+    notes: "Hors périmètre des règles d'équilibre ; utile au widget stratégie (REST pitstop-estimate)."
+    confidence: high
+    sources:
+      - "docs/research/01-telemetrie-lmu.md §3"
+
+  # ===== Direction, refroidissement ======================================================================
+  - id: steer.lock
+    label_fr: "Butée / rapport de direction"
+    group: steering
+    svm: {section: CONTROLS, key: SteerLockSetting, per_wheel: false, confidence: high, index_sign: -1}
+    rest_key: VM_STEER_LOCK
+    unit: "° (ou cran)"
+    live_field: player.inputs.wheel_range_deg
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    default_step: "±1 cran"
+    notes: "Non physique mais utile sur circuits lents (voiture plus vive)."
+    confidence: medium
+    sources:
+      - "https://coachdaveacademy.com/tutorials/the-ultimate-le-mans-ultimate-setup-guide/"
+
+  - id: cooling.radiators
+    label_fr: "Caches radiateur eau / huile"
+    group: cooling
+    svm: {section: BODYAERO, key: "WaterRadiatorSetting / OilRadiatorSetting", per_wheel: false, confidence: high, index_sign: 0}
+    unit: cran
+    live_field: player.engine.water_c
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: false
+    live_adjustable: false
+    notes: "Garder eau / huile < 120 °C (guide LMP3). Hors règles d'équilibre."
+    confidence: medium
+    sources:
+      - "https://lemansultimate.com/?p=3955"
+
+  # ===== Héritage rF2, probablement non réglables en LMU (à confirmer via minValue == maxValue) =========
+  - id: legacy.chassis
+    label_fr: "Réglages hérités de rFactor 2 (probablement figés)"
+    group: legacy
+    svm: {section: "GENERAL / SUSPENSION / LEFTFENDER / RIGHTFENDER / FRONTLEFT…", key: "CGHeightSetting, CGRightSetting, CGRearSetting, WedgeSetting, FrontWheelTrackSetting, RearWheelTrackSetting, LeftTrackBarSetting, RightTrackBarSetting, ChassisAdj00..11Setting, FenderFlareSetting, TenderSpringSetting, TenderTravelSetting, SpringRubberSetting, BrakeDiscSetting, BrakePadSetting, HandfrontbrakePressSetting, HandbrakePressSetting", per_wheel: false, confidence: high, index_sign: 0}
+    classes: [hypercar, lmp2, lmp3, gt3]
+    bop_locked: true
+    live_adjustable: false
+    notes: "Présents dans les fichiers .svm ; les libellés « N/A » / « Non-adjustable » indiquent ce qui est figé pour une voiture donnée. Lest et répartition de masse sont fixés par le BoP (WeightPenalty)."
+    confidence: medium
+    sources:
+      - "docs/research/01-telemetrie-lmu.md §3"
+
+# ---------------------------------------------------------------------------------------------------
+# Leviers verrouillés par le BoP (A.5) — à ne jamais proposer en modification ; servent d'invariants.
+# ---------------------------------------------------------------------------------------------------
+bop_levers:
+  - {lever: WeightPenalty, label_fr: "Lest (position fixée)", classes: [hypercar, lmp2, lmp3, gt3], unit: kg, example: "Lamborghini Huracán +45 kg Le Mans ; Porsche 963 +10 kg partout", confidence: high}
+  - {lever: MaxPowerOutput, label_fr: "Puissance maximale", classes: [hypercar], unit: kW, example: "BMW / Cadillac / Lamborghini −5 kW Le Mans", confidence: high}
+  - {lever: PowerOutput, label_fr: "Puissance (%)", classes: [gt3], unit: "%", example: "Ford −2 % Monza", confidence: high}
+  - {lever: MaxStintEnergy, label_fr: "Énergie maximale par relais", classes: [gt3, lmp2, hypercar], unit: MJ, example: "Porsche 911 +22 MJ Bahreïn", confidence: high}
+  - {lever: MinimumAllowedRearWing, label_fr: "Angle d'aileron arrière minimal", classes: [gt3], unit: "°", example: "3,85° (296 GT3, Monza) ; 4,80° (720S, Le Mans / Monza)", confidence: high}
+  - {lever: AeroDrag, label_fr: "Traînée aérodynamique", classes: [gt3], unit: "—", example: "Corvette à Monza", confidence: high}
+  - {lever: CombinedPower, label_fr: "Puissance totale combinée", classes: [hypercar], unit: kW, example: "500 kW pour tous", confidence: high}
+  - {lever: FrontMguDeploymentSpeed, label_fr: "Vitesse de déploiement du MGU avant", classes: [hypercar], unit: km/h, example: "190 (Ferrari / Toyota), 150 (Peugeot) ; LMDh : dès 0 km/h", confidence: high}
+  - {lever: MguPower, label_fr: "Puissance MGU / régénération", classes: [hypercar], unit: kW, example: "LMH 200 kW / LMDh 50 kW ; régén 200 / 170 kW", confidence: high}
+  - {lever: MinimumRideHeight, label_fr: "Hauteur de caisse minimale", classes: [gt3], unit: mm, example: "non publié", confidence: low}
+  - {lever: GearRatioSets, label_fr: "Jeux de rapports", classes: [hypercar, lmp2, lmp3, gt3], unit: "—", example: "« Le Mans » vs « Standard »", confidence: high}
+  - {lever: ClassMass, label_fr: "Masse LMP2", classes: [lmp2], unit: kg, example: "930–950 kg (+7 kg en v1.4)", confidence: high}
+
+# Aides « pilote » (réglages du jeu, pas du setup) et leur pénalité de masse en Hypercar.
+driver_aids:
+  - {aid: ABS, classes: [hypercar], levels: "Low / High", weight_penalty_kg: "+25 / +45", confidence: high, source: "https://traxion.gg/le-mans-ultimate-update-adjusts-lmgt3-bop-and-increases-driver-aid-weight-penalties/"}
+  - {aid: StabilityControl, classes: [hypercar], levels: "Low / High", weight_penalty_kg: "+20 / +40", confidence: high, source: "https://traxion.gg/le-mans-ultimate-update-adjusts-lmgt3-bop-and-increases-driver-aid-weight-penalties/"}
+
+# Fenêtres thermiques connues (A.4) — ordres de grandeur ; la valeur officielle par composé se lit
+# dans player.wheels[i].optimal_temp_c (mémoire partagée) ou via REST, jamais codée en dur.
+thermal_windows:
+  tyres:
+    - {scope: "GT3 / Hypercar slicks", target: "≈ 78–80 °C de carcasse en régime (communauté) ; iRacing GT3 transposable 80–90 °C", confidence: low}
+    - {scope: "Pneus pluie", target: "≈ 60–80 °C", confidence: low}
+    - {scope: "LMP3 (guide officiel)", target: "85–95 °C via les conduits de frein", confidence: medium}
+    - {scope: "Surchauffe", target: "surface > ~110–115 °C prolongée", confidence: low}
+  brakes:
+    - {scope: "LMGT3 (acier)", target: "optimum ≈ 350–650 °C avant ; froid < 250 ; chaud > 750", confidence: low}
+    - {scope: "Prototypes / Hypercar (carbone)", target: "optimum ≈ 400–800 °C ; froid < 300 ; fade > 1000", confidence: low}
+  notes:
+    - "v1.2.3 : pics de température réduits, chauffe plus longue ; v1.4 : grip à froid Hypercar amélioré, courbes friction/température des plaquettes réalistes."
+    - "Loi des gaz : p_chaud ≈ p_froid × (T_chaud + 273,15) / (T_froid + 273,15) (pressions absolues), soit ≈ +0,5–0,6 kPa par °C de gaz pour 180 kPa manométrique."
+  sources:
+    - "https://steamcommunity.com/app/2399420/discussions/0/777534074828971181"
+    - "https://traxion.gg/le-mans-ultimates-hypercars-given-massive-tyre-update/"
+    - "https://lemansultimate.com/?p=3955"
+
+# Points à vérifier sur le PC du client (brief 02 §F, brief 01 §7) avant de figer quoi que ce soit.
+to_verify_in_game:
+  - "Noms exacts des clés .svm en LMU 1.4.x et bornes par voiture (REST getPlayerGarageData)."
+  - "Interprétation de FuelSetting (ratio ?) et FuelCapacitySetting (litres) ; correspondance index ↔ minValue/maxValue REST."
+  - "Présence effective du 3e élément, du flap avant et de la barre réglable en roulant, voiture par voiture."
+  - "Allocation de composés par classe et session (REST TireManagement)."
+  - "Seuil lent/rapide des amortisseurs par voiture (défaut 25 mm/s)."
+  - "Fenêtres de température des freins par classe après la refonte v1.4 (calibrer sur la couleur du HUD)."

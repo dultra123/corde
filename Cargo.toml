@@ -1,0 +1,47 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/corde-protocol",
+    "crates/corde-core",
+    "crates/corde-lmu",
+    "crates/corde-sim",
+    "crates/corde-store",
+    "crates/corde-engineer",
+    "crates/corde-server",
+]
+# La coquille de bureau (Tauri 2) est un workspace à part : elle tire WebView2 / GTK-WebKit
+# et ne se compile que là où ces bibliothèques existent (job CI `desktop`, Windows).
+# `cargo check --workspace` et `cargo test --workspace` ne la voient donc pas.
+exclude = ["apps/desktop/src-tauri"]
+
+[workspace.package]
+version = "0.3.0"
+edition = "2021"
+repository = "https://github.com/dultra123/corde"
+authors = ["dultra__"]
+license = "GPL-3.0-or-later"
+rust-version = "1.85"
+
+[workspace.dependencies]
+corde-protocol = { path = "crates/corde-protocol" }
+corde-core = { path = "crates/corde-core" }
+corde-lmu = { path = "crates/corde-lmu" }
+corde-store = { path = "crates/corde-store" }
+corde-engineer = { path = "crates/corde-engineer" }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+ts-rs = { version = "12", features = ["serde-compat", "serde-json-impl"] }
+thiserror = "2"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "net", "fs", "signal"] }
+memmap2 = "0.9"
+bytemuck = { version = "1", features = ["derive"] }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true

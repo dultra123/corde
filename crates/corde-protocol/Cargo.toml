@@ -1,0 +1,14 @@
+[package]
+name = "corde-protocol"
+description = "Modèle de données normalisé de Corde (télémétrie multi-jeux) et messages du serveur local. Source unique des types Rust et TypeScript."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+ts-rs = { workspace = true }
+
+[features]
+default = []

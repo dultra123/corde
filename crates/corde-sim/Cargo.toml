@@ -1,0 +1,22 @@
+[package]
+name = "corde-sim"
+description = "Simulateur : monde synthétique déterministe (tracé façon Paul Ricard, GT3/Hypercar, 19 IA) produisant des TelemetryFrame complètes pour développer et tester sans le jeu."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "corde-sim"
+path = "src/main.rs"
+
+[dependencies]
+corde-protocol = { workspace = true }
+corde-core = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+clap = { version = "4", features = ["derive"] }
+# TODO(sim-shm): `memmap2` + `bytemuck` reviendront avec le mode « écrire /dev/shm/LMU_Data ».

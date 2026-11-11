@@ -1,0 +1,36 @@
+[package]
+name = "corde-lmu"
+description = "Adaptateur Le Mans Ultimate : mémoire partagée native LMU_Data (Windows + pont /dev/shm Linux), API REST locale, fichiers de setup .svm."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "lmu-probe"
+path = "src/bin/lmu-probe.rs"
+
+[[bin]]
+name = "lmu-shm-fake"
+path = "src/bin/lmu-shm-fake.rs"
+
+[dependencies]
+corde-protocol = { workspace = true }
+corde-core = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+memmap2 = { workspace = true }
+# `min_const_generics` : Pod/Zeroable pour les tableaux de taille quelconque
+# ([TelemInfoV01; 104], [u8; 65536]…) ; `extern_crate_alloc` : `zeroed_box`.
+bytemuck = { workspace = true, features = ["min_const_generics", "extern_crate_alloc"] }
+indexmap = "2"
+# Fichiers de résultats `UserData/Log/Results/*.xml` (format rFactorXML, avec DOCTYPE).
+roxmltree = "0.21"
+# Client REST local en HTTP clair (127.0.0.1) : pas de TLS, pas de gzip.
+ureq = { version = "3", default-features = false, features = ["json"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_Memory", "Win32_System_Threading", "Win32_Security"] }

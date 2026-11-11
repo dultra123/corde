@@ -1,0 +1,14 @@
+[package]
+name = "corde-core"
+description = "Cœur de Corde : trait de source de télémétrie, exécution d'une source, suivi des tours, métriques dérivées. Indépendant du jeu."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+corde-protocol = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }

@@ -1,0 +1,8 @@
+{
+    "rFactor2SharedMemoryMapPlugin64.dll": {
+        " Enabled": 1,
+        "DebugISIInternals": 0,
+        "DebugOutputLevel": 0,
+        "EnableStockCarRulesPlugin": 0
+    }
+}

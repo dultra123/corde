@@ -1,0 +1,24 @@
+[package]
+name = "corde-engineer"
+description = "Ingénieur de course Corde : analyse d'une session enregistrée (virages, équilibre, pneus, freins, plateforme, style) → rapport et trois orientations de réglage (agressif / sûr / pluie) d'après knowledge/*.yaml."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+corde-protocol = { workspace = true }
+corde-store = { workspace = true }
+# `.svm` parser / writer and garage bounds (plans resolved against the real setup).
+corde-lmu = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = "0.9"
+thiserror = { workspace = true }
+tracing = { workspace = true }
+regex = "1"
+# Optional language-model extractor (Anthropic Messages API over HTTPS, 8 s timeout).
+ureq = { version = "3", default-features = false, features = ["rustls", "json"] }

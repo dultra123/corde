@@ -1,0 +1,62 @@
+# Coquille de bureau de Corde (Tauri 2) : une fenêtre native + le serveur Corde embarqué.
+#
+# Ce crate est VOLONTAIREMENT hors du workspace Cargo racine (`exclude` dans le Cargo.toml
+# racine, `[workspace]` vide ici) : Tauri tire WebView2 / GTK-WebKit et ne se compile pas sur
+# les machines sans ces bibliothèques (CI Linux « rust », conteneurs de développement).
+# `cargo check --workspace` à la racine ne le voit donc pas ; c'est le job CI `desktop`
+# (windows-latest) qui le compile et produit l'installeur.
+
+[package]
+name = "corde-desktop"
+description = "Corde — télémétrie, tableau de bord et ingénieur de course pour Le Mans Ultimate"
+# Même version que le workspace (Cargo.toml racine) et que tauri.conf.json : les trois bougent ensemble.
+version = "0.3.0"
+authors = ["dultra__"]
+edition = "2021"
+# Tauri 2.12 exige Rust 1.90 (le workspace principal reste à 1.85).
+rust-version = "1.90"
+repository = "https://github.com/dultra123/corde"
+license.workspace = true
+publish = false
+
+# Workspace à un seul membre (voir plus haut) ; il porte la licence, comme le workspace racine.
+[workspace]
+
+[workspace.package]
+license = "GPL-3.0-or-later"
+
+[[bin]]
+name = "corde-desktop"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2.7", features = [] }
+
+[dependencies]
+tauri = { version = "2.12", features = ["tray-icon"] }
+tauri-plugin-single-instance = "2.5"
+tauri-plugin-autostart = "2.7"
+tauri-plugin-window-state = "2.5"
+tauri-plugin-notification = "2.8"
+
+# Le serveur embarqué : mêmes crates que l'exécutable `corde-server`.
+corde-server = { path = "../../../crates/corde-server" }
+corde-store = { path = "../../../crates/corde-store" }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "chrono"] }
+tokio = { version = "1", features = ["rt-multi-thread", "sync"] }
+# Client HTTP minimal pour interroger le serveur embarqué sur 127.0.0.1 (pas de TLS).
+ureq = { version = "3", default-features = false, features = ["json"] }
+
+[features]
+# `--features devtools` : outils de développement du WebView (F12) dans un build release.
+devtools = ["tauri/devtools"]
+
+[profile.release]
+opt-level = 3
+strip = true
+# LTO et codegen-units par défaut : ce crate est recompilé par la CI à chaque poussée ; le LTO
+# « thin » + codegen-units = 1 du workspace principal coûterait plusieurs minutes pour quelques %.

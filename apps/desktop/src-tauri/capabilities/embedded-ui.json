@@ -1,0 +1,16 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "embedded-ui",
+  "description": "L'UI web de Corde, servie par le serveur embarqué sur la boucle locale (origine « distante » pour Tauri). Elle n'a accès qu'aux quatre commandes du contrat coquille ↔ UI ; aucun plugin, aucun accès au système de fichiers.",
+  "windows": ["main"],
+  "local": false,
+  "remote": {
+    "urls": ["http://127.0.0.1:*", "http://localhost:*"]
+  },
+  "permissions": [
+    "allow-get-autostart",
+    "allow-set-autostart",
+    "allow-restart-app",
+    "allow-app-version"
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Corde",
+  "mainBinaryName": "Corde",
+  "version": "0.3.0",
+  "identifier": "app.corde.desktop",
+  "build": {
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Corde",
+        "url": "index.html",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 600,
+        "center": true,
+        "visible": false,
+        "theme": "Dark",
+        "backgroundColor": "#0b0e12",
+        "dragDropEnabled": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src ipc: http://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "publisher": "dultra__",
+    "copyright": "Copyright (C) 2026 dultra__",
+    "license": "GPL-3.0-or-later",
+    "category": "Utility",
+    "homepage": "https://github.com/dultra123/corde",
+    "shortDescription": "Corde — télémétrie et ingénieur de course pour Le Mans Ultimate",
+    "longDescription": "Corde lit la télémétrie de Le Mans Ultimate, affiche un tableau de bord en direct, enregistre tes sessions et propose des réglages. Toutes les données restent sur ton PC.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": {
+      "../../../packages/ui/dist": "ui"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["English", "French"],
+        "displayLanguageSelector": false,
+        "installerIcon": "icons/icon.ico",
+        "installerHooks": "windows/hooks.nsh"
+      }
+    }
+  }
+}

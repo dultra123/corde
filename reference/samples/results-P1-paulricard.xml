@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE rF [
+<!ENTITY rFEnt "rFactor Entity">
+]>
+<rFactorXML version="1.0">
+<RaceResults>
+<Setting>Multiplayer</Setting>
+<ServerName></ServerName>
+<ClientFuelVisible>2</ClientFuelVisible>
+<PlayerFile>Settings</PlayerFile>
+<DateTime>1793560250</DateTime>
+<TimeString>2026/11/01 20:10:50</TimeString>
+<TrackVenue>Silverstone Circuit</TrackVenue>
+<TrackCourse>Silverstone International Circuit</TrackCourse>
+<TrackEvent>Silverstone International Circuit</TrackEvent>
+<TrackData>C:\Program Files (x86)\Steam\steamapps\common\Le Mans Ultimate\Installed\Locations\Silverstone_2025\1.13\layoutInternational.mas</TrackData>
+<TrackLength>2962.1</TrackLength>
+<GameVersion>1.4200</GameVersion>
+<Dedicated>0</Dedicated>
+<ConnectionType upload="1000" download="8000">ADSL2+ 16M</ConnectionType>
+<RaceLaps>0</RaceLaps>
+<RaceTime>60</RaceTime>
+<MechFailRate>1</MechFailRate>
+<DamageMult>100</DamageMult>
+<FuelMult>1</FuelMult>
+<TireMult>1</TireMult>
+<VehiclesAllowed>Mercedes_AMG_GT3,</VehiclesAllowed>
+<ParcFerme>3</ParcFerme>
+<FixedSetups>0</FixedSetups>
+<FreeSettings>0</FreeSettings>
+<FixedUpgrades>0</FixedUpgrades>
+<TireWarmers>0</TireWarmers>
+<Practice1>
+<DateTime>1793560254</DateTime>
+<TimeString>2026/11/01 20:10:54</TimeString>
+<Laps>2147483647</Laps>
+<Minutes>120</Minutes>
+<Stream>
+<Score et="7107.5">Sebastien Lacour(44) lap=28 point=0 t=63.828 et=7107.520</Score>
+<Score et="7108.2">Kristian Petrov#3717(82) lap=1 point=2 t=-1.000 et=7108.076</Score>
+<Score et="7108.2">Kristian Petrov#3717(82) lap=2 point=0 t=-1.000 et=7108.076</Score>
+<Score et="7108.2">Kristian Petrov#3717(82) lap=2 point=1 t=-1.000 et=7108.076</Score>
+<Score et="7108.2">Kristian Petrov#3717(82) lap=2 point=2 t=-1.000 et=7108.076</Score>
+<Score et="7108.2">Kristian Petrov#3717(82) lap=3 point=0 t=-1.000 et=7108.076</Score>
+<TrackLimits Driver="grd pubba" ID="66" Lap="12" WarningPoints="0" CurrentPoints="0" Resolution="7" et="7111.0">No Further Action</TrackLimits>
+<TrackLimits Driver="grd pubba" ID="66" Lap="12" WarningPoints="0" CurrentPoints="0" Resolution="7" et="7111.0">No Further Action</TrackLimits>
+<Score et="7111.2">Maciej Orlowski(74) lap=11 point=0 t=63.750 et=7111.160</Score>
+<Score et="7111.6">grd pubba(66) lap=12 point=2 t=49.167 et=7111.540</Score>
+<Score et="7114.9">Ted Ferguson(52) lap=23 point=1 t=17.530 et=7114.880</Score>
+<Score et="7116.7">Andrei Vykh(46) lap=29 point=0 t=65.554 et=7116.700</Score>
+<Score et="7117.7">Alessandro Marello(81) lap=5 point=0 t=66.996 et=7117.620</Score>
+<Score et="7120.7">Robin Vale#4821(29) lap=53 point=2 t=-1.000 et=7120.640</Score>
+<TrackLimits Driver="Robin Vale#4821" ID="29" Lap="53" WarningPoints="0.5" CurrentPoints="5" Resolution="5" et="7121.7">Invalid Lap Cut Track</TrackLimits>
+<TrackLimits Driver="Robin Vale#4821" ID="29" Lap="53" WarningPoints="0.5" CurrentPoints="5" Resolution="5" et="7121.7">Invalid Lap Cut Track</TrackLimits>
+<Incident et="7122.7">Andrei Vykh(46) reported contact (236.15) with Immovable</Incident>
+<Incident et="7123.0">Andrei Vykh(46) reported contact (15444.19) with Immovable</Incident>
+<Incident et="7123.1">Andrei Vykh(46) reported contact (176.57) with Wheel</Incident>
+<Incident et="7123.1">Andrei Vykh(46) reported contact (108.18) with Wheel</Incident>
+<Incident et="7123.1">Andrei Vykh(46) reported contact (108.18) with Wheel</Incident>
+<Incident et="7123.2">Andrei Vykh(46) reported contact (296.13) with Wheel</Incident>
+<Incident et="7123.3">Andrei Vykh(46) reported contact (22.00) with Wing</Incident>
+<Incident et="7123.4">Andrei Vykh(46) reported contact (5.49) with Wing</Incident>
+<Incident et="7123.4">Andrei Vykh(46) reported contact (50.25) with Wing</Incident>
+<Incident et="7123.8">Andrei Vykh(46) reported contact (5.40) with Wing</Incident>
+<Incident et="7123.9">Andrei Vykh(46) reported contact (18.57) with Wing</Incident>
+<Score et="7125.1">Sebastien Lacour(44) lap=28 point=1 t=17.514 et=7125.040</Score>
+<Incident et="7125.3">Andrei Vykh(46) reported contact (3.02) with Wing</Incident>
+<Score et="7125.4">MR SLIDER7(55) lap=19 point=2 t=47.694 et=7125.260</Score>
+<Incident et="7126.2">Andrei Vykh(46) reported contact (11.98) with Wing</Incident>
+<Incident et="7127.6">Andrei Vykh(46) reported contact (16.45) with Wing</Incident>
+<Incident et="7127.9">Andrei Vykh(46) reported contact (1.45) with Wing</Incident>
+<Score et="7128.6">grd pubba(66) lap=13 point=0 t=66.082 et=7128.460</Score>
+<Incident et="7128.7">Andrei Vykh(46) reported contact (2.82) with Wing</Incident>
+<Score et="7128.9">Maciej Orlowski(74) lap=11 point=1 t=17.717 et=7128.880</Score>
+<Incident et="7131.1">Andrei Vykh(46) reported contact (2.04) with Wing</Incident>
+<TrackLimits Driver="Andrei Vykh" ID="46" Lap="29" WarningPoints="9" CurrentPoints="9" Resolution="5" et="7131.1">Invalid Lap Cut Track</TrackLimits>
+<TrackLimits Driver="Andrei Vykh" ID="46" Lap="29" WarningPoints="9" CurrentPoints="9" Resolution="5" et="7131.1">Invalid Lap Cut Track</TrackLimits>
+<Incident et="7131.6">Andrei Vykh(46) reported contact (2.08) with Wing</Incident>
+<Incident et="7131.8">Andrei Vykh(46) reported contact (38.57) with Immovable</Incident>
+<Incident et="7132.5">Andrei Vykh(46) reported contact (3.42) with Wing</Incident>
+<Incident et="7132.9">Andrei Vykh(46) reported contact (38.62) with Immovable</Incident>
+<Score et="7133.5">Andrei Vykh(46) lap=29 point=1 t=-1.000 et=7133.445</Score>
+<Score et="7133.5">Andrei Vykh(46) lap=29 point=2 t=-1.000 et=7133.445</Score>
+<Score et="7133.5">Andrei Vykh(46) lap=30 point=0 t=-1.000 et=7133.445</Score>
+<Score et="7135.9">Alessandro Marello(81) lap=5 point=1 t=18.245 et=7135.860</Score>
+<TrackLimits Driver="Sebastien Lacour" ID="44" Lap="28" WarningPoints="0" CurrentPoints="0" Resolution="7" et="7136.1">No Further Action</TrackLimits>
+<TrackLimits Driver="Sebastien Lacour" ID="44" Lap="28" WarningPoints="0" CurrentPoints="0" Resolution="7" et="7136.1">No Further Action</TrackLimits>
+<Score et="7136.8">Robin Vale#4821(29) lap=54 point=0 t=-1.000 et=7136.760</Score>
+<TrackLimits Driver="MR SLIDER7" ID="55" Lap="19" WarningPoints="0" CurrentPoints="0.25" Resolution="7" et="7136.8">No Further Action</TrackLimits>
+<TrackLimits Driver="MR SLIDER7" ID="55" Lap="19" WarningPoints="0" CurrentPoints="0.25" Resolution="7" et="7136.8">No Further Action</TrackLimits>
+<Score et="7138.5">Sebastien Lacour(44) lap=28 point=2 t=-1.000 et=7138.506</Score>
+<Score et="7138.5">Sebastien Lacour(44) lap=29 point=0 t=-1.000 et=7138.506</Score>
+<Score et="7138.9">grd pubba(66) lap=13 point=1 t=-1.000 et=7138.748</Score>
+<Score et="7138.9">grd pubba(66) lap=13 point=2 t=-1.000 et=7138.748</Score>
+<Score et="7138.9">grd pubba(66) lap=14 point=0 t=-1.000 et=7138.748</Score>
+<Score et="7142.2">MR SLIDER7(55) lap=20 point=0 t=64.491 et=7142.060</Score>
+<Score et="7144.2">Ted Ferguson(52) lap=23 point=2 t=46.824 et=7144.160</Score>
+<Score et="7154.2">Robin Vale#4821(29) lap=54 point=1 t=17.433 et=7154.180</Score>
+<Score et="7158.2">Maciej Orlowski(74) lap=11 point=2 t=-1.000 et=7158.160</Score>
+<TrackLimits Driver="Ted Ferguson" ID="52" Lap="23" WarningPoints="0" CurrentPoints="0" Resolution="7" et="7159.1">No Further Action</TrackLimits>
+<TrackLimits Driver="Ted Ferguson" ID="52" Lap="23" WarningPoints="0" CurrentPoints="0" Resolution="7" et="7159.1">No Further Action</TrackLimits>
+<TrackLimits Driver="Maciej Orlowski" ID="74" Lap="11" WarningPoints="0.5" CurrentPoints="0.5" Resolution="5" et="7159.3">Invalid Lap Cut Track</TrackLimits>
+<TrackLimits Driver="Maciej Orlowski" ID="74" Lap="11" WarningPoints="0.5" CurrentPoints="0.5" Resolution="5" et="7159.3">Invalid Lap Cut Track</TrackLimits>
+<Score et="7160.6">Ted Ferguson(52) lap=24 point=0 t=63.229 et=7160.580</Score>
+<Score et="7162.0">MR SLIDER7(55) lap=20 point=1 t=19.802 et=7161.860</Score>
+<Score et="7165.1">Alessandro Marello(81) lap=5 point=2 t=47.470 et=7165.100</Score>
+<Score et="7174.7">Maciej Orlowski(74) lap=12 point=0 t=-1.000 et=7174.700</Score>
+<Sector Driver="Robin Vale#4821" ID="29" Sector="1" Class="GT3" et="7177.5">Robin Vale#4821(29) set new best for sector 1</Sector>
+<Sector Driver="Robin Vale#4821" ID="29" Sector="2" Class="GT3" et="7177.5">Robin Vale#4821(29) set new best for sector 2</Sector>
+<Sector Driver="Robin Vale#4821" ID="29" Sector="3" Class="GT3" et="7177.5">Robin Vale#4821(29) set new best for sector 3</Sector>
+<Score et="7178.3">Ted Ferguson(52) lap=24 point=1 t=17.693 et=7178.260</Score>
+<Score et="7180.1">Maciej Orlowski(74) lap=12 point=1 t=-1.000 et=7180.098</Score>
+<Score et="7180.1">Maciej Orlowski(74) lap=12 point=2 t=-1.000 et=7180.098</Score>
+<Score et="7180.1">Maciej Orlowski(74) lap=13 point=0 t=-1.000 et=7180.098</Score>
+<Incident et="7181.6">Robin Vale#4821(29) reported contact (7409.44) with Immovable</Incident>
+<Score et="7181.8">Alessandro Marello(81) lap=6 point=0 t=64.153 et=7181.780</Score>
+<Incident et="7182.3">Robin Vale#4821(29) reported contact (215.28) with Immovable</Incident>
+<Incident et="7183.1">Robin Vale#4821(29) reported contact (154.63) with Immovable</Incident>
+<Score et="7184.0">Ted Ferguson(52) lap=24 point=2 t=-1.000 et=7183.963</Score>
+<Score et="7184.0">Ted Ferguson(52) lap=25 point=0 t=-1.000 et=7183.963</Score>
+<Incident et="7184.5">Robin Vale#4821(29) reported contact (74.05) with Immovable</Incident>
+<Incident et="7185.1">Robin Vale#4821(29) reported contact (45.34) with Immovable</Incident>
+<Incident et="7185.4">Robin Vale#4821(29) reported contact (80.22) with Immovable</Incident>
+<Incident et="7185.5">Robin Vale#4821(29) reported contact (92.83) with Immovable</Incident>
+<Score et="7185.5">Robin Vale#4821(29) lap=54 point=2 t=-1.000 et=7185.460</Score>
+<Incident et="7188.0">Robin Vale#4821(29) reported contact (15.86) with Immovable</Incident>
+<Incident et="7188.1">Robin Vale#4821(29) reported contact (38.01) with Immovable</Incident>
+<TrackLimits Driver="Alessandro Marello" ID="81" Lap="6" WarningPoints="0" CurrentPoints="0" Resolution="7" et="7188.6">No Further Action</TrackLimits>
+<TrackLimits Driver="Alessandro Marello" ID="81" Lap="6" WarningPoints="0" CurrentPoints="0" Resolution="7" et="7188.6">No Further Action</TrackLimits>
+<Incident et="7189.6">Robin Vale#4821(29) reported contact (3.25) with Immovable</Incident>
+<Incident et="7189.7">Robin Vale#4821(29) reported contact (5.93) with Immovable</Incident>
+<Incident et="7189.8">Robin Vale#4821(29) reported contact (9.74) with Immovable</Incident>
+<Incident et="7191.0">Robin Vale#4821(29) reported contact (6.78) with Immovable</Incident>
+<Incident et="7191.7">Robin Vale#4821(29) reported contact (8.83) with Immovable</Incident>
+<Incident et="7192.2">Robin Vale#4821(29) reported contact (12.31) with Immovable</Incident>
+<Incident et="7192.8">Robin Vale#4821(29) reported contact (16.79) with Immovable</Incident>
+<Score et="7192.9">MR SLIDER7(55) lap=20 point=2 t=50.730 et=7192.800</Score>
+<Score et="7199.6">Alessandro Marello(81) lap=6 point=1 t=17.751 et=7199.520</Score>
+<Score et="7209.8">MR SLIDER7(55) lap=21 point=0 t=67.621 et=7209.680</Score>
+<Score et="7214.1">Alessandro Marello(81) lap=6 point=2 t=-1.000 et=7214.071</Score>
+<Score et="7214.1">Alessandro Marello(81) lap=7 point=0 t=-1.000 et=7214.071</Score>
+<Score et="7217.9">MR SLIDER7(55) lap=21 point=1 t=-1.000 et=7217.829</Score>
+<Score et="7217.9">MR SLIDER7(55) lap=21 point=2 t=-1.000 et=7217.829</Score>
+<Score et="7217.9">MR SLIDER7(55) lap=22 point=0 t=-1.000 et=7217.829</Score>
+<Score et="7226.6">Robin Vale#4821(29) lap=55 point=0 t=-1.000 et=7226.587</Score>
+<Score et="7226.6">Robin Vale#4821(29) lap=55 point=1 t=-1.000 et=7226.587</Score>
+<Score et="7226.6">Robin Vale#4821(29) lap=55 point=2 t=-1.000 et=7226.587</Score>
+<Score et="7226.6">Robin Vale#4821(29) lap=56 point=0 t=-1.000 et=7226.587</Score>
+</Stream>
+<MostLapsCompleted>56</MostLapsCompleted>
+<Driver>
+<Name>Robin Vale#4821</Name>
+<Connected>1</Connected>
+<VehFile>397_25_911GT3R.VEH</VehFile>
+<UpgradeCode>15a51800 00000000 00000000 00000000</UpgradeCode>
+<VehName>911GT3R Custom Team 2025 #397</VehName>
+<Category>WEC 2025, GT3, Porsche 911 GT3 R LMGT3</Category>
+<CarType>Porsche 911 GT3 R LMGT3</CarType>
+<CarClass>GT3</CarClass>
+<CarNumber>21</CarNumber>
+<TeamName>Vales Motorspot</TeamName>
+<isPlayer>1</isPlayer>
+<ServerScored>1</ServerScored>
+<Position>1</Position>
+<ClassPosition>1</ClassPosition>
+<LapRankIncludingDiscos>5</LapRankIncludingDiscos>
+<Lap num="1" p="105" et="--.---" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="2" p="105" et="2975.0601" s1="18.8054" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="3" p="105" et="3056.8999" s1="18.6223" s2="30.2532" s3="16.7107" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">65.5862</Lap>
+<Lap num="4" p="105" et="3122.5000" s1="18.1104" s2="30.1501" s3="16.8079" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">65.0684</Lap>
+<Lap num="5" p="105" et="3187.5601" s1="18.0312" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="6" p="105" et="3251.9600" s1="17.7888" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="7" p="105" et="3315.5801" s1="17.6475" s2="29.5872" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="8" p="105" et="3384.5200" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="9" p="105" et="3508.9600" s1="18.8936" s2="30.6396" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="10" p="105" et="3575.2400" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="11" p="105" et="3639.8601" s1="17.7637" s2="29.6694" s3="16.4446" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">63.8777</Lap>
+<Lap num="12" p="105" et="3703.7400" s1="18.2822" s2="29.1948" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="13" p="105" et="3767.4399" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="14" p="105" et="3830.5801" s1="17.6833" s2="29.0557" s3="16.2612" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">63.0002</Lap>
+<Lap num="15" p="105" et="3893.5801" s1="17.5222" s2="29.1892" s3="16.3176" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">63.0291</Lap>
+<Lap num="16" p="105" et="3956.6001" s1="17.3408" s2="28.9861" s3="16.3945" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">62.7214</Lap>
+<Lap num="17" p="105" et="4019.3201" s1="17.5435" s2="46.6697" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="18" p="105" et="4105.2000" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="19" p="105" et="4222.3799" s1="17.9263" s2="29.6704" s3="16.6611" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">64.2578</Lap>
+<Lap num="20" p="105" et="4286.6399" s1="20.6328" s2="33.9409" s3="16.5474" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">71.1211</Lap>
+<Lap num="21" p="105" et="4357.7600" s1="19.4019" s2="30.1772" s3="16.3354" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">65.9146</Lap>
+<Lap num="22" p="105" et="4423.6799" s1="17.9956" s2="29.7188" s3="16.6196" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">64.3340</Lap>
+<Lap num="23" p="105" et="4488.0200" s1="18.5767" s2="29.9604" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="24" p="105" et="4553.6399" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="25" p="105" et="4558.7275" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="26" p="105" et="4745.8000" s1="20.6250" s2="30.2021" s3="17.0049" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">67.8320</Lap>
+<Lap num="27" p="105" et="4813.6399" s1="18.6152" s2="29.6655" s3="16.7363" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">65.0171</Lap>
+<Lap num="28" p="105" et="4878.6599" s1="18.9463" s2="29.2710" s3="16.3066" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">64.5239</Lap>
+<Lap num="29" p="105" et="4943.1799" s1="17.7012" s2="29.3760" s3="16.2842" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">63.3613</Lap>
+<Lap num="30" p="105" et="5006.5400" s1="17.7349" s2="29.2368" s3="16.1567" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">63.1284</Lap>
+<Lap num="31" p="105" et="5069.6799" s1="17.5425" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="32" p="105" et="5132.7400" s1="17.4541" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="33" p="105" et="5187.3899" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="34" p="105" et="5747.8601" s1="18.9351" s2="30.6323" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="35" p="105" et="5819.3401" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="36" p="105" et="5922.9399" s1="20.4458" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="37" p="105" et="5989.5601" s1="17.8643" s2="30.0029" s3="16.4087" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">64.2759</Lap>
+<Lap num="38" p="105" et="6053.8201" s1="17.5908" s2="29.4644" s3="16.3345" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">63.3896</Lap>
+<Lap num="39" p="105" et="6117.2200" s1="17.4404" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="40" p="105" et="6181.1799" s1="17.4512" s2="29.3237" s3="16.4082" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">63.1831</Lap>
+<Lap num="41" p="105" et="6244.3799" s1="17.4990" s2="28.9224" s3="16.2241" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">62.6455</Lap>
+<Lap num="42" p="105" et="6307.0200" s1="17.3384" s2="29.1304" s3="16.3555" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">62.8242</Lap>
+<Lap num="43" p="105" et="6369.8401" s1="18.5381" s2="29.0034" s3="16.5469" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">64.0884</Lap>
+<Lap num="44" p="105" et="6433.9199" s1="17.4678" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="45" p="105" et="6496.5801" s1="17.3398" s2="29.0176" s3="16.0737" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">62.4312</Lap>
+<Lap num="46" p="105" et="6559.0200" s1="17.3877" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="47" p="105" et="6621.5400" s1="17.4517" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="48" p="105" et="6684.9399" s1="17.6899" s2="30.5166" s3="16.0845" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">64.2910</Lap>
+<Lap num="49" p="105" et="6749.2200" s1="17.4243" s2="31.2646" s3="16.5181" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">65.2070</Lap>
+<Lap num="50" p="105" et="6814.4199" s1="19.7236" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="51" p="105" et="6881.3601" s1="17.3496" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="52" p="105" et="6943.8799" s1="17.2739" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="53" p="105" et="7006.3201" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="54" p="2" et="7074.2400" s1="17.5532" topspeed="246.39" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="55" p="1" et="7136.7600" s1="17.4331" topspeed="246.84" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="56" p="1" et="7226.5872" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<BestLapTime>62.4312</BestLapTime>
+<Laps>56</Laps>
+<Pitstops>0</Pitstops>
+<FinishStatus>Finished Normally</FinishStatus>
+<ControlAndAids startLap="1" endLap="53">UnknownControl</ControlAndAids>
+<ControlAndAids startLap="54" endLap="55">PlayerControl,Clutch,AutoBlip</ControlAndAids>
+<ControlAndAids startLap="56" endLap="56">UnknownControl</ControlAndAids>
+</Driver>
+<Driver>
+<Name>Casey Dunmore</Name>
+<Connected>1</Connected>
+<VehFile>397_24_911GT3R.VEH</VehFile>
+<UpgradeCode>15a51800 00000000 00000000 00000000</UpgradeCode>
+<VehName>911GT3R Custom Team 2024 #397</VehName>
+<Category>WEC 2024, GT3, Porsche 911 GT3 R LMGT3</Category>
+<CarType>Porsche 911 GT3 R LMGT3</CarType>
+<CarClass>GT3</CarClass>
+<CarNumber>3</CarNumber>
+<TeamName>Marcos Motorsport</TeamName>
+<isPlayer>1</isPlayer>
+<ServerScored>1</ServerScored>
+<Position>2</Position>
+<ClassPosition>2</ClassPosition>
+<LapRankIncludingDiscos>5</LapRankIncludingDiscos>
+<Lap num="1" p="105" et="--.---" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="2" p="105" et="3390.4897" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="3" p="105" et="3490.0200" s1="19.2078" s2="31.6270" s3="17.6216" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">68.4563</Lap>
+<Lap num="4" p="105" et="3558.4800" s1="18.6980" s2="30.8049" s3="64.6404" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">114.1433</Lap>
+<Lap num="5" p="105" et="3672.6201" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="6" p="105" et="3741.0200" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="7" p="105" et="3807.9199" s1="18.6797" s2="30.5984" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="8" p="105" et="3874.0601" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="9" p="105" et="3939.1599" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">66.0923</Lap>
+<Lap num="10" p="105" et="4005.2600" s1="18.7678" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="11" p="105" et="4077.3201" s1="18.2202" s2="33.4636" s3="16.7578" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">68.4417</Lap>
+<Lap num="12" p="105" et="4145.7600" s1="19.0503" s2="39.9365" s3="16.8843" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">75.8711</Lap>
+<Lap num="13" p="105" et="4221.6399" s1="17.9229" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="14" p="105" et="4286.3401" s1="24.9443" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="15" p="105" et="4358.6799" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="16" p="105" et="4423.5000" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="17" p="105" et="4487.8201" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="18" p="105" et="4544.1191" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="19" p="105" et="4679.8999" s1="19.3242" s2="31.1841" s3="17.1445" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">67.6528</Lap>
+<Lap num="20" p="105" et="4747.5601" s1="18.5508" s2="30.2915" s3="17.0791" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">65.9214</Lap>
+<Lap num="21" p="105" et="4813.4800" s1="18.2407" s2="29.9370" s3="16.9004" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">65.0781</Lap>
+<Lap num="22" p="105" et="4878.5601" s1="18.7383" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="23" p="105" et="4943.7600" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="24" p="105" et="5008.0000" s1="18.1743" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="25" p="105" et="5072.6201" s1="17.9248" s2="29.7314" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="26" p="105" et="5136.8201" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="27" p="105" et="5204.5200" s1="18.5967" s2="29.6069" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="28" p="105" et="5269.5601" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="29" p="105" et="5343.8401" s1="18.1348" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="30" p="105" et="5408.5200" s1="17.8657" s2="30.0835" s3="16.6108" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">64.5601</Lap>
+<Lap num="31" p="105" et="5473.0801" s1="18.2324" s2="30.0142" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="32" p="105" et="5538.0801" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="33" p="105" et="5602.3601" s1="18.1108" s2="29.8784" s3="16.4868" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">64.4761</Lap>
+<Lap num="34" p="105" et="5666.8401" s1="18.1724" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="35" p="105" et="5731.3799" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="36" p="105" et="5795.7800" s1="18.1499" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="37" p="105" et="5860.3799" s1="17.7148" s2="29.4238" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="38" p="105" et="5924.2400" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="39" p="105" et="5988.7200" s1="17.8896" s2="29.4180" s3="16.6206" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">63.9282</Lap>
+<Lap num="40" p="105" et="6052.6399" s1="18.0000" s2="29.3428" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="41" p="105" et="6116.6201" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="42" p="105" et="6197.7202" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="43" p="105" et="6197.7202" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="44" p="105" et="6346.1599" s1="19.2456" s2="31.6470" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="45" p="105" et="6414.1799" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="46" p="105" et="6480.6599" s1="17.9766" s2="29.7832" s3="16.7515" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">64.5112</Lap>
+<Lap num="47" p="105" et="6545.1799" s1="17.9219" s2="29.5830" s3="16.6499" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">64.1548</Lap>
+<Lap num="48" p="105" et="6609.3201" s1="18.0186" s2="29.2065" s3="16.4990" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">63.7241</Lap>
+<Lap num="49" p="105" et="6673.0400" s1="17.8623" s2="29.5747" s3="16.3491" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">63.7861</Lap>
+<Lap num="50" p="105" et="6736.8401" s1="17.7007" s2="29.3740" s3="16.5986" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">63.6733</Lap>
+<Lap num="51" p="105" et="6800.5000" s1="17.6978" s2="29.8550" s3="16.6445" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">64.1973</Lap>
+<BestLapTime>63.6733</BestLapTime>
+<Laps>51</Laps>
+<Pitstops>0</Pitstops>
+<FinishStatus>None</FinishStatus>
+<ControlAndAids startLap="1" endLap="51">UnknownControl</ControlAndAids>
+</Driver>
+<Driver>
+<Name>MR SLIDER7</Name>
+<Connected>1</Connected>
+<VehFile>397_24_HURACAN.VEH</VehFile>
+<UpgradeCode>2a4a3100 00000000 00000000 00000000</UpgradeCode>
+<VehName>Huracan Custom Team 2024 #397</VehName>
+<Category>WEC 2024, GT3, Lamborghini Huracan LMGT3 Evo2</Category>
+<CarType>Lamborghini Huracan LMGT3 Evo2</CarType>
+<CarClass>GT3</CarClass>
+<CarNumber>11</CarNumber>
+<TeamName>Pearl Night Motorsports</TeamName>
+<isPlayer>1</isPlayer>
+<ServerScored>1</ServerScored>
+<Position>3</Position>
+<ClassPosition>3</ClassPosition>
+<LapRankIncludingDiscos>5</LapRankIncludingDiscos>
+<Lap num="1" p="105" et="--.---" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="2" p="105" et="5793.2600" s1="20.5903" s2="36.9453" s3="17.6987" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">75.2344</Lap>
+<Lap num="3" p="105" et="5868.4800" s1="19.3530" s2="31.0884" s3="17.8125" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">68.2539</Lap>
+<Lap num="4" p="105" et="5936.7400" s1="18.8628" s2="30.3994" s3="17.6138" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">66.8760</Lap>
+<Lap num="5" p="105" et="6003.6201" s1="18.4102" s2="30.4038" s3="17.1973" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">66.0112</Lap>
+<Lap num="6" p="105" et="6069.6399" s1="18.9336" s2="29.9097" s3="16.9019" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">65.7451</Lap>
+<Lap num="7" p="105" et="6135.3799" s1="18.2856" s2="30.3335" s3="16.8887" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">65.5078</Lap>
+<Lap num="8" p="105" et="6200.8799" s1="18.9956" s2="32.1406" s3="16.9404" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">68.0767</Lap>
+<Lap num="9" p="105" et="6268.9600" s1="25.1890" s2="30.7446" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="10" p="105" et="6359.0200" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="11" p="105" et="6440.2200" s1="19.3872" s2="29.8188" s3="16.9912" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">66.1973</Lap>
+<Lap num="12" p="105" et="6506.4199" s1="20.1494" s2="31.4048" s3="16.9634" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">68.5176</Lap>
+<Lap num="13" p="105" et="6574.9199" s1="17.8711" s2="29.7324" s3="17.1968" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">64.8003</Lap>
+<Lap num="14" p="105" et="6639.7200" s1="18.0415" s2="29.6543" s3="16.6680" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">64.3638</Lap>
+<Lap num="15" p="105" et="6704.1001" s1="17.8379" s2="29.9399" s3="16.5903" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">64.3682</Lap>
+<Lap num="16" p="105" et="6768.4600" s1="17.9980" s2="29.7124" s3="17.0439" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">64.7544</Lap>
+<Lap num="17" p="105" et="6833.2200" s1="18.0728" s2="29.9194" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="18" p="105" et="6916.7800" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<Lap num="19" p="105" et="7010.7800" s1="19.2515" s2="30.1191" s3="17.4292" topspeed="0.00" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">66.7998</Lap>
+<Lap num="20" p="7" et="7077.5801" s1="17.8438" s2="29.8501" s3="16.7969" topspeed="246.84" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">64.4907</Lap>
+<Lap num="21" p="4" et="7142.0601" s1="19.8018" s2="30.9287" s3="16.8906" topspeed="246.39" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">67.6211</Lap>
+<Lap num="22" p="4" et="7209.6799" topspeed="210.81" fcompound="0,Medium" rcompound="0,Medium" FL="0,Medium" FR="0,Medium" RL="0,Medium" RR="0,Medium">--.----</Lap>
+<BestLapTime>64.3638</BestLapTime>
+<Laps>22</Laps>
+<Pitstops>0</Pitstops>
+<FinishStatus>Finished Normally</FinishStatus>
+<ControlAndAids startLap="1" endLap="19">UnknownControl</ControlAndAids>
+<ControlAndAids startLap="20" endLap="22">PlayerControl,ABS=1,Clutch,AutoBlip</ControlAndAids>
+</Driver>
+<Driver>
+<Name>alex martin</Name>
+<Connected>1</Connected>
+<VehFile>397_25_AMG.VEH</VehFile>
+<UpgradeCode>2a4a3100 00000000 00000000 00000000</UpgradeCode>
+<VehName>Mercedes AMG Custom Team 2025 #397</VehName>
+<Category>WEC 2025, GT3, Mercedes-AMG LMGT3</Category>
+<CarType>Mercedes-AMG LMGT3</CarType>
+<CarClass>GT3</CarClass>
+<CarNumber>69</CarNumber>
+<TeamName>Martin Racing</TeamName>
+<isPlayer>1</isPlayer>
+<ServerScored>1</ServerScored>
+<Position>4</Position>
+<ClassPosition>4</ClassPosition>
+<LapRankIncludingDiscos>5</LapRankIncludingDiscos>
+<Laps>0</Laps>
+<Pitstops>0</Pitstops>
+<FinishStatus>None</FinishStatus>
+</Driver>
+</Practice1>
+</RaceResults>
+</rFactorXML>

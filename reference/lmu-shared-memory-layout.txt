@@ -1,0 +1,556 @@
+===== TelemVect3 sizeof=24 align=4
+      0  union TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:49:5)
+      0  double x
+      8  double y
+     16  double z
+      0  double[3] data
+===== TelemWheelV01 sizeof=260 align=4
+      0  double mSuspensionDeflection
+      8  double mRideHeight
+     16  double mSuspForce
+     24  double mBrakeTemp
+     32  double mBrakePressure
+     40  double mRotation
+     48  double mLateralPatchVel
+     56  double mLongitudinalPatchVel
+     64  double mLateralGroundVel
+     72  double mLongitudinalGroundVel
+     80  double mCamber
+     88  double mLateralForce
+     96  double mLongitudinalForce
+    104  double mTireLoad
+    112  double mGripFract
+    120  double mPressure
+    128  double[3] mTemperature
+    152  double mWear
+    160  char[16] mTerrainName
+    176  unsigned char mSurfaceType
+    177  _Bool mFlat
+    178  _Bool mDetached
+    179  unsigned char mStaticUndeflectedRadius
+    180  double mVerticalTireDeflection
+    188  double mWheelYLocation
+    196  double mToe
+    204  double mTireCarcassTemperature
+    212  double[3] mTireInnerLayerTemperature
+    236  float_t mOptimalTemp
+    240  unsigned char mCompoundIndex
+    241  unsigned char mCompoundType
+    242  unsigned char[18] mExpansion
+===== TelemInfoV01 sizeof=1888 align=4
+      0  long mID
+      4  double mDeltaTime
+     12  double mElapsedTime
+     20  long mLapNumber
+     24  double mLapStartET
+     32  char[64] mVehicleName
+     96  char[64] mTrackName
+    160  struct TelemVect3 mPos
+    160  union TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:49:5)
+    160  struct TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:51:9)
+    160  double x
+    168  double y
+    176  double z
+    160  double[3] data
+    184  struct TelemVect3 mLocalVel
+    184  union TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:49:5)
+    184  struct TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:51:9)
+    184  double x
+    192  double y
+    200  double z
+    184  double[3] data
+    208  struct TelemVect3 mLocalAccel
+    208  union TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:49:5)
+    208  struct TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:51:9)
+    208  double x
+    216  double y
+    224  double z
+    208  double[3] data
+    232  TelemVect3[3] mOri
+    304  struct TelemVect3 mLocalRot
+    304  union TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:49:5)
+    304  struct TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:51:9)
+    304  double x
+    312  double y
+    320  double z
+    304  double[3] data
+    328  struct TelemVect3 mLocalRotAccel
+    328  union TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:49:5)
+    328  struct TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:51:9)
+    328  double x
+    336  double y
+    344  double z
+    328  double[3] data
+    352  long mGear
+    356  double mEngineRPM
+    364  double mEngineWaterTemp
+    372  double mEngineOilTemp
+    380  double mClutchRPM
+    388  double mUnfilteredThrottle
+    396  double mUnfilteredBrake
+    404  double mUnfilteredSteering
+    412  double mUnfilteredClutch
+    420  double mFilteredThrottle
+    428  double mFilteredBrake
+    436  double mFilteredSteering
+    444  double mFilteredClutch
+    452  double mSteeringShaftTorque
+    460  double mFront3rdDeflection
+    468  double mRear3rdDeflection
+    476  double mFrontWingHeight
+    484  double mFrontRideHeight
+    492  double mRearRideHeight
+    500  double mDrag
+    508  double mFrontDownforce
+    516  double mRearDownforce
+    524  double mFuel
+    532  double mEngineMaxRPM
+    540  unsigned char mScheduledStops
+    541  _Bool mOverheating
+    542  _Bool mDetached
+    543  _Bool mHeadlights
+    544  unsigned char[8] mDentSeverity
+    552  double mLastImpactET
+    560  double mLastImpactMagnitude
+    568  struct TelemVect3 mLastImpactPos
+    568  union TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:49:5)
+    568  struct TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:51:9)
+    568  double x
+    576  double y
+    584  double z
+    568  double[3] data
+    592  double mEngineTorque
+    600  long mCurrentSector
+    604  unsigned char mSpeedLimiter
+    605  unsigned char mMaxGears
+    606  unsigned char mFrontTireCompoundIndex
+    607  unsigned char mRearTireCompoundIndex
+    608  double mFuelCapacity
+    616  unsigned char mFrontFlapActivated
+    617  unsigned char mRearFlapActivated
+    618  unsigned char mRearFlapLegalStatus
+    619  unsigned char mIgnitionStarter
+    620  char[18] mFrontTireCompoundName
+    638  char[18] mRearTireCompoundName
+    656  unsigned char mSpeedLimiterAvailable
+    657  unsigned char mAntiStallActivated
+    658  unsigned char[2] mUnused
+    660  float mVisualSteeringWheelRange
+    664  double mRearBrakeBias
+    672  double mTurboBoostPressure
+    680  float[3] mPhysicsToGraphicsOffset
+    692  float mPhysicalSteeringWheelRange
+    696  double mDeltaBest
+    704  double mBatteryChargeFraction
+    712  double mElectricBoostMotorTorque
+    720  double mElectricBoostMotorRPM
+    728  double mElectricBoostMotorTemperature
+    736  double mElectricBoostWaterTemperature
+    744  unsigned char mElectricBoostMotorState
+    745  _Bool mLapInvalidated
+    746  _Bool mABSActive
+    747  _Bool mTCActive
+    748  _Bool mSpeedLimiterActive
+    749  uint8_t mWiperState
+    750  uint8_t mTC
+    751  uint8_t mTCMax
+    752  uint8_t mTCSlip
+    753  uint8_t mTCSlipMax
+    754  uint8_t mTCCut
+    755  uint8_t mTCCutMax
+    756  uint8_t mABS
+    757  uint8_t mABSMax
+    758  uint8_t mMotorMap
+    759  uint8_t mMotorMapMax
+    760  uint8_t mMigration
+    761  uint8_t mMigrationMax
+    762  uint8_t mFrontAntiSway
+    763  uint8_t mFrontAntiSwayMax
+    764  uint8_t mRearAntiSway
+    765  uint8_t mRearAntiSwayMax
+    766  uint8_t mLiftAndCoastProgress
+    767  uint8_t mTrackLimitsSteps
+    768  float mRegen
+    772  float mSoC
+    776  float mVirtualEnergy
+    780  float mTimeGapCarAhead
+    784  float mTimeGapCarBehind
+    788  float mTimeGapPlaceAhead
+    792  float mTimeGapPlaceBehind
+    796  char[30] mVehicleModel
+    826  IP_VehicleClass mVehicleClass
+    827  IP_VehicleChampionship mVehicleChampionship
+    828  unsigned char[20] mExpansion
+    848  TelemWheelV01[4] mWheel
+===== VehicleScoringInfoV01 sizeof=584 align=4
+      0  long mID
+      4  char[32] mDriverName
+     36  char[64] mVehicleName
+    100  short mTotalLaps
+    102  signed char mSector
+    103  signed char mFinishStatus
+    104  double mLapDist
+    112  double mPathLateral
+    120  double mTrackEdge
+    128  double mBestSector1
+    136  double mBestSector2
+    144  double mBestLapTime
+    152  double mLastSector1
+    160  double mLastSector2
+    168  double mLastLapTime
+    176  double mCurSector1
+    184  double mCurSector2
+    192  short mNumPitstops
+    194  short mNumPenalties
+    196  _Bool mIsPlayer
+    197  signed char mControl
+    198  _Bool mInPits
+    199  unsigned char mPlace
+    200  char[32] mVehicleClass
+    232  double mTimeBehindNext
+    240  long mLapsBehindNext
+    244  double mTimeBehindLeader
+    252  long mLapsBehindLeader
+    256  double mLapStartET
+    264  struct TelemVect3 mPos
+    264  union TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:49:5)
+    264  struct TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:51:9)
+    264  double x
+    272  double y
+    280  double z
+    264  double[3] data
+    288  struct TelemVect3 mLocalVel
+    288  union TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:49:5)
+    288  struct TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:51:9)
+    288  double x
+    296  double y
+    304  double z
+    288  double[3] data
+    312  struct TelemVect3 mLocalAccel
+    312  union TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:49:5)
+    312  struct TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:51:9)
+    312  double x
+    320  double y
+    328  double z
+    312  double[3] data
+    336  TelemVect3[3] mOri
+    408  struct TelemVect3 mLocalRot
+    408  union TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:49:5)
+    408  struct TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:51:9)
+    408  double x
+    416  double y
+    424  double z
+    408  double[3] data
+    432  struct TelemVect3 mLocalRotAccel
+    432  union TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:49:5)
+    432  struct TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:51:9)
+    432  double x
+    440  double y
+    448  double z
+    432  double[3] data
+    456  unsigned char mHeadlights
+    457  unsigned char mPitState
+    458  unsigned char mServerScored
+    459  unsigned char mIndividualPhase
+    460  long mQualification
+    464  double mTimeIntoLap
+    472  double mEstimatedLapTime
+    480  char[24] mPitGroup
+    504  unsigned char mFlag
+    505  _Bool mUnderYellow
+    506  unsigned char mCountLapFlag
+    507  _Bool mInGarageStall
+    508  unsigned char[16] mUpgradePack
+    524  float mPitLapDist
+    528  float mBestLapSector1
+    532  float mBestLapSector2
+    536  unsigned long long mSteamID
+    544  char[32] mVehFilename
+    576  short mAttackMode
+    578  unsigned char mFuelFraction
+    579  _Bool mDRSState
+    580  unsigned char[4] mExpansion
+===== ScoringInfoV01 sizeof=548 align=4
+      0  char[64] mTrackName
+     64  long mSession
+     68  double mCurrentET
+     76  double mEndET
+     84  long mMaxLaps
+     88  double mLapDist
+     96  char * mResultsStream
+    104  long mNumVehicles
+    108  unsigned char mGamePhase
+    109  signed char mYellowFlagState
+    110  signed char[3] mSectorFlag
+    113  unsigned char mStartLight
+    114  unsigned char mNumRedLights
+    115  _Bool mInRealtime
+    116  char[32] mPlayerName
+    148  char[64] mPlrFileName
+    212  double mDarkCloud
+    220  double mRaining
+    228  double mAmbientTemp
+    236  double mTrackTemp
+    244  struct TelemVect3 mWind
+    244  union TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:49:5)
+    244  struct TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:51:9)
+    244  double x
+    252  double y
+    260  double z
+    244  double[3] data
+    268  double mMinPathWetness
+    276  double mMaxPathWetness
+    284  unsigned char mGameMode
+    285  _Bool mIsPasswordProtected
+    286  unsigned short mServerPort
+    288  unsigned long mServerPublicIP
+    292  long mMaxPlayers
+    296  char[32] mServerName
+    328  float mStartET
+    332  double mAvgPathWetness
+    340  float mSessionTimeRemaining
+    344  float mTimeOfDay
+    348  _Bool mIsFixedSetup
+    349  uint8_t mTrackGripLevel
+    350  uint8_t mCloudCoverage
+    351  uint8_t mTrackLimitsStepsPerPenalty
+    352  uint8_t mTrackLimitsStepsPerPoint
+    353  unsigned char[187] mExpansion
+    540  VehicleScoringInfoV01 * mVehicle
+===== ApplicationStateV01 sizeof=260 align=4
+      0  HWND mAppWindow
+      8  unsigned long mWidth
+     12  unsigned long mHeight
+     16  unsigned long mRefreshRate
+     20  unsigned long mWindowed
+     24  unsigned char mOptionsLocation
+     25  char[31] mOptionsPage
+     56  unsigned char[204] mExpansion
+===== SharedMemoryGeneric sizeof=332 align=4
+      0  SharedMemoryEvent[16] events
+     64  long gameVersion
+     68  float FFBTorque
+     72  struct ApplicationStateV01 appInfo
+     72  HWND mAppWindow
+     80  unsigned long mWidth
+     84  unsigned long mHeight
+     88  unsigned long mRefreshRate
+     92  unsigned long mWindowed
+     96  unsigned char mOptionsLocation
+     97  char[31] mOptionsPage
+    128  unsigned char[204] mExpansion
+===== SharedMemoryPathData sizeof=1300 align=1
+      0  char[260] userData
+    260  char[260] customVariables
+    520  char[260] stewardResults
+    780  char[260] playerProfile
+   1040  char[260] pluginsFolder
+===== SharedMemoryScoringData sizeof=126832 align=8
+      0  struct ScoringInfoV01 scoringInfo
+      0  char[64] mTrackName
+     64  long mSession
+     68  double mCurrentET
+     76  double mEndET
+     84  long mMaxLaps
+     88  double mLapDist
+     96  char * mResultsStream
+    104  long mNumVehicles
+    108  unsigned char mGamePhase
+    109  signed char mYellowFlagState
+    110  signed char[3] mSectorFlag
+    113  unsigned char mStartLight
+    114  unsigned char mNumRedLights
+    115  _Bool mInRealtime
+    116  char[32] mPlayerName
+    148  char[64] mPlrFileName
+    212  double mDarkCloud
+    220  double mRaining
+    228  double mAmbientTemp
+    236  double mTrackTemp
+    244  struct TelemVect3 mWind
+    244  union TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:49:5)
+    244  struct TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:51:9)
+    244  double x
+    252  double y
+    260  double z
+    244  double[3] data
+    268  double mMinPathWetness
+    276  double mMaxPathWetness
+    284  unsigned char mGameMode
+    285  _Bool mIsPasswordProtected
+    286  unsigned short mServerPort
+    288  unsigned long mServerPublicIP
+    292  long mMaxPlayers
+    296  char[32] mServerName
+    328  float mStartET
+    332  double mAvgPathWetness
+    340  float mSessionTimeRemaining
+    344  float mTimeOfDay
+    348  _Bool mIsFixedSetup
+    349  uint8_t mTrackGripLevel
+    350  uint8_t mCloudCoverage
+    351  uint8_t mTrackLimitsStepsPerPenalty
+    352  uint8_t mTrackLimitsStepsPerPoint
+    353  unsigned char[187] mExpansion
+    540  VehicleScoringInfoV01 * mVehicle
+    552  size_t scoringStreamSize
+    560  VehicleScoringInfoV01[104] vehScoringInfo
+  61296  char[65536] scoringStream
+===== SharedMemoryTelemetryData sizeof=196356 align=4
+      0  uint8_t activeVehicles
+      1  uint8_t playerVehicleIdx
+      2  _Bool playerHasVehicle
+      4  TelemInfoV01[104] telemInfo
+===== SharedMemoryObjectOut sizeof=324824 align=8
+      0  struct SharedMemoryGeneric generic
+      0  SharedMemoryEvent[16] events
+     64  long gameVersion
+     68  float FFBTorque
+     72  struct ApplicationStateV01 appInfo
+     72  HWND mAppWindow
+     80  unsigned long mWidth
+     84  unsigned long mHeight
+     88  unsigned long mRefreshRate
+     92  unsigned long mWindowed
+     96  unsigned char mOptionsLocation
+     97  char[31] mOptionsPage
+    128  unsigned char[204] mExpansion
+    332  struct SharedMemoryPathData paths
+    332  char[260] userData
+    592  char[260] customVariables
+    852  char[260] stewardResults
+   1112  char[260] playerProfile
+   1372  char[260] pluginsFolder
+   1632  struct SharedMemoryScoringData scoring
+   1632  struct ScoringInfoV01 scoringInfo
+   1632  char[64] mTrackName
+   1696  long mSession
+   1700  double mCurrentET
+   1708  double mEndET
+   1716  long mMaxLaps
+   1720  double mLapDist
+   1728  char * mResultsStream
+   1736  long mNumVehicles
+   1740  unsigned char mGamePhase
+   1741  signed char mYellowFlagState
+   1742  signed char[3] mSectorFlag
+   1745  unsigned char mStartLight
+   1746  unsigned char mNumRedLights
+   1747  _Bool mInRealtime
+   1748  char[32] mPlayerName
+   1780  char[64] mPlrFileName
+   1844  double mDarkCloud
+   1852  double mRaining
+   1860  double mAmbientTemp
+   1868  double mTrackTemp
+   1876  struct TelemVect3 mWind
+   1876  union TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:49:5)
+   1876  struct TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:51:9)
+   1876  double x
+   1884  double y
+   1892  double z
+   1876  double[3] data
+   1900  double mMinPathWetness
+   1908  double mMaxPathWetness
+   1916  unsigned char mGameMode
+   1917  _Bool mIsPasswordProtected
+   1918  unsigned short mServerPort
+   1920  unsigned long mServerPublicIP
+   1924  long mMaxPlayers
+   1928  char[32] mServerName
+   1960  float mStartET
+   1964  double mAvgPathWetness
+   1972  float mSessionTimeRemaining
+   1976  float mTimeOfDay
+   1980  _Bool mIsFixedSetup
+   1981  uint8_t mTrackGripLevel
+   1982  uint8_t mCloudCoverage
+   1983  uint8_t mTrackLimitsStepsPerPenalty
+   1984  uint8_t mTrackLimitsStepsPerPoint
+   1985  unsigned char[187] mExpansion
+   2172  VehicleScoringInfoV01 * mVehicle
+   2184  size_t scoringStreamSize
+   2192  VehicleScoringInfoV01[104] vehScoringInfo
+  62928  char[65536] scoringStream
+ 128464  struct SharedMemoryTelemetryData telemetry
+ 128464  uint8_t activeVehicles
+ 128465  uint8_t playerVehicleIdx
+ 128466  _Bool playerHasVehicle
+ 128468  TelemInfoV01[104] telemInfo
+===== SharedMemoryLayout sizeof=324824 align=8
+      0  struct SharedMemoryObjectOut data
+      0  struct SharedMemoryGeneric generic
+      0  SharedMemoryEvent[16] events
+     64  long gameVersion
+     68  float FFBTorque
+     72  struct ApplicationStateV01 appInfo
+     72  HWND mAppWindow
+     80  unsigned long mWidth
+     84  unsigned long mHeight
+     88  unsigned long mRefreshRate
+     92  unsigned long mWindowed
+     96  unsigned char mOptionsLocation
+     97  char[31] mOptionsPage
+    128  unsigned char[204] mExpansion
+    332  struct SharedMemoryPathData paths
+    332  char[260] userData
+    592  char[260] customVariables
+    852  char[260] stewardResults
+   1112  char[260] playerProfile
+   1372  char[260] pluginsFolder
+   1632  struct SharedMemoryScoringData scoring
+   1632  struct ScoringInfoV01 scoringInfo
+   1632  char[64] mTrackName
+   1696  long mSession
+   1700  double mCurrentET
+   1708  double mEndET
+   1716  long mMaxLaps
+   1720  double mLapDist
+   1728  char * mResultsStream
+   1736  long mNumVehicles
+   1740  unsigned char mGamePhase
+   1741  signed char mYellowFlagState
+   1742  signed char[3] mSectorFlag
+   1745  unsigned char mStartLight
+   1746  unsigned char mNumRedLights
+   1747  _Bool mInRealtime
+   1748  char[32] mPlayerName
+   1780  char[64] mPlrFileName
+   1844  double mDarkCloud
+   1852  double mRaining
+   1860  double mAmbientTemp
+   1868  double mTrackTemp
+   1876  struct TelemVect3 mWind
+   1876  union TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:49:5)
+   1876  struct TelemVect3::(anonymous at Support/SharedMemoryInterface/InternalsPlugin.hpp:51:9)
+   1876  double x
+   1884  double y
+   1892  double z
+   1876  double[3] data
+   1900  double mMinPathWetness
+   1908  double mMaxPathWetness
+   1916  unsigned char mGameMode
+   1917  _Bool mIsPasswordProtected
+   1918  unsigned short mServerPort
+   1920  unsigned long mServerPublicIP
+   1924  long mMaxPlayers
+   1928  char[32] mServerName
+   1960  float mStartET
+   1964  double mAvgPathWetness
+   1972  float mSessionTimeRemaining
+   1976  float mTimeOfDay
+   1980  _Bool mIsFixedSetup
+   1981  uint8_t mTrackGripLevel
+   1982  uint8_t mCloudCoverage
+   1983  uint8_t mTrackLimitsStepsPerPenalty
+   1984  uint8_t mTrackLimitsStepsPerPoint
+   1985  unsigned char[187] mExpansion
+   2172  VehicleScoringInfoV01 * mVehicle
+   2184  size_t scoringStreamSize
+   2192  VehicleScoringInfoV01[104] vehScoringInfo
+  62928  char[65536] scoringStream
+ 128464  struct SharedMemoryTelemetryData telemetry
+ 128464  uint8_t activeVehicles
+ 128465  uint8_t playerVehicleIdx
+ 128466  _Bool playerHasVehicle
+ 128468  TelemInfoV01[104] telemInfo

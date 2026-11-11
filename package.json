@@ -1,0 +1,15 @@
+{
+  "name": "corde",
+  "private": true,
+  "version": "0.3.0",
+  "license": "GPL-3.0-or-later",
+  "description": "Corde — télémétrie, tableau de bord et ingénieur de course pour simulateurs (Le Mans Ultimate d'abord).",
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "dev": "pnpm --filter @corde/ui dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "protocol:gen": "cargo test -p corde-protocol"
+  }
+}
