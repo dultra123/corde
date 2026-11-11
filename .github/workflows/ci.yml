@@ -440,11 +440,11 @@ jobs:
         with:
           persist-credentials: false
 
+      # deny.toml est lu dans le dossier courant (racine du dépôt) pour les deux workspaces.
       - name: Serveur, outils et bibliothèques (workspace racine)
         uses: EmbarkStudios/cargo-deny-action@v2
         with:
           command: check
-          command-arguments: --config deny.toml
 
       - name: Application de bureau (apps/desktop/src-tauri)
         if: always()
@@ -452,4 +452,3 @@ jobs:
         with:
           manifest-path: apps/desktop/src-tauri/Cargo.toml
           command: check
-          command-arguments: --config deny.toml

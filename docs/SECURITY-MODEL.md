@@ -89,7 +89,9 @@ Ordre d'application (`guard::guard`, après le routage) :
    d'une autre origine reçoit 403.
 4. **Routes réservées au PC** (tableau du §4) : 403 « cette action n'est possible que depuis le PC qui fait
    tourner Corde » si la connexion ne vient pas de la boucle locale, ou si la page qui l'envoie n'est pas une
-   origine locale (`net::may_change_settings`, la garde qui protégeait déjà les réglages).
+   origine locale (`net::may_change_settings`, la garde qui protégeait déjà les réglages). Un navigateur du
+   PC qui ouvre Corde par l'adresse réseau du PC (`http://192.168.x.x:8471`) est vu comme un autre appareil :
+   sur le PC, ouvrir `http://127.0.0.1:8471`.
 5. **Taille** : corps de requête limité à **1 Mio** (413 au-delà), message WebSocket du client à **16 Kio**.
 6. **Erreurs** : une erreur 5xx renvoyée à un autre appareil du réseau perd son détail (qui peut nommer un
    dossier du PC) : « erreur interne du serveur (détails dans le journal du PC) ». Le détail reste dans le

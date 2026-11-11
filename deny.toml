@@ -1,8 +1,9 @@
 # cargo-deny — licences, avis de sécurité et sources des dépendances Rust.
 #
 # Utilisé par le job CI `deny` (non bloquant) pour les deux workspaces : la racine et
-# apps/desktop/src-tauri. En local : `cargo deny check` (racine) et
-# `cargo deny --manifest-path apps/desktop/src-tauri/Cargo.toml check --config deny.toml`.
+# apps/desktop/src-tauri. En local, depuis la racine du dépôt (deny.toml est lu dans le dossier
+# courant) : `cargo deny check` et `cargo deny --manifest-path apps/desktop/src-tauri/Cargo.toml check`.
+# Vérifié avec cargo-deny 0.20.
 # Politique : docs/adr/0005-licences-et-header-s397.md et docs/adr/0008-open-source-publication.md.
 
 [graph]
@@ -10,9 +11,20 @@ all-features = false
 
 [advisories]
 version = 2
-# Base RustSec ; un avis ignoré doit être justifié ici, avec sa date.
-ignore = []
+# Bibliothèques « plus maintenues » : signalées pour nos dépendances directes seulement.
+unmaintained = "workspace"
 yanked = "warn"
+# Base RustSec ; un avis ignoré doit être justifié ici, avec sa date (relu à chaque montée de version).
+ignore = [
+  # 2026-11-11 — SQLite < 3.54 (libsqlite3-sys 0.38, via rusqlite 0.40 `bundled`) : fuite de mémoire
+  # non initialisée quand on ouvre une base ET son `-wal` fabriqués par un tiers. Corde n'ouvre que sa
+  # propre base (`%LOCALAPPDATA%\Corde\corde.db`), écrite par lui-même. Le correctif (rusqlite 0.41)
+  # exige Rust 1.89 alors que le workspace déclare 1.85 : à faire avec la prochaine montée de version.
+  { id = "RUSTSEC-2026-0459", reason = "base locale écrite par Corde seulement ; rusqlite 0.41 exige Rust 1.89" },
+  # 2024 — glib 0.18 (GTK, tiré par Tauri sous Linux seulement) : l'application de bureau n'est
+  # construite que pour Windows.
+  { id = "RUSTSEC-2024-0429", reason = "dépendance Linux de Tauri, application construite pour Windows seulement" },
+]
 
 [licenses]
 version = 2
