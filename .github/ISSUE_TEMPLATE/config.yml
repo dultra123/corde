@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Signaler une faille de sécurité (en privé)
+    url: https://github.com/dultra123/corde/security/advisories/new
+    about: Ne publie pas une faille dans un ticket. Utilise le signalement privé (voir SECURITY.md).
+  - name: Installer Corde et dépannage
+    url: https://github.com/dultra123/corde/blob/main/docs/TESTING-ON-PC.md
+    about: Le guide d'installation et les réponses aux problèmes courants.

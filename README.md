@@ -19,6 +19,7 @@ que l'on vise à chaque tour. Corde s'appelait anciennement Muret (nom de travai
 ## Sommaire
 
 - [Installer (Windows)](#installer-windows)
+- [Désinstaller](#désinstaller)
 - [Ce que fait Corde](#ce-que-fait-corde)
   - [Le tableau de bord en direct](#le-tableau-de-bord-en-direct)
   - [Sur le téléphone](#sur-le-téléphone)
@@ -28,6 +29,7 @@ que l'on vise à chaque tour. Corde s'appelait anciennement Muret (nom de travai
 - [Où en est le projet](#où-en-est-le-projet)
 - [Pour les développeurs](#pour-les-développeurs)
 - [Documentation](#documentation)
+- [Sécurité et vie privée](#sécurité-et-vie-privée)
 - [Licence](#licence)
 
 ## Installer (Windows)
@@ -41,6 +43,19 @@ que l'on vise à chaque tour. Corde s'appelait anciennement Muret (nom de travai
    `Settings > Gameplay > Enable Plugins` activé). Corde détecte le jeu toute seule.
 
 Le guide complet, avec le dépannage, est dans [docs/TESTING-ON-PC.md](docs/TESTING-ON-PC.md).
+
+## Désinstaller
+
+1. Quitte Corde (clic droit sur son icône près de l'horloge → Quitter).
+2. `Paramètres Windows` → `Applications` → `Applications installées` → **Corde** → `Désinstaller`. Le
+   programme, le raccourci et le démarrage avec Windows sont retirés.
+3. La désinstallation **garde tes données** (sessions, résultats importés, dispositions, réglages, journal).
+   Pour tout effacer, supprime ensuite le dossier `%LOCALAPPDATA%\Corde` (tape `%LOCALAPPDATA%` dans la
+   barre d'adresse de l'Explorateur). La case « Supprimer les données de l'application » du désinstalleur ne
+   concerne que le cache d'affichage.
+
+Les fichiers de réglage `Corde_*.svm` que tu as fait créer restent dans le dossier `Settings` du jeu, avec
+tes autres réglages : supprime-les depuis le jeu ou l'Explorateur si tu n'en veux plus.
 
 ## Ce que fait Corde
 
@@ -62,7 +77,9 @@ plusieurs dispositions, par exemple une pour l'écran du PC et une pour le tél�
 Les mêmes pages s'ouvrent dans le navigateur du téléphone, sur le même Wi-Fi que le PC. L'accès est fermé par
 défaut ; il s'active d'un bouton sur l'écran d'accueil, qui propose alors un QR code à scanner. L'adresse
 du PC et le QR code restent floutés tant qu'on ne demande pas à les voir, et le dossier de données est
-affiché sans le nom du compte Windows : rien de personnel n'apparaît en direct ou sur une capture.
+affiché sans le nom du compte Windows : rien de personnel n'apparaît en direct ou sur une capture. Supprimer
+une session, recalculer une analyse, réimporter les résultats, créer les fichiers de réglage et changer les
+réglages restent réservés au PC ([pourquoi](docs/SECURITY-MODEL.md)).
 
 ![Accueil, tableau de bord et analyse d'un tour sur téléphone](docs/images/mobile.png)
 
@@ -217,6 +234,15 @@ corde/
 - [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) — conventions, commits, types générés, ajouter un jeu
 - [docs/research/](docs/research/) — briefs : télémétrie LMU, ingénieur de course, stack technique
 - [knowledge/README.md](knowledge/README.md) — schémas des fichiers de connaissances et niveaux de confiance
+
+## Sécurité et vie privée
+
+- **Vie privée** : tout reste sur ton PC — pas de compte, pas de télémétrie, rien n'est envoyé sur Internet
+  sauf si tu actives l'extracteur LLM optionnel. Détails : [PRIVACY.md](PRIVACY.md).
+- **Sécurité** : le serveur local n'écoute que sur ton PC par défaut ; ce qui est exposé quand l'accès
+  depuis le téléphone est activé est décrit dans [docs/SECURITY-MODEL.md](docs/SECURITY-MODEL.md).
+- **Signaler une faille** : en privé, par l'onglet *Security* du dépôt → *Report a vulnerability*
+  ([SECURITY.md](SECURITY.md)). Pas de ticket public.
 
 ## Licence
 

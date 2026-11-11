@@ -1,0 +1,75 @@
+name: Signaler un bogue
+description: Quelque chose ne marche pas comme prévu dans Corde.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci de prendre le temps de signaler un problème.
+
+        **Une faille de sécurité ?** Ne l'écris pas ici : signale-la en privé (onglet *Security* → *Report a vulnerability*, voir `SECURITY.md`).
+
+        **Avant de joindre un fichier, relis-le :**
+        - **ne joins jamais un fichier de résultats du jeu tel quel** (`UserData\Log\Results\*.xml`) : il contient les noms et les temps des **autres pilotes** de la course. Si le fichier est nécessaire, remplace d'abord tous les noms (sauf le tien, si tu veux) par des noms inventés ;
+        - **ne colle pas un journal (`corde-desktop.log`, sortie de la console) sans l'avoir relu** : il peut contenir des chemins de ton PC (donc le nom de ton compte Windows) et des noms de pilotes. Remplace-les par `…` ;
+        - pas de clé d'API, d'adresse e-mail ni de capture d'écran montrant des noms d'autres pilotes.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: Ce qui se passe
+      description: Ce que tu as fait, ce que tu attendais, ce qui s'est passé à la place.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pour reproduire
+      description: Les étapes, si tu les connais.
+      placeholder: |
+        1. Lancer Corde…
+        2. Ouvrir la page…
+        3. …
+
+  - type: input
+    id: version
+    attributes:
+      label: Version de Corde
+      description: Affichée dans les réglages de l'application, ou dans le nom de l'installeur (`Corde_<version>_x64-setup.exe`).
+    validations:
+      required: true
+
+  - type: dropdown
+    id: how
+    attributes:
+      label: Comment tu utilises Corde
+      options:
+        - Application de bureau (Windows)
+        - Mode console (corde-server.exe)
+        - Navigateur du téléphone (réseau local)
+        - OBS (source navigateur)
+        - Autre / je ne sais pas
+    validations:
+      required: true
+
+  - type: input
+    id: system
+    attributes:
+      label: Système
+      description: Windows 10 / 11, Linux (distribution, Proton)…
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Extrait du journal (relu)
+      description: Seulement les lignes utiles, après avoir retiré chemins personnels et noms de pilotes.
+      render: text
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Vérifications
+      options:
+        - label: Je n'ai joint aucun fichier de résultats du jeu tel quel, et j'ai relu les journaux et captures (pas de noms d'autres pilotes, pas de chemin personnel, pas de clé).
+          required: true
