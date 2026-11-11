@@ -44,11 +44,13 @@
 //! POST   /api/profile/import                       scan the results folder now → import status
 //! GET    /api/results?track=&kind=&vehicle=&limit= ResultRow[] (imported results files, most recent first)
 //! GET    /api/results/{id}                         result + player laps + parsed file + linked_session_id
-//! GET    /api/settings                             {lan_access} — `<data-dir>/settings.json`
-//! PUT    /api/settings                             body {lan_access?: bool} → 200 {lan_access, restart_required}
+//! GET    /api/settings                             {lan_access, online_schedule} — `<data-dir>/settings.json`
+//! PUT    /api/settings                             body {lan_access?: bool, online_schedule?: bool}
+//!                                                  → 200 {lan_access, online_schedule, restart_required}
 //!                                                  · 400 not an object / wrong type / unknown key
 //!                                                  · 403 not sent from this PC (see `net::may_change_settings`)
 //! GET    /api/network                              {lan_access_setting, listening_on_lan, port, urls}
+//! GET    /api/races/sources · /picks · /settings   online race schedule, picks, reminders (see `races`)
 //! GET    /ws                 WebSocket (see `ws`)
 //! /*                         static UI with SPA fallback, or a small landing page
 //! ```
@@ -201,6 +203,20 @@ pub fn router(state: Arc<AppState>, ui_dir: Option<PathBuf>) -> Router {
         .route("/api/results/{id}", get(get_result))
         .route("/api/settings", get(get_settings).put(put_settings))
         .route("/api/network", get(network))
+        .route("/api/races/sources", get(crate::races::get_sources))
+        .route(
+            "/api/races/sources/{source}/unreadable",
+            post(crate::races::post_unreadable),
+        )
+        .route("/api/races/picks", get(crate::races::list_picks))
+        .route(
+            "/api/races/picks/{id}",
+            axum::routing::put(crate::races::put_pick).delete(crate::races::delete_pick),
+        )
+        .route(
+            "/api/races/settings",
+            get(crate::races::get_settings).put(crate::races::put_settings),
+        )
         .route("/ws", any(ws_handler));
 
     let app = match ui_dir {
@@ -775,7 +791,11 @@ async fn get_result(State(state): State<Arc<AppState>>, Path(id): Path<i64>) -> 
 
 async fn get_settings(State(state): State<Arc<AppState>>) -> AppResult {
     let settings = tokio::task::spawn_blocking(move || state.settings.get()).await?;
-    Ok(Json(json!({ "lan_access": settings.lan_access })).into_response())
+    Ok(Json(json!({
+        "lan_access": settings.lan_access,
+        "online_schedule": settings.online_schedule,
+    }))
+    .into_response())
 }
 
 /// What a `PUT /api/settings` body may change. Every key is optional: an
@@ -783,6 +803,7 @@ async fn get_settings(State(state): State<Arc<AppState>>) -> AppResult {
 #[derive(Debug, Default, PartialEq, Eq)]
 struct SettingsPatch {
     lan_access: Option<bool>,
+    online_schedule: Option<bool>,
 }
 
 fn validate_settings(body: &[u8]) -> Result<SettingsPatch, ApiError> {
@@ -797,9 +818,10 @@ fn validate_settings(body: &[u8]) -> Result<SettingsPatch, ApiError> {
     for (key, value) in map {
         match (key.as_str(), value) {
             ("lan_access", Value::Bool(b)) => patch.lan_access = Some(b),
-            ("lan_access", other) => {
+            ("online_schedule", Value::Bool(b)) => patch.online_schedule = Some(b),
+            (k @ ("lan_access" | "online_schedule"), other) => {
                 return Err(ApiError::bad_request(format!(
-                    "réglage `lan_access` invalide : true ou false attendu, reçu {other}"
+                    "réglage `{k}` invalide : true ou false attendu, reçu {other}"
                 )))
             }
             (other, _) => {
@@ -837,6 +859,9 @@ async fn put_settings(
             if let Some(lan) = patch.lan_access {
                 s.lan_access = lan;
             }
+            if let Some(on) = patch.online_schedule {
+                s.online_schedule = on;
+            }
         })
     })
     .await??;
@@ -856,8 +881,15 @@ async fn put_settings(
             }
         );
     }
+    if let Some(on) = patch.online_schedule {
+        tracing::info!(
+            "réglage enregistré : lecture du planning des courses en ligne {}",
+            if on { "activée" } else { "désactivée" }
+        );
+    }
     Ok(Json(json!({
         "lan_access": saved.lan_access,
+        "online_schedule": saved.online_schedule,
         "restart_required": restart_required,
     }))
     .into_response())
@@ -912,13 +944,22 @@ mod tests {
         assert_eq!(
             validate_settings(br#"{"lan_access": true}"#).unwrap(),
             SettingsPatch {
-                lan_access: Some(true)
+                lan_access: Some(true),
+                ..Default::default()
             }
         );
         assert_eq!(
             validate_settings(br#"{"lan_access": false}"#).unwrap(),
             SettingsPatch {
-                lan_access: Some(false)
+                lan_access: Some(false),
+                ..Default::default()
+            }
+        );
+        assert_eq!(
+            validate_settings(br#"{"online_schedule": true, "lan_access": false}"#).unwrap(),
+            SettingsPatch {
+                lan_access: Some(false),
+                online_schedule: Some(true),
             }
         );
         // Nothing to change is fine: the caller gets the current settings back.
@@ -932,6 +973,8 @@ mod tests {
             br#"{"lan_access": 1}"#,
             br#"{"lan_access": null}"#,
             br#"{"lan_acces": true}"#,
+            br#"{"online_schedule": "true"}"#,
+            br#"{"online_schedule": null}"#,
         ] {
             let err = validate_settings(bad).unwrap_err();
             assert_eq!(

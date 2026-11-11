@@ -24,6 +24,8 @@ export type { Motion } from "./generated/Motion";
 export type { MotorState } from "./generated/MotorState";
 export type { PitState } from "./generated/PitState";
 export type { PlayerTelemetry } from "./generated/PlayerTelemetry";
+export type { RaceReminder } from "./generated/RaceReminder";
+export type { RaceReminderKind } from "./generated/RaceReminderKind";
 export type { ServerMessage } from "./generated/ServerMessage";
 export type { SessionInfo } from "./generated/SessionInfo";
 export type { SessionType } from "./generated/SessionType";

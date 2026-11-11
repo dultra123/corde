@@ -3,10 +3,12 @@
 //! **Contract shared with the desktop shell** (`apps/desktop`): the file lives
 //! at the root of the data directory and holds one JSON object; its boolean
 //! key `lan_access` (default `false`) decides whether the server listens on
-//! the local network (see [`crate::config::resolve_bind`]).
+//! the local network (see [`crate::config::resolve_bind`]). The boolean key
+//! `online_schedule` (default `false`) lets the server read the public race
+//! schedule pages (see [`crate::races`]).
 //!
 //! ```json
-//! { "lan_access": false }
+//! { "lan_access": false, "online_schedule": false }
 //! ```
 //!
 //! Reading is tolerant: a missing or unreadable file means the defaults, and
@@ -23,6 +25,7 @@ use std::sync::Mutex;
 pub const SETTINGS_FILE: &str = "settings.json";
 
 const KEY_LAN_ACCESS: &str = "lan_access";
+const KEY_ONLINE_SCHEDULE: &str = "online_schedule";
 
 /// What `settings.json` holds.
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -31,6 +34,10 @@ pub struct Settings {
     /// network can open Corde. `false` (default) = this PC only, which also
     /// spares the Windows firewall prompt on first launch.
     pub lan_access: bool,
+    /// Read the public pages of the online race schedule (racecontrol.gg,
+    /// lmu.tools) when the « Courses » page asks for them. `false` (default) =
+    /// the server contacts no web site.
+    pub online_schedule: bool,
     /// Keys of the file this version does not know, written back as they are.
     pub extra: Map<String, Value>,
 }
@@ -77,21 +84,24 @@ impl Settings {
     }
 
     /// Build the settings from the content of the file. `None` when it is not
-    /// a JSON object. A `lan_access` that is not a boolean counts as `false`.
+    /// a JSON object. A known key that is not a boolean counts as `false`.
     pub fn from_json(value: Value) -> Option<Self> {
         let Value::Object(mut map) = value else {
             return None;
         };
-        let lan_access = match map.remove(KEY_LAN_ACCESS) {
+        let mut flag = |key: &str| match map.remove(key) {
             Some(Value::Bool(b)) => b,
             Some(other) => {
-                tracing::warn!("réglage `lan_access` invalide ({other}) : false");
+                tracing::warn!("réglage `{key}` invalide ({other}) : false");
                 false
             }
             None => false,
         };
+        let lan_access = flag(KEY_LAN_ACCESS);
+        let online_schedule = flag(KEY_ONLINE_SCHEDULE);
         Some(Self {
             lan_access,
+            online_schedule,
             extra: map,
         })
     }
@@ -100,8 +110,12 @@ impl Settings {
     pub fn to_json(&self) -> Value {
         let mut map = Map::new();
         map.insert(KEY_LAN_ACCESS.to_string(), Value::Bool(self.lan_access));
+        map.insert(
+            KEY_ONLINE_SCHEDULE.to_string(),
+            Value::Bool(self.online_schedule),
+        );
         for (k, v) in &self.extra {
-            if k != KEY_LAN_ACCESS {
+            if k != KEY_LAN_ACCESS && k != KEY_ONLINE_SCHEDULE {
                 map.insert(k.clone(), v.clone());
             }
         }
@@ -195,7 +209,10 @@ mod tests {
         assert_eq!(Settings::load(&dir), s);
         let text = fs::read_to_string(Settings::path(&dir)).unwrap();
         let on_disk: Value = serde_json::from_str(&text).unwrap();
-        assert_eq!(on_disk, json!({ "lan_access": true }));
+        assert_eq!(
+            on_disk,
+            json!({ "lan_access": true, "online_schedule": false })
+        );
         assert!(!dir.join("settings.json.tmp").exists());
         let _ = fs::remove_dir_all(&dir);
     }
@@ -218,7 +235,7 @@ mod tests {
             serde_json::from_slice(&fs::read(Settings::path(&dir)).unwrap()).unwrap();
         assert_eq!(
             on_disk,
-            json!({ "lan_access": false, "window": { "w": 1280, "h": 800 }, "autostart": false })
+            json!({ "lan_access": false, "online_schedule": false, "window": { "w": 1280, "h": 800 }, "autostart": false })
         );
         let _ = fs::remove_dir_all(&dir);
     }
@@ -243,6 +260,24 @@ mod tests {
         let s = Settings::load(&dir);
         assert!(!s.lan_access);
         assert_eq!(s.extra.get("theme"), Some(&json!("dark")));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn online_schedule_is_off_unless_a_real_true() {
+        let dir = tmp_dir("online");
+        fs::create_dir_all(&dir).unwrap();
+        for (content, expected) in [
+            ("{}", false),
+            (r#"{ "online_schedule": "true" }"#, false),
+            (r#"{ "online_schedule": 1 }"#, false),
+            (r#"{ "online_schedule": true }"#, true),
+        ] {
+            fs::write(Settings::path(&dir), content).unwrap();
+            let s = Settings::load(&dir);
+            assert_eq!(s.online_schedule, expected, "{content:?}");
+            assert!(!s.lan_access, "{content:?}");
+        }
         let _ = fs::remove_dir_all(&dir);
     }
 

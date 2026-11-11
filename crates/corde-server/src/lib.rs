@@ -13,6 +13,8 @@
 //!                                      └── resolved against the driver's .svm (setups) ──▶ plans with real indices
 //! garage capture (game at the garage, once per car and session) ── 8 GET ──▶ diagnostics/lmu-api/garage/
 //! POST /api/sessions/{id}/setup-files ── corde_engineer::setup::build_setup ──▶ UserData/player/Settings/<Track>/Corde_*.svm
+//! GET /api/races/sources (setting `online_schedule`) ── GET racecontrol.gg, lmu.tools (cache) ──▶ HTML parsed by the UI
+//! reminder task (every 5 s) ── races/picks.json ──▶ broadcast race_reminder
 //! ```
 //!
 //! The binary is a thin wrapper around [`Server`], which the integration tests
@@ -26,6 +28,7 @@ pub mod layouts;
 pub mod lmu_api;
 pub mod lmu_garage;
 pub mod net;
+pub mod races;
 pub mod results_import;
 pub mod runner;
 pub mod settings;
@@ -246,6 +249,10 @@ impl Server {
                 state.shutdown.subscribe(),
             ))
         });
+        let reminder_task = tokio::spawn(races::run_periodic(
+            Arc::clone(&state),
+            state.shutdown.subscribe(),
+        ));
         let app = api::router(Arc::clone(&state), ui_dir);
         let graceful = {
             let state = Arc::clone(&state);
@@ -272,6 +279,7 @@ impl Server {
         if let Some(t) = garage_task {
             t.abort();
         }
+        reminder_task.abort();
         result.map_err(Into::into)
     }
 }

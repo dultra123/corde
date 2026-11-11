@@ -160,6 +160,8 @@ pub struct AppState {
     pub shutdown: watch::Sender<bool>,
     /// Knowledge base + feedback extractor.
     pub engineer: Engineer,
+    /// Online race schedule, picks and reminders (page « Courses »).
+    pub races: crate::races::Races,
 }
 
 impl AppState {
@@ -178,6 +180,7 @@ impl AppState {
         let (frame_tx, frame_rx) = watch::channel(None);
         let (bus, _) = broadcast::channel(256);
         let (shutdown, _) = watch::channel(false);
+        let races = crate::races::Races::open(&data_dir);
         Arc::new(Self {
             frame_tx,
             frame_rx,
@@ -200,6 +203,7 @@ impl AppState {
             started: Instant::now(),
             shutdown,
             engineer,
+            races,
         })
     }
 
@@ -315,6 +319,11 @@ impl AppState {
 
     pub fn uptime_s(&self) -> f64 {
         self.started.elapsed().as_secs_f64()
+    }
+
+    /// Send a message to every connected dashboard.
+    pub fn broadcast(&self, msg: &ServerMessage) {
+        self.send_json(msg);
     }
 
     fn send_json(&self, msg: &ServerMessage) {

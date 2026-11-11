@@ -136,7 +136,10 @@ async fn lan_access_is_off_by_default_saved_by_put_and_applied_at_the_next_start
 
     let (code, settings) = call("GET", format!("{base}/api/settings"), None, None).await;
     assert_eq!(code, 200);
-    assert_eq!(settings, json!({ "lan_access": false }));
+    assert_eq!(
+        settings,
+        json!({ "lan_access": false, "online_schedule": false })
+    );
     assert!(
         !settings_file.exists(),
         "reading the settings must not create the file"
@@ -186,7 +189,7 @@ async fn lan_access_is_off_by_default_saved_by_put_and_applied_at_the_next_start
     assert_eq!(code, 200, "{body}");
     assert_eq!(
         body,
-        json!({ "lan_access": false, "restart_required": false })
+        json!({ "lan_access": false, "online_schedule": false, "restart_required": false })
     );
 
     // --- turning it on: saved, but this process keeps its address -----------
@@ -200,14 +203,20 @@ async fn lan_access_is_off_by_default_saved_by_put_and_applied_at_the_next_start
     assert_eq!(code, 200, "{body}");
     assert_eq!(
         body,
-        json!({ "lan_access": true, "restart_required": true })
+        json!({ "lan_access": true, "online_schedule": false, "restart_required": true })
     );
     let on_disk: Value = serde_json::from_slice(&std::fs::read(&settings_file).unwrap()).unwrap();
-    assert_eq!(on_disk, json!({ "lan_access": true }));
+    assert_eq!(
+        on_disk,
+        json!({ "lan_access": true, "online_schedule": false })
+    );
     assert!(Settings::load(&data_dir).lan_access);
 
     let (_, settings) = call("GET", format!("{base}/api/settings"), None, None).await;
-    assert_eq!(settings, json!({ "lan_access": true }));
+    assert_eq!(
+        settings,
+        json!({ "lan_access": true, "online_schedule": false })
+    );
     let (_, net) = call("GET", format!("{base}/api/network"), None, None).await;
     assert_eq!(net["lan_access_setting"], true);
     assert_eq!(
@@ -233,8 +242,46 @@ async fn lan_access_is_off_by_default_saved_by_put_and_applied_at_the_next_start
     let on_disk: Value = serde_json::from_slice(&std::fs::read(&settings_file).unwrap()).unwrap();
     assert_eq!(
         on_disk,
-        json!({ "lan_access": true, "shell": { "minimized": true } })
+        json!({ "lan_access": true, "online_schedule": false, "shell": { "minimized": true } })
     );
+
+    // Reading the race schedule: a setting of this PC too, and no restart.
+    let (code, body) = call(
+        "PUT",
+        format!("{base}/api/settings"),
+        Some(r#"{"online_schedule": "yes"}"#),
+        None,
+    )
+    .await;
+    assert_eq!(code, 400, "{body}");
+    let (code, body) = call(
+        "PUT",
+        format!("{base}/api/settings"),
+        Some(r#"{"online_schedule": true}"#),
+        Some("http://192.168.1.20:8471"),
+    )
+    .await;
+    assert_eq!(code, 403, "{body}");
+    let (code, body) = call(
+        "PUT",
+        format!("{base}/api/settings"),
+        Some(r#"{"online_schedule": true}"#),
+        None,
+    )
+    .await;
+    assert_eq!(code, 200, "{body}");
+    assert_eq!(body["online_schedule"], true);
+    assert_eq!(body["lan_access"], true, "the other setting is kept");
+    assert!(Settings::load(&data_dir).online_schedule);
+    let (code, body) = call(
+        "PUT",
+        format!("{base}/api/settings"),
+        Some(r#"{"online_schedule": false}"#),
+        None,
+    )
+    .await;
+    assert_eq!(code, 200, "{body}");
+    assert!(!Settings::load(&data_dir).online_schedule);
     server.stop().await;
 
     // --- second start: the setting opens the LAN ----------------------------
@@ -270,7 +317,7 @@ async fn lan_access_is_off_by_default_saved_by_put_and_applied_at_the_next_start
     assert_eq!(code, 200, "{body}");
     assert_eq!(
         body,
-        json!({ "lan_access": false, "restart_required": true })
+        json!({ "lan_access": false, "online_schedule": false, "restart_required": true })
     );
     let (_, net) = call("GET", format!("{base}/api/network"), None, None).await;
     assert_eq!(net["lan_access_setting"], false);

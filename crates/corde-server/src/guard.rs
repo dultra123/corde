@@ -70,9 +70,17 @@ pub fn route_access(method: &Method, route: &str) -> Access {
             | ("POST", "/api/profile/import")
             // Writes outside the data folder (the game's setups).
             | ("POST", "/api/sessions/{id}/setup-files")
-            // Opens or closes the server to the network.
+            // Opens or closes the server to the network; lets it read the
+            // race schedule on the web (`online_schedule`).
             | ("PUT", "/api/settings")
     );
+    // Deliberately open (the phone uses them), bounded by their handlers:
+    // GET /api/races/sources (fetches only the closed list of `races::sources`,
+    // and only when `online_schedule` is on), POST
+    // /api/races/sources/{source}/unreadable (keeps a copy the server already
+    // holds, one file per source), GET /api/races/picks, PUT / DELETE
+    // /api/races/picks/{id} (≤ 50 validated picks), GET / PUT
+    // /api/races/settings (validated keys).
     if pc_only {
         Access::ThisPcOnly
     } else {
@@ -422,6 +430,13 @@ mod tests {
             (Method::GET, "/api/settings", Open),
             (Method::OPTIONS, "/api/settings", Open),
             (Method::GET, "/ws", Open),
+            (Method::GET, "/api/races/sources", Open),
+            (Method::POST, "/api/races/sources/{source}/unreadable", Open),
+            (Method::GET, "/api/races/picks", Open),
+            (Method::PUT, "/api/races/picks/{id}", Open),
+            (Method::DELETE, "/api/races/picks/{id}", Open),
+            (Method::GET, "/api/races/settings", Open),
+            (Method::PUT, "/api/races/settings", Open),
         ];
         for (m, r, want) in cases {
             assert_eq!(route_access(&m, r), want, "{m} {r}");

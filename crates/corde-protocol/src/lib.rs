@@ -757,6 +757,45 @@ pub struct SourceStatus {
     pub recording: bool,
 }
 
+/// What a [`RaceReminder`] announces.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "snake_case")]
+#[ts(export, export_to = "../../../packages/protocol/src/generated/")]
+pub enum RaceReminderKind {
+    /// `lead_min` minutes before the start of a race (0 = at the start).
+    Lead,
+    /// The evening before a special event (18:00, local time of the device that chose it).
+    Eve,
+    /// The day of a special event.
+    Day,
+}
+
+/// An online race the driver picked on the « Courses » page is about to start (or, for a special
+/// event, is tomorrow / today). Sent once to every dashboard when it is due; the UI shows a banner
+/// and plays a short sound.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../../packages/protocol/src/generated/")]
+pub struct RaceReminder {
+    /// `<race_id>@<start_ms>`.
+    pub pick_id: String,
+    pub race_id: String,
+    pub name: String,
+    pub track: String,
+    /// `daily` | `weekly` | `special` | `champ`.
+    pub cat: String,
+    /// `beginner` | `intermediate` | `advanced` (daily races).
+    pub level: Option<String>,
+    /// Start of the race (ms since the epoch); for a special event, the reminder of the day.
+    #[ts(type = "number")]
+    pub start_ms: i64,
+    pub kind: RaceReminderKind,
+    /// Minutes before the start, for [`RaceReminderKind::Lead`].
+    pub lead_min: Option<u32>,
+    /// When the reminder was due (ms since the epoch).
+    #[ts(type = "number")]
+    pub due_ms: i64,
+}
+
 /// Messages from the server to a dashboard.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[allow(clippy::large_enum_variant)]
@@ -776,6 +815,8 @@ pub enum ServerMessage {
         #[ts(type = "number")]
         t: u64,
     },
+    /// A picked online race is due (page « Courses »).
+    RaceReminder(RaceReminder),
 }
 
 /// Messages from a dashboard to the server.
@@ -1647,5 +1688,28 @@ mod tests {
         let m = ServerMessage::Pong { t: 42 };
         let s = serde_json::to_string(&m).unwrap();
         assert_eq!(s, r#"{"type":"pong","t":42}"#);
+    }
+
+    #[test]
+    fn race_reminder_is_flat_and_tagged() {
+        let m = ServerMessage::RaceReminder(RaceReminder {
+            pick_id: "one-stint-sprint-advanced@1762892700000".into(),
+            race_id: "one-stint-sprint-advanced".into(),
+            name: "One Stint Sprint".into(),
+            track: "Monza".into(),
+            cat: "daily".into(),
+            level: Some("advanced".into()),
+            start_ms: 1_762_892_700_000,
+            kind: RaceReminderKind::Lead,
+            lead_min: Some(5),
+            due_ms: 1_762_892_400_000,
+        });
+        let v: serde_json::Value = serde_json::to_value(&m).unwrap();
+        assert_eq!(v["type"], "race_reminder");
+        assert_eq!(v["kind"], "lead");
+        assert_eq!(v["lead_min"], 5);
+        assert_eq!(v["start_ms"], 1_762_892_700_000_i64);
+        let back: ServerMessage = serde_json::from_value(v).unwrap();
+        assert_eq!(back, m);
     }
 }
