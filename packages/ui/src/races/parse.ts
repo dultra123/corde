@@ -6,7 +6,8 @@
  * - `https://lmu.tools/schedule` — a community site: weekly races, special events and the
  *   RaceControl Pro championships (and the daily races again, used to complete them).
  *
- * Ported from the owner's « LMU Courses v2.2 » script (Scriptable, iPhone), where these functions
+ * « Porté du script LMU Courses v2.2 du propriétaire du projet » (Scriptable, iPhone): ported
+ * from the project owner's script, where these functions
  * were tuned on the real pages. The port is deliberately literal — same regular expressions, same
  * time-zone heuristics, same object shapes — and is checked against the original script on the
  * same sample pages (see docs/STATUS.md, « Courses »). Do not "improve" the logic here without
