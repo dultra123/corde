@@ -157,7 +157,7 @@ chaque modification du code.
 | **Écran Session** : tours, secteurs, courbes par tour, carte avec trace | Deux tours superposables par distance ; export CSV d'un tour |
 | **Import des résultats XML** `UserData\Log\Results\*.xml` | Une course terminée hors Corde apparaît dans l'historique avec positions et tours (brief 01 §5) |
 | **Lecture du setup courant** (`.svm` + REST `getPlayerGarageData`) | Le setup est attaché à chaque session ; diff lisible entre deux setups au cran près |
-| **Source OBS** | Une disposition « overlay » (fond transparent) s'affiche dans une source navigateur OBS à `http://127.0.0.1:8471/?layout=<id>` |
+| **Source OBS** (fait en 0.5) | Une disposition « overlay » (grille libre 48 × 27 sur 1920 × 1080, fond transparent) s'affiche dans une source navigateur OBS à `http://127.0.0.1:8471/#/overlay/layout/<id>`, un widget seul à `#/overlay/widget/<id>` ; ni barre, ni bandeau, ni curseur, ni défilement ; options `bg`, `opacity`, `scale`, `hide=offtrack`, `lang` dans l'adresse ; page « OBS » de Corde avec aperçus, adresses à copier et tailles conseillées ; reconnexion silencieuse ; jamais d'adresse IP, de chemin ni de réglage de voiture à l'écran |
 
 ### Phase 2 — L'ingénieur
 
@@ -343,8 +343,11 @@ sont jamais envoyés.
    GPL-3.0-or-later, dépôt public `dultra123/corde` ([ADR 0008](adr/0008-open-source-publication.md)). Restent à
    décider : la signature des exécutables (ADR 0007) et les mises à jour automatiques.
 3. **Langue de l'interface.** Français par défaut ; faut-il l'anglais dès le début (spectateurs, ligue) ?
-4. **OBS.** Quels widgets montrer aux spectateurs ? Fond transparent ou habillage aux couleurs de ton overlay
-   existant ? Taille cible de la source navigateur dans la scène ?
+4. ~~**OBS.**~~ **Tranché le 12 novembre 2026 (0.5)** : **fond transparent**, n'importe quel widget seul ou
+   une disposition overlay entière, choisis par le streamer dans la page « OBS » ; trois fonds au choix
+   (transparent avec contour, verre fumé par défaut, opaque), taille des textes réglable, taille de source
+   conseillée par widget (1920 × 1080 pour une disposition). Un habillage aux couleurs d'un overlay existant
+   reste possible plus tard (CSS personnalisé de la source).
 5. **Ressenti par IA.** Acceptes-tu de fournir une clé API (coût de l'ordre du centime par ressenti, brief 03
    §5) ou le formulaire suffit-il au départ ?
 6. **Linux.** Priorité réelle pour toi (tu joues sous Windows) ou uniquement pour l'équipe ?

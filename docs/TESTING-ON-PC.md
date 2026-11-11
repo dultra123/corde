@@ -36,7 +36,7 @@ L'option `Automatically Record Telemetry` peut rester désactivée : Corde enreg
    **<https://github.com/dultra123/corde/releases/tag/continuous>** — elle s'appelle
    « Corde — dernière version » et elle est reconstruite à chaque modification du projet.
 2. Tout en bas, section **Assets**, clique sur le fichier dont le nom finit par **`-setup.exe`**
-   (par exemple `Corde_0.4.0_x64-setup.exe`).
+   (par exemple `Corde_0.5.0_x64-setup.exe`).
 3. Ton navigateur peut hésiter : Edge affiche parfois « … n'est pas couramment téléchargé ». Clique sur
    les **…** à côté du fichier → **Conserver** → **Conserver quand même**.
 
@@ -181,6 +181,64 @@ un site change sa page et que Corde n'y reconnaît plus aucune course, la page l
 
 ---
 
+## 6 ter. Dans OBS (streamers)
+
+Les widgets de Corde s'affichent par-dessus ton jeu dans OBS, **sur fond transparent**, sans la barre de
+Corde ni rien d'autre. Corde doit rester ouverte pendant le stream (la fenêtre peut être cachée).
+
+**Trouver l'adresse** : dans Corde, menu des dispositions du tableau de bord (en haut, à côté des onglets) →
+**Adresses pour OBS…**, ou carte **Dans OBS** de l'Accueil. La page liste :
+
+- les **dispositions overlay** : plusieurs widgets placés sur un canevas 1920 × 1080 (une seule source,
+  de la taille de ta scène). Corde en propose une, « OBS » (circuit, écarts, classement relatif,
+  commandes, pneus) ; « Modifier dans le tableau de bord » l'ouvre sur un damier (le damier sera
+  transparent dans OBS), **Modifier** pour déplacer, étirer, ajouter ou retirer des widgets, **Terminer**
+  pour enregistrer. Le menu des dispositions → **Nouvelle disposition overlay** en crée une autre ;
+- les **widgets seuls** : une source par widget, le widget remplit la source.
+
+Chaque carte montre un aperçu (données de démonstration), la **taille conseillée** et un bouton **Copier**.
+
+**Créer la source dans OBS** :
+
+1. Dans la scène : **Sources** → **+** → **Navigateur** → donne-lui un nom (par exemple « Corde –
+   Commandes ») → OK.
+2. **URL** : colle l'adresse copiée, par exemple `http://127.0.0.1:8471/#/overlay/widget/inputs`.
+   Laisse « Fichier local » décoché.
+3. **Largeur** et **Hauteur** : la taille conseillée de la carte (par exemple 640 et 384 pour les
+   commandes, 1920 et 1080 pour une disposition overlay).
+4. **CSS personnalisé** : laisse le champ vide, ou remplace ce qu'OBS y a mis par
+   `body { background: rgba(0,0,0,0); }` (c'est déjà transparent). « Contrôler l'audio via OBS »,
+   « Éteindre la source quand elle n'est pas visible » : comme tu veux. **« Actualiser le navigateur
+   quand la scène devient active » est inutile** : la source se reconnecte toute seule si Corde
+   redémarre.
+5. OK, puis place et redimensionne la source dans la scène comme une image (Alt + glisser pour rogner).
+
+**Les options** se cochent en haut de la page OBS de Corde ; elles complètent l'adresse (recopie-la après
+un changement). Tu peux aussi les écrire à la main après l'adresse :
+
+| Option | Valeurs | Effet |
+|---|---|---|
+| `bg` | `none`, `glass` (défaut), `solid` | fond des widgets : transparent (contour sombre autour des chiffres), verre fumé, opaque |
+| `opacity` | 0.1 à 1 (défaut 1) | opacité de tout l'overlay |
+| `scale` | 0.5 à 3 (défaut 1) | taille des textes et des graphiques ; la taille conseillée grandit d'autant |
+| `hide=offtrack` | — | l'overlay s'efface en fondu quand tu n'es pas en piste (garage, menus), 2 s après ta sortie |
+| `lang` | `fr`, `en` | langue de l'overlay (sinon celle de Corde) |
+| `title=0` | — | sans le titre des widgets |
+| `w.mode`, `w.window` | selon le widget | réglage du widget seul : classement `relative` / `full`, fenêtre des traces `5`, `10`, `20` s |
+
+Exemple : `http://127.0.0.1:8471/#/overlay/widget/standings?bg=none&scale=1.25&hide=offtrack`. Une valeur
+invalide est ignorée (la valeur par défaut s'applique).
+
+**OBS sur un second PC de stream** : active l'accès réseau (section 6), redémarre Corde, puis dans la page
+OBS choisis **Un autre PC (réseau)** : l'adresse devient celle du PC de jeu (`http://192.168.x.x:8471/…`).
+Elle n'est montrée qu'à ta demande ; ne l'affiche pas en direct. L'adresse `127.0.0.1` ne marche que si
+OBS tourne sur le PC de jeu.
+
+**Ce que l'overlay ne montre jamais** : ni adresse IP, ni chemin de dossier, ni tes réglages de voiture ;
+un widget sans données (jeu fermé) n'affiche rien, pas même son panneau.
+
+---
+
 ## 7. Où sont tes données
 
 Tout ce que Corde enregistre est dans **`%LOCALAPPDATA%\Corde\`**
@@ -256,6 +314,12 @@ RaceLab…). Corde est prévue pour cohabiter, mais on veut d'abord une mesure p
 **7. Et l'anti-triche (EAC) ?** Corde lit uniquement ce que le jeu publie volontairement (le même
 mécanisme que SimHub ou TinyPedal) et ne touche pas au processus du jeu. Par prudence, fais les premiers
 tests hors ligne, et dis-nous avant de l'utiliser en session en ligne.
+
+**8. La source OBS reste vide.** Corde est-elle ouverte ? L'adresse s'ouvre-t-elle dans un navigateur du
+même PC (widgets visibles quand tu es en piste) ? Un widget sans données n'affiche rien : entre en piste
+(et retire `hide=offtrack` pour essayer au garage). Avec un second PC, il faut l'adresse réseau (section 6
+ter) et l'accès réseau activé. Si un fond apparaît derrière les widgets, vide le champ « CSS
+personnalisé » de la source. Clic droit → **Interagir** est inutile : l'overlay n'a aucun bouton.
 
 ---
 

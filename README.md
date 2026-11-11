@@ -27,6 +27,7 @@ que l'on vise à chaque tour. Corde s'appelait anciennement Muret (nom de travai
   - [Profil et résultats de course](#profil-et-résultats-de-course)
   - [L'ingénieur de course](#lingénieur-de-course)
   - [Courses en ligne](#courses-en-ligne)
+  - [Dans OBS](#dans-obs)
 - [Où en est le projet](#où-en-est-le-projet)
 - [Pour les développeurs](#pour-les-développeurs)
 - [Documentation](#documentation)
@@ -155,6 +156,30 @@ Corde ne contacte aucun site. Une fois activé, elle lit les pages publiques
 sans compte ni identifiant ([vie privée](PRIVACY.md#planning-des-courses-en-ligne-optionnel-désactivé-par-défaut)).
 Planning non officiel : si un site change sa page, Corde le dit et en garde une copie pour être adaptée.
 
+### Dans OBS
+
+Pour les streamers : chaque widget, ou une disposition entière, s'affiche **sur fond transparent par-dessus
+le jeu** dans une source « Navigateur » d'OBS, sans rien de l'interface autour (ni barre, ni bandeau, ni
+curseur). La page **OBS** de Corde (menu des dispositions du tableau de bord, ou carte « Dans OBS » de
+l'Accueil) donne pour chacun un aperçu, l'adresse à copier et la taille conseillée de la source.
+
+![Une scène OBS : la disposition « OBS » par défaut sur un décor de jeu dessiné](docs/images/obs-overlay.png)
+
+1. Dans OBS : **Sources → + → Navigateur**, puis OK.
+2. Colle l'adresse copiée dans Corde, par exemple `http://127.0.0.1:8471/#/overlay/widget/inputs`.
+3. Mets la **largeur et la hauteur conseillées** (640 × 384 pour les commandes, 1920 × 1080 pour une
+   disposition), puis OK.
+
+Options, à cocher dans la page OBS (elles complètent l'adresse) : fond des widgets `bg=none` (transparent,
+avec un contour sombre pour rester lisible sur le jeu), `glass` (verre fumé, par défaut) ou `solid` ;
+`opacity` ; `scale` (taille des textes) ; `hide=offtrack` (fondu quand tu n'es pas en piste) ; `lang=fr|en`.
+Les **dispositions overlay** (canevas 1920 × 1080, sur damier) se composent dans le tableau de bord comme
+les autres : menu des dispositions → « Nouvelle disposition overlay ». L'adresse proposée est celle du PC
+lui-même (`127.0.0.1`), qui ne révèle rien à l'écran ; celle du réseau, pour un second PC de stream, n'est
+montrée qu'à la demande. Pas à pas : [docs/TESTING-ON-PC.md](docs/TESTING-ON-PC.md#6-ter-dans-obs-streamers).
+
+![La page OBS de Corde : adresses, tailles conseillées, options et aperçus](docs/images/obs-page.png)
+
 ## Où en est le projet
 
 | Partie | État |
@@ -166,6 +191,7 @@ Planning non officiel : si un site change sa page, Corde le dit et en garde une 
 | Ingénieur : analyse, trois orientations de réglage, ressenti → ajustement | fait, à calibrer sur des données réelles |
 | Fichiers de réglage `.svm` prêts à charger dans le jeu | fait (lecture de tes réglages, crans réels, écriture à la demande) ; bornes exactes à lire dans le garage du jeu sur ton PC |
 | Page des courses en ligne (planning, mes courses, rappel sonore avant le départ) | fait ; lecture des vrais sites, son dans l'application Windows et rappels sur le téléphone à vérifier chez le pilote |
+| Widgets dans OBS (fond transparent, page « OBS », dispositions overlay) | fait, vérifié dans Chromium ; à essayer dans une vraie source OBS |
 | Signature de l'installeur (plus d'avertissement Windows) | à décider |
 | Application mobile autonome (iOS / Android) | à venir |
 | Linux (le jeu tourne sous Proton) | serveur compilé, non testé avec le jeu |

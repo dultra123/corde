@@ -23,7 +23,7 @@ autrement :
 | Application de bureau (fenêtre Tauri) | `http://127.0.0.1:<port>/#/…` (la coquille fait naviguer sa webview vers le serveur embarqué : `apps/desktop/src-tauri/src/shell.rs`, `ui_url` → `server::local_url`) | `http://127.0.0.1:<port>` = même origine que l'hôte |
 | Navigateur du PC | `http://127.0.0.1:8471` | même origine |
 | Téléphone du réseau local | `http://<ip-du-pc>:8471` | même origine (`http://<ip-du-pc>:8471`) |
-| OBS (source navigateur) | `http://127.0.0.1:8471/…` | même origine |
+| OBS (source navigateur, mode overlay de 0.5) | `http://127.0.0.1:8471/#/overlay/…` ; second PC de stream : `http://<ip-du-pc>:8471/#/overlay/…` (accès réseau activé) | même origine |
 | Développement, scripts de capture | `http://127.0.0.1:<autre port>/?server=127.0.0.1:8471`, `vite dev` sur `localhost:5173` | origine locale (autre port de la boucle locale) |
 
 Les pages propres à la coquille (écran de démarrage, `apps/desktop/dist` : `tauri://localhost` sous
@@ -117,7 +117,7 @@ PC seulement.
 | GET | `/api/status` | L | aucune | ouverte | état du jeu et de la source, tableau de bord |
 | GET | `/api/frame` | L | aucune | ouverte | dernière image de télémétrie (classement en direct : noms des autres pilotes) |
 | GET | `/api/laps` | L | aucune | ouverte | tours de la session en cours |
-| GET | `/api/layouts` | L | aucune | ouverte | dispositions du tableau de bord |
+| GET | `/api/layouts` | L | aucune | ouverte | dispositions du tableau de bord ; une page overlay (OBS) relit la liste toutes les 10 s pour suivre la disposition qu'elle montre |
 | PUT | `/api/layouts` | D | aucune | ouverte | le tableau de bord du téléphone y enregistre ses dispositions (remplacement complet par tableau) ; données petites et recréables |
 | DELETE | `/api/layouts` | S | aucune | **PC** | supprime toutes les dispositions ; l'interface ne l'utilise pas |
 | GET | `/api/layouts/{id}` | L | aucune | ouverte | |
@@ -185,6 +185,17 @@ action n'est possible que depuis le PC qui fait tourner Corde » ; elles restent
 Créer les fichiers de réglage et changer l'accès réseau étaient déjà réservés au PC. Le tableau de bord, la
 saisie du ressenti, la commande d'enregistrement et toutes les lectures restent disponibles au téléphone.
 
+### Le mode overlay (OBS, 0.5)
+
+Aucune route ajoutée : une page overlay (`#/overlay/widget/<id>`, `#/overlay/layout/<id>`) est l'interface
+habituelle (`GET /*`, le fragment `#…` n'atteint jamais le serveur), qui lit `GET /api/layouts` et le
+WebSocket `/ws` à 30 Hz, **sans jamais écrire** : pas de synchronisation des dispositions, pas de démo
+automatique. Elle n'appelle ni `/api/network`, ni `/api/storage`, ni `/api/profile`, ni les réglages : elle
+ne peut afficher ni adresse IP, ni chemin du PC, ni réglage de voiture. Les dispositions overlay
+(`device: "overlay"`) s'enregistrent par les routes de dispositions existantes. La page « OBS » de Corde
+(`#/obs`) propose `http://127.0.0.1:<port>` ; l'adresse réseau (`GET /api/network`) n'y est lue et montrée
+que sur demande.
+
 ## 5. Autres vérifications (novembre 2026)
 
 | Sujet | Constat |
@@ -210,6 +221,10 @@ saisie du ressenti, la commande d'enregistrement et toutes les lectures restent 
   cache, aucune lecture tant que le réglage est faux, redirections limitées au site, en-têtes réels envoyés
   (serveur HTTP local), pas de cookie, limite de taille, validation des choix et des réglages, copie de
   diagnostic, rappel reçu sur le WebSocket.
+- `tests/access_policy.rs` → `an_obs_browser_source_loads_the_overlay_from_the_server` (0.5) : la page
+  overlay, ses fichiers, `GET /api/layouts` et le WebSocket chargés comme le fait une source OBS, depuis
+  `127.0.0.1`, `localhost` et, si la machine a une adresse réseau, depuis cette adresse avec l'accès réseau
+  activé.
 - Les scripts de capture (`packages/ui/scripts/screenshot-home.mjs`, `screenshot-sessions.mjs --spawn`)
   échouent sur toute erreur de console : ils vérifient que l'interface fonctionne depuis une autre origine
   locale.
