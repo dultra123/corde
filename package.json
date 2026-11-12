@@ -1,7 +1,7 @@
 {
   "name": "corde",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.7.1",
   "license": "GPL-3.0-or-later",
   "description": "Corde — télémétrie, tableau de bord et ingénieur de course pour simulateurs (Le Mans Ultimate d'abord).",
   "packageManager": "pnpm@10.28.0",

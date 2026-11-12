@@ -8,6 +8,23 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [0.7.1] — 2026-11-12
+
+### Nouveautés
+
+- **Courses en ligne sur l'Accueil** : sous ta dernière session, une carte fait défiler tes courses
+  choisies puis les prochains départs du planning, une course à la fois, avec l'image du site, le niveau,
+  les badges SR / DR, l'heure du départ et un compte à rebours. Elle passe à la suivante toutes les
+  8 secondes et s'arrête quand ta souris est dessus. Flèches, points, clavier ou glissement du doigt pour
+  passer d'une course à l'autre ; un clic ouvre la page Courses, **Choisir ce départ** l'ajoute à tes
+  courses.
+- Elle remplace la ligne « Prochaine course » de l'Accueil.
+
+### À savoir
+
+- Rien de plus n'est lu sur Internet : la carte utilise le planning déjà lu pour la page Courses, et ne
+  montre rien tant que le planning n'est pas activé.
+
 ## [0.7.0] — 2026-11-12
 
 ### Nouveautés

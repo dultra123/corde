@@ -36,7 +36,7 @@ L'option `Automatically Record Telemetry` peut rester désactivée : Corde enreg
    **<https://github.com/dultra123/corde/releases/tag/continuous>** — elle s'appelle
    « Corde — dernière version » et elle est reconstruite à chaque modification du projet.
 2. Tout en bas, section **Assets**, clique sur le fichier dont le nom finit par **`-setup.exe`**
-   (par exemple `Corde_0.7.0_x64-setup.exe`).
+   (par exemple `Corde_0.7.1_x64-setup.exe`).
 3. Ton navigateur peut hésiter : Edge affiche parfois « … n'est pas couramment téléchargé ». Clique sur
    les **…** à côté du fichier → **Conserver** → **Conserver quand même**.
 
@@ -165,8 +165,19 @@ t'inscrit pas.
 **Les rappels** : 15 et 5 minutes avant le départ par défaut (**Rappels avant le départ** : 60, 30, 15, 10,
 5, 2 min ou au départ). À l'heure dite, un bandeau apparaît en haut de n'importe quelle page de Corde —
 « Départ dans 5 min — LMP3 Fixed, Monza, 21:30 » — avec un son court (plus insistant à 5 minutes et
-moins), sur le PC **et** sur le téléphone si Corde y est ouverte. L'Accueil affiche aussi « Prochaine
-course … dans 12 min » quand une course choisie part dans les trois heures.
+moins), sur le PC **et** sur le téléphone si Corde y est ouverte.
+
+**Sur l'Accueil** : sous **Ta dernière session**, la carte **Courses en ligne** montre une course à la fois
+— d'abord tes courses choisies (marquées « Choisie »), puis les prochains départs du planning, quotidiennes
+d'abord, selon tes filtres de niveau et de catégorie (8 au plus). Chaque course a son image (ou un dessin
+aux couleurs de sa catégorie), son niveau, ses badges SR / DR, l'heure du départ et un compte à rebours
+(« dans 12 min », à la seconde sous une minute). Elle passe à la suivante toutes les 8 secondes ; elle
+**s'arrête** quand la souris est dessus ou que tu y navigues au clavier. Flèches et points en dessous,
+flèches ← → du clavier, glissement du doigt sur le téléphone. Un clic sur la course ouvre la page
+Courses ; **Choisir ce départ** / **Retirer** agit tout de suite. À vérifier : les images des sites
+s'affichent (sinon le dessin les remplace, jamais d'image cassée), une course partie disparaît d'elle-même,
+et si Windows est réglé sur « Afficher les animations » désactivé, la carte ne défile plus seule. Planning
+désactivé : la carte le dit en une phrase, avec un lien **Activer dans Courses**.
 
 **Tester la sonnerie** : sur la page Courses, bouton **Tester la sonnerie**. Fais-le une fois sur chaque
 appareil : un navigateur (surtout sur téléphone) n'autorise le son qu'après un premier geste sur la page.

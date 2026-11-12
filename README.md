@@ -156,8 +156,9 @@ RaceControl Pro, avec leur circuit, leur durée, leurs catégories de voitures e
 (marqués quand ton rang, que tu indiques, est en dessous). Touche un horaire : la course rejoint **Mes
 courses**, avec un compte à rebours, et Corde te prévient avant le départ (15 et 5 min par défaut, au
 choix entre 60 min et le départ) par un bandeau et un son court, sur le PC et sur le téléphone, quelle que
-soit la page ouverte. L'Accueil affiche la prochaine course des trois heures à venir. L'inscription, elle,
-se fait toujours dans le jeu : lance LMU et rejoins la course.
+soit la page ouverte. Sur l'Accueil, sous ta dernière session, la carte **Courses en ligne** fait défiler
+tes courses choisies puis les prochains départs, une course à la fois, avec l'image du site et le compte à
+rebours. L'inscription, elle, se fait toujours dans le jeu : lance LMU et rejoins la course.
 
 ![Planning des courses, mes courses et un rappel, sur PC et téléphone](docs/images/courses.png)
 
