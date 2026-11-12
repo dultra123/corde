@@ -2,7 +2,7 @@
 
 > À lire après [SERVEUR.md](SERVEUR.md) (le serveur doit déjà marcher à la maison).
 > Ce guide reste **générique** : chaque box et chaque application a ses menus, qui changent d'une version à
-> l'autre. Les commandes d'outils tiers (PiVPN, applications WireGuard, Tailscale…) sont données à titre
+> l'autre. Les commandes d'outils tiers (WireGuard, applications mobiles, Tailscale…) sont données à titre
 > indicatif : **vérifie-les dans leur documentation officielle** au moment de les utiliser.
 
 ## Le principe : on n'ouvre jamais Corde, on entre chez soi par un VPN
@@ -55,79 +55,132 @@ seule défense serait l'appairage.
 
 ### Étapes
 
+On utilise le paquet `wireguard` fourni par Raspberry Pi OS, sans script tiers. (Le script communautaire
+PiVPN, souvent cité, a annoncé l'arrêt de son développement en 2024 : ne pars pas dessus pour une nouvelle
+installation.)
+
+Le montage est le plus simple possible : le téléphone ne parle **qu'au Pi lui-même**, par une adresse qui
+n'existe que dans le tunnel (`10.8.0.1`). Le Pi ne fait pas suivre le trafic : le reste de ton réseau reste
+hors d'atteinte du téléphone.
+
 1. **Nom de domaine dynamique.** L'adresse publique de ta box peut changer. Un service de **DNS dynamique**
    donne un nom fixe (par exemple `chez-moi.exemple-dyndns.net`) qui suit ton adresse. Beaucoup de box en
-   proposent un dans leurs réglages ; sinon, des services gratuits existent, avec un petit programme sur le
-   Pi qui met le nom à jour. PiVPN (étape 2) propose aussi d'utiliser un tel nom.
-2. **Installer WireGuard sur le Pi.** Deux façons :
-   - **PiVPN**, un script communautaire qui installe et configure WireGuard pas à pas. D'après sa
-     documentation (pivpn.io), il se lance par `curl -L https://install.pivpn.io | bash` ; il demande le
-     protocole (choisis **WireGuard**), le port (51820 par défaut), l'adresse publique ou le nom de domaine
-     dynamique, et les DNS. **Avant de l'utiliser, vérifie sur son site qu'il est toujours maintenu** et
-     compatible avec ta version de Raspberry Pi OS ; lis le script avant de le lancer si tu le peux.
-   - **À la main**, avec le paquet `wireguard` de Raspberry Pi OS et la documentation officielle de
-     WireGuard (wireguard.com) : plus long, mais sans outil tiers.
-3. **Rediriger le port UDP** du VPN (51820, ou celui choisi) de la box vers l'adresse **fixe** du Pi
-   (menu de la box souvent appelé « redirection de ports », « NAT/PAT » ou « serveurs virtuels »). **Seulement
-   celui-là, seulement en UDP.**
-4. **Créer un profil par appareil.** Avec PiVPN, d'après sa documentation : `pivpn add` (donne un nom :
-   `telephone`), puis `pivpn -qr` affiche un QR code. Un profil = une clé = un appareil : ne partage jamais
-   un profil entre deux appareils, pour pouvoir en révoquer un seul.
-5. **Sur le téléphone**, installe l'application officielle **WireGuard** (App Store ou Google Play), ajoute
-   un tunnel en **scannant le QR code**.
-6. **Ne donner au téléphone que l'accès au Pi** (voir ci-dessous).
-7. **Essaie** depuis le réseau mobile (Wi-Fi coupé) : active le tunnel, ouvre l'adresse de Corde, vérifie
-   que la page s'affiche.
+   proposent un dans leurs réglages.
+2. **Installer WireGuard et créer les clés**, sur le Pi :
+
+   ```bash
+   sudo apt update && sudo apt install wireguard qrencode
+   sudo -i
+   cd /etc/wireguard
+   umask 077
+   wg genkey | tee serveur.key | wg pubkey > serveur.pub
+   wg genkey | tee telephone.key | wg pubkey > telephone.pub
+   ```
+
+3. **Le réglage du Pi** : crée `/etc/wireguard/wg0.conf` (par exemple avec `nano wg0.conf`), en remplaçant
+   les deux lignes entre parenthèses par le contenu des fichiers (`cat serveur.key`, `cat telephone.pub`) :
+
+   ```ini
+   [Interface]
+   Address = 10.8.0.1/24
+   ListenPort = 51820
+   PrivateKey = (contenu de serveur.key)
+
+   [Peer]
+   # telephone
+   PublicKey = (contenu de telephone.pub)
+   AllowedIPs = 10.8.0.2/32
+   ```
+
+4. **Le réglage du téléphone** : crée `telephone.conf` dans le même dossier :
+
+   ```ini
+   [Interface]
+   PrivateKey = (contenu de telephone.key)
+   Address = 10.8.0.2/32
+
+   [Peer]
+   PublicKey = (contenu de serveur.pub)
+   Endpoint = chez-moi.exemple-dyndns.net:51820
+   AllowedIPs = 10.8.0.1/32
+   PersistentKeepalive = 25
+   ```
+
+   `AllowedIPs = 10.8.0.1/32` veut dire : seul le trafic vers le Pi passe par le tunnel. Le reste de la
+   navigation du téléphone ne passe pas par chez toi.
+5. **Démarrer le VPN** (et à chaque démarrage du Pi) :
+
+   ```bash
+   systemctl enable --now wg-quick@wg0
+   ```
+
+6. **Rediriger le port UDP 51820** de la box vers l'adresse **fixe** du Pi (menu de la box souvent appelé
+   « redirection de ports », « NAT/PAT » ou « serveurs virtuels »). **Seulement celui-là, seulement en UDP.**
+7. **Sur le téléphone**, installe l'application officielle **WireGuard** (App Store ou Google Play). Sur le
+   Pi, affiche le réglage en QR code, scanne-le dans l'application (« ajouter un tunnel » → « depuis un QR
+   code »), puis **efface du Pi** la clé privée du téléphone : elle ne doit exister que sur le téléphone.
+
+   ```bash
+   qrencode -t ansiutf8 < telephone.conf
+   shred -u telephone.conf telephone.key
+   exit
+   ```
+
+8. **Essaie** depuis le réseau mobile (Wi-Fi coupé) : active le tunnel, ouvre `http://10.8.0.1:8471`,
+   appaire le téléphone ([SERVEUR.md](SERVEUR.md)).
+
+Un appareil = une paire de clés = un bloc `[Peer]` avec sa propre adresse (`10.8.0.3`, `10.8.0.4`…). Ne
+partage jamais un réglage entre deux appareils : tu ne pourrais plus en révoquer un seul.
+
+**Deux adresses, deux appairages.** Dans Corde, l'appairage vaut pour une adresse. Dehors, le téléphone
+utilise `http://10.8.0.1:8471` ; à la maison sans VPN, l'adresse locale du Pi. Appaire le téléphone pour
+chacune des deux, ou garde le tunnel actif aussi à la maison si ta box le permet. L'application WireGuard
+sait s'activer toute seule hors de ton Wi-Fi (réglage « activation à la demande » sur iPhone).
 
 ### Ne donner au téléphone que l'accès au Pi
 
-Par défaut, un VPN « maison » donne souvent accès à **tout** le réseau (box, PC, imprimante…) et fait passer
-tout le trafic du téléphone par chez toi. Pour Corde, il suffit d'atteindre le Pi. Deux réglages, à faire
-**tous les deux** :
+Avec le montage ci-dessus, c'est déjà le cas, pour deux raisons indépendantes :
 
-1. **Côté téléphone : `AllowedIPs`.** Dans le profil WireGuard du téléphone, la ligne `AllowedIPs` dit quelles
-   adresses passent par le tunnel. Mets **seulement l'adresse du Pi**, par exemple :
+1. **Le Pi ne fait pas suivre le trafic.** Tant que le routage est désactivé, ce qui arrive par le tunnel
+   s'arrête au Pi. Vérifie-le :
 
-   ```ini
-   [Peer]
-   AllowedIPs = 192.168.1.50/32
+   ```bash
+   sysctl net.ipv4.ip_forward     # doit répondre : net.ipv4.ip_forward = 0
    ```
 
-   (l'adresse **locale fixe** du Pi, celle de [SERVEUR.md](SERVEUR.md)). En principe, le téléphone ouvre
-   alors Corde par **la même adresse** à la maison et dehors (`http://192.168.1.50:8471`) : un seul
-   appairage dans Corde. Le reste de son trafic ne passe pas par chez toi. *Non vérifié sur toutes les
-   configurations* : si cela ne marche pas, utilise l'adresse du Pi **dans le VPN** (souvent `10.x.x.1`) dans
-   `AllowedIPs` et dans le navigateur, et appaire le téléphone aussi pour cette adresse.
-2. **Côté Pi : le pare-feu.** `AllowedIPs` se règle sur le téléphone : un voleur qui a le téléphone en main
-   peut le modifier. La vraie barrière est sur le Pi : **interdire au tunnel de sortir vers le reste du
-   réseau**, et n'y laisser entrer que Corde. Par exemple avec `ufw` (à adapter ; `wg0` est le nom
-   habituel de l'interface WireGuard) :
+   Certains logiciels l'activent en s'installant (Docker, par exemple). Si la réponse est `1`, le pare-feu
+   ci-dessous devient indispensable.
+2. **Un pare-feu sur le Pi**, qui ne laisse entrer que ce qu'il faut. `AllowedIPs` se règle sur le
+   téléphone : un voleur qui a le téléphone en main peut le modifier ; la vraie barrière est sur le Pi.
+   Exemple avec `ufw`, **à adapter à ta plage d'adresses** (`wg0` est l'interface WireGuard) :
 
    ```bash
    sudo apt install ufw
-   sudo ufw allow from 192.168.1.0/24 to any port 22 proto tcp   # SSH depuis la maison seulement (adapte la plage)
-   sudo ufw allow 51820/udp                                      # le VPN lui-même
-   sudo ufw allow in on wg0 to any port 8471 proto tcp           # Corde, depuis le tunnel
-   sudo ufw route deny in on wg0                                 # rien ne sort du tunnel vers le réseau
+   sudo ufw allow from 192.168.1.0/24 to any port 22 proto tcp     # SSH, depuis la maison seulement
+   sudo ufw allow from 192.168.1.0/24 to any port 8471 proto tcp   # Corde, depuis la maison
+   sudo ufw allow in on wg0 to any port 8471 proto tcp             # Corde, depuis le tunnel
+   sudo ufw allow 51820/udp                                        # le VPN lui-même
    sudo ufw enable
    ```
 
+   Par défaut, `ufw` refuse tout le reste en entrée et refuse de faire suivre le trafic.
+
    **Attention** : avant `ufw enable`, assure-toi que la règle SSH correspond bien à ton réseau, sinon tu
    perds l'accès SSH (il faudra brancher un écran et un clavier). Si d'autres services tournent sur le Pi
-   (Pi-hole, partage de fichiers…), ajoute leurs règles. PiVPN active en général le routage pour donner
-   accès à tout le réseau : la règle `route deny` le neutralise pour le tunnel.
+   (Pi-hole, partage de fichiers…), ajoute leurs règles.
 
 ### Téléphone perdu ou volé
 
 Fais **les deux**, dans cet ordre, depuis le PC ou un autre appareil :
 
-1. **Révoque sa clé WireGuard** sur le Pi (avec PiVPN, d'après sa documentation : `pivpn revoke`, puis
-   choisis le profil du téléphone) : le téléphone ne peut plus entrer chez toi.
+1. **Retire sa clé WireGuard** sur le Pi : supprime le bloc `[Peer]` du téléphone dans
+   `/etc/wireguard/wg0.conf`, puis `sudo systemctl restart wg-quick@wg0`. Le téléphone ne peut plus entrer
+   chez toi.
 2. **Révoque l'appareil dans Corde** : page **Appareils** du serveur, ou sur le Pi
    `sudo corde-server devices` puis `sudo corde-server revoke <identifiant>`. Même revenu sur ton Wi-Fi, il
    ne verra plus rien.
 
-Pour un nouveau téléphone : nouveau profil WireGuard, nouvel appairage Corde.
+Pour un nouveau téléphone : nouvelles clés, nouveau bloc `[Peer]`, nouvel appairage Corde.
 
 ## B. La box fait elle-même serveur VPN WireGuard
 
