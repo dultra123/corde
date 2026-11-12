@@ -674,10 +674,12 @@ pub fn sync_once(state: &AppState, opts: &SyncOptions) -> Result<SyncReport, Syn
     let token = file.token.clone().ok_or(SyncError::NotPaired)?;
     let store = store_of(state).map_err(|e| local(format!("{e:?}")))?;
     let force = opts.force || link.force_next.swap(false, Ordering::Relaxed);
+    // The message of the previous round stays until this one ends: while a retry is under way
+    // (a refused connection takes seconds on Windows) the page keeps saying why the last one
+    // failed instead of flickering.
     link.update_status(|s| {
         s.state = LinkState::Syncing;
         s.last_attempt_ms = Some(now_ms());
-        s.message = None;
     });
     let client = Client::new(&file.url, &token);
     let result = run_round(state, &link, &client, &store, opts, force);

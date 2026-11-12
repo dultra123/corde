@@ -285,7 +285,12 @@ jobs:
           packaging/linux/make-archive.sh "$version" x64 target/x86_64-unknown-linux-gnu/release/corde-server ui-dist server-dist
           packaging/linux/make-archive.sh "$version" arm64 target/aarch64-unknown-linux-gnu/release/corde-server ui-dist server-dist
           ls -l server-dist
-          for a in server-dist/*.tar.gz; do tar -tzf "$a" | head -20; done
+          # Liste écrite dans un fichier puis tronquée : « tar | head » échoue sous pipefail
+          # quand head ferme le tube avant la fin.
+          for a in server-dist/*.tar.gz; do
+            tar -tzf "$a" > "$RUNNER_TEMP/contenu.txt"
+            head -n 20 "$RUNNER_TEMP/contenu.txt"
+          done
 
       - uses: actions/upload-artifact@v4
         with:
