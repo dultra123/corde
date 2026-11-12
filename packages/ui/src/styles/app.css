@@ -50,9 +50,7 @@ html.is-app .btn.is-fullscreen {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   height: calc(var(--app-tabs-h) + var(--safe-bottom));
   padding: 0 var(--safe-right) var(--safe-bottom) var(--safe-left);
-  background: rgba(11, 14, 18, 0.94);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: var(--bg);
   border-top: 1px solid var(--line);
 }
 .app-tab {
