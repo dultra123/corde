@@ -50,6 +50,7 @@ corde/
 │  ├─ protocol/               # @corde/protocol : types TS générés + constantes
 │  └─ ui/                     # @corde/ui : dashboard React (widgets, grille)
 ├─ apps/
+│  ├─ mobile/                 # application iPhone (Capacitor 8, projet Xcode SPM) — ADR 0011, docs/IOS.md
 │  └─ desktop/                # application de bureau Windows (coquille Tauri 2) — voir apps/desktop/README.md
 │     ├─ dist/                #   page locale « Démarrage de Corde… » / erreur (frontendDist, sans build)
 │     ├─ assets/, scripts/    #   logo source (SVG) et génération du jeu d'icônes
@@ -113,5 +114,5 @@ il produit l'installeur `Corde_<version>_x64-setup.exe`.
 | 0 | protocole, adaptateur LMU, simulateur, serveur, dashboard v0 (6–8 widgets), layouts | `corde-server` + UI web (Linux build ici, Windows via CI) |
 | 1 | CI Windows, coquille Tauri desktop, enregistrement SQLite/Parquet, import résultats XML | installeur Windows, premières sessions enregistrées |
 | 2 | analyse post-session, diagnostics, 3 setups proposés, boucle de ressenti (LLM + règles), profil pilote | « l'ingénieur » |
-| 3 | application mobile (Tauri iOS/Android), découverte mDNS, appairage | app mobile |
+| 3 | application mobile : iPhone par Capacitor (ADR 0011, 0.8 : courses sur le téléphone, serveurs, appairage) ; Android, découverte mDNS à venir | app mobile |
 | 4 | adaptateurs ACC, AC EVO, iRacing, rF2, AMS2 | multi-jeux |

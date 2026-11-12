@@ -8,6 +8,26 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [0.8.0] — 2026-11-12
+
+### Nouveautés
+
+- **Corde sur iPhone** (première version, distribuée par TestFlight dès que le compte Apple est prêt) : la
+  même interface dans une vraie application, avec les onglets en bas de l'écran.
+- **Courses sans PC** : l'application lit elle-même le planning (racecontrol.gg et lmu.tools, si tu
+  l'actives), garde tes choix et tes réglages sur le téléphone et programme les **rappels en notifications**
+  de l'iPhone : ils sonnent même application fermée ou téléphone verrouillé. L'autorisation est demandée à
+  ton premier choix de course.
+- **Mes serveurs** : ajoute ton PC (adresse ou QR code de l'Accueil du PC) pour le direct, les sessions,
+  l'ingénieur et le profil ; ajoute ton serveur Corde et appaire le téléphone avec un code.
+
+### À savoir
+
+- Sur le PC, rien ne change, sauf qu'il accepte maintenant l'application iPhone quand l'accès depuis le
+  téléphone est activé. L'application a besoin de Corde 0.8 sur le PC.
+- Les choix de courses du téléphone et ceux du PC restent séparés.
+- Ce qu'il faut faire côté Apple : `docs/IOS.md`.
+
 ## [0.7.1] — 2026-11-12
 
 ### Nouveautés

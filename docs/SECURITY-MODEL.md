@@ -5,7 +5,7 @@
 > (origines locales, garde « depuis ce PC »), tests : `crates/corde-server/tests/access_policy.rs`.
 > Signaler une faille : [SECURITY.md](../SECURITY.md). Vie privée : [PRIVACY.md](../PRIVACY.md).
 > Le **serveur Corde de la maison** (`--role hub`, 0.7, appairage obligatoire) a ses propres règles :
-> [§7](#7-le-serveur-corde-mode-hub).
+> [§7](#7-le-serveur-corde-mode-hub). L'**application iPhone** (0.8) : [§8](#8-lapplication-iphone).
 
 ## 1. Ce qui tourne
 
@@ -18,7 +18,7 @@ autrement :
 - L'accès depuis le réseau local (téléphone, tablette, OBS sur un autre PC) s'active par le bouton « Activer
   l'accès depuis mon téléphone » de l'écran d'accueil (réglage `lan_access` de `settings.json`, appliqué au
   redémarrage), ou par `--lan` / `--bind` en mode console. Le serveur écoute alors sur toutes les interfaces.
-- L'interface est chargée de cinq façons, toutes prises en compte par la politique ci-dessous :
+- L'interface est chargée de six façons, toutes prises en compte par la politique ci-dessous :
 
 | Cas | Adresse de la page | Origine envoyée à l'API |
 |---|---|---|
@@ -27,6 +27,7 @@ autrement :
 | Téléphone du réseau local | `http://<ip-du-pc>:8471` | même origine (`http://<ip-du-pc>:8471`) |
 | OBS (source navigateur, mode overlay de 0.5) | `http://127.0.0.1:8471/#/overlay/…` ; second PC de stream : `http://<ip-du-pc>:8471/#/overlay/…` (accès réseau activé) | même origine |
 | Développement, scripts de capture | `http://127.0.0.1:<autre port>/?server=127.0.0.1:8471`, `vite dev` sur `localhost:5173` | origine locale (autre port de la boucle locale) |
+| Application iPhone (0.8, `apps/mobile`, Capacitor) | `capacitor://localhost/index.html` (l'interface est **dans** l'application) ; elle appelle `http://<ip-du-pc>:8471` ou le serveur Corde | `capacitor://localhost` (§8) |
 
 Les pages propres à la coquille (écran de démarrage, `apps/desktop/dist` : `tauri://localhost` sous
 macOS/Linux, `http://tauri.localhost` sous Windows) n'appellent pas l'API HTTP — elles passent par l'IPC de
@@ -89,11 +90,15 @@ Ordre d'application (`guard::guard`, après le routage) :
      serveur de développement, scripts de capture) ;
    - une **origine de la coquille Tauri** : `tauri://localhost`, `http://tauri.localhost`,
      `https://tauri.localhost` ;
+   - l'**origine de l'application iPhone** : `capacitor://localhost` exactement (0.8, §8) — acceptée
+     pour l'`Origin` et CORS, **jamais** comme une page de ce PC (règle 4) ;
    - sinon **403** « origine non autorisée », **y compris pour un GET**. Une requête **sans `Origin`**
      (navigation directe, `curl`) est acceptée.
 3. **CORS** : `Access-Control-Allow-Origin` ne reflète que les origines acceptées ci-dessus, pré-requêtes
-   `OPTIONS` comprises (méthodes GET, POST, PUT, DELETE ; en-têtes `Content-Type`, `Accept`). Une pré-requête
-   d'une autre origine reçoit 403.
+   `OPTIONS` comprises (méthodes GET, POST, PUT, PATCH, DELETE ; en-têtes `Content-Type`, `Accept` et,
+   depuis 0.8, `Authorization` : le jeton d'appareil de l'application iPhone, §8). Une pré-requête d'une
+   autre origine reçoit 403. Aucune réponse n'autorise les cookies d'une autre origine
+   (`Access-Control-Allow-Credentials` absent).
 4. **Routes réservées au PC** (tableau du §4) : 403 « cette action n'est possible que depuis le PC qui fait
    tourner Corde » si la connexion ne vient pas de la boucle locale, ou si la page qui l'envoie n'est pas une
    origine locale (`net::may_change_settings`, la garde qui protégeait déjà les réglages). Un navigateur du
@@ -311,6 +316,15 @@ aucune route de mise à jour. Vie privée : [PRIVACY.md](../PRIVACY.md#mises-à-
 - Les scripts de capture (`packages/ui/scripts/screenshot-home.mjs`, `screenshot-sessions.mjs --spawn`)
   échouent sur toute erreur de console : ils vérifient que l'interface fonctionne depuis une autre origine
   locale.
+- Application iPhone (0.8) : `guard.rs` (unitaires : `capacitor://localhost` accepté sur toute adresse,
+  imitations refusées, jamais « ce PC », pré-requête avec `Authorization`), `hub/auth.rs` (jeton dans le
+  sous-protocole, seulement sur une demande de WebSocket), `tests/mobile_app.rs` (serveurs réels : PC avec
+  l'accès réseau ouvert — API, CORS, WebSocket avec et sans `corde.v1`, routes du PC refusées même depuis la
+  boucle locale ; accès réseau fermé → 403 ; serveur Corde — appairage `kind: app` sans cookie, `Bearer`,
+  jeton en sous-protocole accepté et jamais renvoyé, faux jeton et jeton dans l'adresse refusés, révocation),
+  `packages/ui/src/mobile/*.test.ts` (adresses acceptées, jeton jamais dans une entrée de la liste, un
+  journal ni un message d'erreur, rappels, planning), `scripts/screenshot-app.mjs` (aperçu avec un faux
+  pont : rien ne sort de la boucle locale sauf par le HTTP natif, vers les deux adresses du planning).
 
 ## 7. Le serveur Corde (mode hub)
 
@@ -365,7 +379,7 @@ rester allumé sans surveillance, et pour être joint à travers un VPN.
 | Code d'appairage | 8 chiffres tirés du générateur aléatoire du système (sans biais), **un seul à la fois**, usage unique, **10 minutes** ; **3 erreurs l'annulent** ; jamais écrit dans le journal ni dans une réponse d'erreur |
 | Obtenir un code | uniquement sur le serveur : `sudo corde-server pair` appelle `POST /api/hub/local/pairing-code` sur `127.0.0.1`, **sans** en-tête `Origin`, avec la clé de `hub/control.json` (nouvelle à chaque démarrage, fichier 0600 du compte `corde`, lisible par root) |
 | Limite d'essais | 5 par adresse et 30 au total par tranche de 10 minutes (429 + `Retry-After`), comptés avant de regarder le code ; une adresse IPv4 vue en IPv6 (`::ffff:`) compte pour la même |
-| Jeton d'appareil | 256 bits aléatoires (64 caractères hexadécimaux), remis **une fois** : cookie `corde_device` (`HttpOnly; SameSite=Strict; Path=/; Max-Age` ≈ 400 jours, pas `Secure`) pour un navigateur, corps de la réponse pour le PC (`"kind": "app"`), qui le garde dans `hub-link.json` (0600 sous Unix ; `%LOCALAPPDATA%` est propre à l'utilisateur sous Windows) et l'envoie en `Authorization: Bearer` |
+| Jeton d'appareil | 256 bits aléatoires (64 caractères hexadécimaux), remis **une fois** : cookie `corde_device` (`HttpOnly; SameSite=Strict; Path=/; Max-Age` ≈ 400 jours, pas `Secure`) pour un navigateur, corps de la réponse pour le PC et l'application iPhone (`"kind": "app"`). Le PC le garde dans `hub-link.json` (0600 sous Unix ; `%LOCALAPPDATA%` est propre à l'utilisateur sous Windows), l'application iPhone dans son stockage (§8) ; les deux l'envoient en `Authorization: Bearer`, et l'application, sur le WebSocket, en entrée `corde.token.<jeton>` de l'en-tête `Sec-WebSocket-Protocol` (lue seulement sur une demande de passage en WebSocket ; le serveur répond `corde.v1`, jamais cette entrée) |
 | Stockage côté serveur | `hub/devices.json` (0600, dossier `hub/` en 0700) : identifiant, nom, **SHA-256 du jeton**, dates, administrateur ; le jeton lui-même n'est jamais écrit. Un fichier illisible est mis de côté et le serveur démarre **sans aucun appareil** (fermé, jamais ouvert) |
 | Vérification | SHA-256 du jeton présenté comparé à **chaque** empreinte en temps constant (`subtle`), sans sortie anticipée |
 | Révocation | immédiate : l'appareil disparaît de la liste, ses requêtes suivantes reçoivent 401, ses WebSockets ouverts sont fermés (code 4401) |
@@ -408,3 +422,58 @@ refusé (409 `server_outdated`, « mets à jour le serveur »), et le PC refuse 
 - Le PC ne parle qu'à l'adresse enregistrée, en HTTP, **sans proxy**, avec des délais (5 s pour se
   connecter, 120 s par requête) ; il n'envoie que des sessions **fermées**.
 - Toutes les routes `/api/hub-link` qui changent quelque chose sont réservées au PC (§4).
+
+## 8. L'application iPhone
+
+Décision : [ADR 0011](adr/0011-application-mobile-capacitor.md). Guide : [IOS.md](IOS.md). Code :
+`packages/ui/src/mobile/` (application), `crates/corde-server/src/net.rs` (`MOBILE_APP_ORIGIN`),
+`guard.rs` (`origin_allowed`, CORS), `hub/auth.rs` (`token_of`, `WS_PROTOCOL`), `ws.rs`.
+
+### 8.1 Ce que le serveur accepte
+
+| Élément | Règle |
+|---|---|
+| Origine | `capacitor://localhost` exactement (schéma `capacitor`, hôte `localhost`, sans port) : l'origine par défaut de Capacitor sur iOS (`server.iosScheme` = `capacitor`, `server.hostname` = `localhost` ; vérifié dans `@capacitor/ios` 8.6.0, `CAPInstanceDescriptor.swift` / `.m`, et `@capacitor/cli`, `declarations.d.ts`), laissée telle quelle dans `apps/mobile/capacitor.config.json`. `capacitor://autre-chose`, `ionic://localhost`, un port ou des identifiants : refusés |
+| « Ce PC » | jamais : `net::origin_is_local` ne la connaît pas, donc `may_change_settings` la refuse. Les routes réservées au PC (§4) répondent 403 à l'application, même si la connexion venait de la boucle locale |
+| `Host` | inchangé : l'application tape l'adresse IP du PC (ou son nom `.local`), qui n'est acceptée que si l'accès réseau est activé (§3, règle 1). Accès réseau coupé : 403 |
+| CORS | l'origine est reflétée, `Authorization` est un en-tête autorisé ; pas de cookie entre origines |
+| WebSocket | origine acceptée ; si l'application demande le sous-protocole `corde.v1`, le serveur le choisit (`WebSocketUpgrade::protocols`), sinon il n'en choisit aucun (navigateur : inchangé) |
+| Serveur Corde | appairage `kind: "app"` : le jeton arrive dans la réponse, aucun cookie. Ensuite `Authorization: Bearer` sur HTTP ; sur le WebSocket, l'entrée `corde.token.<jeton>` de `Sec-WebSocket-Protocol`, lue **seulement** sur une demande de passage en WebSocket (`Upgrade: websocket`), jamais renvoyée. Un jeton en paramètre d'adresse (`?token=`) n'est **pas** lu : l'adresse complète finit dans le journal des requêtes (`TraceLayer`), les en-têtes non |
+
+**Pourquoi accepter cette origine ne retire rien** : le contrôle `Origin` protège contre une **page web**
+ouverte dans un navigateur (§2). Une page web ne peut pas avoir l'origine `capacitor://localhost` : elle
+n'existe que dans une application qui embarque Capacitor et sert ses propres fichiers. Une application, elle,
+n'est pas un navigateur : elle peut déjà envoyer n'importe quel `Origin`, ou aucun (accepté, comme `curl`).
+L'accès réseau reste désactivé par défaut, et le serveur Corde exige toujours un appareil appairé.
+
+### 8.2 Ce que fait l'application
+
+- **Serveurs** : n'accepte une adresse en `http://` que vers le réseau privé ou local (IPv4 10/8, 172.16/12,
+  192.168/16, 127/8, 169.254/16 ; IPv6 de boucle locale, fc00::/7, fe80::/10 ; `localhost`, `.local`, nom
+  sans point) ; ailleurs `https://` est exigé (`mobile/addresses.ts`). Au plus 10 serveurs.
+- **Jeton** : gardé sous sa propre clé dans le stockage de l'application (Capacitor Preferences =
+  `UserDefaults`, bac à sable de l'application), jamais dans la liste des serveurs, jamais affiché, jamais
+  dans un journal ni un message d'erreur (testé). Envoyé seulement au serveur auquel il appartient. Un 401
+  du serveur (révoqué) l'efface ; « Oublier l'appairage » demande d'abord au serveur de révoquer cet
+  appareil. Il n'est pas dans le trousseau iOS (pas de module officiel) : il est inclus dans les sauvegardes
+  de l'iPhone.
+- **Requêtes vers un serveur Corde** : `fetch` et WebSocket depuis la webview, `credentials: "omit"`.
+- **Planning des courses** : HTTP natif (`CapacitorHttp`, `URLSession`), deux adresses en dur
+  (`mobile/schedule.ts`), redirections suivies par l'application (au plus 3, `https://` sur le même site),
+  20 s, 3 Mio, en-têtes du serveur (§4). `URLSession` garde les cookies qu'un site envoie : l'application
+  les efface après chaque page (`CapacitorCookies.clearCookies`).
+- **App Transport Security** (`Info.plist`) : `NSAllowsLocalNetworking` (noms sans point et `.local` en
+  HTTP) et des exceptions `NSExceptionAllowsInsecureHTTPLoads` pour 10.0.0.0/8, 172.16.0.0/12 et
+  192.168.0.0/16. D'après Apple (Quinn, DTS, forum « ATS and local IP addresses ») les adresses IP littérales
+  échappent à ATS depuis iOS 10 ; la documentation d'iOS 17 parle d'exceptions en notation CIDR : les
+  exceptions sont là pour le cas où ATS s'appliquerait aux adresses IP. Une adresse publique en HTTP reste
+  bloquée par ATS (et refusée par l'application avant).
+- **Liens `corde://`** : ouvrent une page d'une liste fermée, sans paramètre ; ne déclenchent aucune action.
+
+### 8.3 Ce qui ne protège pas
+
+- Le trafic vers le PC ou le serveur Corde reste en **HTTP non chiffré** sur le réseau de la maison (§2,
+  §7.1) : quelqu'un qui contrôle le Wi-Fi peut lire les données et voler le jeton d'appairage de
+  l'application. Dehors : le VPN.
+- Un **iPhone volé et déverrouillé** ouvre l'application et donc le serveur Corde jusqu'à la révocation de
+  cet appareil (page Appareils, `sudo corde-server revoke`).

@@ -24,6 +24,7 @@ que l'on vise à chaque tour. Corde s'appelait anciennement Muret (nom de travai
 - [Ce que fait Corde](#ce-que-fait-corde)
   - [Le tableau de bord en direct](#le-tableau-de-bord-en-direct)
   - [Sur le téléphone](#sur-le-téléphone)
+  - [L'application iPhone](#lapplication-iphone-08-en-préparation)
   - [Sessions et tours](#sessions-et-tours)
   - [Profil et résultats de course](#profil-et-résultats-de-course)
   - [L'ingénieur de course](#lingénieur-de-course)
@@ -96,6 +97,21 @@ une session, recalculer une analyse, réimporter les résultats, créer les fich
 réglages restent réservés au PC ([pourquoi](docs/SECURITY-MODEL.md)).
 
 ![Accueil, tableau de bord et analyse d'un tour sur téléphone](docs/images/mobile.png)
+
+### L'application iPhone (0.8, en préparation)
+
+La même interface dans une vraie application iPhone, distribuée par TestFlight : onglets en bas de l'écran,
+notifications, et surtout la page **Courses sans PC** — le téléphone lit lui-même le planning de
+racecontrol.gg et lmu.tools, garde tes choix et **sonne les rappels même application fermée**. Le direct,
+les sessions, l'ingénieur et le profil s'ouvrent dès qu'un PC ou un serveur Corde est ajouté dans
+« Mes serveurs » (adresse ou QR code, appairage par code pour le serveur Corde). Compilée uniquement par
+GitHub (aucun Mac nécessaire) : [docs/IOS.md](docs/IOS.md).
+
+![Aperçu du mode application : Accueil, Courses et « Mes serveurs »](docs/images/iphone.png)
+
+*Aperçu du mode application rendu dans Chromium à 390 px avec un faux pont Capacitor
+(`packages/ui/scripts/screenshot-app.mjs`) — ce n'est pas une capture d'iPhone : sur le téléphone, la
+page est affichée par WebKit, sous la barre d'état et au-dessus de la barre d'accueil de l'iPhone.*
 
 ### Sessions et tours
 
@@ -229,7 +245,8 @@ Pas à pas pour un non-informaticien : [docs/SERVEUR.md](docs/SERVEUR.md) · acc
 | Mises à jour depuis l'application (releases numérotées signées) | fait (0.6.0) ; à essayer pour de vrai avec la 0.6.1, une fois le dépôt public |
 | Corde serveur (Raspberry Pi) : appairage, synchronisation depuis le PC, paquet Linux arm64 / x64 | fait (0.7.0), vérifié entre deux serveurs et sous émulation arm64 ; à installer sur un vrai Pi |
 | Signature de l'installeur (plus d'avertissement Windows) | à décider |
-| Application mobile autonome (iOS / Android) | à venir |
+| Application iPhone (Capacitor) : courses sans PC avec rappels en notifications, connexion au PC et au serveur Corde | fait (0.8.0) ; compilée par la CI seulement, jamais vue sur un iPhone ; TestFlight dès que le compte Apple est activé et les secrets ajoutés |
+| Application Android | à venir |
 | Linux (le jeu tourne sous Proton) | serveur compilé, non testé avec le jeu |
 | Autres simulateurs (ACC, Assetto Corsa EVO, iRacing, rFactor 2…) | à venir |
 
@@ -291,11 +308,12 @@ corde/
 │  ├─ protocol/               # @corde/protocol : types TS générés + constantes
 │  └─ ui/                     # @corde/ui : interface React (accueil, dashboard, sessions, courses, ingénieur)
 ├─ apps/
-│  └─ desktop/                # application Windows (Tauri 2) + installeur, workspace Cargo à part
+│  ├─ desktop/                # application Windows (Tauri 2) + installeur, workspace Cargo à part
+│  └─ mobile/                 # application iPhone (Capacitor 8, Swift Package Manager), compilée par la CI
 ├─ docs/                      # SPEC, ARCHITECTURE, ADR, guides, research/
 ├─ knowledge/                 # base de connaissances « ingénieur » (YAML + méthodologie)
 ├─ reference/                 # layout mémoire calculé, échantillons de résultats (noms remplacés)
-└─ .github/workflows/         # CI Linux + Windows, installeur, version continue
+└─ .github/workflows/         # CI Linux + Windows, installeur, version continue ; ios.yml (simulateur, TestFlight)
 ```
 
 ## Documentation
@@ -312,10 +330,12 @@ corde/
   [signature Windows](docs/adr/0007-windows-smartscreen-signature.md),
   [passage en open source](docs/adr/0008-open-source-publication.md),
   [mises à jour signées](docs/adr/0009-mises-a-jour-releases-github-signees.md),
-  [serveur domestique](docs/adr/0010-serveur-domestique.md)
+  [serveur domestique](docs/adr/0010-serveur-domestique.md),
+  [application iPhone](docs/adr/0011-application-mobile-capacitor.md)
 - [docs/TESTING-ON-PC.md](docs/TESTING-ON-PC.md) — installer et utiliser Corde sur Windows, dépannage
 - [docs/SERVEUR.md](docs/SERVEUR.md) — installer Corde serveur sur un Raspberry Pi, appairer, sauvegarder
 - [docs/ACCES-EXTERIEUR.md](docs/ACCES-EXTERIEUR.md) — ouvrir le serveur depuis l'extérieur par un VPN, sans exposer Corde
+- [docs/IOS.md](docs/IOS.md) — l'application iPhone : ce qu'elle fait, comment sortent les versions (CI, TestFlight), ce qu'il faut faire côté Apple
 - [docs/STATUS.md](docs/STATUS.md) — état détaillé du projet, tenu à jour à chaque étape
 - [CHANGELOG.md](CHANGELOG.md) — nouveautés de chaque version (affichées par l'application avant une mise à jour)
 - [docs/ENGINEER.md](docs/ENGINEER.md) — comment l'ingénieur analyse une session et ajuste un réglage
@@ -328,7 +348,9 @@ corde/
 - **Vie privée** : tout reste sur ton PC — pas de compte, pas de télémétrie, rien n'est envoyé sur Internet
   sauf si tu actives l'extracteur LLM optionnel ; le planning des courses en ligne, s'il est activé, lit
   deux pages publiques sans rien y envoyer de toi ; la recherche de mises à jour (désactivable) lit un
-  fichier public sur GitHub, qui voit ton adresse IP. Détails : [PRIVACY.md](PRIVACY.md).
+  fichier public sur GitHub, qui voit ton adresse IP. L'application iPhone garde tout sur le téléphone et
+  ne parle qu'aux serveurs Corde que tu ajoutes (et, si tu l'actives, aux deux pages du planning).
+  Détails : [PRIVACY.md](PRIVACY.md).
 - **Sécurité** : le serveur local n'écoute que sur ton PC par défaut ; ce qui est exposé quand l'accès
   depuis le téléphone est activé est décrit dans [docs/SECURITY-MODEL.md](docs/SECURITY-MODEL.md). Corde
   serveur exige un appareil appairé pour tout, et ne doit jamais être ouvert sur Internet (§7).

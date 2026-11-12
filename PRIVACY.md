@@ -1,6 +1,6 @@
 # Vie privée
 
-Ce document décrit ce que Corde fait **aujourd'hui** (version 0.7) avec tes données. Il est vérifié dans le
+Ce document décrit ce que Corde fait **aujourd'hui** (version 0.8) avec tes données. Il est vérifié dans le
 code ; s'il devient faux, c'est un bogue à signaler.
 
 ## En bref
@@ -18,6 +18,9 @@ code ; s'il devient faux, c'est un bogue à signaler.
 - **Serveur Corde de la maison (optionnel, 0.7)** : si tu installes Corde serveur sur ta propre machine
   (Raspberry Pi) et que tu y appaires ton PC, le PC lui envoie tes sessions **sur ton réseau** ; rien ne passe
   par Internet ni par un service à nous (voir plus bas).
+- **Application iPhone (0.8)** : elle garde tes serveurs, tes courses et tes réglages **sur le téléphone**,
+  lit les deux pages du planning si tu l'actives, et ne parle qu'aux serveurs Corde que tu as ajoutés.
+  Rien n'est envoyé ailleurs (voir plus bas).
 
 ## Ce que Corde lit (en lecture seule)
 
@@ -95,6 +98,37 @@ Tu peux installer **Corde serveur** sur une machine à toi, toujours allumée, c
 - **Effacer** : supprimer une session sur le PC ne la supprime pas du serveur ; supprime-la aussi sur le
   serveur (appareil administrateur), ou efface tout le serveur (`sudo /opt/corde/uninstall.sh --purge`).
   Pour que le PC arrête d'envoyer : Réglages → Serveur Corde → **Dissocier**.
+
+## Application iPhone
+
+L'application iPhone (0.8, [docs/IOS.md](docs/IOS.md)) est l'interface de Corde dans une application. Elle
+n'a ni compte, ni statistiques d'usage, ni publicité, ni service à nous.
+
+- **Ce qu'elle lit** :
+  - si tu actives le planning dans sa page Courses : les deux mêmes pages publiques, `https://racecontrol.gg/`
+    et `https://lmu.tools/schedule`, **lues par le téléphone lui-même**, seulement quand l'application est
+    ouverte, au plus toutes les 10 / 60 minutes (« Actualiser » au plus une fois par minute), avec une
+    requête `GET` et l'en-tête `User-Agent: Corde/<version> (+https://github.com/dultra123/corde)`, sans
+    compte ni donnée de pilote. Les cookies qu'un site enverrait sont effacés après chaque lecture. Les
+    images des courses viennent directement des adresses `https://` données par les sites, sans `Referer` ;
+  - les serveurs Corde **que tu as ajoutés** dans « Mes serveurs » (ton PC, ton serveur Corde), à l'adresse
+    que tu as saisie ou scannée : les mêmes pages que dans le navigateur ;
+  - l'appareil photo, **seulement** quand tu touches « Scanner le QR code », pour lire le QR code affiché par
+    Corde sur ton PC. Aucune image n'est gardée.
+- **Ce qu'elle garde sur le téléphone** (stockage de l'application, effacé avec elle) : la liste de tes
+  serveurs (nom, adresse), le serveur actif, la **clé d'appairage** de ton serveur Corde (jamais affichée),
+  tes courses choisies, les réglages de la page Courses (délais de rappel, DR / SR saisis, affichage,
+  correction d'heure), le choix d'activer le planning, et quelques préférences d'affichage (langue…). Les
+  pages du planning ne sont gardées qu'en mémoire, le temps que l'application est ouverte. Ces données
+  sont incluses dans les sauvegardes de ton iPhone (iCloud ou ordinateur), comme celles de toute
+  application.
+- **Les rappels** sont des **notifications locales** programmées par l'application sur le téléphone : rien
+  ne passe par un service de notifications (pas de notification push).
+- **Rien n'est envoyé ailleurs** : ni à nous, ni à Apple par l'application (Apple voit, comme pour toute
+  application installée par TestFlight, les rapports de plantage si tu as accepté de les partager dans les
+  réglages de l'iPhone), ni aux sites du planning au-delà de la requête décrite plus haut.
+- **Effacer** : supprimer l'application efface tout ce qu'elle garde. Pour qu'un serveur Corde l'oublie
+  aussi : « Oublier l'appairage » dans « Mes serveurs » (ou la page Appareils du serveur).
 
 ## Planning des courses en ligne (optionnel, désactivé par défaut)
 
@@ -198,4 +232,9 @@ always-on machine (a Raspberry Pi) and pair your PC with it, the PC sends it you
 (with other drivers' names), feedback and plan iterations, straight over your own network or VPN in plain HTTP
 (no proxy, no online service), and gets back the feedback typed on the server. Only devices paired with a code
 read on the server can open it; it keeps the same data in `/var/lib/corde`, plus the paired devices (a hash of
-each key, never the key). Erase it with `sudo /opt/corde/uninstall.sh --purge`.
+each key, never the key). Erase it with `sudo /opt/corde/uninstall.sh --purge`. **iPhone app (0.8)**: it keeps your servers (name,
+address, the pairing key of your home server, never shown), your picked races and the Races page settings
+**on the phone**; if you turn the schedule on, the phone itself reads the same two public pages (same rules,
+only while the app is open, site cookies cleared); it only talks to the Corde servers you added; reminders
+are local notifications (no push service); the camera is used only to scan the QR code shown by Corde on
+your PC. Nothing is sent anywhere else. Deleting the app erases all of it.
