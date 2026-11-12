@@ -34,6 +34,8 @@ use tokio::sync::Notify;
 pub const LINK_FILE: &str = "hub-link.json";
 /// Cache of the SHA-256 of the local sample files, in the data folder.
 pub const HASH_CACHE_FILE: &str = "sync-hashes.json";
+/// What the end of a recording looks like on the bus (`GameEvent::RecordingStopped`).
+const RECORDING_STOPPED: &str = "\"kind\":\"recording_stopped\"";
 
 #[derive(Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 struct LinkFile {
@@ -988,7 +990,7 @@ pub async fn run_periodic(
                 _ = link.wake.notified() => { woken = true; break; }
                 msg = bus.recv() => {
                     if let Ok(BusMessage::Json(j)) = msg {
-                        if j.contains("\"recording_stopped\"") {
+                        if j.contains(RECORDING_STOPPED) {
                             // Let the recorder close its files first.
                             tokio::time::sleep(Duration::from_secs(3)).await;
                             woken = true;
@@ -1139,6 +1141,26 @@ pub async fn delete_link(State(state): State<Arc<AppState>>) -> Result<Response,
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_end_of_a_recording_is_recognised_on_the_bus() {
+        // `run_periodic` wakes on this text in the broadcast JSON.
+        let msg =
+            corde_protocol::ServerMessage::Event(corde_protocol::GameEvent::RecordingStopped {
+                session_id: "s".into(),
+                laps: 3,
+                samples: 10,
+            });
+        let json = serde_json::to_string(&msg).unwrap();
+        assert!(json.contains(RECORDING_STOPPED), "{json}");
+        let other =
+            corde_protocol::ServerMessage::Event(corde_protocol::GameEvent::RecordingStarted {
+                session_id: "s".into(),
+            });
+        assert!(!serde_json::to_string(&other)
+            .unwrap()
+            .contains(RECORDING_STOPPED));
+    }
 
     #[test]
     fn urls_typed_by_the_driver() {
