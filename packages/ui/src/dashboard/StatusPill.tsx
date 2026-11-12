@@ -1,5 +1,7 @@
 import { useT } from "../i18n";
 import { fmtNum } from "../lib/format";
+import { useApp } from "../mobile/app-state";
+import { APP_BUILD } from "../mobile/env";
 import { useHub } from "../store/hub";
 import { type ConnectionPhase, useConnectionPhase, useTelemetry } from "../store/telemetry";
 
@@ -31,6 +33,22 @@ export function StatusPill({ onClick }: { onClick: () => void }) {
   // The home server never has a game: « connected » is all there is to say.
   const onHub = useHub((s) => s.role === "hub");
   const label = onHub && phase === "waiting-game" ? "status.hub" : LABEL[phase];
+  // In the phone app a server is optional (Races works without one): with none chosen there is
+  // nothing unreachable to report, so no red light.
+  const noServer = useApp((a) => a.status === "none");
+  if (APP_BUILD && noServer) {
+    return (
+      <button
+        type="button"
+        className="status is-idle"
+        onClick={onClick}
+        title={t("topbar.settings")}
+      >
+        <span className="status-dot" />
+        <span className="status-text">{t("status.noServer")}</span>
+      </button>
+    );
+  }
   const showHz =
     phase === "live" || phase === "demo" || phase === "demo-auto" || phase === "monitor";
   return (

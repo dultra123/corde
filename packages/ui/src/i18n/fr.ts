@@ -7,6 +7,7 @@ export const fr = {
   "status.live": "Jeu détecté",
   "status.monitor": "Jeu détecté, hors piste",
   "status.offline": "Serveur injoignable",
+  "status.noServer": "Aucun serveur",
   "status.demo": "Mode démo",
   "status.demoAuto": "Mode démo (aucun serveur trouvé)",
   "topbar.edit": "Modifier",

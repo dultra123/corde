@@ -7,6 +7,7 @@ export const en: Record<TranslationKey, string> = {
   "status.live": "Game detected",
   "status.monitor": "Game detected, not on track",
   "status.offline": "Server unreachable",
+  "status.noServer": "No server",
   "status.demo": "Demo mode",
   "status.demoAuto": "Demo mode (no server found)",
   "topbar.edit": "Edit",
