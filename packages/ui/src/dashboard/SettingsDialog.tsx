@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { useT } from "../i18n";
 import { appVersion, getAutostart, isDesktop, restartApp, setAutostart } from "../lib/desktop";
 import { fmtNum } from "../lib/format";
+import { appSlots } from "../mobile/slots";
 import { isAutoNavDisabled } from "../nav/auto";
+import { routeHash } from "../nav/routes";
 import { connection } from "../net/connection";
 import { type Lang, useSettings } from "../store/settings";
 import { useConnectionPhase, useTelemetry } from "../store/telemetry";
@@ -181,21 +183,32 @@ export function SettingsDialog({ open, onClose }: Props) {
       >
         <div className="sheet-head">{t("settings.title")}</div>
         <div className="sheet-body">
-          <div className="field">
-            <label htmlFor="set-server">{t("settings.server")}</label>
-            <input
-              id="set-server"
-              className="input num"
-              value={server}
-              onChange={(e) => setServer(e.target.value)}
-              placeholder={t("settings.serverDefault")}
-              inputMode="url"
-              autoCapitalize="off"
-              autoCorrect="off"
-              spellCheck={false}
-            />
-            <span className="hint">{t("settings.serverHint")}</span>
-          </div>
+          {appSlots.ServersPage ? (
+            // iPhone application: the servers are chosen in « Mes serveurs ».
+            <div className="field">
+              <span className="hint">
+                <a className="link" href={routeHash({ page: "servers" })} onClick={onClose}>
+                  {t("mobile.home.server.manage")}
+                </a>
+              </span>
+            </div>
+          ) : (
+            <div className="field">
+              <label htmlFor="set-server">{t("settings.server")}</label>
+              <input
+                id="set-server"
+                className="input num"
+                value={server}
+                onChange={(e) => setServer(e.target.value)}
+                placeholder={t("settings.serverDefault")}
+                inputMode="url"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+              />
+              <span className="hint">{t("settings.serverHint")}</span>
+            </div>
+          )}
           <div className="field">
             <label htmlFor="set-rate">{t("settings.rate")}</label>
             <select
