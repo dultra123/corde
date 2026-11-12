@@ -22,6 +22,7 @@
 //! * [`decimate`] — min/max-preserving decimation for graphs.
 //! * [`results`] — results files imported from the game (`results` /
 //!   `result_laps`, schema v2) and the driver profile built from them.
+//! * [`sync`] — what a PC sends its home server (`corde-server --role hub`, schema v7).
 
 pub mod channels;
 pub mod db;
@@ -36,6 +37,7 @@ pub mod results;
 pub mod samples;
 pub mod session_id;
 pub mod store;
+pub mod sync;
 
 pub use channels::{Channel, ChannelKind, CHANNELS};
 pub use db::{
@@ -53,3 +55,7 @@ pub use results::{
 pub use samples::{FileInfo, SampleWriter, WriterConfig};
 pub use session_id::{make_session_id, valid_id};
 pub use store::Store;
+pub use sync::{
+    FeedbackItem, FeedbackSet, FeedbackUids, IterationItem, MergeReport, ResultBundle,
+    SessionBundle,
+};

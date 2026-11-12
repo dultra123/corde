@@ -25,6 +25,11 @@ pub const DB_FILE: &str = "corde.db";
 /// Current schema version (= number of migrations).
 pub const SCHEMA_VERSION: i64 = MIGRATIONS.len() as i64;
 
+/// Added (on read) to an iteration computed in parallel with another one built on the same
+/// previous iteration — feedback typed on the PC and on the home server between two syncs.
+/// Followed by the number of the other iteration.
+pub const PARALLEL_NOTE_FR: &str = "Calculée en parallèle d'une autre itération (ressentis saisis sur le PC et sur le serveur Corde entre deux synchronisations) : elle ne tient pas compte de l'itération n° ";
+
 /// Migrations, applied in order inside one transaction each. Append only.
 const MIGRATIONS: &[&str] = &[
     // v1 — initial schema.
@@ -228,6 +233,48 @@ const MIGRATIONS: &[&str] = &[
         iteration_json TEXT NOT NULL
     );
     CREATE INDEX plan_iterations_session ON plan_iterations(session_id, base_plan, iteration);
+    "#,
+    // v7 — home server (`corde-server --role hub`, ADR 0010). Stable identifiers for what two
+    // databases may both create (`feedback.uid`, `plan_iterations.uid`, random 128-bit hex), the
+    // iteration each one was built on (`parent_uid`: two iterations with the same parent were
+    // computed in parallel on the PC and on the server), and the server's bookkeeping of what a
+    // PC sent (`sync_received`, `sync_files`) or what it deleted for good (`sync_tombstones`).
+    r#"
+    ALTER TABLE feedback ADD COLUMN uid TEXT;
+    UPDATE feedback SET uid = lower(hex(randomblob(16))) WHERE uid IS NULL;
+    CREATE UNIQUE INDEX feedback_uid ON feedback(uid);
+    ALTER TABLE plan_iterations ADD COLUMN uid TEXT;
+    ALTER TABLE plan_iterations ADD COLUMN parent_uid TEXT;
+    UPDATE plan_iterations SET uid = lower(hex(randomblob(16))) WHERE uid IS NULL;
+    UPDATE plan_iterations SET parent_uid = (
+        SELECT p.uid FROM plan_iterations p
+        WHERE p.session_id = plan_iterations.session_id
+          AND p.base_plan = plan_iterations.base_plan
+          AND (p.iteration < plan_iterations.iteration
+               OR (p.iteration = plan_iterations.iteration AND p.id < plan_iterations.id))
+        ORDER BY p.iteration DESC, p.id DESC LIMIT 1);
+    CREATE UNIQUE INDEX plan_iterations_uid ON plan_iterations(uid);
+    CREATE TABLE sync_received (
+        -- `session` | `result`
+        kind         TEXT NOT NULL,
+        -- session id, or result file name
+        key          TEXT NOT NULL,
+        -- SHA-256 (hex) of the bundle as the PC sent it
+        fingerprint  TEXT NOT NULL,
+        received_ms  INTEGER NOT NULL,
+        PRIMARY KEY (kind, key)
+    );
+    CREATE TABLE sync_files (
+        session_id  TEXT NOT NULL,
+        name        TEXT NOT NULL,
+        sha256      TEXT NOT NULL,
+        bytes       INTEGER NOT NULL,
+        PRIMARY KEY (session_id, name)
+    );
+    CREATE TABLE sync_tombstones (
+        session_id  TEXT PRIMARY KEY,
+        deleted_ms  INTEGER NOT NULL
+    );
     "#,
 ];
 
@@ -888,7 +935,8 @@ impl Db {
         let created_ms = now_ms();
         let plan = f.plan.as_ref().map(enum_str);
         self.conn.execute(
-            "INSERT INTO feedback (session_id, created_ms, plan, text) VALUES (?1, ?2, ?3, ?4)",
+            "INSERT INTO feedback (session_id, created_ms, plan, text, uid)
+             VALUES (?1, ?2, ?3, ?4, lower(hex(randomblob(16))))",
             params![session_id, created_ms, plan, f.text],
         )?;
         Ok(Feedback {
@@ -953,16 +1001,29 @@ impl Db {
         let base_plan = enum_str(&it.base_plan);
         // The JSON is stored with the final id so that reads need no patching.
         let json_without_id = serde_json::to_string(it)?;
+        // Built on the latest iteration of the same plan (none for the first one).
+        let parent: Option<String> = self
+            .conn
+            .query_row(
+                "SELECT uid FROM plan_iterations WHERE session_id = ?1 AND base_plan = ?2
+                 ORDER BY iteration DESC, id DESC LIMIT 1",
+                params![it.session_id, base_plan],
+                |r| r.get(0),
+            )
+            .optional()?
+            .flatten();
         self.conn.execute(
-            "INSERT INTO plan_iterations (session_id, created_ms, iteration, base_plan, feedback_id, iteration_json)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            "INSERT INTO plan_iterations (session_id, created_ms, iteration, base_plan, feedback_id,
+                iteration_json, uid, parent_uid)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, lower(hex(randomblob(16))), ?7)",
             params![
                 it.session_id,
                 it.created_ms,
                 it.iteration as i64,
                 base_plan,
                 it.feedback_id,
-                json_without_id
+                json_without_id,
+                parent
             ],
         )?;
         let id = self.conn.last_insert_rowid();
@@ -983,16 +1044,32 @@ impl Db {
     ) -> Result<Vec<PlanIteration>> {
         let plan = base_plan.as_ref().map(enum_str);
         let mut stmt = self.conn.prepare(
-            "SELECT iteration_json FROM plan_iterations
+            "SELECT iteration_json, base_plan, parent_uid FROM plan_iterations
              WHERE session_id = ?1 AND (?2 IS NULL OR base_plan = ?2)
-             ORDER BY created_ms, id",
+             ORDER BY created_ms, uid, id",
         )?;
         let rows = stmt
-            .query_map(params![session_id, plan], |r| r.get::<_, String>(0))?
+            .query_map(params![session_id, plan], |r| {
+                Ok((
+                    r.get::<_, String>(0)?,
+                    r.get::<_, String>(1)?,
+                    r.get::<_, Option<String>>(2)?,
+                ))
+            })?
             .collect::<std::result::Result<Vec<_>, _>>()?;
         let mut out = Vec::with_capacity(rows.len());
-        for json in rows {
-            out.push(serde_json::from_str::<PlanIteration>(&json)?);
+        // (plan, parent) → iteration number of the first child seen.
+        let mut first_child: std::collections::HashMap<(String, Option<String>), u32> =
+            std::collections::HashMap::new();
+        for (json, plan, parent) in rows {
+            let mut it = serde_json::from_str::<PlanIteration>(&json)?;
+            match first_child.get(&(plan.clone(), parent.clone())) {
+                Some(n) => it.notes_fr.push(format!("{PARALLEL_NOTE_FR}{n}.")),
+                None => {
+                    first_child.insert((plan, parent), it.iteration);
+                }
+            }
+            out.push(it);
         }
         Ok(out)
     }
@@ -1168,7 +1245,7 @@ pub fn now_ms() -> i64 {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
 
     pub(crate) fn sample_session(id: &str) -> SessionRow {
@@ -1588,6 +1665,68 @@ mod tests {
             )
             .unwrap();
         assert_eq!(reconciled, Some(42), "v5 session column kept");
+        drop(db);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn v7_gives_existing_feedback_and_iterations_stable_ids() {
+        // A v6 database (0.6) with one feedback and two iterations of the same plan: after the
+        // upgrade every row has a uid, and the second iteration names the first as its parent.
+        let dir = std::env::temp_dir().join(format!("corde-store-v7-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join(DB_FILE);
+        {
+            let conn = Connection::open(&path).unwrap();
+            conn.execute_batch(
+                "CREATE TABLE schema_version (version INTEGER PRIMARY KEY, applied_wall_ms INTEGER NOT NULL);",
+            )
+            .unwrap();
+            for (i, m) in MIGRATIONS.iter().take(6).enumerate() {
+                conn.execute_batch(m).unwrap();
+                conn.execute(
+                    "INSERT INTO schema_version (version, applied_wall_ms) VALUES (?1, ?2)",
+                    params![(i + 1) as i64, 1_i64],
+                )
+                .unwrap();
+            }
+            let mut s = sample_session("old");
+            s.ended_wall_ms = Some(2);
+            Db { conn }.insert_session(&s).unwrap();
+            let conn = Connection::open(&path).unwrap();
+            conn.execute(
+                "INSERT INTO feedback (session_id, created_ms, plan, text) VALUES ('old', 5, 'safe', 'x')",
+                [],
+            )
+            .unwrap();
+            for n in 1..=2_i64 {
+                conn.execute(
+                    "INSERT INTO plan_iterations (session_id, created_ms, iteration, base_plan, iteration_json)
+                     VALUES ('old', ?1, ?1, 'safe', '{}')",
+                    [n],
+                )
+                .unwrap();
+            }
+        }
+        let db = Db::open(&path).unwrap();
+        assert_eq!(db.schema_version().unwrap(), SCHEMA_VERSION);
+        let uid: Option<String> = db
+            .conn()
+            .query_row("SELECT uid FROM feedback", [], |r| r.get(0))
+            .unwrap();
+        assert!(uid.is_some_and(|u| crate::sync::valid_uid(&u)));
+        let rows: Vec<(i64, String, Option<String>)> = db
+            .conn()
+            .prepare("SELECT iteration, uid, parent_uid FROM plan_iterations ORDER BY iteration")
+            .unwrap()
+            .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
+            .unwrap()
+            .collect::<std::result::Result<_, _>>()
+            .unwrap();
+        assert_eq!(rows.len(), 2);
+        assert_eq!(rows[0].2, None);
+        assert_eq!(rows[1].2.as_deref(), Some(rows[0].1.as_str()));
         drop(db);
         let _ = std::fs::remove_dir_all(&dir);
     }
