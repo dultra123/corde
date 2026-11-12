@@ -1310,6 +1310,120 @@ export const fr = {
   "races.off.remoteHub": "Le planning s'active depuis un appareil administrateur du serveur.",
   "races.hubLink": "Tes courses sont aussi sur ton serveur",
   "races.hubLink.hint": "(tes choix sur le PC et sur le serveur restent séparés)",
+
+  // iPhone application (apps/mobile)
+  "races.unreadable.bodyPhone":
+    "Aucune course n'y a été reconnue : le site a peut-être changé. Ouvre le site pour vérifier, et signale-le sur la page du projet.",
+  "races.reminders.hintPhone":
+    "Une notification de l'iPhone à chaque rappel, même application fermée ou téléphone verrouillé.",
+  "races.off.bodyPhone":
+    "Corde lira les pages publiques racecontrol.gg et lmu.tools depuis ce téléphone, au plus toutes les 10 minutes. Tu pourras y choisir tes courses et recevoir une notification avant le départ, sans PC.",
+  "mobile.tabs": "Sections",
+  "mobile.schedule.err.network": "site injoignable",
+  "mobile.schedule.err.timeout": "pas de réponse en 20 s",
+  "mobile.schedule.err.redirects": "trop de redirections",
+  "mobile.schedule.err.redirectAway": "redirection vers un autre site refusée",
+  "mobile.schedule.err.notText": "réponse inattendue (pas une page)",
+  "mobile.schedule.err.tooBig": "page trop grande (plus de 3 Mio)",
+  "mobile.notif.in": "Départ dans {n} min",
+  "mobile.notif.now": "C'est l'heure du départ",
+  "mobile.notif.eve": "Demain : événement spécial",
+  "mobile.notif.day": "Aujourd'hui : événement spécial",
+  "mobile.notif.granted":
+    "Les rappels arrivent en notification sur ce téléphone, même application fermée.",
+  "mobile.notif.denied":
+    "Notifications refusées : les rappels ne sonneront pas. Pour les autoriser : Réglages de l'iPhone → Corde → Notifications.",
+  "mobile.notif.prompt":
+    "L'iPhone te demandera d'autoriser les notifications à ton premier choix de course.",
+  "mobile.notif.ask": "Autoriser maintenant",
+  "mobile.gate.none.title": "Aucun serveur Corde",
+  "mobile.gate.none.body":
+    "Cette page montre les données de ton PC de jeu (ou de ton serveur Corde). Ajoute-le dans « Mes serveurs » : sur le PC, Accueil → « Activer l'accès depuis mon téléphone », puis saisis l'adresse affichée ou scanne le QR code.",
+  "mobile.gate.racesFree": "La page Courses fonctionne sans PC.",
+  "mobile.gate.checking": "Connexion à {name}…",
+  "mobile.gate.unpaired.title": "{name} demande un appairage",
+  "mobile.gate.unpaired.body":
+    "C'est un serveur Corde : appaire ce téléphone avec un code obtenu sur le serveur (« sudo corde-server pair »).",
+  "mobile.gate.unreachable.title": "{name} ne répond pas",
+  "mobile.gate.unreachable.body": "Vérifie, dans l'ordre :",
+  "mobile.gate.unreachable.on": "le PC est allumé et Corde est ouverte ;",
+  "mobile.gate.unreachable.lan": "sur le PC, l'accès depuis le téléphone est activé (Accueil) ;",
+  "mobile.gate.unreachable.wifi": "le téléphone est sur le même Wi-Fi (ou dans ton VPN) ;",
+  "mobile.gate.unreachable.local":
+    "Corde a le droit d'utiliser le réseau local : Réglages de l'iPhone → Confidentialité et sécurité → Réseau local.",
+  "mobile.gate.refused.title": "{name} refuse cette application",
+  "mobile.gate.refused.body":
+    "Mets Corde à jour sur le PC (version 0.8 ou plus récente) et active l'accès depuis le téléphone.",
+  "mobile.gate.notCorde.title": "Ce n'est pas un serveur Corde",
+  "mobile.gate.notCorde.body":
+    "Quelque chose répond à cette adresse, mais pas Corde. Vérifie l'adresse et le port (8471).",
+  "mobile.gate.error.title": "{name} a répondu par une erreur",
+  "mobile.gate.retry": "Réessayer",
+  "mobile.gate.servers": "Mes serveurs",
+  "mobile.home.server.title": "Ton serveur Corde",
+  "mobile.home.server.none":
+    "Ajoute ton PC pour voir le direct, tes sessions et l'ingénieur sur ce téléphone.",
+  "mobile.home.server.add": "Ajouter un serveur",
+  "mobile.home.server.manage": "Mes serveurs",
+  "mobile.status.none": "aucun serveur",
+  "mobile.status.checking": "connexion…",
+  "mobile.status.ok": "connecté",
+  "mobile.status.unpaired": "appairage nécessaire",
+  "mobile.status.refused": "refusé",
+  "mobile.status.unreachable": "injoignable",
+  "mobile.status.not_corde": "pas un serveur Corde",
+  "mobile.status.error": "erreur",
+  "mobile.role.desktop": "PC",
+  "mobile.role.hub": "Serveur Corde",
+  "servers.title": "Mes serveurs",
+  "servers.subtitle":
+    "Le PC de jeu pour le direct à la maison ; ton serveur Corde pour tes sessions partout. La page Courses n'en a pas besoin.",
+  "servers.empty": "Aucun serveur pour l'instant.",
+  "servers.active": "Actif",
+  "servers.use": "Utiliser",
+  "servers.test": "Tester",
+  "servers.testing": "Test…",
+  "servers.remove": "Retirer",
+  "servers.removeConfirm": "Oui, retirer",
+  "servers.cancel": "Annuler",
+  "servers.rename": "Renommer",
+  "servers.save": "Enregistrer",
+  "servers.paired": "Ce téléphone est appairé.",
+  "servers.unpair": "Oublier l'appairage",
+  "servers.unpaired.revoked": "Appairage oublié, et ce téléphone retiré des appareils du serveur.",
+  "servers.unpaired.local":
+    "Appairage oublié sur ce téléphone. Retire-le aussi de la page Appareils du serveur.",
+  "servers.pair.title": "Appairer ce téléphone",
+  "servers.pair.code": "Code d'appairage",
+  "servers.pair.name": "Nom de ce téléphone",
+  "servers.pair.go": "Appairer",
+  "servers.pair.hint":
+    "Le code s'obtient sur le serveur : « sudo corde-server pair ». Il est valable 10 minutes.",
+  "servers.pair.ok": "Appairé sous le nom « {name} ».",
+  "servers.pair.wait": "Trop d'essais : réessaie dans {n} s.",
+  "servers.pair.failed": "Appairage refusé ({code}).",
+  "servers.pair.unreachable": "Le serveur ne répond pas.",
+  "servers.pair.invalid": "Le code fait 8 chiffres.",
+  "servers.add.title": "Ajouter un serveur",
+  "servers.add.address": "Adresse",
+  "servers.add.addressHint":
+    "Sur le PC : Accueil → « Accès depuis le téléphone ». Par exemple 192.168.1.20:8471.",
+  "servers.add.name": "Nom (facultatif)",
+  "servers.add.namePlaceholder": "PC de jeu",
+  "servers.add.go": "Ajouter",
+  "servers.add.scan": "Scanner le QR code",
+  "servers.add.scanFailed": "Aucun QR code lu.",
+  "servers.err.empty": "Saisis l'adresse du serveur.",
+  "servers.err.invalid": "Ce n'est pas une adresse : par exemple 192.168.1.20:8471.",
+  "servers.err.scheme": "Seules les adresses http:// et https:// sont possibles.",
+  "servers.err.public_http":
+    "En http://, seules les adresses du réseau de la maison (ou de ton VPN) sont acceptées : 192.168.…, 10.…, 172.16–31.…, nom en .local. Ailleurs, https:// est obligatoire.",
+  "servers.err.credentials": "Pas d'identifiant ni de mot de passe dans l'adresse.",
+  "servers.err.duplicate": "Ce serveur est déjà dans la liste.",
+  "servers.err.full": "10 serveurs au plus : retires-en un d'abord.",
+  "servers.test.ok": "Corde {version} répond ({role}).",
+  "servers.privacy":
+    "Les adresses et la clé d'appairage restent sur ce téléphone. Corde ne contacte que les serveurs de cette liste.",
 } as const;
 
 export type TranslationKey = keyof typeof fr;

@@ -1,18 +1,9 @@
 import { useEffect, useState } from "react";
-import {
-  deletePick,
-  fetchPicks,
-  fetchRaceSettings,
-  fetchRaceSources,
-  type RacePick,
-  type RaceSettings,
-  type RaceSources,
-  savePick,
-} from "../net/races-api";
+import type { RacePick, RaceSettings, RaceSources } from "../net/races-api";
 import { ApiError } from "../net/sessions-api";
 import { errorMessage } from "../sessions/shared";
 import { useRaces } from "../store/races";
-import { useTelemetry } from "../store/telemetry";
+import { raceBackend, useRacesReady } from "./backend";
 import { pickOf } from "./model";
 import type { Race } from "./parse";
 
@@ -33,11 +24,12 @@ export function useNow(everyMs: number): number {
 }
 
 /**
- * The driver's picks, shared by the PC and the phone through the server: read when a page needs
- * them, again every 30 s and whenever something changed (a pick toggled, a reminder received).
+ * The driver's picks, shared by the PC and the phone through the server (or kept on the phone
+ * by the iPhone application, `races/backend`): read when a page needs them, again every 30 s
+ * and whenever something changed (a pick toggled, a reminder received).
  */
 export function usePicks(): { picks: RacePick[] | null; error: string | null } {
-  const online = useTelemetry((s) => s.socket === "open");
+  const online = useRacesReady();
   const revision = useRaces((s) => s.picksRevision);
   const picks = useRaces((s) => s.picks);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +44,8 @@ export function usePicks(): { picks: RacePick[] | null; error: string | null } {
   useEffect(() => {
     if (!online) return;
     const ctrl = new AbortController();
-    fetchPicks(ctrl.signal)
+    raceBackend()
+      .fetchPicks(ctrl.signal)
       .then((p) => {
         if (ctrl.signal.aborted) return;
         useRaces.getState().setPicks(p);
@@ -78,7 +71,8 @@ export function loadSources(force = false): Promise<void> {
   if (sourcesInFlight && !force) return sourcesInFlight;
   const store = useRaces.getState();
   store.update({ sourcesLoading: true });
-  const p = fetchRaceSources(force)
+  const p = raceBackend()
+    .fetchSources(force)
     .then((d) => {
       useRaces.getState().update({ sources: d, sourcesAt: Date.now(), sourcesError: null });
     })
@@ -109,7 +103,7 @@ export function useRaceSources(): {
   error: string | null;
   loading: boolean;
 } {
-  const online = useTelemetry((s) => s.socket === "open");
+  const online = useRacesReady();
   const data = useRaces((s) => s.sources);
   const error = useRaces((s) => s.sourcesError);
   const loading = useRaces((s) => s.sourcesLoading);
@@ -135,7 +129,8 @@ let settingsInFlight: Promise<RaceSettings | null> | null = null;
 /** Reads the race settings (shared by the callers of the moment). */
 export function loadRaceSettings(): Promise<RaceSettings | null> {
   if (settingsInFlight) return settingsInFlight;
-  const p = fetchRaceSettings()
+  const p = raceBackend()
+    .fetchSettings()
     .then((s) => {
       useRaces.getState().update({ settings: s, settingsAt: Date.now() });
       return s;
@@ -149,7 +144,7 @@ export function loadRaceSettings(): Promise<RaceSettings | null> {
 
 /** The race settings (filters, ratings, reminders), shared by the Courses and home pages. */
 export function useRaceSettings(): { settings: RaceSettings | null; error: string | null } {
-  const online = useTelemetry((s) => s.socket === "open");
+  const online = useRacesReady();
   const settings = useRaces((s) => s.settings);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -188,8 +183,8 @@ export async function togglePick(race: Race, start: number): Promise<void> {
   const on = current.some((p) => p.id === pick.id);
   store.setPicks(on ? current.filter((p) => p.id !== pick.id) : [...current, pick]);
   try {
-    if (on) await deletePick(pick.id);
-    else await savePick(pick);
+    if (on) await raceBackend().deletePick(pick.id);
+    else await raceBackend().savePick(pick);
   } finally {
     useRaces.getState().bumpPicks();
   }
@@ -200,7 +195,7 @@ export async function removePick(p: RacePick): Promise<void> {
   const store = useRaces.getState();
   store.setPicks((store.picks ?? []).filter((x) => x.id !== p.id));
   try {
-    await deletePick(p.id);
+    await raceBackend().deletePick(p.id);
   } catch (e) {
     if (!(e instanceof ApiError && e.status === 404)) throw e;
   } finally {

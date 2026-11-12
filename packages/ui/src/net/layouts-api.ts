@@ -1,4 +1,5 @@
 import type { DashboardLayout } from "@corde/protocol";
+import { authHeaders } from "./auth";
 
 /**
  * REST access to the server's layout store.
@@ -16,7 +17,7 @@ export async function fetchLayouts(
   try {
     const res = await fetch(`${httpBase}/api/layouts`, {
       signal: ctrl.signal,
-      headers: { Accept: "application/json" },
+      headers: { Accept: "application/json", ...authHeaders() },
     });
     if (!res.ok) return null;
     const json: unknown = await res.json();
@@ -40,7 +41,7 @@ export async function pushLayouts(
     const res = await fetch(`${httpBase}/api/layouts`, {
       method: "PUT",
       signal: ctrl.signal,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify(layouts),
     });
     return res.ok;

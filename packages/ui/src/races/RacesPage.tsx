@@ -2,24 +2,15 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { IconFlag, IconRefresh } from "../dashboard/icons";
 import { hubPageUrl } from "../hub/lib";
 import { useT } from "../i18n";
-import { isDesktop, isLocalPage } from "../lib/desktop";
+import { appSlots } from "../mobile/slots";
 import { fetchHubLink, type HubLinkStatus } from "../net/hub-api";
-import {
-  type RacePick,
-  type RaceSettings,
-  type RaceSettingsPatch,
-  type Ratings,
-  type ReqKey,
-  reportUnreadable,
-  saveRaceSettings,
-} from "../net/races-api";
+import type { RacePick, RaceSettings, RaceSettingsPatch, Ratings, ReqKey } from "../net/races-api";
 import { ApiError } from "../net/sessions-api";
-import { fetchSettings, saveSettings } from "../net/system-api";
 import { errorMessage } from "../sessions/shared";
-import { isHub, isHubAdmin } from "../store/hub";
+import { isHub } from "../store/hub";
 import { useRaces } from "../store/races";
 import { useSettings } from "../store/settings";
-import { useTelemetry } from "../store/telemetry";
+import { raceBackend, useRacesReady } from "./backend";
 import { chipDay, dateRange, dayLabel, hm, relLabel } from "./format";
 import {
   isFull,
@@ -61,9 +52,13 @@ const SITE: Record<string, string> = {
 
 /**
  * The settings may only be changed from the PC that runs Corde — on the home server, from a
- * device marked administrator (the server says so too).
+ * device marked administrator (the server says so too); in the iPhone application, on the
+ * phone itself (`races/backend`).
  */
-const onThisPc = () => (isHub() ? isHubAdmin() : isDesktop() || isLocalPage());
+const onThisPc = () => raceBackend().canSwitch();
+
+/** The races are the phone's own (iPhone application): no server, no diagnostic file. */
+const onPhone = () => raceBackend().kind === "phone";
 
 /** Why the switch is not here, worded for where the page is open. */
 const remoteKey = (): "races.off.remoteHub" | "races.off.remote" =>
@@ -77,7 +72,7 @@ function HubRacesLink() {
   const { t } = useT();
   const [link, setLink] = useState<HubLinkStatus | null>(null);
   useEffect(() => {
-    if (isHub()) return;
+    if (isHub() || onPhone()) return;
     const ctrl = new AbortController();
     fetchHubLink(ctrl.signal)
       .then(setLink)
@@ -352,7 +347,9 @@ function SourceNotice({ s }: { s: SourceView }) {
       <div className="races-notice is-warn" role="status">
         <p className="races-notice-title">{t("races.unreadable.title", { site })}</p>
         <p>
-          {t("races.unreadable.body", { file: `diagnostics/races/${s.id}.html` })}{" "}
+          {onPhone()
+            ? t("races.unreadable.bodyPhone")
+            : t("races.unreadable.body", { file: `diagnostics/races/${s.id}.html` })}{" "}
           <a className="link" href={s.url} target="_blank" rel="noreferrer noopener">
             {t("races.openSite", { site })}
           </a>
@@ -568,6 +565,7 @@ function RemindersCard({
     playChime(true);
     setTest(ok ? "ok" : "blocked");
   };
+  const Status = appSlots.ReminderStatus;
   return (
     <section className="card races-card" aria-labelledby="races-reminders-title">
       <div className="card-head">
@@ -586,7 +584,10 @@ function RemindersCard({
           </button>
         ))}
       </fieldset>
-      <p className="races-hint faint">{t("races.reminders.hint")}</p>
+      <p className="races-hint faint">
+        {t(onPhone() ? "races.reminders.hintPhone" : "races.reminders.hint")}
+      </p>
+      {Status && <Status />}
       <div className="races-sound">
         <label className="switch">
           <input
@@ -741,7 +742,7 @@ function OffCard({
       <IconFlag />
       <div>
         <h2 className="races-off-title">{t("races.off.title")}</h2>
-        <p>{t("races.off.body")}</p>
+        <p>{t(onPhone() ? "races.off.bodyPhone" : "races.off.body")}</p>
         <p className="dim">{t("races.off.privacy")}</p>
         {onThisPc() ? (
           <button type="button" className="home-btn is-primary" onClick={onEnable} disabled={busy}>
@@ -769,7 +770,7 @@ function OffCard({
  */
 export function RacesPage() {
   const { t } = useT();
-  const online = useTelemetry((s) => s.socket === "open");
+  const online = useRacesReady();
   const now = useNow(20_000);
   // The schedule pages and the race settings are shared with the home page (one copy).
   const { data, error: sourcesError, loading } = useRaceSources();
@@ -784,8 +785,9 @@ export function RacesPage() {
   // The setting answers faster than the sites: the « off » card shows without waiting.
   useEffect(() => {
     if (!online) return;
-    void fetchSettings()
-      .then((s) => setSetting(s.online_schedule === true))
+    void raceBackend()
+      .fetchEnabled()
+      .then(setSetting)
       .catch(() => {});
   }, [online]);
   const enabled = data ? data.enabled : setting;
@@ -798,7 +800,9 @@ export function RacesPage() {
       const key = `${s.id}@${s.fetchedAt}`;
       if (s.unreadable && !reported.current.has(key)) {
         reported.current.add(key);
-        void reportUnreadable(s.id).catch(() => {});
+        void raceBackend()
+          .reportUnreadable(s.id)
+          .catch(() => {});
       }
     }
   }, [view]);
@@ -813,7 +817,8 @@ export function RacesPage() {
   const saveSettingsPatch = (patch: RaceSettingsPatch) => {
     // Optimistic: the page follows at once, the server answer replaces it.
     setRaceSettings((s) => mergeSettings(s, patch));
-    saveRaceSettings(patch)
+    raceBackend()
+      .saveSettings(patch)
       .then((s) => {
         setRaceSettings(s);
         if (patch.hour_fix !== undefined) useRaces.getState().bumpPicks();
@@ -852,7 +857,7 @@ export function RacesPage() {
     setBusy("setting");
     setActionError(null);
     try {
-      await saveSettings({ online_schedule: on });
+      await raceBackend().setEnabled(on);
       setSetting(on);
       await loadSources(false);
     } catch (e) {

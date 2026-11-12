@@ -1,4 +1,5 @@
 import type { GameId, LapRecord, SessionType, VehicleClass, Weather } from "@corde/protocol";
+import { authHeaders } from "./auth";
 import { notifyUnauthorized } from "./auth-events";
 import { connection } from "./connection";
 
@@ -158,6 +159,8 @@ function base(): string {
 
 /** One JSON call to the server; shared with `profile-api`. */
 export async function request<T>(path: string, init?: RequestInit, timeoutMs = 15_000): Promise<T> {
+  // iPhone application with no active server: nothing to call.
+  if (!connection.hasEndpoint) throw new ApiError(0, "no server");
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   const outer = init?.signal;
@@ -167,7 +170,7 @@ export async function request<T>(path: string, init?: RequestInit, timeoutMs = 1
     const res = await fetch(`${base()}${path}`, {
       ...init,
       signal: ctrl.signal,
-      headers: { Accept: "application/json", ...(init?.headers ?? {}) },
+      headers: { Accept: "application/json", ...authHeaders(), ...(init?.headers ?? {}) },
     });
     if (!res.ok) {
       // Home server: this device is not paired (any more) → the pairing screen.

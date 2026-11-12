@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Dashboard } from "./dashboard/Dashboard";
 import { PairingScreen } from "./hub/PairingScreen";
+import { appSlots, useAppServerGate } from "./mobile/slots";
 import { useRoute } from "./nav/routes";
 import { ReminderBanner } from "./races/ReminderBanner";
 import { SessionsShell } from "./sessions/SessionsShell";
@@ -21,6 +22,10 @@ import { useUpdates } from "./store/updates";
  * Served by the home server (« Corde serveur », `store/hub`), the same app opens on the pairing
  * screen until this device is paired, and the live dashboard gives way to a page that sends the
  * driver to the PC (the game, and so the live view, are there).
+ *
+ * In the iPhone application (`mobile/slots`, filled in before the first render) the pairing
+ * happens in « Mes serveurs », the tabs are at the bottom, and the live dashboard needs an
+ * active server (`useServerGate`): without one, the shell explains how to add it.
  */
 export function App() {
   const lang = useSettings((s) => s.lang);
@@ -45,13 +50,17 @@ export function App() {
   useEffect(() => {
     if (!onDashboard) useDashboard.getState().setView("screen");
   }, [onDashboard]);
+  const Tabs = appSlots.BottomTabs;
+  const gate = useAppServerGate(route);
   // Until the server has said what it is, the usual app (a PC answers at once; a phone offline
   // keeps its offline state): the home server switches to the pairing screen when it answers.
-  if (hubChecked && onHub && !paired) return <PairingScreen />;
+  if (!Tabs && hubChecked && onHub && !paired) return <PairingScreen />;
+  const dashboard = route.page === "dashboard" && !onHub && !gate;
   return (
     <>
       <ReminderBanner />
-      {route.page === "dashboard" && !onHub ? <Dashboard /> : <SessionsShell route={route} />}
+      {dashboard ? <Dashboard /> : <SessionsShell route={route} />}
+      {dashboard && Tabs && <Tabs section="dashboard" />}
     </>
   );
 }

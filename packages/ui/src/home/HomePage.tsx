@@ -5,6 +5,7 @@ import { isDesktop, isLocalPage, restartApp } from "../lib/desktop";
 import { fmtBytes, fmtDuration, fmtLapTime, fmtRelativeDay } from "../lib/format";
 import { lapNo } from "../lib/laps";
 import { hasUpdate } from "../lib/updates";
+import { appSlots, useAppServerOnline } from "../mobile/slots";
 import { routeHash } from "../nav/routes";
 import { connection } from "../net/connection";
 import { fetchProfile, fetchResults, type Profile, type ResultRow } from "../net/profile-api";
@@ -915,9 +916,33 @@ function HomeFoot({ online, onGuide }: { online: boolean; onGuide: () => void })
 export function HomePage({ onSettings }: { onSettings: () => void }) {
   const { t } = useT();
   // REST is only worth trying while a server answers on the socket.
-  const online = useTelemetry((s) => s.socket === "open");
+  const socketOpen = useTelemetry((s) => s.socket === "open");
+  // iPhone application: the server is the one chosen in « Mes serveurs » (and, on the home
+  // server, paired). Installed once before the first render (`mobile/slots`).
+  const online = useAppServerOnline(socketOpen);
   const minute = useMinuteTick();
   const [guide, setGuide] = useState(false);
+
+  const ServerCard = appSlots.HomeServerCard;
+  if (ServerCard) {
+    // The application: its own races first (no server needed), then the server's cards.
+    return (
+      <div className="home-page is-app-home">
+        <h1 className="sr-only">{t("home.title")}</h1>
+        {online && <StatusCard onSettings={onSettings} />}
+        <div className="home-grid">
+          <div className="home-col">
+            <RaceCarousel />
+            <ServerCard />
+          </div>
+          {online && <LastSessionCard minute={minute} />}
+          {online && <RacesCard minute={minute} />}
+        </div>
+        <HomeFoot online={online} onGuide={() => setGuide(true)} />
+        <GuideDialog open={guide} onClose={() => setGuide(false)} />
+      </div>
+    );
+  }
 
   return (
     <div className="home-page">

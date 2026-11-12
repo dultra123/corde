@@ -23,6 +23,7 @@ import "./styles/hub.css";
 
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
+import { APP_BUILD } from "./mobile/env";
 import { startAutoNav } from "./nav/auto";
 import { isEmptyHash } from "./nav/routes";
 import { connection } from "./net/connection";
@@ -53,12 +54,28 @@ if (OVERLAY_AT_BOOT) {
   });
   createRoot(root).render(<OverlayApp />);
 } else {
-  // `?demo=1` is a request to see the demo race: open the dashboard rather than the home page.
-  if (isDemoForced() && isEmptyHash(window.location.hash)) {
-    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#/`);
+  const start = () => {
+    // `?demo=1` is a request to see the demo race: open the dashboard rather than the home page.
+    if (isDemoForced() && isEmptyHash(window.location.hash)) {
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${window.location.search}#/`,
+      );
+    }
+    // Before the first render, while the hash still is what the app was opened with.
+    startAutoNav();
+    connection.start({ noAutoDemo: APP_BUILD });
+    createRoot(root).render(<App />);
+  };
+  if (import.meta.env.MODE === "mobile") {
+    // The iPhone application (`vite build --mode mobile`): its own start first. In the browser
+    // build this branch and the module it loads are left out.
+    import("./mobile/boot")
+      .then((m) => m.bootApp())
+      .catch((e: unknown) => console.error("[corde] start of the application failed", e))
+      .finally(start);
+  } else {
+    start();
   }
-  // Before the first render, while the hash still is what the app was opened with.
-  startAutoNav();
-  connection.start();
-  createRoot(root).render(<App />);
 }

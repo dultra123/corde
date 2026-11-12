@@ -1,0 +1,287 @@
+/*
+ * The iPhone application (apps/mobile): loaded by src/mobile/boot.ts only, every rule under
+ * html.is-app. The browser build never contains this file.
+ */
+
+html.is-app {
+  --app-tabs-h: 54px;
+  /* No rubber-band of the whole page past its ends. */
+  overscroll-behavior: none;
+}
+
+/* A native application: no text selection, no callout on a long press, no grey tap flash —
+   except where the driver types. */
+html.is-app body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+html.is-app input,
+html.is-app textarea,
+html.is-app select,
+html.is-app [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+/* iOS zooms into a field written smaller than 16 px. */
+html.is-app .input,
+html.is-app .select,
+html.is-app input,
+html.is-app textarea {
+  font-size: 16px;
+}
+
+/* The tabs live at the bottom: the top bar keeps the logo, the status and the settings. No
+   full-screen button (the application already is). */
+html.is-app .topbar .navtabs,
+html.is-app .btn.is-fullscreen {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- bottom tab bar */
+.app-tabs {
+  position: fixed;
+  z-index: 60;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  height: calc(var(--app-tabs-h) + var(--safe-bottom));
+  padding: 0 var(--safe-right) var(--safe-bottom) var(--safe-left);
+  background: rgba(11, 14, 18, 0.94);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid var(--line);
+}
+.app-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 500;
+}
+.app-tab svg {
+  width: 22px;
+  height: 22px;
+}
+.app-tab span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.app-tab.is-current {
+  color: var(--text);
+}
+.app-tab.is-current svg {
+  color: var(--accent);
+}
+.app-tab:active {
+  opacity: 0.6;
+}
+
+/* Room for the bar under the pages and the dashboard. */
+html.is-app .page {
+  padding-bottom: calc(var(--app-tabs-h) + var(--safe-bottom) + 20px);
+}
+html.is-app .board {
+  padding-bottom: calc(var(--app-tabs-h) + var(--safe-bottom) + 3px);
+}
+/* The live dashboard on its side: the whole screen for the widgets (the logo leads home). */
+@media (orientation: landscape) and (max-height: 500px) {
+  html.is-app .app-tabs.is-dashboard {
+    display: none;
+  }
+  html.is-app .board {
+    padding-bottom: calc(3px + var(--safe-bottom));
+  }
+}
+
+/* ---------------------------------------------------------------- needs a server */
+.card.app-gate {
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 560px;
+  margin: 8px auto 0;
+}
+.notice.app-gate {
+  margin-top: 8px;
+}
+.app-gate-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+.app-gate-body {
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.app-gate-body p {
+  margin: 0 0 8px;
+}
+.app-gate-list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.app-gate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.app-gate-foot {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* ---------------------------------------------------------------- servers */
+.app-servers {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.app-server-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.card.app-server,
+.card.app-add {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.card.app-server.is-active {
+  border-color: rgba(255, 180, 84, 0.45);
+}
+.app-server-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.app-server-id {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.app-server-name {
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+.app-server-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.app-tag {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid var(--line-strong);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.app-tag.is-active {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.app-server-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 0;
+  font-size: 14px;
+}
+.app-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  flex: none;
+}
+.app-dot.is-ok {
+  background: var(--optimal);
+}
+.app-dot.is-checking {
+  background: var(--warm);
+}
+.app-dot.is-unreachable,
+.app-dot.is-refused,
+.app-dot.is-error,
+.app-dot.is-not_corde {
+  background: var(--slower);
+}
+.app-dot.is-unpaired {
+  background: var(--accent);
+}
+.app-server-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.app-server-actions .home-btn {
+  height: 38px;
+  padding: 0 14px;
+}
+.home-btn.is-danger {
+  color: var(--slower);
+  border-color: rgba(255, 90, 90, 0.6);
+}
+.app-pair {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+}
+.app-pair-title {
+  margin: 0 0 10px;
+  font-weight: 600;
+}
+.app-code {
+  letter-spacing: 0.12em;
+  font-size: 20px;
+  height: 42px;
+}
+.app-server-paired,
+.app-note,
+.app-ok {
+  margin: 0;
+  font-size: 13px;
+}
+.app-ok {
+  color: var(--optimal);
+}
+.app-privacy {
+  margin: 0;
+  font-size: 12.5px;
+}
+.card.app-server-card {
+  padding: 14px 16px 16px;
+}
+
+/* ---------------------------------------------------------------- notifications line */
+.app-notif.is-denied {
+  color: var(--warm);
+}

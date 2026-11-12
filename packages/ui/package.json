@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite --host",
     "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "build:mobile": "vite build --mode mobile --outDir ../../apps/mobile/www --emptyOutDir",
     "preview": "vite preview --host",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
@@ -16,9 +17,15 @@
     "screenshot": "node scripts/screenshot.mjs"
   },
   "dependencies": {
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.6.0",
+    "@capacitor/keyboard": "8.0.6",
+    "@capacitor/local-notifications": "8.3.1",
+    "@capacitor/preferences": "8.0.1",
+    "@capacitor/screen-orientation": "8.0.2",
+    "@corde/protocol": "workspace:*",
     "@fontsource/barlow": "^5.3.0",
     "@fontsource/barlow-semi-condensed": "^5.3.0",
-    "@corde/protocol": "workspace:*",
     "gridstack": "^14.0.0",
     "qrcode-generator": "^2.0.4",
     "react": "^19.3.1",

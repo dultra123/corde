@@ -2,6 +2,7 @@ import { DemoRunner } from "../demo/runner";
 import { useRaces } from "../store/races";
 import { useSettings } from "../store/settings";
 import { useTelemetry } from "../store/telemetry";
+import { wsProtocols } from "./auth";
 import { CordeClient } from "./client";
 import { syncLayoutsWithServer } from "./layout-sync";
 import type { ParsedMessage } from "./messages";
@@ -20,7 +21,18 @@ export interface StartOptions {
   overlay?: boolean;
   /** With the demo (`?demo=1`): stop it after this delay and keep the last picture (previews). */
   freezeDemoAfterMs?: number;
+  /**
+   * iPhone application: never start the demo race on its own (no server chosen is not a
+   * reason to show invented data; the pages say how to add a server).
+   */
+  noAutoDemo?: boolean;
 }
+
+/**
+ * Where to connect, when it is not the page's own server (`resolveEndpoint`): the iPhone
+ * application gives the active server of « Mes serveurs », or `null` when there is none.
+ */
+export type EndpointSource = () => ServerEndpoint | null;
 
 /**
  * Owns the WebSocket client and the demo generator and decides which one feeds the store:
@@ -34,10 +46,20 @@ class ConnectionManager {
   private demo: DemoRunner | null = null;
   private autoDemoTimer: ReturnType<typeof setTimeout> | null = null;
   endpoint: ServerEndpoint = resolveEndpoint("");
+  /** `false` only in the application while no server is chosen (`request` then fails at once). */
+  hasEndpoint = true;
   private overlay = false;
+  private noAutoDemo = false;
+  private source: EndpointSource | null = null;
+
+  /** The application's servers (`mobile/servers`); set before `start`. */
+  setEndpointSource(source: EndpointSource | null): void {
+    this.source = source;
+  }
 
   start(opts: StartOptions = {}): void {
     this.overlay = opts.overlay ?? false;
+    this.noAutoDemo = opts.noAutoDemo ?? false;
     setInterval(() => this.refreshRates(), RATE_REFRESH_MS);
     if (isDemoForced()) {
       this.setDemo(true);
@@ -56,13 +78,23 @@ class ConnectionManager {
   /** (Re)connects to the address currently configured in settings. */
   connect(): void {
     this.disconnect();
-    this.endpoint = resolveEndpoint(useSettings.getState().server);
+    if (this.source) {
+      const ep = this.source();
+      this.hasEndpoint = ep !== null;
+      if (!ep) {
+        useTelemetry.getState().setSocket("closed", 0);
+        return;
+      }
+      this.endpoint = ep;
+    } else {
+      this.endpoint = resolveEndpoint(useSettings.getState().server);
+    }
     const telemetry = useTelemetry.getState();
     telemetry.setSocket("connecting", 0);
     this.client = new CordeClient(
       this.overlay
         ? { url: this.endpoint.ws, rateHz: OVERLAY_RATE_HZ, maxDelayMs: 3000 }
-        : { url: this.endpoint.ws, rateHz: useSettings.getState().rateHz },
+        : { url: this.endpoint.ws, rateHz: useSettings.getState().rateHz, protocols: wsProtocols },
       {
         onMessage: (m) => this.onMessage(m),
         onState: (state, attempt) => {
@@ -133,12 +165,15 @@ class ConnectionManager {
         break;
       case "race_reminder":
         // Shown whatever the page and the demo: it is about the driver's evening, not the stream.
-        useRaces.getState().pushReminder(m.reminder);
+        // The iPhone application has its own picks and reminders (local notifications): the
+        // ones of a PC it is connected to are that PC's.
+        if (useRaces.getState().serverReminders) useRaces.getState().pushReminder(m.reminder);
         break;
     }
   }
 
   private armAutoDemo(): void {
+    if (this.noAutoDemo) return;
     if (this.overlay || this.autoDemoTimer || useTelemetry.getState().demo !== "off") return;
     this.autoDemoTimer = setTimeout(() => {
       this.autoDemoTimer = null;

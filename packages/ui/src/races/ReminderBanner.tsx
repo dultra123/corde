@@ -69,7 +69,7 @@ export function ReminderBanner() {
     for (const r of reminders) {
       if (played.current.has(r.key)) continue;
       played.current.add(r.key);
-      if (sound) playChime(isUrgent(r));
+      if (sound && !r.quiet) playChime(isUrgent(r));
     }
   }, [reminders, sound]);
 

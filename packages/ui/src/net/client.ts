@@ -16,6 +16,11 @@ export interface ClientOptions {
   minDelayMs?: number;
   maxDelayMs?: number;
   pingIntervalMs?: number;
+  /**
+   * WebSocket subprotocols, read at each (re)connection (iPhone application on the home
+   * server: its device token, `net/auth`). `undefined`: none, as in the browser.
+   */
+  protocols?: () => string[] | undefined;
 }
 
 /**
@@ -47,6 +52,7 @@ export class CordeClient {
       minDelayMs: 500,
       maxDelayMs: 10_000,
       pingIntervalMs: 5_000,
+      protocols: () => undefined,
       ...opts,
     };
   }
@@ -103,7 +109,8 @@ export class CordeClient {
     this.setState("connecting");
     let ws: WebSocket;
     try {
-      ws = new WebSocket(this.opts.url);
+      const protocols = this.opts.protocols();
+      ws = protocols ? new WebSocket(this.opts.url, protocols) : new WebSocket(this.opts.url);
     } catch {
       this.scheduleReconnect();
       return;

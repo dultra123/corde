@@ -19,6 +19,7 @@ import { useSyncExternalStore } from "react";
  *   #/profile?track=<course>             …filtered on one track
  *   #/results/<id>                       one imported result (classification, player laps)
  *   #/devices                            home server only: the paired devices
+ *   #/servers                            iPhone application only: « Mes serveurs »
  *
  * The query string of the page (`?server=…`) is left untouched: only the hash changes, so a
  * phone that reached the UI with `?server=192.168.1.20:8471` keeps it while browsing.
@@ -35,7 +36,8 @@ export type Route =
   | { page: "obs" }
   | { page: "profile"; track?: string }
   | { page: "result"; id: number }
-  | { page: "devices" };
+  | { page: "devices" }
+  | { page: "servers" };
 
 export type Section = "home" | "dashboard" | "sessions" | "races" | "profile";
 
@@ -80,6 +82,7 @@ export function parseRoute(hash: string): Route {
   if (parts[0] === "races") return { page: "races" };
   if (parts[0] === "obs") return { page: "obs" };
   if (parts[0] === "devices") return { page: "devices" };
+  if (parts[0] === "servers") return { page: "servers" };
   if (parts[0] === "profile") {
     const track = query.get("track")?.trim();
     return track ? { page: "profile", track } : { page: "profile" };
@@ -137,6 +140,8 @@ export function routeHash(route: Route): string {
       return `#/results/${route.id}`;
     case "devices":
       return "#/devices";
+    case "servers":
+      return "#/servers";
   }
 }
 
@@ -166,7 +171,7 @@ export function useRoute(): Route {
 
 /** Which top-level tab a route belongs to. */
 export function sectionOf(route: Route): Section {
-  if (route.page === "home" || route.page === "devices") return "home";
+  if (route.page === "home" || route.page === "devices" || route.page === "servers") return "home";
   if (route.page === "dashboard" || route.page === "obs") return "dashboard";
   if (route.page === "races") return "races";
   if (route.page === "profile" || route.page === "result") return "profile";

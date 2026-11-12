@@ -13,11 +13,18 @@ export interface ShownReminder extends RaceReminder {
   /** `<pick_id>#<kind>[-<lead>]`, unique per reminder. */
   key: string;
   received_ms: number;
+  /** The phone already rang it (notification of the iPhone application): no second sound. */
+  quiet?: boolean;
 }
 
 interface RacesState {
   /** Newest last; at most three. */
   reminders: ShownReminder[];
+  /**
+   * The server's `race_reminder` messages are shown (the browser, the desktop application);
+   * `false` in the iPhone application, which rings its own picks.
+   */
+  serverReminders: boolean;
   picks: RacePick[] | null;
   /** Bumped when the picks changed somewhere (reminder received, pick toggled). */
   picksRevision: number;
@@ -30,7 +37,7 @@ interface RacesState {
   /** `GET /api/races/settings`, the last answer (or an optimistic update of it). */
   settings: RaceSettings | null;
   settingsAt: number;
-  pushReminder(r: RaceReminder): void;
+  pushReminder(r: RaceReminder, quiet?: boolean): void;
   dismiss(key: string): void;
   setPicks(p: RacePick[]): void;
   bumpPicks(): void;
@@ -42,6 +49,7 @@ export const reminderKey = (r: Pick<RaceReminder, "pick_id" | "kind" | "lead_min
 
 export const useRaces = create<RacesState>((set) => ({
   reminders: [],
+  serverReminders: true,
   picks: null,
   picksRevision: 0,
   sources: null,
@@ -50,12 +58,12 @@ export const useRaces = create<RacesState>((set) => ({
   sourcesLoading: false,
   settings: null,
   settingsAt: 0,
-  pushReminder(r) {
+  pushReminder(r, quiet) {
     const key = reminderKey(r);
     set((s) => ({
       reminders: [
         ...s.reminders.filter((x) => x.key !== key && x.pick_id !== r.pick_id),
-        { ...r, key, received_ms: Date.now() },
+        { ...r, key, received_ms: Date.now(), ...(quiet ? { quiet: true } : {}) },
       ].slice(-3),
       picksRevision: s.picksRevision + 1,
     }));
