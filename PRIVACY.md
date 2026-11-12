@@ -1,13 +1,16 @@
 # Vie privée
 
-Ce document décrit ce que Corde fait **aujourd'hui** (version 0.4) avec tes données. Il est vérifié dans le
+Ce document décrit ce que Corde fait **aujourd'hui** (version 0.6) avec tes données. Il est vérifié dans le
 code ; s'il devient faux, c'est un bogue à signaler.
 
 ## En bref
 
 - **Tout reste sur ton PC.** Corde n'a pas de serveur en ligne, pas de compte, pas de télémétrie, pas de
-  statistiques d'usage, pas de publicité. Il ne vérifie pas les mises à jour en ligne.
+  statistiques d'usage, pas de publicité.
 - **Rien n'est envoyé sur Internet**, sauf si tu actives toi-même l'extracteur LLM optionnel (voir plus bas).
+- **L'application de bureau vérifie les mises à jour sur GitHub** (activé par défaut, désactivable) : elle
+  lit un petit fichier public ; GitHub voit l'adresse IP de ta connexion, rien d'autre n'est envoyé (voir
+  plus bas).
 - **Deux pages publiques peuvent être lues, si tu l'actives** : le planning des courses en ligne
   (racecontrol.gg et lmu.tools), désactivé par défaut. Rien de toi n'y est envoyé (voir plus bas).
 - **L'accès depuis le réseau local est désactivé par défaut** : seul ton PC peut ouvrir Corde tant que tu
@@ -88,6 +91,31 @@ le jeu. Les rappels (bandeau et son) sont produits par Corde elle-même, sur ton
 réseau où elle est ouverte ; rien ne passe par un service de notifications. Pour couper : **Affichage et
 heure → Ne plus lire le planning sur ces sites** (ou `"online_schedule": false` dans `settings.json`).
 
+## Mises à jour de l'application de bureau (activé par défaut, désactivable)
+
+L'application Windows peut se mettre à jour depuis **Réglages → Mises à jour**. Pour savoir s'il existe
+une version plus récente, elle lit **un seul fichier public** :
+`https://github.com/dultra123/corde/releases/latest/download/latest.json` (GitHub le sert depuis son
+stockage de fichiers, un domaine en `*.githubusercontent.com`, vers lequel `github.com` redirige).
+
+- **Quand** : 30 secondes après le lancement, puis toutes les 6 heures, tant que la case « Rechercher
+  automatiquement » est cochée ; et chaque fois que tu cliques sur « Rechercher une mise à jour ». C'est
+  l'application de bureau qui le fait (pas le serveur, ni le navigateur du téléphone).
+- **Ce qui part** : une simple requête `GET`, avec les en-têtes `User-Agent: tauri-plugin-updater/<version
+  du module>` et `Accept: application/json`. **Aucun cookie, aucun compte, aucun identifiant, aucune donnée
+  de pilote ni de session, pas même la version de Corde installée** (la comparaison se fait sur ton PC).
+  Comme pour toute page web, **GitHub voit l'adresse IP de ta connexion** et l'heure de la requête.
+- **Quand tu cliques sur « Installer et redémarrer »** : l'installeur de la nouvelle version est téléchargé
+  depuis la même page des versions (même chose : GitHub voit ton adresse IP), sa signature est vérifiée sur
+  ton PC, puis il s'installe. Rien n'est installé sans ce clic.
+- **Pour couper** : décoche **Réglages → Mises à jour → Rechercher automatiquement** (réglage
+  `update_auto_check` de `%LOCALAPPDATA%\Corde\desktop.json`). Corde ne contacte alors plus GitHub, sauf
+  quand tu cliques toi-même sur « Rechercher une mise à jour ».
+- `desktop.json` garde aussi la dernière version annoncée par une notification (pour ne pas la répéter) et,
+  le temps d'une installation, la version d'avant et la version installée.
+
+Les politiques de GitHub s'appliquent à ces requêtes : https://docs.github.com/site-policy/privacy-policies.
+
 ## Extracteur LLM (optionnel, désactivé par défaut)
 
 Par défaut, ton ressenti (« ça sous-vire en entrée ») est interprété **sur ton PC**, par un dictionnaire.
@@ -102,7 +130,8 @@ compte Anthropic et soumises à ses conditions. Sans la variable, rien ne part.
 ## Installation
 
 L'installeur Windows peut télécharger le moteur d'affichage WebView2 depuis Microsoft s'il manque sur le PC
-(il est déjà présent sur Windows 10 et 11 à jour). Corde lui-même ne télécharge rien.
+(il est déjà présent sur Windows 10 et 11 à jour). En dehors de ses propres mises à jour (plus haut), Corde
+ne télécharge rien.
 
 ## Tout effacer
 
@@ -113,8 +142,13 @@ supprime le dossier `%LOCALAPPDATA%\Corde`. Voir aussi le [README](README.md#dé
 
 ## English summary
 
-Corde keeps **everything on your PC**: no online service, no account, no telemetry or usage statistics, no
-online update check. The **online race schedule is off by default**: once you turn it on, the server
+Corde keeps **everything on your PC**: no online service, no account, no telemetry or usage statistics.
+The **desktop app checks for updates on GitHub** (on by default, can be turned off in Settings → Updates):
+30 s after start-up, then every 6 hours, and when you click "Check for updates", it downloads one public
+file (`https://github.com/dultra123/corde/releases/latest/download/latest.json`) with a plain `GET`; GitHub
+sees your IP address, nothing else is sent (no cookie, no identifier, not even the installed version). The
+installer of a new version is downloaded only when you click "Install and restart", and its signature is
+checked on your PC. The **online race schedule is off by default**: once you turn it on, the server
 reads two public pages only (`https://racecontrol.gg/`, `https://lmu.tools/schedule`), when the Races page
 is open and at most every 10 / 60 minutes, with a plain `GET` (User-Agent `Corde/<version>`, no cookie, no
 account, no driver data); race pictures are loaded by the displaying device straight from the `https://`

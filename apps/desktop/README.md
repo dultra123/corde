@@ -6,6 +6,7 @@ zone de notification quand on ferme la fenêtre et la ressort quand le pilote en
 
 Guide d'installation pour le pilote : [`docs/TESTING-ON-PC.md`](../../docs/TESTING-ON-PC.md).
 Pare-feu, SmartScreen et signature : [ADR 0007](../../docs/adr/0007-windows-smartscreen-signature.md).
+Mises à jour depuis l'application : [ADR 0009](../../docs/adr/0009-mises-a-jour-releases-github-signees.md).
 
 ## Structure
 
@@ -16,6 +17,7 @@ apps/desktop/
 │  ├─ corde-icon.svg             # logo source : trajectoire en « C » et point de corde, ambre #ffb454 sur fond sombre
 │  └─ corde-icon-1024.png        # rendu 1024 px (entrée de `tauri icon`)
 ├─ scripts/make-icons.mjs        # régénère assets/*.png et src-tauri/icons/* (+ pack-icons.py : .ico, .icns)
+├─ updater-public-key.txt        # clé publique des mises à jour (copiée dans tauri.conf.json > plugins > updater)
 ├─ dist/                         # frontendDist : page locale « Démarrage de Corde… » / erreur
 │  ├─ index.html                 #   (écrite à la main, pas de build, embarquée dans l'exe)
 │  ├─ splash.css
@@ -23,10 +25,10 @@ apps/desktop/
 └─ src-tauri/                    # crate `corde-desktop` — workspace Cargo À PART (voir plus bas)
    ├─ Cargo.toml, Cargo.lock
    ├─ build.rs                   # tauri-build + liste des commandes IPC (permissions générées)
-   ├─ tauri.conf.json            # fenêtre, CSP, bundle NSIS, ressources (ui/)
+   ├─ tauri.conf.json            # fenêtre, CSP, bundle NSIS, ressources (ui/), mises à jour (plugins > updater)
    ├─ capabilities/
    │  ├─ local-pages.json        # page locale : boot_status, restart_app, app_version
-   │  └─ embedded-ui.json        # UI servie par le serveur (http://127.0.0.1:*, http://localhost:*) : 4 commandes
+   │  └─ embedded-ui.json        # UI servie par le serveur (http://127.0.0.1:*, http://localhost:*) : 10 commandes + écoute des événements
    ├─ windows/hooks.nsh          # installeur : programme dans %LOCALAPPDATA%\Programs\Corde
    ├─ icons/                     # générées (png, ico, icns, logos Store)
    └─ src/
@@ -38,12 +40,15 @@ apps/desktop/
       ├─ shell.rs                # état, fenêtre principale, démarrage, quitter, redémarrer
       ├─ tray.rs                 # icône et menu de la zone de notification
       ├─ watcher.rs, edges.rs    # veilleur 1 Hz sur /api/status, détection des fronts
+      ├─ updater.rs              # mises à jour : tauri-plugin-updater, vérification automatique, installation
+      ├─ updates.rs              # mises à jour, partie sans Tauri : machine d'états, refus, versions, calendrier
       └─ commands.rs             # commandes IPC (contrat avec l'UI)
 ```
 
 Versions retenues (novembre 2026, Tauri **2.x stable**, pas la 3.0 alpha) : `tauri` 2.12.5, `tauri-build`
 2.7.4, `tauri-plugin-single-instance` 2.5.5, `tauri-plugin-autostart` 2.7.0, `tauri-plugin-window-state`
-2.5.0, `tauri-plugin-notification` 2.8.1, CLI `@tauri-apps/cli` 2.12.4 (épinglée dans la CI). Rust ≥ 1.90.
+2.5.0, `tauri-plugin-notification` 2.8.1, `tauri-plugin-updater` 2.14.1, CLI `@tauri-apps/cli` 2.12.4 (épinglée
+dans la CI). Rust ≥ 1.90.
 
 ## Comportement
 
@@ -59,6 +64,8 @@ Versions retenues (novembre 2026, Tauri **2.x stable**, pas la 3.0 alpha) : `tau
 | **Jeu détecté** (`connected`) | seule l'info-bulle change ; une application démarrée cachée reste cachée jusqu'à l'entrée en piste |
 | **« Quitter »** | fenêtre cachée, puis arrêt propre du serveur (`Server::run` rejoint le thread source, qui clôt l'enregistrement), 10 s max, puis fin du processus |
 | **`restart_app`** | même arrêt propre, puis relance de l'exécutable **sans** `--hidden` |
+| **Vérification des mises à jour** | 30 s après le lancement puis toutes les 6 h si `update_auto_check` (vrai par défaut, `desktop.json`), et sur `check_update` : lecture de `latest.json` (dernière release GitHub), événement `update-status` vers l'UI ; version plus récente → notification Windows une seule fois par version (mémorisée dans `desktop.json`), reportée tant que le jeu est détecté. N'installe jamais |
+| **`install_update`** | refus (message clair) si le jeu est détecté, si un enregistrement est en cours, ou si l'état du jeu est inconnu ; sinon téléchargement (progression par événements), signature vérifiée, nouveau contrôle du jeu, puis le plugin lance l'installeur NSIS en mode **passif** (`/P /UPDATE /R`) et termine le processus par `std::process::exit` — sans `RunEvent::Exit` : notre `on_before_exit` arrête donc d'abord le veilleur et le serveur embarqué (l'enregistrement est clos), enregistre la position de la fenêtre et nettoie Tauri. L'installeur relance Corde avec les arguments de l'instance remplacée ; `update_pending` (`desktop.json`) fait revenir la fenêtre même après `--hidden` et journalise « X → Y installée ». Si l'installeur ne part pas après l'arrêt du serveur, Corde se relance sans la mise à jour |
 
 Le serveur embarqué a la configuration par défaut de `corde-server` (source `auto` = LMU, enregistrement à
 50 Hz, import des résultats). Seules différences : `ui_dir` = ressource `ui/` de l'installeur, port 8471
@@ -75,7 +82,9 @@ const invoke = window.__TAURI__?.core?.invoke; // undefined dans un navigateur o
 await invoke("get_autostart");                 // → boolean
 await invoke("set_autostart", { enabled: true });
 await invoke("restart_app");                   // l'application s'arrête et se relance
-await invoke("app_version");                   // → "0.5.1"
+await invoke("app_version");                   // → "0.6.0"
+await invoke("check_update");                  // → état des mises à jour (voir plus bas)
+await window.__TAURI__.event.listen("update-status", (e) => console.log(e.payload));
 ```
 
 | Commande | Arguments | Retour | Effet |
@@ -84,6 +93,27 @@ await invoke("app_version");                   // → "0.5.1"
 | `set_autostart` | `{ enabled: boolean }` | — | inscrit / retire la clé `HKCU\…\Run\Corde` (`"…\Corde.exe" --hidden`) |
 | `restart_app` | — | — | arrêt propre puis relance, fenêtre visible |
 | `app_version` | — | `string` | version de `tauri.conf.json` |
+| `update_status` | — | `UpdateStatus` | état des mises à jour (ci-dessous) |
+| `check_update` | — | `UpdateStatus` | vérifie maintenant ; un échec de vérification est **dans** l'état (`error.kind = "check"`), pas un rejet |
+| `install_update` | — | — | télécharge, vérifie, installe : en cas de succès Corde s'arrête et la promesse ne se résout jamais ; rejet avec un message français si refusé (jeu, enregistrement…) |
+| `open_releases_page` | — | — | ouvre `https://github.com/dultra123/corde/releases` dans le navigateur par défaut (adresse fixe, `rundll32 url.dll,FileProtocolHandler`) |
+| `get_update_auto_check` | — | `boolean` | réglage « rechercher automatiquement » (vrai par défaut) |
+| `set_update_auto_check` | `{ enabled: boolean }` | — | l'enregistre dans `desktop.json` |
+
+`UpdateStatus` (Rust : `updates::Snapshot`, TypeScript : `UpdateStatus` de `packages/ui/src/lib/desktop.ts`),
+aussi envoyé par l'événement **`update-status`** à chaque changement :
+
+```json
+{
+  "current_version": "0.6.0", "auto_check": true,
+  "phase": "idle | checking | downloading | installing",
+  "last_check_ms": 1762934400000, "last_check_ok": true,
+  "available": { "version": "0.6.1", "date": "2026-11-20T18:00:00Z", "notes": "### Nouveautés…" },
+  "progress": { "downloaded": 9500000, "total": 21000000 },
+  "error": { "kind": "check | download | install | game_running | recording | activity_unknown | busy | nothing_to_install", "message": "…" },
+  "updated_from": "0.5.1"
+}
+```
 
 Les erreurs rejettent la promesse avec un texte. Ajouter une commande = `src/commands.rs` +
 `generate_handler!` (`main.rs`) + la liste `COMMANDS` de `build.rs` + la capacité concernée.
@@ -123,7 +153,7 @@ pour un installeur qui les garde : `… build --features devtools`.
 
 Sous Linux, le crate se compile si les paquets de développement GTK / WebKitGTK 4.1 sont installés
 (prérequis Tauri) ; ce n'est pas le cas des conteneurs de développement du projet. Les modules qui ne
-dépendent pas de Tauri (`server`, `settings`, `edges`, `logging`) ont des tests unitaires (`cargo test` dans
+dépendent pas de Tauri (`server`, `settings`, `edges`, `logging`, `migration`, `updates`) ont des tests unitaires (`cargo test` dans
 `src-tauri`, là où le crate se compile).
 
 ### Déboguer chez le pilote
@@ -147,11 +177,32 @@ Faire suivre ensemble `Cargo.toml` / `Cargo.lock` et `TAURI_CLI_VERSION` dans `.
 `$LOCALAPPDATA\<produit>`, et l'on compte sur le fait que le désinstalleur ne supprime que les fichiers
 qu'il a installés (les données du pilote sont dans `%LOCALAPPDATA%\Corde`).
 
+Mises à jour : relire aussi, dans les sources de `tauri-plugin-updater`, `Update::install` sous Windows
+(`updater.rs` : `on_before_exit`, arguments `/P /UPDATE /R /ARGS`, `std::process::exit(0)`) et, dans le
+modèle NSIS, `.onInstSuccess` (relance avec `/R`) et `CheckIfAppIsRunning` : `src/updater.rs` en dépend.
+La signature de mise à jour est produite par la CLI (`tauri-cli/src/bundle.rs`, `sign_updaters`) : le nom
+`<installeur>.sig` et le commentaire signé `…\tversion:<version>` sont relus par
+`.github/scripts/updater_manifest.py`.
+
+### Publier une version
+
+1. Changer le numéro partout : `Cargo.toml` (racine), `apps/desktop/src-tauri/Cargo.toml`,
+   `apps/desktop/src-tauri/tauri.conf.json`, les trois `package.json`, puis `cargo metadata` dans les deux
+   workspaces (les deux `Cargo.lock`).
+2. Écrire la section `## [<version>] — <date>` de `CHANGELOG.md` (pour le pilote : ce sont les notes
+   affichées par l'application).
+3. Pousser sur `main` du dépôt d'origine. Le job CI `version` crée la release `v<version>` (installeur,
+   `.sig`, archive portable, `latest.json`) et la marque « latest » : les applications installées la voient
+   à leur prochaine vérification. Il faut le secret `TAURI_SIGNING_PRIVATE_KEY` (sinon : avertissement, pas
+   de release numérotée) et un dépôt public (sinon `latest.json` n'est pas téléchargeable).
+
 ## Limites connues
 
 - Jamais exécuté sous Windows par ses auteurs : compilé par la CI, logique sans Tauri testée sous Linux.
   Voir `docs/STATUS.md` pour la liste des points à vérifier sur le PC du pilote.
-- Pas de mise à jour automatique (réinstaller par-dessus), pas de signature de code (ADR 0007).
+- Mises à jour depuis l'application à partir de 0.6.0 (la 0.6.0 s'installe à la main) ; jamais essayées
+  pour de vrai tant que le dépôt est privé (`latest.json` → 404, « Impossible de vérifier pour l'instant »).
+  Pas de signature de code (ADR 0007) : la signature de mise à jour n'en est pas une.
 - Fenêtre cachée après un premier affichage : l'UI reste chargée et continue de recevoir la télémétrie
   (un peu de CPU) ; la mettre en veille serait une optimisation possible.
 - Arrêt de Windows / fermeture de session sans « Quitter » : le processus est tué par le système ;

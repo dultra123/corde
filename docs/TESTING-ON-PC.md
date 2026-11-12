@@ -36,7 +36,7 @@ L'option `Automatically Record Telemetry` peut rester désactivée : Corde enreg
    **<https://github.com/dultra123/corde/releases/tag/continuous>** — elle s'appelle
    « Corde — dernière version » et elle est reconstruite à chaque modification du projet.
 2. Tout en bas, section **Assets**, clique sur le fichier dont le nom finit par **`-setup.exe`**
-   (par exemple `Corde_0.5.1_x64-setup.exe`).
+   (par exemple `Corde_0.6.0_x64-setup.exe`).
 3. Ton navigateur peut hésiter : Edge affiche parfois « … n'est pas couramment téléchargé ». Clique sur
    les **…** à côté du fichier → **Conserver** → **Conserver quand même**.
 
@@ -325,14 +325,44 @@ personnalisé » de la source. Clic droit → **Interagir** est inutile : l'over
 
 ## 9. Mettre à jour
 
-Il n'y a pas encore de mise à jour automatique. Pour passer à la dernière version :
+### Depuis Corde (à partir de la 0.6.0)
+
+1. Ouvre **Réglages** (roue dentée en haut à droite) → section **Mises à jour**.
+2. Clique sur **Rechercher une mise à jour**. Corde répond « Corde est à jour » ou « Version X disponible »,
+   avec la liste des nouveautés.
+3. **Ferme le jeu** (et attends la fin de l'enregistrement de ta session), puis clique sur **Installer et
+   redémarrer**. Corde télécharge la nouvelle version, vérifie qu'elle vient bien de nous (signature), se
+   ferme ; une petite fenêtre d'installation s'affiche quelques secondes, sans question, puis Corde
+   redémarre toute seule sur la nouvelle version. Tes sessions, dispositions et réglages sont conservés.
+
+Bon à savoir :
+
+- **Corde cherche aussi toute seule** 30 secondes après son lancement, puis toutes les 6 heures. Quand une
+  version est disponible : une notification Windows (une seule fois par version, jamais pendant que le jeu
+  tourne), une **pastille verte** sur la roue dentée et une ligne « Mise à jour » sur l'Accueil. Elle
+  n'installe **jamais** rien sans ton clic. Pour couper la recherche automatique : décoche **Rechercher
+  automatiquement** (le bouton reste utilisable).
+- **Pendant que le jeu est ouvert ou qu'une session s'enregistre**, l'installation est refusée avec un
+  message : Corde ne s'arrête jamais pendant que tu roules.
+- « **Impossible de vérifier pour l'instant** » : pas d'Internet, ou GitHub injoignable. **Tant que le
+  dépôt du projet est privé, c'est normal** : GitHub ne distribue pas les fichiers d'un dépôt privé. Le lien
+  **Ouvrir la page des versions** mène à la page où télécharger l'installeur à la main.
+- La recherche lit un fichier public sur GitHub, qui voit l'adresse IP de ta connexion ; rien d'autre n'est
+  envoyé (voir `PRIVACY.md`).
+- **La 0.6.0 elle-même s'installe encore à la main** (ci-dessous) : c'est elle qui apporte le bouton. Les
+  versions suivantes arrivent par le bouton.
+- Les mises à jour du bouton sont les **versions numérotées** (page des versions, « Corde 0.6.x »). La
+  version de développement « Corde — dernière version » (§ 2) s'installe toujours à la main.
+
+### À la main (toutes versions)
 
 1. Quitte Corde (clic droit sur l'icône → **Quitter**).
-2. Télécharge le nouvel installeur sur la même page (§ 2) et lance-le **par-dessus** l'ancien, sans
+2. Télécharge le nouvel installeur sur la page des versions (<https://github.com/dultra123/corde/releases>)
+   ou sur la page de la dernière version de développement (§ 2), et lance-le **par-dessus** l'ancien, sans
    désinstaller. L'avertissement de Windows réapparaît (§ 3) : c'est normal.
 3. Relance Corde. Tes sessions, tes dispositions et tes réglages sont conservés.
 
-La version installée est indiquée dans les Réglages de Corde.
+La version installée est indiquée dans les Réglages de Corde (sections Application et Mises à jour).
 
 ### Passer de l'ancienne version (avant 0.3.0, logo « M ») à Corde
 

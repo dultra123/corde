@@ -29,9 +29,12 @@ autrement :
 Les pages propres à la coquille (écran de démarrage, `apps/desktop/dist` : `tauri://localhost` sous
 macOS/Linux, `http://tauri.localhost` sous Windows) n'appellent pas l'API HTTP — elles passent par l'IPC de
 Tauri — mais leurs origines sont acceptées quand même. Le code Rust de la coquille interroge le serveur par
-`ureq` sur `http://127.0.0.1:<port>` sans en-tête `Origin` : accepté. Les quatre commandes IPC de la coquille
-ne sont accordées qu'aux pages `http://127.0.0.1:*` et `http://localhost:*`
-(`apps/desktop/src-tauri/capabilities/embedded-ui.json`).
+`ureq` sur `http://127.0.0.1:<port>` sans en-tête `Origin` : accepté. Les commandes IPC de la coquille
+(démarrage avec Windows, redémarrage, version, mises à jour) et l'écoute des événements ne sont accordées
+qu'aux pages `http://127.0.0.1:*` et `http://localhost:*`
+(`apps/desktop/src-tauri/capabilities/embedded-ui.json`) ; aucune commande de plugin (ni celles de
+`tauri-plugin-updater`) ne leur est ouverte. Un téléphone ou un navigateur n'a pas d'IPC : il ne peut ni
+vérifier ni installer une mise à jour (§5 bis).
 
 ## 2. Modèle de menace
 
@@ -207,6 +210,61 @@ que sur demande.
 | Clé de l'extracteur LLM | lue dans la variable d'environnement `CORDE_ANTHROPIC_API_KEY`, envoyée seulement dans l'en-tête `x-api-key` vers `api.anthropic.com` ; jamais journalisée (le `Debug` de l'extracteur ne l'affiche pas, les erreurs ne citent que le statut HTTP) ; `/api/health` dit seulement `anthropic` ou `dictionary`. |
 | Chemins dans les erreurs | 5xx : détail masqué aux autres appareils (§3). 4xx : messages sans chemin absolu (noms relatifs `Dossier/Fichier.svm`, identifiants). **Reste visible au réseau quand l'accès est activé** : le chemin du dossier de données (`/api/storage`), du dossier de résultats (`/api/profile`) et du dossier `Settings` du jeu (`/api/setups`), affichés par l'interface ; ils peuvent contenir le nom du compte Windows. Accepté : réseau de confiance (§2). |
 
+## 5 bis. Mises à jour de l'application de bureau (0.6)
+
+Décision : [ADR 0009](adr/0009-mises-a-jour-releases-github-signees.md). Code : `apps/desktop/src-tauri/src/updater.rs`
+(liaison avec `tauri-plugin-updater` 2.14), `updates.rs` (règles, testées), `.github/scripts/updater_manifest.py` (CI).
+
+**Chaîne de confiance**
+
+1. La CI construit l'installeur `Corde_<version>_x64-setup.exe` (job `desktop`, windows-latest) et la CLI
+   Tauri le **signe avec la clé privée de mise à jour** (minisign, Ed25519), secret
+   `TAURI_SIGNING_PRIVATE_KEY` du dépôt, donné à la seule étape de construction, jamais sur une PR ni un
+   fork. La signature (`.sig`) couvre l'installeur final et un commentaire signé
+   `timestamp:…\tfile:Corde_<version>_x64-setup.exe\tversion:<version>`.
+2. Le job `version` vérifie que la signature vient bien de la clé dont la **clé publique** est dans
+   `tauri.conf.json` (identifiant de clé), qu'elle est faite pour cette version et ce fichier, puis publie
+   la release `v<version>` avec `latest.json` (version, notes, date, adresse de l'installeur, signature).
+3. L'application lit `latest.json` en **HTTPS** sur une adresse fixe compilée dans l'exécutable
+   (`plugins.updater.endpoints`, http refusé en build de production), télécharge l'installeur, puis
+   **vérifie la signature avec la clé publique embarquée** (`plugins.updater.pubkey`, dans l'exécutable,
+   copie de `apps/desktop/updater-public-key.txt`). Signature absente ou invalide : rien n'est installé.
+4. `requireSignedVersion` est activé : la version **signée** doit être celle qu'annonce `latest.json`. Un
+   `latest.json` falsifié ne peut donc pas présenter un ancien installeur (authentique, bien signé) comme
+   une nouvelle version ; et l'application n'installe qu'une version **strictement plus récente**
+   (`updates::is_newer`) : pas de retour en arrière.
+5. L'installation ne part que sur un **clic** du pilote, jamais pendant que le jeu est détecté ou qu'un
+   enregistrement est en cours ; l'installeur NSIS (mode passif, par utilisateur, sans droits
+   administrateur) remplace les fichiers du programme, pas les données (`%LOCALAPPDATA%\Corde`).
+
+**Ce que la signature de mise à jour garantit** : l'installeur téléchargé est, octet pour octet, celui
+qu'a signé le détenteur de la clé privée de Corde, pour la version annoncée. Ni GitHub, ni un proxy, ni un
+réseau compromis, ni un `latest.json` modifié ne peuvent faire installer autre chose.
+
+**Ce qu'elle ne garantit pas** :
+
+- **Ce n'est pas une signature de code Windows (Authenticode)**. Windows ne la connaît pas : SmartScreen
+  et Smart App Control voient un installeur non signé, comme avant (ADR 0007). Elle ne protège que le
+  chemin « mise à jour depuis l'application » ; un installeur téléchargé à la main n'est vérifié par
+  personne (comparer avec la release).
+- Elle ne dit rien de la qualité du code : elle prouve **qui** a publié, pas **ce que** fait la version.
+  Tout ce qui est poussé sur `main` du dépôt d'origine avec un nouveau numéro est signé et publié
+  automatiquement : la protection de la branche `main` et du compte GitHub (double authentification) fait
+  partie de la chaîne.
+- **Perte ou fuite de la clé privée** : fuite → quelqu'un qui contrôle aussi la page des versions (compte
+  GitHub) peut pousser une mise à jour ; perte → les versions installées ne peuvent plus être mises à jour
+  depuis l'application (il faut réinstaller à la main une version embarquant une nouvelle clé publique).
+  La clé est hors du dépôt, chez le propriétaire, et dans les secrets du dépôt.
+- `latest.json` n'est pas signé lui-même : il peut être bloqué ou retardé (on reste alors sur la version
+  installée, « Impossible de vérifier pour l'instant »), ses notes peuvent être modifiées, mais pas
+  l'installeur ni la version installée.
+- La première version dotée du bouton (0.6.0) s'installe encore à la main : c'est elle qui apporte la clé
+  publique.
+
+**Réseau** : seule l'application de bureau contacte GitHub (`github.com`, puis le stockage de fichiers,
+un domaine en `*.githubusercontent.com`), en `GET`, sans cookie ni identifiant ; le serveur local de Corde n'a
+aucune route de mise à jour. Vie privée : [PRIVACY.md](../PRIVACY.md#mises-à-jour-de-lapplication-de-bureau-activé-par-défaut-désactivable).
+
 ## 6. Tests
 
 - `crates/corde-server/src/guard.rs` (unitaires) : `Host` réseau coupé / activé, origines acceptées et
@@ -225,6 +283,13 @@ que sur demande.
   overlay, ses fichiers, `GET /api/layouts` et le WebSocket chargés comme le fait une source OBS, depuis
   `127.0.0.1`, `localhost` et, si la machine a une adresse réseau, depuis cette adresse avec l'accès réseau
   activé.
+- Mises à jour (0.6) : `apps/desktop/src-tauri/src/updates.rs` et `settings.rs` (banc des modules sans
+  Tauri, hors dépôt) — refus pendant le jeu / un enregistrement / état inconnu, comparaison de versions,
+  calendrier, une notification par version, chemins personnels masqués dans le journal, réglage
+  `update_auto_check` vrai par défaut ; `packages/ui/src/lib/updates.test.ts`, `desktop.test.ts` (contrat
+  des commandes) ; `.github/scripts/updater_manifest.py` essayé hors dépôt contre une signature produite
+  comme la CLI Tauri et vérifiée comme le plugin (mauvaise clé, mauvaise version, signature absente,
+  section du CHANGELOG absente : refus).
 - Les scripts de capture (`packages/ui/scripts/screenshot-home.mjs`, `screenshot-sessions.mjs --spawn`)
   échouent sur toute erreur de console : ils vérifient que l'interface fonctionne depuis une autre origine
   locale.

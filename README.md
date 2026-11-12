@@ -19,6 +19,7 @@ que l'on vise à chaque tour. Corde s'appelait anciennement Muret (nom de travai
 ## Sommaire
 
 - [Installer (Windows)](#installer-windows)
+- [Mettre à jour](#mettre-à-jour)
 - [Désinstaller](#désinstaller)
 - [Ce que fait Corde](#ce-que-fait-corde)
   - [Le tableau de bord en direct](#le-tableau-de-bord-en-direct)
@@ -45,6 +46,16 @@ que l'on vise à chaque tour. Corde s'appelait anciennement Muret (nom de travai
    `Settings > Gameplay > Enable Plugins` activé). Corde détecte le jeu toute seule.
 
 Le guide complet, avec le dépannage, est dans [docs/TESTING-ON-PC.md](docs/TESTING-ON-PC.md).
+
+## Mettre à jour
+
+Depuis la 0.6.0 : **Réglages → Mises à jour → Rechercher une mise à jour**, puis **Installer et
+redémarrer** (jeu fermé). Corde télécharge la nouvelle version, vérifie sa signature, s'installe et
+redémarre ; tes données sont conservées. Elle cherche aussi toute seule (au lancement puis toutes les
+6 heures, désactivable) et te prévient, mais n'installe jamais rien sans ton clic. La 0.6.0 elle-même
+s'installe à la main, par-dessus la version précédente. Les versions sont publiées sur la
+[page des versions](https://github.com/dultra123/corde/releases) ; leurs nouveautés sont dans
+[CHANGELOG.md](CHANGELOG.md). Détails : [docs/TESTING-ON-PC.md](docs/TESTING-ON-PC.md#9-mettre-à-jour).
 
 ## Désinstaller
 
@@ -192,6 +203,7 @@ montrée qu'à la demande. Pas à pas : [docs/TESTING-ON-PC.md](docs/TESTING-ON-
 | Fichiers de réglage `.svm` prêts à charger dans le jeu | fait (lecture de tes réglages, crans réels, écriture à la demande) ; bornes exactes à lire dans le garage du jeu sur ton PC |
 | Page des courses en ligne (planning, mes courses, rappel sonore avant le départ) | fait ; lecture des vrais sites, son dans l'application Windows et rappels sur le téléphone à vérifier chez le pilote |
 | Widgets dans OBS (fond transparent, page « OBS », dispositions overlay) | fait, vérifié dans Chromium ; à essayer dans une vraie source OBS |
+| Mises à jour depuis l'application (releases numérotées signées) | fait (0.6.0) ; à essayer pour de vrai avec la 0.6.1, une fois le dépôt public |
 | Signature de l'installeur (plus d'avertissement Windows) | à décider |
 | Application mobile autonome (iOS / Android) | à venir |
 | Linux (le jeu tourne sous Proton) | serveur compilé, non testé avec le jeu |
@@ -274,9 +286,11 @@ corde/
   [licences](docs/adr/0005-licences-et-header-s397.md),
   [stockage local-first](docs/adr/0006-stockage-local-first.md),
   [signature Windows](docs/adr/0007-windows-smartscreen-signature.md),
-  [passage en open source](docs/adr/0008-open-source-publication.md)
+  [passage en open source](docs/adr/0008-open-source-publication.md),
+  [mises à jour signées](docs/adr/0009-mises-a-jour-releases-github-signees.md)
 - [docs/TESTING-ON-PC.md](docs/TESTING-ON-PC.md) — installer et utiliser Corde sur Windows, dépannage
 - [docs/STATUS.md](docs/STATUS.md) — état détaillé du projet, tenu à jour à chaque étape
+- [CHANGELOG.md](CHANGELOG.md) — nouveautés de chaque version (affichées par l'application avant une mise à jour)
 - [docs/ENGINEER.md](docs/ENGINEER.md) — comment l'ingénieur analyse une session et ajuste un réglage
 - [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) — conventions, commits, types générés, ajouter un jeu
 - [docs/research/](docs/research/) — briefs : télémétrie LMU, ingénieur de course, stack technique
@@ -286,7 +300,8 @@ corde/
 
 - **Vie privée** : tout reste sur ton PC — pas de compte, pas de télémétrie, rien n'est envoyé sur Internet
   sauf si tu actives l'extracteur LLM optionnel ; le planning des courses en ligne, s'il est activé, lit
-  deux pages publiques sans rien y envoyer de toi. Détails : [PRIVACY.md](PRIVACY.md).
+  deux pages publiques sans rien y envoyer de toi ; la recherche de mises à jour (désactivable) lit un
+  fichier public sur GitHub, qui voit ton adresse IP. Détails : [PRIVACY.md](PRIVACY.md).
 - **Sécurité** : le serveur local n'écoute que sur ton PC par défaut ; ce qui est exposé quand l'accès
   depuis le téléphone est activé est décrit dans [docs/SECURITY-MODEL.md](docs/SECURITY-MODEL.md).
 - **Signaler une faille** : en privé, par l'onglet *Security* du dépôt → *Report a vulnerability*
