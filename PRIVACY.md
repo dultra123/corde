@@ -1,6 +1,6 @@
 # Vie privée
 
-Ce document décrit ce que Corde fait **aujourd'hui** (version 0.6) avec tes données. Il est vérifié dans le
+Ce document décrit ce que Corde fait **aujourd'hui** (version 0.7) avec tes données. Il est vérifié dans le
 code ; s'il devient faux, c'est un bogue à signaler.
 
 ## En bref
@@ -15,6 +15,9 @@ code ; s'il devient faux, c'est un bogue à signaler.
   (racecontrol.gg et lmu.tools), désactivé par défaut. Rien de toi n'y est envoyé (voir plus bas).
 - **L'accès depuis le réseau local est désactivé par défaut** : seul ton PC peut ouvrir Corde tant que tu
   n'as pas activé l'accès depuis le téléphone.
+- **Serveur Corde de la maison (optionnel, 0.7)** : si tu installes Corde serveur sur ta propre machine
+  (Raspberry Pi) et que tu y appaires ton PC, le PC lui envoie tes sessions **sur ton réseau** ; rien ne passe
+  par Internet ni par un service à nous (voir plus bas).
 
 ## Ce que Corde lit (en lecture seule)
 
@@ -42,6 +45,8 @@ Dans son **dossier de données**, `%LOCALAPPDATA%\Corde` (sous Linux : `~/.local
   publique (une par site, remplacée à chaque fois) ;
 - `logs\` (application de bureau) : le journal. Il peut contenir des chemins de ton PC (donc le nom de ton
   compte Windows) et ton nom de pilote.
+- seulement si tu as appairé un serveur Corde : `hub-link.json` (adresse du serveur et clé de ce PC auprès de
+  lui) et `sync-hashes.json` (sommes de contrôle des fichiers d'échantillons, pour ne pas les renvoyer).
 
 **Ces données ne quittent pas ton PC**, y compris les fichiers de résultats et les noms des autres pilotes
 qu'ils contiennent.
@@ -64,6 +69,32 @@ réseau** peut ouvrir Corde et voir ce que l'interface montre : sessions, télé
 des autres pilotes, chemins de dossiers. Certaines actions restent réservées au PC (suppressions, création
 des fichiers de réglage, réglages). Active-le seulement sur un réseau de confiance, et coupe-le quand tu n'en
 as plus besoin. Détails : [docs/SECURITY-MODEL.md](docs/SECURITY-MODEL.md).
+
+## Serveur Corde de la maison (optionnel, 0.7)
+
+Tu peux installer **Corde serveur** sur une machine à toi, toujours allumée, chez toi (un Raspberry Pi :
+[docs/SERVEUR.md](docs/SERVEUR.md)). Rien ne se passe tant que tu n'y as pas **appairé** ton PC.
+
+- **Ce que le PC lui envoie**, après chaque session terminée, au démarrage et toutes les 5 minutes : tes
+  sessions (tours, événements, réglages capturés, fichiers d'échantillons), tes **résultats importés** (dont
+  le classement complet : **les noms des autres pilotes**), tes ressentis et les itérations de l'ingénieur.
+  Pas les dispositions, ni les réglages, ni tes choix de courses.
+- **Ce que le serveur renvoie au PC** : les ressentis que tu as saisis sur le serveur.
+- **Par où** : directement du PC à l'adresse que tu as donnée (ton réseau local, ou ton propre VPN), en HTTP,
+  jamais par un proxy, jamais par un service en ligne. Corde n'a pas de serveur à nous.
+- **Qui peut lire le serveur** : seulement les appareils que tu as appairés avec un code obtenu sur le serveur
+  lui-même. Sur le réseau de la maison, ce trafic n'est **pas chiffré** (comme l'accès depuis le téléphone) :
+  dehors, passe par un VPN ([docs/ACCES-EXTERIEUR.md](docs/ACCES-EXTERIEUR.md)).
+- **Ce que le serveur garde**, dans `/var/lib/corde` : les mêmes données que le PC (`corde.db`, `sessions/`),
+  la liste des appareils appairés (`hub/devices.json` : nom, dates, empreinte de la clé, jamais la clé
+  elle-même), le dernier PC qui a envoyé quelque chose (nom, version, adresse de son direct), ses propres
+  choix et réglages de courses (`races/`), et son journal système (`journalctl -u corde` : adresses IP des
+  appareils qui s'appairent ou sont refusés ; jamais un code ni une clé).
+- **Le serveur lui-même ne contacte Internet** que si un appareil administrateur active le planning des
+  courses en ligne sur lui (mêmes deux pages, mêmes règles que plus bas).
+- **Effacer** : supprimer une session sur le PC ne la supprime pas du serveur ; supprime-la aussi sur le
+  serveur (appareil administrateur), ou efface tout le serveur (`sudo /opt/corde/uninstall.sh --purge`).
+  Pour que le PC arrête d'envoyer : Réglages → Serveur Corde → **Dissocier**.
 
 ## Planning des courses en ligne (optionnel, désactivé par défaut)
 
@@ -136,7 +167,8 @@ ne télécharge rien.
 ## Tout effacer
 
 Désinstalle Corde (Paramètres Windows → Applications → Applications installées → Corde → Désinstaller), puis
-supprime le dossier `%LOCALAPPDATA%\Corde`. Voir aussi le [README](README.md#désinstaller).
+supprime le dossier `%LOCALAPPDATA%\Corde`. Voir aussi le [README](README.md#désinstaller). Si tu as un
+serveur Corde : `sudo /opt/corde/uninstall.sh --purge` sur le serveur ([docs/SERVEUR.md](docs/SERVEUR.md#10-désinstaller)).
 
 ---
 
@@ -161,4 +193,9 @@ off by default**; when you turn it on, any device on the same network can see wh
 optional LLM extractor is **off by default**: only when you set `CORDE_ANTHROPIC_API_KEY` with your own key
 does Corde send the text of each feedback you type to Anthropic's API (nothing else). The Windows installer
 may download Microsoft's WebView2 runtime if it is missing. To erase everything: uninstall Corde, then
-delete `%LOCALAPPDATA%\Corde`.
+delete `%LOCALAPPDATA%\Corde`. **Home server (optional, 0.7)**: if you install Corde server on your own
+always-on machine (a Raspberry Pi) and pair your PC with it, the PC sends it your sessions, imported results
+(with other drivers' names), feedback and plan iterations, straight over your own network or VPN in plain HTTP
+(no proxy, no online service), and gets back the feedback typed on the server. Only devices paired with a code
+read on the server can open it; it keeps the same data in `/var/lib/corde`, plus the paired devices (a hash of
+each key, never the key). Erase it with `sudo /opt/corde/uninstall.sh --purge`.

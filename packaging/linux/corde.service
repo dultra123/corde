@@ -1,0 +1,51 @@
+# Corde serveur — serveur Corde de la maison (Raspberry Pi), docs/SERVEUR.md.
+# Installé par install.sh dans /etc/systemd/system/corde.service.
+#
+# Le service tourne sous un compte système sans droits (corde), ne peut écrire que dans
+# /var/lib/corde, ne voit ni /home ni /root, et redémarre tout seul s'il s'arrête.
+# Changer le port ou ajouter un nom d'hôte : « sudo systemctl edit corde » (voir docs/SERVEUR.md).
+
+[Unit]
+Description=Corde serveur (sessions, analyses, profil et courses, pour tes appareils appairés)
+Documentation=https://github.com/dultra123/corde/blob/main/docs/SERVEUR.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=corde
+Group=corde
+ExecStart=/opt/corde/corde-server --role hub --data-dir /var/lib/corde --ui-dir /opt/corde/ui --port 8471
+Restart=always
+RestartSec=5
+UMask=0077
+
+# Durcissement
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ReadWritePaths=/var/lib/corde
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+# AF_NETLINK : lister les adresses de la machine (bannière, lien « Direct »).
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+[Install]
+WantedBy=multi-user.target

@@ -8,6 +8,30 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [0.7.0] — 2026-11-12
+
+### Nouveautés
+
+- **Corde serveur** : un petit serveur chez toi (Raspberry Pi 5), toujours allumé, qui garde tes sessions,
+  l'ingénieur, ton profil et tes courses, et les montre à ton téléphone **même PC éteint**. Le PC lui envoie
+  chaque session dès qu'elle se termine (et, au démarrage, tout ce qui n'était pas encore parti). Le direct
+  reste sur le PC. Installation pas à pas : `docs/SERVEUR.md`.
+- **Seuls tes appareils** ouvrent le serveur : chacun s'appaire une fois avec un code à 8 chiffres affiché
+  sur le serveur lui-même (`sudo corde-server pair`). Page **Appareils** pour renommer ou révoquer, avec
+  effet immédiat.
+- Réglages → **Serveur Corde** sur le PC : adresse du serveur, appairage, état (connecté, injoignable,
+  dernière synchronisation, sessions en attente), « Tout renvoyer », « Dissocier ».
+- Les **ressentis** écrits sur le serveur (depuis le téléphone) redescendent sur le PC, et inversement.
+- La page **Courses** marche aussi sur le serveur, rappels compris, 24 h/24.
+
+### À savoir
+
+- Le serveur ne doit **jamais** être ouvert sur Internet : pour y accéder dehors, on passe par un VPN
+  (`docs/ACCES-EXTERIEUR.md`, WireGuard recommandé).
+- Mets le serveur à jour en même temps que Corde sur le PC : un serveur plus ancien refuse les envois
+  (rien n'est perdu, tout part après la mise à jour).
+- Sans serveur, rien ne change sur le PC.
+
 ## [0.6.0] — 2026-11-12
 
 ### Nouveautés

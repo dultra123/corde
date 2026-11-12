@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { onUnauthorized } from "../net/auth-events";
 import { fetchHubPairing, type HubDeviceRef } from "../net/hub-api";
 import { ApiError } from "../net/sessions-api";
+import { useTelemetry } from "./telemetry";
 
 /**
  * Which kind of server serves this page: the PC (`desktop`, the default — `/api/hub/pairing`
@@ -51,6 +52,14 @@ export const useHub = create<HubState>((set) => ({
 onUnauthorized(() => {
   const s = useHub.getState();
   if (s.role === "hub" && s.paired) useHub.setState({ paired: false, device: null });
+});
+
+// The server closes the live socket of a device the moment it is revoked: ask again, so that an
+// open page goes back to the pairing screen at once rather than at its next request.
+useTelemetry.subscribe((s, prev) => {
+  if (prev.socket === "open" && s.socket !== "open" && useHub.getState().role === "hub") {
+    void useHub.getState().check();
+  }
 });
 
 /** `true` on the home server. */

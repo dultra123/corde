@@ -36,7 +36,7 @@ L'option `Automatically Record Telemetry` peut rester désactivée : Corde enreg
    **<https://github.com/dultra123/corde/releases/tag/continuous>** — elle s'appelle
    « Corde — dernière version » et elle est reconstruite à chaque modification du projet.
 2. Tout en bas, section **Assets**, clique sur le fichier dont le nom finit par **`-setup.exe`**
-   (par exemple `Corde_0.6.0_x64-setup.exe`).
+   (par exemple `Corde_0.7.0_x64-setup.exe`).
 3. Ton navigateur peut hésiter : Edge affiche parfois « … n'est pas couramment téléchargé ». Clique sur
    les **…** à côté du fichier → **Conserver** → **Conserver quand même**.
 
@@ -239,6 +239,24 @@ un widget sans données (jeu fermé) n'affiche rien, pas même son panneau.
 
 ---
 
+## 6 quater. Ton serveur Corde à la maison (facultatif, 0.7)
+
+Si tu as installé **Corde serveur** sur un Raspberry Pi ([SERVEUR.md](SERVEUR.md)), le PC peut lui envoyer
+tes sessions pour que tu les voies sur ton téléphone **PC éteint** :
+
+1. Sur le Pi : `sudo corde-server pair` → un code à 8 chiffres (10 minutes, une seule fois).
+2. Dans Corde sur le PC : **Réglages → Serveur Corde** → adresse du serveur (par exemple `192.168.1.50`) et
+   code → **Appairer**. (La section n'apparaît que sur le PC lui-même, pas depuis le téléphone.)
+3. L'état passe à **Connecté** et le PC envoie tout ce qu'il a ; ensuite chaque session part dès qu'elle se
+   termine. « En attente d'envoi » montre ce qui n'est pas encore parti (serveur éteint, autre réseau…) :
+   Corde réessaie toute seule, au démarrage et toutes les 5 minutes.
+
+Rien ne change si tu n'as pas de serveur : la section reste « Pas appairé » et Corde ne contacte rien.
+Mets à jour le serveur **avant** (ou en même temps que) Corde sur le PC : un serveur plus ancien que le PC
+refuse les envois (« Serveur à mettre à jour »), sans rien perdre.
+
+---
+
 ## 7. Où sont tes données
 
 Tout ce que Corde enregistre est dans **`%LOCALAPPDATA%\Corde\`**
@@ -253,6 +271,7 @@ y reprend son dossier au premier lancement, avec toutes tes sessions (voir § 9)
 | `races\` | tes courses choisies, les réglages de la page Courses, les rappels déjà envoyés |
 | `diagnostics\races\` | la copie d'une page de planning que Corde n'a pas su lire (seulement dans ce cas) |
 | `logs\corde-desktop.log` | le **journal** de l'application |
+| `hub-link.json`, `sync-hashes.json` | seulement avec un serveur Corde : son adresse, la clé de ce PC auprès de lui (ne la partage pas), les sommes de contrôle des fichiers déjà envoyés |
 
 Rien n'est envoyé sur Internet (le planning des courses, si tu l'actives, lit deux pages publiques sans
 rien y envoyer de toi). Corde n'écrit dans le dossier du jeu que lorsque tu le lui demandes

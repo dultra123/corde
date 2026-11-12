@@ -29,6 +29,7 @@ que l'on vise à chaque tour. Corde s'appelait anciennement Muret (nom de travai
   - [L'ingénieur de course](#lingénieur-de-course)
   - [Courses en ligne](#courses-en-ligne)
   - [Dans OBS](#dans-obs)
+- [Corde serveur (Raspberry Pi)](#corde-serveur-raspberry-pi)
 - [Où en est le projet](#où-en-est-le-projet)
 - [Pour les développeurs](#pour-les-développeurs)
 - [Documentation](#documentation)
@@ -191,6 +192,27 @@ montrée qu'à la demande. Pas à pas : [docs/TESTING-ON-PC.md](docs/TESTING-ON-
 
 ![La page OBS de Corde : adresses, tailles conseillées, options et aperçus](docs/images/obs-page.png)
 
+## Corde serveur (Raspberry Pi)
+
+Un petit serveur chez toi, toujours allumé (un **Raspberry Pi 5**), qui garde tes sessions, l'ingénieur, ton
+profil et tes courses, et les montre à ton téléphone **PC éteint** — à la maison, ou dehors à travers un
+**VPN que tu montes toi-même**. Le PC reste le seul à lire le jeu : il enregistre comme d'habitude, puis
+envoie chaque session terminée au serveur (et, au démarrage, ce qui n'était pas encore parti). Le direct
+reste sur le PC.
+
+![Le serveur Corde : l'écran de code d'appairage, l'accueil du serveur, ses appareils et la section « Serveur Corde » des réglages du PC](docs/images/serveur.png)
+
+- **Seuls tes appareils** l'ouvrent : chacun est appairé une fois avec un code à 8 chiffres affiché sur le
+  serveur lui-même (`sudo corde-server pair`), valable 10 minutes, une seule fois. Une révocation est
+  immédiate (page **Appareils**).
+- **Jamais sur Internet** : on n'ouvre pas le port de Corde sur la box ; dehors, on entre chez soi par un VPN.
+- Installation : télécharge `corde-server-<version>-linux-arm64.tar.gz` (page des versions), puis
+  `sudo ./install.sh` sur le Pi. Sur le PC : **Réglages → Serveur Corde**.
+
+Pas à pas pour un non-informaticien : [docs/SERVEUR.md](docs/SERVEUR.md) · accès depuis l'extérieur :
+[docs/ACCES-EXTERIEUR.md](docs/ACCES-EXTERIEUR.md) · sécurité :
+[docs/SECURITY-MODEL.md §7](docs/SECURITY-MODEL.md#7-le-serveur-corde-mode-hub).
+
 ## Où en est le projet
 
 | Partie | État |
@@ -204,6 +226,7 @@ montrée qu'à la demande. Pas à pas : [docs/TESTING-ON-PC.md](docs/TESTING-ON-
 | Page des courses en ligne (planning, mes courses, rappel sonore avant le départ) | fait ; lecture des vrais sites, son dans l'application Windows et rappels sur le téléphone à vérifier chez le pilote |
 | Widgets dans OBS (fond transparent, page « OBS », dispositions overlay) | fait, vérifié dans Chromium ; à essayer dans une vraie source OBS |
 | Mises à jour depuis l'application (releases numérotées signées) | fait (0.6.0) ; à essayer pour de vrai avec la 0.6.1, une fois le dépôt public |
+| Corde serveur (Raspberry Pi) : appairage, synchronisation depuis le PC, paquet Linux arm64 / x64 | fait (0.7.0), vérifié entre deux serveurs et sous émulation arm64 ; à installer sur un vrai Pi |
 | Signature de l'installeur (plus d'avertissement Windows) | à décider |
 | Application mobile autonome (iOS / Android) | à venir |
 | Linux (le jeu tourne sous Proton) | serveur compilé, non testé avec le jeu |
@@ -287,8 +310,11 @@ corde/
   [stockage local-first](docs/adr/0006-stockage-local-first.md),
   [signature Windows](docs/adr/0007-windows-smartscreen-signature.md),
   [passage en open source](docs/adr/0008-open-source-publication.md),
-  [mises à jour signées](docs/adr/0009-mises-a-jour-releases-github-signees.md)
+  [mises à jour signées](docs/adr/0009-mises-a-jour-releases-github-signees.md),
+  [serveur domestique](docs/adr/0010-serveur-domestique.md)
 - [docs/TESTING-ON-PC.md](docs/TESTING-ON-PC.md) — installer et utiliser Corde sur Windows, dépannage
+- [docs/SERVEUR.md](docs/SERVEUR.md) — installer Corde serveur sur un Raspberry Pi, appairer, sauvegarder
+- [docs/ACCES-EXTERIEUR.md](docs/ACCES-EXTERIEUR.md) — ouvrir le serveur depuis l'extérieur par un VPN, sans exposer Corde
 - [docs/STATUS.md](docs/STATUS.md) — état détaillé du projet, tenu à jour à chaque étape
 - [CHANGELOG.md](CHANGELOG.md) — nouveautés de chaque version (affichées par l'application avant une mise à jour)
 - [docs/ENGINEER.md](docs/ENGINEER.md) — comment l'ingénieur analyse une session et ajuste un réglage
@@ -303,7 +329,8 @@ corde/
   deux pages publiques sans rien y envoyer de toi ; la recherche de mises à jour (désactivable) lit un
   fichier public sur GitHub, qui voit ton adresse IP. Détails : [PRIVACY.md](PRIVACY.md).
 - **Sécurité** : le serveur local n'écoute que sur ton PC par défaut ; ce qui est exposé quand l'accès
-  depuis le téléphone est activé est décrit dans [docs/SECURITY-MODEL.md](docs/SECURITY-MODEL.md).
+  depuis le téléphone est activé est décrit dans [docs/SECURITY-MODEL.md](docs/SECURITY-MODEL.md). Corde
+  serveur exige un appareil appairé pour tout, et ne doit jamais être ouvert sur Internet (§7).
 - **Signaler une faille** : en privé, par l'onglet *Security* du dépôt → *Report a vulnerability*
   ([SECURITY.md](SECURITY.md)). Pas de ticket public.
 

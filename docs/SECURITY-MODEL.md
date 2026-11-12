@@ -4,6 +4,8 @@
 > Code : `crates/corde-server/src/guard.rs` (politique), `crates/corde-server/src/net.rs`
 > (origines locales, garde « depuis ce PC »), tests : `crates/corde-server/tests/access_policy.rs`.
 > Signaler une faille : [SECURITY.md](../SECURITY.md). Vie privée : [PRIVACY.md](../PRIVACY.md).
+> Le **serveur Corde de la maison** (`--role hub`, 0.7, appairage obligatoire) a ses propres règles :
+> [§7](#7-le-serveur-corde-mode-hub).
 
 ## 1. Ce qui tourne
 
@@ -155,6 +157,11 @@ PC seulement.
 | GET | `/api/races/settings` | L | — (0.4) | ouverte | délais de rappel, affichage, correction d'heure, DR / SR, exigences |
 | PUT | `/api/races/settings` | D (`races/settings.json`) | — (0.4) | ouverte | clés connues seulement, valeurs dans des listes fermées |
 | GET | `/api/network` | L | aucune | ouverte | adresses à ouvrir sur le téléphone |
+| GET | `/api/hub-link` | L | — (0.7) | ouverte | état du lien avec le serveur Corde (adresse, état, dernière synchronisation, en attente) ; **jamais le jeton** |
+| PUT | `/api/hub-link` | D (`hub-link.json`) | — (0.7) | **PC** | adresse du serveur |
+| POST | `/api/hub-link/pair` | D (jeton dans `hub-link.json`, 0600) ; **X** vers l'adresse donnée (le serveur de la maison) | — (0.7) | **PC** | appairage avec un code lu sur le serveur |
+| POST | `/api/hub-link/sync`, `/resend` | **X** vers le serveur appairé | — (0.7) | **PC** | « Synchroniser maintenant », « Tout renvoyer » |
+| DELETE | `/api/hub-link` | S (`hub-link.json`) ; **X** (demande au serveur de révoquer ce PC) | — (0.7) | **PC** | « Dissocier » |
 | GET | `/ws` | L (télémétrie en direct ; le client n'envoie que `SetRate` et `Ping`) | aucune | ouverte, avec contrôle d'`Origin` | tableaux de bord, OBS |
 | GET | `/*` | L (fichiers de l'interface, repli sur `index.html`) | aucune | ouverte, contrôle `Host` seulement | |
 
@@ -162,7 +169,10 @@ Tâches de fond (pas de route) : lecture de la mémoire partagée du jeu ; `GET`
 (`http://127.0.0.1:6397`, liste fermée de chemins en lecture seule, `lmu_api.rs`, `lmu_garage.rs`) avec
 copie dans `diagnostics/lmu-api/` du dossier de données ; lecture des fichiers de résultats toutes les 60 s ;
 rappels des courses choisies toutes les 5 s (`races/mod.rs` : message `race_reminder` diffusé sur `/ws`,
-rappels envoyés notés dans `races/reminders.json`, aucun appel extérieur).
+rappels envoyés notés dans `races/reminders.json`, aucun appel extérieur) ; **seulement si le PC est appairé
+à un serveur Corde** (0.7) : envoi au serveur de la maison au démarrage, à la fin de chaque enregistrement
+et toutes les 5 minutes (`hub_link.rs`, routes `/api/sync/*` du §7, en HTTP vers l'adresse enregistrée,
+jamais par un proxy).
 
 **Appels vers Internet (planning des courses, 0.4)** : seulement `https://racecontrol.gg/` et
 `https://lmu.tools/schedule` (constante `SOURCES` de `crates/corde-server/src/races/sources.rs`), seulement
@@ -290,6 +300,111 @@ aucune route de mise à jour. Vie privée : [PRIVACY.md](../PRIVACY.md#mises-à-
   des commandes) ; `.github/scripts/updater_manifest.py` essayé hors dépôt contre une signature produite
   comme la CLI Tauri et vérifiée comme le plugin (mauvaise clé, mauvaise version, signature absente,
   section du CHANGELOG absente : refus).
+- Serveur Corde (0.7) : `crates/corde-server/src/hub/auth.rs` (unitaires : code à usage unique, trois
+  erreurs, expiration, limite par adresse et totale, jeton haché, fichier 0600, révocation, cookie),
+  `guard.rs::hub_route_classes`, `tests/hub_access.rs` (serveur réel : routes fermées sans jeton, cookie
+  `HttpOnly; SameSite=Strict; Path=/` sans `Secure`, jeton faux / révoqué sur HTTP et WebSocket, WebSocket
+  fermé à la révocation, administrateur, routes refusées, routes locales et commandes `pair | devices |
+  revoke`, garde `Host` / `Origin` toujours devant), `tests/hub_sync.rs` (deux serveurs réels : coupure,
+  reprise, aucun doublon, analyse identique, ressentis dans les deux sens, version incompatible refusée,
+  envoi au démarrage et à la fin d'un enregistrement), `hub_link.rs` (jeton jamais montré, fichier 0600).
 - Les scripts de capture (`packages/ui/scripts/screenshot-home.mjs`, `screenshot-sessions.mjs --spawn`)
   échouent sur toute erreur de console : ils vérifient que l'interface fonctionne depuis une autre origine
   locale.
+
+## 7. Le serveur Corde (mode hub)
+
+Décision : [ADR 0010](adr/0010-serveur-domestique.md). Guide : [SERVEUR.md](SERVEUR.md), accès extérieur :
+[ACCES-EXTERIEUR.md](ACCES-EXTERIEUR.md). Code : `crates/corde-server/src/hub/` (`auth.rs`, `routes.rs`,
+`receive.rs`, `cli.rs`), `guard.rs` (`hub_route_access`), `hub_link.rs` (côté PC), `sync_wire.rs`.
+
+`corde-server --role hub` tourne sur une machine toujours allumée de la maison (Raspberry Pi 5). Il ne lit
+aucun jeu, n'enregistre rien, n'écrit que dans son dossier de données (`/var/lib/corde`), et écoute sur
+toutes les interfaces. Contrairement au PC, **il exige un appareil appairé pour tout** : il est fait pour
+rester allumé sans surveillance, et pour être joint à travers un VPN.
+
+### 7.1 Modèle de menace
+
+**Ce qui protège :**
+
+1. **Le VPN** (choisi et monté par le pilote, [ACCES-EXTERIEUR.md](ACCES-EXTERIEUR.md)) : le serveur n'est
+   jamais exposé à Internet ; dehors, seul un appareil qui a une clé VPN entre dans la maison, et le trafic
+   est chiffré. Le pare-feu du Pi empêche le tunnel d'atteindre le reste du réseau.
+2. **L'appairage** : même sur le réseau de la maison ou dans le VPN, un appareil ne voit rien sans un jeton
+   d'appareil, obtenu seulement avec un code lu **sur le serveur** (`sudo corde-server pair`).
+3. **La garde du §3** (`Host`, `Origin`, tailles) reste devant tout : une page web malveillante ouverte sur
+   un appareil appairé ne peut ni lire l'API (origine refusée, cookie `SameSite=Strict` non envoyé), ni
+   s'en servir par un nom de domaine piégé (DNS rebinding).
+4. **Le service systemd durci** (`packaging/linux/corde.service`) : compte `corde` sans droits ni
+   connexion, `NoNewPrivileges`, `ProtectSystem=strict`, `ProtectHome`, `PrivateTmp`, `PrivateDevices`,
+   `ReadWritePaths=/var/lib/corde`, aucune capacité, appels système filtrés.
+
+**Ce qui ne protège pas :**
+
+1. **HTTP en clair sur le réseau local.** À la maison (sans VPN), le trafic entre le téléphone et le Pi
+   n'est pas chiffré : une machine hostile sur le même réseau, ou quelqu'un qui contrôle le Wi-Fi, peut lire
+   ce qui passe **et voler le cookie** d'un appareil, donc agir en son nom jusqu'à sa révocation. Le cookie
+   n'a pas l'attribut `Secure` (il ne serait pas envoyé en HTTP). Protège ton Wi-Fi (WPA2/WPA3, mot de passe
+   solide, pas d'invités sur le même réseau que le Pi).
+2. **Un appareil appairé volé** garde l'accès **tant qu'il n'est pas révoqué** (page Appareils ou
+   `sudo corde-server revoke`), et un téléphone volé avec son profil VPN entre dans la maison tant que sa clé
+   VPN n'est pas révoquée : il faut faire les deux.
+3. **Qui a un accès administrateur au Pi** (compte `sudo`, carte SD en main) a tout : les données sont en
+   clair sur le disque, et il peut fabriquer des codes d'appairage.
+4. **Un appareil appairé** voit tout ce que montre l'interface (sessions, résultats avec les noms des autres
+   pilotes) et peut écrire des ressentis, choisir des courses, envoyer des sessions (y compris de fausses :
+   tout appareil appairé peut parler le protocole du PC). Les actions destructrices demandent un appareil
+   administrateur.
+5. **Un PC compromis** qui est appairé peut envoyer n'importe quoi au serveur (dans les limites de taille et
+   de forme du §7.4).
+
+### 7.2 Appairage et jetons
+
+| Élément | Règle |
+|---|---|
+| Code d'appairage | 8 chiffres tirés du générateur aléatoire du système (sans biais), **un seul à la fois**, usage unique, **10 minutes** ; **3 erreurs l'annulent** ; jamais écrit dans le journal ni dans une réponse d'erreur |
+| Obtenir un code | uniquement sur le serveur : `sudo corde-server pair` appelle `POST /api/hub/local/pairing-code` sur `127.0.0.1`, **sans** en-tête `Origin`, avec la clé de `hub/control.json` (nouvelle à chaque démarrage, fichier 0600 du compte `corde`, lisible par root) |
+| Limite d'essais | 5 par adresse et 30 au total par tranche de 10 minutes (429 + `Retry-After`), comptés avant de regarder le code ; une adresse IPv4 vue en IPv6 (`::ffff:`) compte pour la même |
+| Jeton d'appareil | 256 bits aléatoires (64 caractères hexadécimaux), remis **une fois** : cookie `corde_device` (`HttpOnly; SameSite=Strict; Path=/; Max-Age` ≈ 400 jours, pas `Secure`) pour un navigateur, corps de la réponse pour le PC (`"kind": "app"`), qui le garde dans `hub-link.json` (0600 sous Unix ; `%LOCALAPPDATA%` est propre à l'utilisateur sous Windows) et l'envoie en `Authorization: Bearer` |
+| Stockage côté serveur | `hub/devices.json` (0600, dossier `hub/` en 0700) : identifiant, nom, **SHA-256 du jeton**, dates, administrateur ; le jeton lui-même n'est jamais écrit. Un fichier illisible est mis de côté et le serveur démarre **sans aucun appareil** (fermé, jamais ouvert) |
+| Vérification | SHA-256 du jeton présenté comparé à **chaque** empreinte en temps constant (`subtle`), sans sortie anticipée |
+| Révocation | immédiate : l'appareil disparaît de la liste, ses requêtes suivantes reçoivent 401, ses WebSockets ouverts sont fermés (code 4401) |
+| Administrateur | le premier appareil appairé ; ensuite, un administrateur en désigne d'autres ; le dernier administrateur ne peut pas retirer ses droits (409) ; s'il n'en reste aucun, le prochain appairé l'est (`sudo corde-server pair --admin` force ce rôle) |
+| Journal | appairages (adresse, identifiant, nom), refus (adresse, motif), révocations ; jamais un code, un jeton ni une empreinte |
+
+### 7.3 Routes du serveur
+
+Toutes les règles du §3 s'appliquent d'abord (`Host` : adresses IP, nom de la machine, `<nom>.local`, et les
+noms donnés par `--allow-host` ; `Origin` ; tailles ; 5xx sans détail). Puis :
+
+| Accès | Routes |
+|---|---|
+| **Public** (sans jeton) | `GET /api/hub/pairing` (rôle, version, cet appareil est-il appairé), `POST /api/hub/pair` (`{code, name?, kind?}`) ; et les fichiers de l'interface (`GET /*`), qui affichent l'écran de code |
+| **Commandes locales** (boucle locale + pas d'`Origin` + clé de contrôle) | `POST /api/hub/local/pairing-code`, `GET /api/hub/local/devices`, `DELETE /api/hub/local/devices/{id}` |
+| **Appareil appairé** | toutes les autres routes `/api/*` du §4 (lectures, ressentis, dispositions, courses…) et `/ws` ; `GET /api/hub/status` ; `GET /api/hub/devices` ; `PATCH` / `DELETE /api/hub/devices/{id}` (soi-même ; un autre : administrateur ; changer `admin` : administrateur) ; `/api/sync/*` (§7.4) ; **toute route inconnue** (401 sans jeton, puis 404) |
+| **Administrateur** | `DELETE /api/sessions/{id}` (+ pierre tombale : le PC ne la renvoie plus), `POST /api/sessions/{id}/analysis/recompute`, `DELETE /api/layouts`, `DELETE /api/layouts/{id}`, `PUT /api/settings` (seulement `online_schedule` ; `lan_access` → 400) |
+| **Refusées** (403 `not_on_server`) | `POST /api/sessions/{id}/setup-files` (écrirait hors du dossier de données ; le jeu est sur le PC), `POST /api/profile/import` (pas de fichiers du jeu), `POST /api/recording/start`, `/stop` (pas d'enregistreur) |
+
+Sur le PC, aucune de ces routes n'existe (404) : c'est ainsi que l'interface reconnaît un PC.
+
+### 7.4 Réception des données d'un PC (`/api/sync/*`)
+
+| Méthode | Chemin | Effet | Bornes |
+|---|---|---|---|
+| POST | `/api/sync/hello` | L ; note le dernier PC (nom, version, adresses de son direct) | adresses `http://hôte[:port]` seulement, ≤ 8, ≤ 100 caractères |
+| POST | `/api/sync/results` | D (`results`, `result_laps`) | corps zstd ≤ 16 Mio, ≤ 256 Mio décompressé ; nom de fichier sans `/`, `\`, NUL ni point initial |
+| PUT | `/api/sync/files/{id}/{name}` | D (`sync-incoming/<id>/<name>.part`) | morceau ≤ 1 Mio, fichier ≤ 2 Gio ; `id` validé (`valid_id`), `name` = `[A-Za-z0-9._-]+.parquet` sans `..` ; écrit seulement à la position attendue (sinon 409 + position) |
+| POST | `/api/sync/files/{id}/{name}/commit` | D (déplace dans `sessions/<id>/`) | taille et SHA-256 vérifiés, sinon fichier partiel supprimé (422) |
+| PUT | `/api/sync/sessions/{id}` | D (remplace les lignes de la session ; garde ses ressentis) | corps zstd borné comme plus haut ; session fermée ; tous ses fichiers présents (sinon 409) ; pierre tombale → 410 |
+| GET / POST | `/api/sync/sessions/{id}/feedback` | L / D (ajoute les ressentis et itérations manquants, ne supprime rien) | identifiants hexadécimaux, texte ≤ 4000 caractères |
+
+Chaque requête porte `corde-sync-version` et `corde-schema-version` : un PC plus récent que le serveur est
+refusé (409 `server_outdated`, « mets à jour le serveur »), et le PC refuse de même un serveur plus ancien.
+
+### 7.5 Côté PC
+
+- `hub-link.json` (dossier de données du PC) garde l'adresse et le jeton ; `GET /api/hub-link` ne renvoie
+  jamais le jeton ; aucune ligne du journal ne le contient.
+- Le PC ne parle qu'à l'adresse enregistrée, en HTTP, **sans proxy**, avec des délais (5 s pour se
+  connecter, 120 s par requête) ; il n'envoie que des sessions **fermées**.
+- Toutes les routes `/api/hub-link` qui changent quelque chose sont réservées au PC (§4).

@@ -1,0 +1,26 @@
+Corde serveur — serveur Corde de la maison (Raspberry Pi 5 ou PC Linux)
+=======================================================================
+
+Ce dossier contient :
+
+  corde-server      le programme (même code que Corde sur le PC, en mode « serveur »)
+  ui/               l'interface (pages Sessions, Ingénieur, Profil, Courses…)
+  corde.service     le service systemd
+  install.sh        installe ou met à jour (sudo ./install.sh)
+  uninstall.sh      désinstalle (sudo ./uninstall.sh, --purge pour effacer aussi les données)
+  docs/             SERVEUR.md (installation pas à pas) et ACCES-EXTERIEUR.md (VPN)
+
+Installer ou mettre à jour :
+
+  tar -xzf corde-server-*-linux-*.tar.gz
+  cd corde-server-*/
+  sudo ./install.sh
+
+Appairer un appareil (PC, téléphone) :
+
+  sudo corde-server pair
+
+Ne redirige jamais le port 8471 depuis ta box : l'accès depuis l'extérieur passe par
+un VPN (docs/ACCES-EXTERIEUR.md).
+
+Licence : GPL-3.0-or-later (fichier LICENSE).

@@ -82,7 +82,7 @@ const invoke = window.__TAURI__?.core?.invoke; // undefined dans un navigateur o
 await invoke("get_autostart");                 // → boolean
 await invoke("set_autostart", { enabled: true });
 await invoke("restart_app");                   // l'application s'arrête et se relance
-await invoke("app_version");                   // → "0.6.0"
+await invoke("app_version");                   // → "0.7.0"
 await invoke("check_update");                  // → état des mises à jour (voir plus bas)
 await window.__TAURI__.event.listen("update-status", (e) => console.log(e.payload));
 ```
@@ -105,7 +105,7 @@ aussi envoyé par l'événement **`update-status`** à chaque changement :
 
 ```json
 {
-  "current_version": "0.6.0", "auto_check": true,
+  "current_version": "0.7.0", "auto_check": true,
   "phase": "idle | checking | downloading | installing",
   "last_check_ms": 1762934400000, "last_check_ok": true,
   "available": { "version": "0.6.1", "date": "2026-11-20T18:00:00Z", "notes": "### Nouveautés…" },

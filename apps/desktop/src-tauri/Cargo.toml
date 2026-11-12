@@ -10,7 +10,7 @@
 name = "corde-desktop"
 description = "Corde — télémétrie, tableau de bord et ingénieur de course pour Le Mans Ultimate"
 # Même version que le workspace (Cargo.toml racine) et que tauri.conf.json : les trois bougent ensemble.
-version = "0.6.0"
+version = "0.7.0"
 authors = ["dultra__"]
 edition = "2021"
 # Tauri 2.12 exige Rust 1.90 (le workspace principal reste à 1.85).

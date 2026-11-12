@@ -3,12 +3,15 @@
 # web        : types TS générés depuis le protocole Rust, typecheck, tests, build du dashboard (artefact ui-dist)
 # rust       : fmt, clippy (toléré), tests, build release des binaires (corde-server, lmu-probe, corde-sim, corde-store),
 #              artefacts corde-linux / corde-windows (binaires + ui/ + docs/TESTING-ON-PC.md)
+# server-linux : Corde serveur (rôle hub, Raspberry Pi) : corde-server pour Linux arm64 et x64 (zig, glibc
+#              2.28), essayé (x64 directement, arm64 sous qemu), archives corde-server-<version>-linux-<arch>.tar.gz
+#              (binaire, ui/, service systemd, install.sh, uninstall.sh, docs) → artefact corde-server-linux
 # desktop    : application de bureau (coquille Tauri 2, apps/desktop — workspace Cargo à part) sur windows-latest :
 #              installeur NSIS, artefact corde-setup (Corde_<version>_x64-setup.exe, et sa signature de mise à
 #              jour Corde_<version>_x64-setup.exe.sig quand le secret TAURI_SIGNING_PRIVATE_KEY existe). C'est le
 #              seul endroit où la coquille est compilée.
 # continuous : sur push main seulement, pré-release glissante étiquetée `continuous` (« Corde — dernière version ») :
-#              installeur + zip portable, anciens fichiers remplacés
+#              installeur + zip portable + archives de Corde serveur, anciens fichiers remplacés
 # version    : sur push main seulement, release NUMÉROTÉE v<version> (version de tauri.conf.json) si elle n'existe
 #              pas encore et que la signature de mise à jour a été produite : installeur, .sig, zip portable et
 #              latest.json (lu par le bouton « Rechercher une mise à jour » de l'application)
@@ -189,6 +192,103 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  server-linux:
+    name: Corde serveur (archives Linux arm64 et x64)
+    needs: web
+    runs-on: ubuntu-latest
+    env:
+      # Versions épinglées des outils d'édition de liens croisée (zig fournit une glibc ancienne :
+      # le binaire tourne sur Raspberry Pi OS « Bookworm », glibc 2.36, et plus ancien).
+      ZIGLANG_VERSION: "0.17.1"
+      CARGO_ZIGBUILD_VERSION: "0.24.1"
+      GLIBC_TARGET: "2.28"
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
+          targets: aarch64-unknown-linux-gnu, x86_64-unknown-linux-gnu
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: server-linux
+
+      - name: Outils (zig, cargo-zigbuild, qemu pour essayer le binaire arm64)
+        run: |
+          set -euo pipefail
+          python3 -m pip install --user "ziglang==${ZIGLANG_VERSION}" "cargo-zigbuild==${CARGO_ZIGBUILD_VERSION}"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq qemu-user-static libc6-arm64-cross shellcheck
+
+      - name: Vérifier les scripts d'installation (shellcheck)
+        run: shellcheck -x packaging/linux/install.sh packaging/linux/uninstall.sh packaging/linux/make-archive.sh
+
+      - name: Construire corde-server (Linux x64 et arm64, glibc ${{ env.GLIBC_TARGET }})
+        run: |
+          set -euo pipefail
+          for target in x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu; do
+            cargo zigbuild --release --locked -p corde-server --bin corde-server --target "${target}.${GLIBC_TARGET}"
+          done
+
+      - name: Contrôler les binaires (version de glibc, démarrage, mode serveur)
+        run: |
+          set -euo pipefail
+          for pair in x64:x86_64-unknown-linux-gnu arm64:aarch64-unknown-linux-gnu; do
+            arch=${pair%%:*}
+            bin="target/${pair#*:}/release/corde-server"
+            file "$bin"
+            max=$(objdump -T "$bin" | grep -o 'GLIBC_[0-9.]*' | sed 's/GLIBC_//' | sort -uV | tail -1)
+            echo "${arch} : glibc ${max} au plus"
+            if [ "$(printf '%s\n%s\n' "$max" "$GLIBC_TARGET" | sort -V | tail -1)" != "$GLIBC_TARGET" ]; then
+              echo "::error::${arch} demande glibc ${max} (> ${GLIBC_TARGET})"
+              exit 1
+            fi
+            run=("$bin")
+            if [ "$arch" = arm64 ]; then
+              run=(qemu-aarch64-static -L /usr/aarch64-linux-gnu "$bin")
+            fi
+            "${run[@]}" --version
+            data=$(mktemp -d)
+            "${run[@]}" --role hub --port 0 --bind 127.0.0.1 --data-dir "$data" > "$data/out.log" 2>&1 &
+            pid=$!
+            for _ in $(seq 1 60); do
+              [ -s "$data/hub/control.json" ] && break
+              sleep 1
+            done
+            kill "$pid" || true
+            wait "$pid" || true
+            cat "$data/out.log"
+            [ -s "$data/hub/control.json" ] || { echo "::error::${arch} : le mode serveur n'a pas démarré"; exit 1; }
+            grep -q "rôle hub" "$data/out.log"
+          done
+
+      - name: Récupérer le dashboard construit
+        uses: actions/download-artifact@v4
+        with:
+          name: ui-dist
+          path: ui-dist
+
+      - name: Assembler les archives
+        run: |
+          set -euo pipefail
+          version=$(python3 -c "import tomllib; print(tomllib.load(open('Cargo.toml','rb'))['workspace']['package']['version'])")
+          mkdir -p server-dist
+          packaging/linux/make-archive.sh "$version" x64 target/x86_64-unknown-linux-gnu/release/corde-server ui-dist server-dist
+          packaging/linux/make-archive.sh "$version" arm64 target/aarch64-unknown-linux-gnu/release/corde-server ui-dist server-dist
+          ls -l server-dist
+          for a in server-dist/*.tar.gz; do tar -tzf "$a" | head -20; done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: corde-server-linux
+          path: server-dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 30
+
   desktop:
     name: Application de bureau (installeur Windows)
     needs: web
@@ -356,8 +456,12 @@ jobs:
     name: Version continue (pré-release « continuous »)
     # Uniquement quand `main` du dépôt d'origine avance : jamais sur une branche, une PR, un tag
     # ni un fork.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'dultra123/corde'
-    needs: [rust, desktop]
+    # Après server-linux aussi, mais un échec de celui-ci ne bloque pas la publication (elle se fait
+    # alors sans les archives de Corde serveur) : d'où !cancelled() et les deux résultats exigés.
+    if: >-
+      !cancelled() && needs.rust.result == 'success' && needs.desktop.result == 'success' &&
+      github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'dultra123/corde'
+    needs: [rust, desktop, server-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -381,6 +485,13 @@ jobs:
         with:
           name: corde-windows
           path: corde-windows
+
+      - name: Récupérer les archives de Corde serveur
+        if: needs.server-linux.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: corde-server-linux
+          path: release
 
       - name: Préparer les fichiers et les notes
         run: |
@@ -421,6 +532,14 @@ jobs:
             echo "|---|---|"
             echo "| \`${setup}\` | **L'application Corde** : une icône, une fenêtre, pas de console. C'est celui qu'il te faut. |"
             echo "| \`corde-portable-windows.zip\` | Mode console (\`corde-server.exe\`, \`lmu-probe.exe\`…) : pour le diagnostic, ou sans installation. |"
+            for a in release/corde-server-*-linux-*.tar.gz; do
+              [ -e "$a" ] || continue
+              case "$a" in
+                *-arm64.tar.gz) what="**Corde serveur** pour Raspberry Pi 5 (Raspberry Pi OS 64 bits). Guide : [docs/SERVEUR.md](${docs}/SERVEUR.md)." ;;
+                *) what="**Corde serveur** pour un PC Linux 64 bits (x86_64). Guide : [docs/SERVEUR.md](${docs}/SERVEUR.md)." ;;
+              esac
+              echo "| \`$(basename "$a")\` | ${what} |"
+            done
             echo ""
             echo "## Pourquoi Windows affiche un avertissement"
             echo ""
@@ -453,8 +572,12 @@ jobs:
   version:
     name: Version numérotée (release v<version> et mises à jour)
     # Uniquement quand `main` du dépôt d'origine avance : jamais sur une branche, une PR, un tag ni un fork.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'dultra123/corde'
-    needs: [rust, desktop]
+    # Après server-linux aussi, mais un échec de celui-ci ne bloque pas la publication (elle se fait
+    # alors sans les archives de Corde serveur) : d'où !cancelled() et les deux résultats exigés.
+    if: >-
+      !cancelled() && needs.rust.result == 'success' && needs.desktop.result == 'success' &&
+      github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'dultra123/corde'
+    needs: [rust, desktop, server-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -501,6 +624,13 @@ jobs:
         with:
           name: corde-windows
           path: corde-windows
+
+      - name: Récupérer les archives de Corde serveur
+        if: steps.plan.outputs.publish == 'true' && needs.server-linux.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: corde-server-linux
+          path: release
 
       # Sans signature de mise à jour (secret absent), pas de release numérotée : l'application ne
       # pourrait pas l'installer. La pré-release `continuous` reste publiée.
@@ -569,8 +699,10 @@ jobs:
   release:
     name: Release GitHub (étiquette manuelle)
     # Uniquement sur une étiquette v* poussée dans le dépôt d'origine (jamais sur une PR ni un fork).
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && github.repository == 'dultra123/corde'
-    needs: [rust, desktop]
+    if: >-
+      !cancelled() && needs.rust.result == 'success' && needs.desktop.result == 'success' &&
+      github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && github.repository == 'dultra123/corde'
+    needs: [rust, desktop, server-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -610,6 +742,12 @@ jobs:
           name: corde-setup
           path: corde-setup
 
+      - uses: actions/download-artifact@v4
+        if: steps.existing.outputs.found != 'true' && needs.server-linux.result == 'success'
+        with:
+          name: corde-server-linux
+          path: corde-server-linux
+
       - name: Créer les archives
         if: steps.existing.outputs.found != 'true'
         run: |
@@ -628,8 +766,12 @@ jobs:
             corde-setup/*-setup.exe
             corde-*-windows.zip
             corde-*-linux.tar.gz
+            corde-server-linux/corde-server-*-linux-*.tar.gz
           generate_release_notes: true
-          fail_on_unmatched_files: true
+          # Les archives de Corde serveur peuvent manquer (job server-linux en échec) : le motif
+          # correspondant ne fait pas échouer la publication. Les trois autres sont contrôlés
+          # par l'étape « Créer les archives » ci-dessus.
+          fail_on_unmatched_files: false
           make_latest: "false"
 
   deny:
