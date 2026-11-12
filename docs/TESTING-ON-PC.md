@@ -36,7 +36,7 @@ L'option `Automatically Record Telemetry` peut rester désactivée : Corde enreg
    **<https://github.com/dultra123/corde/releases/tag/continuous>** — elle s'appelle
    « Corde — dernière version » et elle est reconstruite à chaque modification du projet.
 2. Tout en bas, section **Assets**, clique sur le fichier dont le nom finit par **`-setup.exe`**
-   (par exemple `Corde_0.7.1_x64-setup.exe`).
+   (par exemple `Corde_0.8.0_x64-setup.exe`).
 3. Ton navigateur peut hésiter : Edge affiche parfois « … n'est pas couramment téléchargé ». Clique sur
    les **…** à côté du fichier → **Conserver** → **Conserver quand même**.
 

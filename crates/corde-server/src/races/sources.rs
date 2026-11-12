@@ -71,7 +71,7 @@ pub fn source(id: &str) -> Option<&'static SourceDef> {
     SOURCES.iter().find(|s| s.id == id)
 }
 
-/// `Corde/0.7.1 (+https://github.com/dultra123/corde)`.
+/// `Corde/0.8.0 (+https://github.com/dultra123/corde)`.
 pub fn user_agent() -> String {
     format!("Corde/{SERVER_VERSION} (+https://github.com/dultra123/corde)")
 }

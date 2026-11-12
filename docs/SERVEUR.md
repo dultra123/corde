@@ -71,14 +71,14 @@ ou « réservation DHCP »). Sinon son adresse peut changer et le PC ne le retro
      (connecté à ton compte GitHub), puis copie-la sur le Pi depuis PowerShell :
 
      ```powershell
-     scp $HOME\Downloads\corde-server-0.7.1-linux-arm64.tar.gz ton-utilisateur@corde.local:~
+     scp $HOME\Downloads\corde-server-0.8.0-linux-arm64.tar.gz ton-utilisateur@corde.local:~
      ```
    - Un PC Linux (pas un Pi) prend l'archive `…-linux-x64.tar.gz`.
 2. Sur le Pi (par SSH) :
 
    ```bash
-   tar -xzf corde-server-0.7.1-linux-arm64.tar.gz
-   cd corde-server-0.7.1-linux-arm64
+   tar -xzf corde-server-0.8.0-linux-arm64.tar.gz
+   cd corde-server-0.8.0-linux-arm64
    sudo ./install.sh
    ```
 
@@ -182,8 +182,8 @@ tout partira après la mise à jour).
 2. Sur le Pi :
 
    ```bash
-   tar -xzf corde-server-0.7.1-linux-arm64.tar.gz
-   cd corde-server-0.7.1-linux-arm64
+   tar -xzf corde-server-0.8.0-linux-arm64.tar.gz
+   cd corde-server-0.8.0-linux-arm64
    sudo ./install.sh
    ```
 
