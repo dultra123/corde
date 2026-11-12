@@ -6,6 +6,7 @@ import { isAutoNavDisabled } from "../nav/auto";
 import { connection } from "../net/connection";
 import { type Lang, useSettings } from "../store/settings";
 import { useConnectionPhase, useTelemetry } from "../store/telemetry";
+import { UpdatesSection } from "./UpdatesSection";
 
 interface Props {
   open: boolean;
@@ -259,6 +260,7 @@ export function SettingsDialog({ open, onClose }: Props) {
             </span>
           </div>
           <DesktopSection open={open} />
+          <UpdatesSection open={open} />
           <div className="sheet-info">
             <span>{t("settings.connectionState")}</span>
             <b>{phaseLabel[phase]}</b>

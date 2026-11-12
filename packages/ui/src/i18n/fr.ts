@@ -910,6 +910,41 @@ export const fr = {
   "settings.restart": "Redémarrer Corde",
   "settings.appVersion": "Application",
   "settings.appError": "L'application n'a pas répondu : {msg}",
+  "settings.section.updates": "Mises à jour",
+  "topbar.settingsUpdate": "Réglages — mise à jour disponible",
+  "update.current": "Version installée",
+  "update.check": "Rechercher une mise à jour",
+  "update.checking": "Recherche en cours…",
+  "update.never": "Pas encore vérifié depuis le lancement de Corde.",
+  "update.upToDate": "Corde est à jour.",
+  "update.lastCheck": "vérifié le {when}",
+  "update.available": "Version {v} disponible",
+  "update.publishedOn": "publiée le {date}",
+  "update.notes": "Nouveautés",
+  "update.install": "Installer et redémarrer",
+  "update.installHint":
+    "Corde se ferme, l'installation s'affiche quelques secondes, puis Corde redémarre. Tes sessions et tes réglages sont conservés.",
+  "update.progress": "Avancement de la mise à jour",
+  "update.downloadingPct": "Téléchargement… {pct} %",
+  "update.downloadingMb": "Téléchargement… {mb} Mo",
+  "update.installing": "Installation : Corde va se fermer puis redémarrer…",
+  "update.justUpdated": "Corde vient d'être mise à jour (tu avais la {v}).",
+  "update.auto": "Rechercher automatiquement (au lancement, puis toutes les 6 heures)",
+  "update.releases": "Ouvrir la page des versions",
+  "update.browser": "Les mises à jour se font depuis l'application sur le PC.",
+  "update.err.check":
+    "Impossible de vérifier pour l'instant. Réessaie plus tard, ou regarde la page des versions.",
+  "update.err.download":
+    "Le téléchargement n'a pas abouti. Réessaie plus tard, ou télécharge l'installeur sur la page des versions.",
+  "update.err.install":
+    "L'installation n'a pas pu démarrer. Télécharge l'installeur sur la page des versions.",
+  "update.err.game":
+    "Ferme le jeu avant d'installer : Corde ne s'arrête jamais pendant que tu roules.",
+  "update.err.recording":
+    "Une session est en cours d'enregistrement : installe la mise à jour une fois la session terminée.",
+  "update.err.unknown": "Corde ne sait pas si le jeu tourne : réessaie dans un instant.",
+  "update.err.busy": "Une recherche ou une installation est déjà en cours.",
+  "update.err.nothing": "Recherche d'abord une mise à jour.",
 
   // Countable words (`nOf`)
   "word.session": "session",
@@ -1082,6 +1117,9 @@ export const fr = {
   "races.banner.view": "Voir",
   "races.banner.close": "Fermer le rappel",
   "home.nextRace": "Prochaine course",
+  "home.update.label": "Mise à jour",
+  "home.update.what": "Corde {v} est disponible",
+  "home.update.action": "Voir",
   "layout.device.overlayMenu": "Overlay (OBS)",
   "layout.newOverlay": "Nouvelle disposition overlay",
   "layout.obsLink": "Adresses pour OBS…",

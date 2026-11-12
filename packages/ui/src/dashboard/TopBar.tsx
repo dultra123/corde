@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useT } from "../i18n";
+import { hasUpdate } from "../lib/updates";
 import { routeHash, type Section } from "../nav/routes";
 import { connection } from "../net/connection";
 import { useDashboard } from "../store/dashboard";
 import { useTelemetry } from "../store/telemetry";
+import { useUpdates } from "../store/updates";
 import {
   IconCheck,
   IconDemo,
@@ -79,6 +81,7 @@ export function TopBar({ onSettings, section = "dashboard" }: Props) {
   const setPaletteOpen = useDashboard((s) => s.setPaletteOpen);
   const demo = useTelemetry((s) => s.demo);
   const [fs, toggleFs] = useFullscreen();
+  const updateKnown = useUpdates((s) => hasUpdate(s.status));
   const demoManual = demo === "manual";
   const onDashboard = section === "dashboard";
 
@@ -155,12 +158,13 @@ export function TopBar({ onSettings, section = "dashboard" }: Props) {
         </button>
         <button
           type="button"
-          className="btn is-icon"
+          className={`btn is-icon${updateKnown ? " has-badge" : ""}`}
           onClick={onSettings}
-          aria-label={t("topbar.settings")}
-          title={t("topbar.settings")}
+          aria-label={updateKnown ? t("topbar.settingsUpdate") : t("topbar.settings")}
+          title={updateKnown ? t("topbar.settingsUpdate") : t("topbar.settings")}
         >
           <IconSettings />
+          {updateKnown && <span className="btn-badge" aria-hidden="true" />}
         </button>
       </div>
     </header>

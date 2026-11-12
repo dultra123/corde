@@ -60,6 +60,21 @@
   display: flex;
   justify-content: center;
 }
+/* Settings button: a newer version of the desktop app is known. */
+.btn.has-badge {
+  position: relative;
+}
+.btn-badge {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--optimal);
+  box-shadow: 0 0 0 2px var(--bg);
+  pointer-events: none;
+}
 
 .brand {
   display: inline-flex;

@@ -5,6 +5,7 @@ import { ReminderBanner } from "./races/ReminderBanner";
 import { SessionsShell } from "./sessions/SessionsShell";
 import { useDashboard } from "./store/dashboard";
 import { useSettings } from "./store/settings";
+import { useUpdates } from "./store/updates";
 
 /**
  * Five sections behind hash routes: the home page (`#/home`, shown when the app opens), the live
@@ -21,6 +22,11 @@ export function App() {
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
+  // Desktop application only (no-op in a browser): follow the update state of the shell, for
+  // the settings badge and the home line.
+  useEffect(() => {
+    useUpdates.getState().start();
+  }, []);
   // An overlay layout is edited on purpose (menu, OBS page): leaving the dashboard ends it, so
   // that the dashboard opened on track shows the screen layout again.
   const onDashboard = route.page === "dashboard";

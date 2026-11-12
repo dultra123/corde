@@ -4,6 +4,7 @@ import { type TranslationKey, useT } from "../i18n";
 import { isDesktop, isLocalPage, restartApp } from "../lib/desktop";
 import { fmtBytes, fmtDuration, fmtLapTime, fmtRelativeDay } from "../lib/format";
 import { lapNo } from "../lib/laps";
+import { hasUpdate } from "../lib/updates";
 import { routeHash } from "../nav/routes";
 import { connection } from "../net/connection";
 import { fetchProfile, fetchResults, type Profile, type ResultRow } from "../net/profile-api";
@@ -25,6 +26,7 @@ import {
 import { useRecording } from "../store/recording";
 import { useSettings } from "../store/settings";
 import { useConnectionPhase, useTelemetry } from "../store/telemetry";
+import { useUpdates } from "../store/updates";
 import { GuideDialog } from "./GuideDialog";
 import {
   bareAddress,
@@ -868,6 +870,22 @@ function NextRaceLine() {
   );
 }
 
+/** Desktop application, a newer version is known: one line that opens the settings. */
+function UpdateLine({ onSettings }: { onSettings: () => void }) {
+  const { t } = useT();
+  const status = useUpdates((s) => s.status);
+  if (!hasUpdate(status) || !status?.available) return null;
+  return (
+    <button type="button" className="home-update" onClick={onSettings}>
+      <span className="home-update-label">{t("home.update.label")}</span>
+      <span className="home-update-what">
+        {t("home.update.what", { v: status.available.version })}
+      </span>
+      <span className="home-update-action">{t("home.update.action")}</span>
+    </button>
+  );
+}
+
 /* ------------------------------------------------------------------ foot */
 
 function HomeFoot({ online, onGuide }: { online: boolean; onGuide: () => void }) {
@@ -930,6 +948,7 @@ export function HomePage({ onSettings }: { onSettings: () => void }) {
     <div className="home-page">
       <h1 className="sr-only">{t("home.title")}</h1>
       <StatusCard onSettings={onSettings} />
+      <UpdateLine onSettings={onSettings} />
       {online && <NextRaceLine />}
       {online && (
         <div className="home-grid">
