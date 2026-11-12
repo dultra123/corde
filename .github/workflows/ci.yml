@@ -222,7 +222,11 @@ jobs:
           python3 -m pip install --user "ziglang==${ZIGLANG_VERSION}" "cargo-zigbuild==${CARGO_ZIGBUILD_VERSION}"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           sudo apt-get update -qq
-          sudo apt-get install -y -qq qemu-user-static libc6-arm64-cross shellcheck
+          sudo apt-get install -y -qq libc6-arm64-cross shellcheck binutils file
+          # L'émulateur arm64 : selon la version d'Ubuntu du runner, le paquet est
+          # « qemu-user-static » (binaire qemu-aarch64-static) ou « qemu-user » (binaire qemu-aarch64).
+          sudo apt-get install -y -qq qemu-user-static || sudo apt-get install -y -qq qemu-user
+          command -v qemu-aarch64-static || command -v qemu-aarch64
 
       - name: Vérifier les scripts d'installation (shellcheck)
         run: shellcheck -x packaging/linux/install.sh packaging/linux/uninstall.sh packaging/linux/make-archive.sh
@@ -249,7 +253,8 @@ jobs:
             fi
             run=("$bin")
             if [ "$arch" = arm64 ]; then
-              run=(qemu-aarch64-static -L /usr/aarch64-linux-gnu "$bin")
+              qemu=$(command -v qemu-aarch64-static || command -v qemu-aarch64)
+              run=("$qemu" -L /usr/aarch64-linux-gnu "$bin")
             fi
             "${run[@]}" --version
             data=$(mktemp -d)
