@@ -16,6 +16,12 @@ const COMMANDS: &[&str] = &[
     "set_autostart",
     "restart_app",
     "app_version",
+    "update_status",
+    "check_update",
+    "install_update",
+    "open_releases_page",
+    "get_update_auto_check",
+    "set_update_auto_check",
     // Page locale de démarrage / d'erreur uniquement.
     "boot_status",
 ];

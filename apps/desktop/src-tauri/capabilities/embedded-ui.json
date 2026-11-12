@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "embedded-ui",
-  "description": "L'UI web de Corde, servie par le serveur embarqué sur la boucle locale (origine « distante » pour Tauri). Elle n'a accès qu'aux quatre commandes du contrat coquille ↔ UI ; aucun plugin, aucun accès au système de fichiers.",
+  "description": "L'UI web de Corde, servie par le serveur embarqué sur la boucle locale (origine « distante » pour Tauri). Elle n'a accès qu'aux commandes du contrat coquille ↔ UI (démarrage avec Windows, redémarrage, version, mises à jour) et à l'écoute des événements (état des mises à jour) ; aucune commande de plugin, aucun accès au système de fichiers.",
   "windows": ["main"],
   "local": false,
   "remote": {
@@ -11,6 +11,14 @@
     "allow-get-autostart",
     "allow-set-autostart",
     "allow-restart-app",
-    "allow-app-version"
+    "allow-app-version",
+    "allow-update-status",
+    "allow-check-update",
+    "allow-install-update",
+    "allow-open-releases-page",
+    "allow-get-update-auto-check",
+    "allow-set-update-auto-check",
+    "core:event:allow-listen",
+    "core:event:allow-unlisten"
   ]
 }

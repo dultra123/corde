@@ -60,6 +60,7 @@ mod tests {
         GameStatus {
             connected,
             in_realtime,
+            recording: false,
         }
     }
 

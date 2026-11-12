@@ -10,7 +10,7 @@
 name = "corde-desktop"
 description = "Corde — télémétrie, tableau de bord et ingénieur de course pour Le Mans Ultimate"
 # Même version que le workspace (Cargo.toml racine) et que tauri.conf.json : les trois bougent ensemble.
-version = "0.5.1"
+version = "0.6.0"
 authors = ["dultra__"]
 edition = "2021"
 # Tauri 2.12 exige Rust 1.90 (le workspace principal reste à 1.85).
@@ -38,6 +38,7 @@ tauri-plugin-single-instance = "2.5"
 tauri-plugin-autostart = "2.7"
 tauri-plugin-window-state = "2.5"
 tauri-plugin-notification = "2.8"
+tauri-plugin-updater = "2.14"
 
 # Le serveur embarqué : mêmes crates que l'exécutable `corde-server`.
 corde-server = { path = "../../../crates/corde-server" }

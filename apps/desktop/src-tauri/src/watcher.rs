@@ -5,15 +5,17 @@
 //!   sans prendre le premier plan au jeu
 //!   (`shell::reveal(TrackEntry)`) ; l'UI passe d'elle-même au tableau de bord ;
 //! - le jeu est détecté / fermé → seule l'info-bulle de la zone de notification change :
-//!   une application démarrée cachée reste cachée tant que le pilote n'est pas en piste.
+//!   une application démarrée cachée reste cachée tant que le pilote n'est pas en piste ;
+//! - chaque lecture est gardée dans [`Shell`] : les mises à jour s'en servent (pas de
+//!   notification ni d'installation pendant que le jeu tourne ou qu'on enregistre).
 
 use crate::edges::{Edge, EdgeDetector};
 use crate::server;
-use crate::shell::{self, Reveal};
+use crate::shell::{self, Reveal, Shell};
 use crate::tray;
 use std::sync::mpsc::{self, RecvTimeoutError};
 use std::time::Duration;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
 /// Période d'interrogation (1 Hz).
 const POLL_PERIOD: Duration = Duration::from_secs(1);
@@ -54,6 +56,7 @@ fn run(app: &AppHandle, port: u16, stop: &mpsc::Receiver<()>) {
     loop {
         // Serveur muet (arrêt en cours, surcharge) : on garde le dernier état connu.
         if let Some(status) = server::game_status(&agent, port) {
+            app.state::<Shell>().set_last_game_status(status);
             match edges.update(status) {
                 Edge::EnteredTrack => {
                     tracing::info!("le pilote entre en piste");

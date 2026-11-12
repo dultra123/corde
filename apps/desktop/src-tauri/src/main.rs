@@ -14,6 +14,7 @@
 //! | [`shell`] | état de la coquille, fenêtre principale, démarrage, arrêt, redémarrage |
 //! | [`tray`] | icône et menu de la zone de notification |
 //! | [`watcher`] + [`edges`] | veilleur 1 Hz sur `/api/status` |
+//! | [`updater`] + [`updates`] | mises à jour : vérification, téléchargement signé, installation |
 //! | [`commands`] | commandes IPC appelées par l'UI (contrat documenté dans le module) |
 //!
 //! Voir `apps/desktop/README.md`.
@@ -29,13 +30,14 @@ mod server;
 mod settings;
 mod shell;
 mod tray;
+mod updater;
+mod updates;
 mod watcher;
 
 use corde_server::SourceKind;
 use server::StartError;
 use shell::{Reveal, Shell};
 use tauri::{AppHandle, Manager, RunEvent, WindowEvent};
-use tauri_plugin_window_state::StateFlags;
 
 /// Variable d'environnement de développement : `sim` remplace le jeu par le simulateur.
 const SOURCE_ENV: &str = "CORDE_SOURCE";
@@ -59,13 +61,36 @@ fn main() {
     let data_dir = migration.dir.clone();
     let log_path = logging::init(&data_dir);
     let args: Vec<String> = std::env::args().collect();
-    let started_hidden = has_hidden_arg(&args);
+    // Lancement par l'installeur d'une mise à jour : il reprend les arguments de l'instance
+    // remplacée (donc `--hidden` si elle avait démarré avec Windows) ; la fenêtre doit
+    // pourtant revenir, puisque le pilote vient de cliquer sur « Installer et redémarrer ».
+    let pending_update = settings::take_pending_update(&data_dir);
+    let started_hidden = has_hidden_arg(&args) && pending_update.is_none();
     tracing::info!(
         "──── Corde {} — lancement (pid {}, caché : {started_hidden}) ────",
         env!("CARGO_PKG_VERSION"),
         std::process::id()
     );
     migration.log();
+    let updated_from = match pending_update {
+        Some(p) if updates::is_newer(env!("CARGO_PKG_VERSION"), &p.from) => {
+            tracing::info!(
+                "mises à jour : {} → {} installée",
+                p.from,
+                env!("CARGO_PKG_VERSION")
+            );
+            Some(p.from)
+        }
+        Some(p) => {
+            tracing::warn!(
+                "mises à jour : l'installation de {} n'a pas pris (toujours en {})",
+                p.to,
+                env!("CARGO_PKG_VERSION")
+            );
+            None
+        }
+        None => None,
+    };
     // Dossier de données resté sous l'ancien nom (ancienne application encore ouverte ?) :
     // son profil WebView n'est pas touché non plus ; tout sera repris au prochain démarrage.
     if !migration.uses_legacy() {
@@ -92,10 +117,17 @@ fn main() {
         // Taille, position et état agrandi mémorisés ; la visibilité est gérée ici.
         .plugin(
             tauri_plugin_window_state::Builder::new()
-                .with_state_flags(StateFlags::SIZE | StateFlags::POSITION | StateFlags::MAXIMIZED)
+                .with_state_flags(shell::window_state_flags())
                 .build(),
         )
         .plugin(tauri_plugin_notification::init())
+        // Mises à jour : configuration dans tauri.conf.json (plugins > updater).
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .manage(updater::Updates::new(
+            data_dir.clone(),
+            env!("CARGO_PKG_VERSION"),
+            updated_from,
+        ))
         .manage(Shell::new(data_dir, log_path, started_hidden))
         .invoke_handler(tauri::generate_handler![
             commands::get_autostart,
@@ -103,6 +135,12 @@ fn main() {
             commands::restart_app,
             commands::app_version,
             commands::boot_status,
+            commands::update_status,
+            commands::check_update,
+            commands::install_update,
+            commands::open_releases_page,
+            commands::get_update_auto_check,
+            commands::set_update_auto_check,
         ])
         .on_window_event(|window, event| {
             if window.label() != shell::MAIN_WINDOW {
@@ -176,6 +214,10 @@ fn setup(app: &AppHandle) {
             StartError::Runtime(format!("thread du serveur impossible à créer : {e}")),
         ),
     }
+
+    // Vérification automatique des mises à jour (30 s après le lancement, puis toutes les 6 h ;
+    // désactivable dans les réglages). Elle ne fait que signaler, n'installe jamais.
+    updater::spawn_scheduler(app);
 
     // Lancement normal : la fenêtre apparaît tout de suite sur « Démarrage de Corde… ».
     // Avec --hidden elle reste cachée — sauf s'il n'y a pas d'icône pour la rouvrir.

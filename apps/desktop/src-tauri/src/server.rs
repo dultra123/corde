@@ -339,6 +339,8 @@ pub struct GameStatus {
     pub connected: bool,
     /// Le pilote est en piste.
     pub in_realtime: bool,
+    /// Un enregistrement de session est en cours (refus d'installer une mise à jour).
+    pub recording: bool,
 }
 
 /// `GET /api/status` ; `None` si le serveur ne répond pas.
@@ -352,6 +354,7 @@ pub fn game_status(agent: &ureq::Agent, port: u16) -> Option<GameStatus> {
     Some(GameStatus {
         connected: flag("connected"),
         in_realtime: flag("in_realtime"),
+        recording: flag("recording"),
     })
 }
 

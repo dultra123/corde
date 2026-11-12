@@ -13,7 +13,7 @@
 //! est-elle visible ? » sont ainsi prises en série, sans verrou tenu pendant un appel à la
 //! fenêtre.
 
-use crate::server::{self, EmbeddedServer, StartError, Started};
+use crate::server::{self, EmbeddedServer, GameStatus, StartError, Started};
 use crate::settings;
 use crate::tray;
 use crate::watcher::{self, Watcher};
@@ -24,11 +24,18 @@ use std::sync::{Mutex, MutexGuard};
 use std::time::Instant;
 use tauri::{AppHandle, Manager, WebviewWindow};
 use tauri_plugin_notification::NotificationExt;
+use tauri_plugin_window_state::StateFlags;
 
 /// Label de la fenêtre principale (tauri.conf.json, capabilities/*.json).
 pub const MAIN_WINDOW: &str = "main";
 /// Argument passé par le démarrage automatique de Windows : démarrer sans fenêtre.
 pub const ARG_HIDDEN: &str = "--hidden";
+
+/// Ce que `tauri-plugin-window-state` mémorise de la fenêtre (main.rs, et avant une mise à
+/// jour : `updater`).
+pub fn window_state_flags() -> StateFlags {
+    StateFlags::SIZE | StateFlags::POSITION | StateFlags::MAXIMIZED
+}
 
 /// Où en est le démarrage du serveur embarqué.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -89,6 +96,8 @@ pub struct Shell {
     tray_hint_shown: AtomicBool,
     server: Mutex<Option<EmbeddedServer>>,
     watcher: Mutex<Option<Watcher>>,
+    /// Dernier état du jeu lu par le veilleur (jeu détecté, en piste, enregistrement).
+    last_status: Mutex<Option<GameStatus>>,
 }
 
 fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
@@ -114,6 +123,7 @@ impl Shell {
             tray_hint_shown: AtomicBool::new(tray_hint_shown),
             server: Mutex::new(None),
             watcher: Mutex::new(None),
+            last_status: Mutex::new(None),
         }
     }
 
@@ -129,6 +139,21 @@ impl Shell {
 
     pub fn set_server(&self, server: EmbeddedServer) {
         *lock(&self.server) = Some(server);
+    }
+
+    /// Corde est en train de s'arrêter (Quitter, redémarrage, installation d'une mise à jour).
+    pub fn is_quitting(&self) -> bool {
+        self.quitting.load(Ordering::Relaxed)
+    }
+
+    /// Dernier état du jeu lu par le veilleur (`None` tant que le serveur n'a pas répondu).
+    pub fn last_game_status(&self) -> Option<GameStatus> {
+        *lock(&self.last_status)
+    }
+
+    /// Appelé par le veilleur à chaque lecture de `/api/status`.
+    pub fn set_last_game_status(&self, status: GameStatus) {
+        *lock(&self.last_status) = Some(status);
     }
 }
 
@@ -149,7 +174,8 @@ pub fn ui_url(port: u16, route: Route) -> String {
     )
 }
 
-fn notify(app: &AppHandle, body: &str) {
+/// Notification Windows discrète, titre « Corde ».
+pub fn notify(app: &AppHandle, body: &str) {
     if let Err(e) = app
         .notification()
         .builder()
@@ -398,6 +424,16 @@ pub fn request_restart(app: &AppHandle) {
 pub fn shutdown(app: &AppHandle) {
     let shell = app.state::<Shell>();
     tracing::info!("arrêt de Corde…");
+    stop_services(&shell);
+    if shell.restart_requested.load(Ordering::Relaxed) {
+        relaunch(app);
+    }
+    tracing::info!("Corde arrêtée");
+}
+
+/// Arrête le veilleur puis le serveur embarqué (l'enregistrement en cours est clos). Sans
+/// effet la seconde fois.
+fn stop_services(shell: &Shell) {
     if let Some(watcher) = lock(&shell.watcher).take() {
         watcher.stop();
     }
@@ -410,10 +446,25 @@ pub fn shutdown(app: &AppHandle) {
             t0.elapsed().as_millis()
         );
     }
-    if shell.restart_requested.load(Ordering::Relaxed) {
-        relaunch(app);
-    }
+}
+
+/// Installation d'une mise à jour : l'installeur va être lancé et le plugin termine le
+/// processus par `std::process::exit` — **sans** `RunEvent::Exit`, donc sans [`shutdown`].
+/// On fait ici ce que [`shutdown`] aurait fait (veilleur, serveur, enregistrement). Appelé
+/// depuis le thread de l'installation.
+pub fn stop_for_update(app: &AppHandle) {
+    let shell = app.state::<Shell>();
+    shell.quitting.store(true, Ordering::Relaxed);
+    stop_services(&shell);
+}
+
+/// Après un échec de lancement de l'installeur, une fois [`stop_for_update`] passé : le
+/// serveur est arrêté et Tauri nettoyé, on relance Corde (sans `--hidden`) et on termine ce
+/// processus. Ne revient pas.
+pub fn relaunch_and_exit(app: &AppHandle) -> ! {
+    relaunch(app);
     tracing::info!("Corde arrêtée");
+    std::process::exit(0);
 }
 
 /// Relance l'exécutable sans argument. Le verrou d'instance unique est libéré d'abord,
