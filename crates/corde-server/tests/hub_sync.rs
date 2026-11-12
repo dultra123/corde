@@ -594,15 +594,25 @@ async fn a_pc_session_reaches_the_home_server_once_and_identical() {
     hub.stop().await;
     let r = sync(&pc.state, SyncOptions::default()).await;
     assert!(matches!(r, Err(SyncError::Unreachable(_))), "{r:?}");
-    assert_eq!(
-        pc.state.link.as_ref().unwrap().status().state,
-        LinkState::Unreachable
-    );
-    let (_, link) = http("GET", format!("{pc_base}/api/hub-link"), None, None).await;
-    assert!(
-        link["message"].as_str().unwrap().contains("injoignable"),
-        "{link}"
-    );
+    // The background task may already be retrying (« syncing » for the seconds a refused
+    // connection takes on Windows): wait for the state to settle, the message stays meanwhile.
+    let link = wait_for(
+        "the link to say unreachable",
+        Duration::from_secs(60),
+        async || {
+            let (_, link) = http("GET", format!("{pc_base}/api/hub-link"), None, None).await;
+            assert!(
+                link["message"]
+                    .as_str()
+                    .is_some_and(|m| m.contains("injoignable")),
+                "{link}"
+            );
+            (pc.state.link.as_ref().unwrap().status().state == LinkState::Unreachable)
+                .then_some(link)
+        },
+    )
+    .await;
+    assert!(link["message"].as_str().unwrap().contains("injoignable"));
 
     // Unpairing forgets the token (the server could not be told: it is off).
     let (code, v) = http("DELETE", format!("{pc_base}/api/hub-link"), None, None).await;

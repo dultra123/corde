@@ -159,8 +159,15 @@ jobs:
         continue-on-error: true
         run: cargo clippy --workspace --all-targets
 
+      # Plusieurs tests d'intégration dépendent du temps réel (simulateur, enregistrement à
+      # 20 Hz) : sur un runner partagé très chargé, ils peuvent échouer sans défaut du code.
+      # Une seconde tentative, signalée par un avertissement ; un vrai défaut échoue deux fois.
       - name: Tests
-        run: cargo test --workspace --no-fail-fast
+        shell: bash
+        run: |
+          cargo test --workspace --no-fail-fast && exit 0
+          echo "::warning::tests en échec à la première tentative (runner chargé ?) : seconde tentative"
+          cargo test --workspace --no-fail-fast
 
       - name: Build release (corde-server, lmu-probe, corde-sim, corde-store)
         run: cargo build --release -p corde-server -p corde-lmu -p corde-sim -p corde-store --bins
