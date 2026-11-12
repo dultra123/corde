@@ -1,0 +1,3 @@
+# Built by `pnpm --filter @corde/mobile build` (the interface in mobile mode), copied into the
+# Xcode project by `cap sync ios` (ios/App/App/public, ignored by ios/.gitignore).
+/www

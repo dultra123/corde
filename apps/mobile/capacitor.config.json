@@ -1,0 +1,30 @@
+{
+  "appId": "io.github.dultra123.corde",
+  "appName": "Corde",
+  "webDir": "www",
+  "backgroundColor": "#0b0e12",
+  "loggingBehavior": "debug",
+  "ios": {
+    "scheme": "App",
+    "backgroundColor": "#0b0e12",
+    "contentInset": "never",
+    "zoomEnabled": false,
+    "allowsLinkPreview": false,
+    "preferredContentMode": "mobile",
+    "handleApplicationNotifications": true,
+    "limitsNavigationsToAppBoundDomains": false
+  },
+  "plugins": {
+    "SystemBars": {
+      "style": "DARK",
+      "hidden": false
+    },
+    "LocalNotifications": {
+      "presentationOptions": ["list", "sound"]
+    },
+    "Keyboard": {
+      "resize": "native",
+      "style": "DARK"
+    }
+  }
+}

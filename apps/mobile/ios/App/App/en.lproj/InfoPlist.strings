@@ -1,0 +1,4 @@
+/* Texts of the permissions iOS asks for (English). */
+"CFBundleDisplayName" = "Corde";
+"NSCameraUsageDescription" = "Corde uses the camera only to read the QR code shown by Corde on your PC, to add it as a server.";
+"NSLocalNetworkUsageDescription" = "Corde connects to Corde on your gaming PC or to your Corde home server, on your home network, to show the live view and your sessions.";

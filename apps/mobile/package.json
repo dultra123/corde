@@ -1,0 +1,26 @@
+{
+  "name": "@corde/mobile",
+  "version": "0.8.0",
+  "license": "GPL-3.0-or-later",
+  "private": true,
+  "type": "module",
+  "description": "Corde pour iPhone — l'interface de @corde/ui dans une application native (Capacitor, iOS).",
+  "scripts": {
+    "build": "pnpm --filter @corde/ui run build:mobile && node scripts/finish-web.mjs",
+    "sync": "cap sync ios",
+    "assets": "node scripts/make-assets.mjs"
+  },
+  "dependencies": {
+    "@capacitor/app": "8.1.2",
+    "@capacitor/barcode-scanner": "3.1.3",
+    "@capacitor/core": "8.6.0",
+    "@capacitor/ios": "8.6.0",
+    "@capacitor/keyboard": "8.0.6",
+    "@capacitor/local-notifications": "8.3.1",
+    "@capacitor/preferences": "8.0.1",
+    "@capacitor/screen-orientation": "8.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.6.0"
+  }
+}
