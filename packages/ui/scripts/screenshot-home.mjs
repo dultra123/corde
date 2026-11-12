@@ -11,13 +11,24 @@
  *
  *   node scripts/screenshot-home.mjs        (≈ 1 min: the simulator must complete a few laps)
  *
- * Writes screenshots/home.png (1920×1080, server A), home-mobile.png (390 wide, whole page,
- * server A) and home-empty.png (1920×1080, server B). Two answers of server A are adjusted for
+ * Writes screenshots/home.png (1920×1080, server A; copied to ../../docs/images/accueil.png),
+ * home-mobile.png (390 wide, whole page, server A), home-empty.png (1920×1080, server B) and
+ * one picture of the carousel per slide (home-live-<n>.png, home-mobile-live-<n>.png). Two answers of server A are adjusted for
  * the pictures, because this machine cannot produce them:
  *   - `GET /api/network` says the LAN is open at http://192.168.1.20:8471 (the sandbox has no
  *     home network), so the phone card shows its address and QR code;
  *   - in `GET /api/results?limit=5`, the sample race is given the start time of the simulator
  *     session, so the "last session" card shows a classification like after a real race.
+ *
+ * The online schedule is simulated as in screenshot-races.mjs (sample pages of
+ * `scripts/race-pages.mjs`, start times computed from the time of the capture, pictures served
+ * by the script — one of them deliberately unreadable), and one start is picked on server A, so
+ * the « Courses en ligne » carousel under the last session has slides; server B keeps the
+ * schedule off. Checks: the carousel is there, right under the last session (both widths), with
+ * 2 to 8 slides, the pick first; it turns to the next slide by itself, holds still under the
+ * pointer, follows the arrow keys; pictures are `https://`, lazy, without referrer, and a picture
+ * that fails leaves the drawn stand-in (no broken image); moving to the Courses page does not ask
+ * the server for the schedule again; with the schedule off it says so and the server reads nothing.
  *
  * Also checks, and fails on: any browser console error; an app opened without a page while the
  * driver is on track must jump to the dashboard, and stay on the home page otherwise; a page
@@ -35,11 +46,12 @@
  *   SCREENSHOT_TIMEOUT_MS=120000  how long to wait for them
  */
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { lmuToolsPage, raceControlPage } from "./race-pages.mjs";
 
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
@@ -48,6 +60,8 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repo = join(root, "..", "..");
 const dist = join(root, "dist");
 const outDir = join(root, "screenshots");
+const docImage = join(repo, "docs", "images", "accueil.png");
+const TZ = "Europe/Zurich";
 const MIN_LAPS = Number(process.env.SCREENSHOT_MIN_LAPS ?? 5);
 const TIMEOUT_MS = Number(process.env.SCREENSHOT_TIMEOUT_MS ?? 120_000);
 const bin = join(
@@ -68,6 +82,31 @@ if (!existsSync(bin)) {
 mkdirSync(outDir, { recursive: true });
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const MIN = 60e3;
+const ceilTo = (ms, step) => Math.ceil(ms / step) * step;
+
+/**
+ * A stand-in for a race picture (no real photo here): a dark track-like scene, drawn as SVG and
+ * served at the `https://img.example/…` addresses of the sample page.
+ */
+function pictureSvg(hue) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="hsl(${hue} 45% 34%)"/><stop offset="0.55" stop-color="hsl(${hue} 30% 16%)"/>
+        <stop offset="1" stop-color="#0b0e12"/>
+      </linearGradient>
+      <radialGradient id="sun" cx="0.78" cy="0.3" r="0.5">
+        <stop offset="0" stop-color="hsl(${hue + 30} 90% 70% / 0.55)"/><stop offset="1" stop-color="transparent"/>
+      </radialGradient>
+    </defs>
+    <rect width="1200" height="600" fill="url(#sky)"/><rect width="1200" height="600" fill="url(#sun)"/>
+    <path d="M0 420 C 260 360 520 380 760 330 S 1100 280 1200 300 L1200 600 L0 600Z" fill="#14181e"/>
+    <path d="M-40 560 C 300 470 600 470 900 420 S 1180 380 1260 372" stroke="#2a3038" stroke-width="70" fill="none"/>
+    <path d="M-40 560 C 300 470 600 470 900 420 S 1180 380 1260 372" stroke="#e9edf2" stroke-opacity="0.5" stroke-width="3" stroke-dasharray="28 22" fill="none"/>
+    <path d="M0 600 L0 520 L60 510 L120 600Z" fill="#d23a33"/><path d="M60 510 L120 600 L180 600 L110 502Z" fill="#f2f2f2"/>
+  </svg>`;
+}
 
 /** Starts one server on a free-ish port; no `--bind`: the default must be this PC only. */
 function startServer(name, args) {
@@ -179,6 +218,7 @@ try {
       isMobile: mobile,
       hasTouch: mobile,
       locale: "fr-FR",
+      timezoneId: TZ,
     });
     const page = await context.newPage();
     const errors = [];
@@ -198,8 +238,69 @@ try {
     };
   }
 
-  /** The two adjusted answers (see the header). */
+  // one start picked on server A: the next LMP3 Fixed of the sample page (« Mes courses »)
+  {
+    const start = ceilTo(Date.now() + 9 * MIN, 5 * MIN);
+    const pick = {
+      id: `lmp3-fixed-beginner@${start}`,
+      race_id: "lmp3-fixed-beginner",
+      cat: "daily",
+      src: "rc",
+      name: "LMP3 Fixed",
+      level: "beginner",
+      track: "Monza",
+      duration: "32 min",
+      image: null,
+      start_ms: start,
+    };
+    await sim.api(`/api/races/picks/${encodeURIComponent(pick.id)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(pick),
+    });
+  }
+
+  /** `GET /api/races/sources` answered with the sample pages; pictures served here. */
+  let sourcesServed = 0;
+  const scheduleData = async (page) => {
+    await page.route("**/api/races/sources**", (route) => {
+      sourcesServed += 1;
+      const now = Date.now();
+      const one = (id, u, html) => ({
+        id,
+        url: u,
+        state: "ok",
+        fetched_at_ms: now,
+        attempted_at_ms: now,
+        error: null,
+        html,
+      });
+      return route.fulfill({
+        json: {
+          enabled: true,
+          sources: [
+            one("racecontrol", "https://racecontrol.gg/", raceControlPage(now, { images: true })),
+            one("lmutools", "https://lmu.tools/schedule", lmuToolsPage(now)),
+          ],
+        },
+      });
+    });
+    await page.route("https://img.example/**", (route) => {
+      const url = route.request().url();
+      const headers = route.request().headers();
+      if (headers.referer) check(false, `a picture was asked with a referrer: ${url}`);
+      if (url.includes("missing-picture")) {
+        // answers, but not with a picture: the page must fall back to its drawn stand-in
+        return route.fulfill({ status: 200, contentType: "image/webp", body: "not a picture" });
+      }
+      const hue = url.includes("lmp3") ? 205 : 25;
+      return route.fulfill({ contentType: "image/svg+xml", body: pictureSvg(hue) });
+    });
+  };
+
+  /** The two adjusted answers (see the header), and the schedule. */
   const pictureData = async (page) => {
+    await scheduleData(page);
     await page.route("**/api/network", (route) =>
       route.fulfill({
         json: {
@@ -222,6 +323,107 @@ try {
     });
   };
 
+  /** The « Courses en ligne » carousel of server A (see the header). */
+  async function checkCarousel(page, name, mobile) {
+    const live = page.locator(".home-live");
+    const slides = await live.locator(".live-slide").count();
+    check(slides >= 2 && slides <= 8, `${name}: carousel with ${slides} slides (2 to 8)`);
+    const box = async (sel) => page.locator(sel).first().boundingBox();
+    const last = await box(".home-last");
+    const card = await box(".home-live");
+    const races = await box(".home-races-card");
+    check(
+      !!last &&
+        !!card &&
+        Math.abs(card.x - last.x) < 2 &&
+        card.y > last.y + last.height &&
+        card.y - (last.y + last.height) < 30 &&
+        (!mobile || (!!races && races.y > card.y)),
+      `${name}: the carousel sits right under the last session`,
+    );
+    const label = () => live.locator(".live-slide.is-current").getAttribute("aria-label");
+    const first = (await live.locator(".live-slide.is-current").textContent()) ?? "";
+    check(
+      /Choisie/.test(first) && /LMP3 Fixed/.test(first) && /dans \d+ (min|s)/.test(first),
+      `${name}: the driver's pick comes first, with its countdown (${first.replace(/\s+/g, " ").slice(0, 90)}…)`,
+    );
+    check(
+      (await live.getAttribute("aria-roledescription")) === "carrousel" &&
+        (await label()) === `1 sur ${slides}`,
+      `${name}: carousel roles and labels (« 1 sur ${slides} »)`,
+    );
+    const imgs = await live.locator(".live-art img").evaluateAll((els) =>
+      els.map((e) => ({
+        src: e.getAttribute("src"),
+        loading: e.getAttribute("loading"),
+        referrer: e.getAttribute("referrerpolicy"),
+      })),
+    );
+    check(
+      imgs.length > 0 &&
+        imgs.every(
+          (i) =>
+            i.src?.startsWith("https://") && i.loading === "lazy" && i.referrer === "no-referrer",
+        ),
+      `${name}: ${imgs.length} pictures, https, lazy, no referrer`,
+    );
+    // every slide must have been seen for its picture to load: walk through them (one picture
+    // of the card per slide: screenshots/<name>-live-<n>.png)
+    for (let i = 0; i < slides; i++) {
+      await live.locator(".live-dot").nth(i).click();
+      await page.waitForTimeout(500);
+      await live.screenshot({ path: join(outDir, `${name}-live-${i + 1}.png`) });
+    }
+    await page.waitForTimeout(800);
+    const broken = await live
+      .locator(".live-art img")
+      .evaluateAll((els) => els.filter((e) => e.complete && e.naturalWidth === 0).length);
+    const proto = live.locator(".live-slide", { hasText: "Prototype Fixed" });
+    check(
+      broken === 0 &&
+        (await proto.locator("img").count()) === 0 &&
+        (await proto.locator(".live-art-mark").count()) === 1,
+      `${name}: a picture that fails leaves the drawn stand-in (broken: ${broken})`,
+    );
+    if (mobile) return;
+    // turns by itself every 8 s…
+    await live.locator(".live-dot").nth(0).click();
+    await page.mouse.move(0, 0);
+    await page.locator("body").evaluate((b) => b.focus());
+    await page.evaluate(() => document.activeElement?.blur?.());
+    const t0 = Date.now();
+    await page.waitForFunction(
+      () =>
+        document.querySelector(".home-live .live-slide.is-current")?.getAttribute("aria-label") ===
+        `2 sur ${document.querySelectorAll(".home-live .live-slide").length}`,
+      null,
+      { timeout: 12_000 },
+    );
+    const waited = ((Date.now() - t0) / 1000).toFixed(1);
+    check(true, `${name}: turns to the next slide by itself (after ${waited} s)`);
+    // …but not under the pointer
+    await page.hover(".home-live .live-viewport");
+    const held = await label();
+    await page.waitForTimeout(9_500);
+    check((await label()) === held, `${name}: holds still under the pointer (${held})`);
+    await page.mouse.move(0, 0);
+    // arrow keys
+    await live.locator(".live-dot").nth(0).click();
+    await page.keyboard.press("ArrowRight");
+    check((await label()) === `2 sur ${slides}`, `${name}: → shows the next slide`);
+    await page.keyboard.press("ArrowLeft");
+    await page.keyboard.press("ArrowLeft");
+    check((await label()) === `${slides} sur ${slides}`, `${name}: ← wraps to the last slide`);
+    // the Courses page uses the same copy of the schedule
+    const before = sourcesServed;
+    await page.click('.navtab[href="#/races"]');
+    await page.waitForSelector(".race-card", { timeout: 15_000 });
+    check(
+      sourcesServed === before,
+      `${name}: the Courses page does not ask for the schedule again`,
+    );
+  }
+
   async function settle(page) {
     await page.evaluate(() => document.fonts.ready);
     await page.waitForFunction(() => !document.querySelector(".spinner"), null, {
@@ -240,21 +442,52 @@ try {
     await page.waitForSelector(".home-phone .qr", { timeout: 30_000 });
     await page.waitForSelector(".home-result", { timeout: 30_000 });
     await page.waitForSelector(".home-rec.is-live", { timeout: 30_000 });
+    await page.waitForSelector(".home-live .live-slide.is-current", { timeout: 30_000 });
     await settle(page);
+    // the carousel rests on its first slide (the pick) for the picture
+    await page.hover(".home-live .live-viewport");
+    await page.click(".home-live .live-dot >> nth=0");
+    await page.mouse.move(0, 0);
+    await page.waitForTimeout(600);
     const file = join(outDir, `${name}.png`);
     await page.screenshot({ path: file, fullPage: mobile });
     console.log(`${name}: ${file}`);
+    if (!mobile) copyFileSync(file, docImage);
     check(new URL(page.url()).hash === "#/home", `${name}: a page opened on #/home stays there`);
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
     check(overflow <= 0, `${name}: no horizontal overflow (${overflow}px)`);
+    await checkCarousel(page, name, mobile);
     await close(name);
   }
 
   // ---- screenshot: server B (first launch)
   {
-    const { page, close } = await open(`${empty.base}/#/home`);
+    let asked = 0;
+    const { page, close } = await open(`${empty.base}/#/home`, {
+      prepare: (p) =>
+        p.route("**/api/races/sources**", (route) => {
+          asked += 1;
+          return route.continue();
+        }),
+    });
+    await page.waitForSelector(".home-live", { timeout: 30_000 });
+    await page.waitForFunction(
+      () => /désactivé/.test(document.querySelector(".home-live")?.textContent ?? ""),
+      null,
+      { timeout: 15_000 },
+    );
+    check(
+      (await page.getAttribute(".home-live .home-card-empty a", "href")) === "#/races" &&
+        /Activer dans Courses/.test((await page.textContent(".home-live")) ?? ""),
+      "schedule off: the carousel says so, with a link to the Courses page",
+    );
+    const off = await empty.api("/api/races/sources");
+    check(
+      asked <= 1 && off.sources.every((s) => s.state === "disabled" && s.html === null),
+      `schedule off: the server reads no website (${asked} request from the page)`,
+    );
     await page.waitForSelector(".home-status.is-waiting", { timeout: 30_000 });
     await page.waitForSelector(".home-steps", { timeout: 30_000 });
     await page.waitForSelector(".home-phone-enable", { timeout: 30_000 });
