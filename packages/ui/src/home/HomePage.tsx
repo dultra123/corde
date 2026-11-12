@@ -11,9 +11,6 @@ import { fetchProfile, fetchResults, type Profile, type ResultRow } from "../net
 import { ApiError, fetchSession, fetchSessions, fetchStorage } from "../net/sessions-api";
 import { fetchNetwork, saveSettings } from "../net/system-api";
 import { classLabel } from "../profile/lib";
-import { hm, relLabel } from "../races/format";
-import { useNow, usePicks } from "../races/hooks";
-import { nextRace } from "../races/model";
 import { LapTimesChart } from "../sessions/LapTimesChart";
 import { lapStats, sessionDurationS } from "../sessions/lib/stats";
 import {
@@ -42,6 +39,7 @@ import {
   phoneState,
 } from "./lib";
 import { Qr } from "./Qr";
+import { RaceCarousel } from "./RaceCarousel";
 
 /** Bumps once a minute while the page is visible: results are imported in the background. */
 function useMinuteTick(): number {
@@ -845,30 +843,7 @@ function ObsCard() {
   );
 }
 
-/* ------------------------------------------------------------------ next race */
-
-/** « Prochaine course : LMP3 Fixed, Monza, 21:30 — dans 12 min » when a pick starts within 3 h. */
-function NextRaceLine() {
-  const { t, lang } = useT();
-  const { picks } = usePicks();
-  const now = useNow(15_000);
-  const next = picks ? nextRace(picks, now) : null;
-  if (!next) return null;
-  const soon = next.start_ms - now <= 5 * 60_000;
-  return (
-    <a className={`home-nextrace${soon ? " is-soon" : ""}`} href={routeHash({ page: "races" })}>
-      <span className="home-nextrace-label">{t("home.nextRace")}</span>
-      <span className="home-nextrace-what">
-        <b>{next.name}</b>
-        <span className="dim">
-          {" "}
-          · {next.track} · {hm(next.start_ms)}
-        </span>
-      </span>
-      <span className="home-nextrace-when num">{relLabel(next.start_ms, now, lang)}</span>
-    </a>
-  );
-}
+/* ------------------------------------------------------------------ update */
 
 /** Desktop application, a newer version is known: one line that opens the settings. */
 function UpdateLine({ onSettings }: { onSettings: () => void }) {
@@ -935,7 +910,7 @@ function HomeFoot({ online, onGuide }: { online: boolean; onGuide: () => void })
 
 /**
  * The home page (`#/home`, shown when the app opens): where things stand, the last recorded
- * session, the last races, and how to get the dashboard on a phone.
+ * session, the online races to come, the last races, and how to get the dashboard on a phone.
  */
 export function HomePage({ onSettings }: { onSettings: () => void }) {
   const { t } = useT();
@@ -949,10 +924,12 @@ export function HomePage({ onSettings }: { onSettings: () => void }) {
       <h1 className="sr-only">{t("home.title")}</h1>
       <StatusCard onSettings={onSettings} />
       <UpdateLine onSettings={onSettings} />
-      {online && <NextRaceLine />}
       {online && (
         <div className="home-grid">
-          <LastSessionCard minute={minute} />
+          <div className="home-col">
+            <LastSessionCard minute={minute} />
+            <RaceCarousel />
+          </div>
           <RacesCard minute={minute} />
           <PhoneCard />
           <ObsCard />

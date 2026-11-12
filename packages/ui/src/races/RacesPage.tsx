@@ -5,17 +5,12 @@ import { useT } from "../i18n";
 import { isDesktop, isLocalPage } from "../lib/desktop";
 import { fetchHubLink, type HubLinkStatus } from "../net/hub-api";
 import {
-  deletePick,
-  fetchRaceSettings,
-  fetchRaceSources,
   type RacePick,
   type RaceSettings,
   type RaceSettingsPatch,
-  type RaceSources,
   type Ratings,
   type ReqKey,
   reportUnreadable,
-  savePick,
   saveRaceSettings,
 } from "../net/races-api";
 import { ApiError } from "../net/sessions-api";
@@ -26,7 +21,18 @@ import { useRaces } from "../store/races";
 import { useSettings } from "../store/settings";
 import { useTelemetry } from "../store/telemetry";
 import { chipDay, dateRange, dayLabel, hm, relLabel } from "./format";
-import { useNow, usePicks } from "./hooks";
+import {
+  isFull,
+  loadRaceSettings,
+  loadSources,
+  removePick,
+  setRaceSettings,
+  togglePick,
+  useNow,
+  usePicks,
+  useRaceSettings,
+  useRaceSources,
+} from "./hooks";
 import {
   buildSchedule,
   CAT_ORDER,
@@ -34,7 +40,6 @@ import {
   LEAD_CHOICES,
   LEVELS,
   missing,
-  pickOf,
   RATINGS,
   REQ_KEYS,
   reqKey,
@@ -45,9 +50,9 @@ import {
   utcLabel,
 } from "./model";
 import { type Cat, type Level, nextOf, type Race, viewRaces } from "./parse";
+import { KindBadge, ReqBadges } from "./parts";
 import { playChime, unlockAudio } from "./sound";
 
-const SOURCES_EVERY_MS = 5 * 60_000;
 const MAX_CHIPS = 8;
 const SITE: Record<string, string> = {
   racecontrol: "racecontrol.gg",
@@ -94,57 +99,6 @@ function HubRacesLink() {
 }
 
 /* ------------------------------------------------------------------ small pieces */
-
-function RatingBadge({
-  kind,
-  value,
-  locked,
-}: {
-  kind: "SR" | "DR";
-  value: string;
-  locked: boolean;
-}) {
-  const { t } = useT();
-  return (
-    <span
-      className={`race-req is-${value.charAt(0).toLowerCase()}${locked ? " is-locked" : ""}`}
-      title={locked ? t("races.req.locked") : undefined}
-    >
-      <i>{kind}</i>
-      <b className="race-req-v">{value}</b>
-    </span>
-  );
-}
-
-function ReqBadges({ req, profile }: { req: Ratings | undefined; profile: Ratings }) {
-  if (!req) return null;
-  return (
-    <>
-      {req.sr && (
-        <RatingBadge
-          kind="SR"
-          value={req.sr}
-          locked={missing({ sr: req.sr, dr: "" }, profile).length > 0}
-        />
-      )}
-      {req.dr && (
-        <RatingBadge
-          kind="DR"
-          value={req.dr}
-          locked={missing({ sr: "", dr: req.dr }, profile).length > 0}
-        />
-      )}
-    </>
-  );
-}
-
-function KindBadge({ cat, level }: { cat: Cat; level: Level | null }) {
-  const { t } = useT();
-  if (cat === "daily" && level) {
-    return <span className={`race-kind lvl-${level}`}>{t(`races.level.${level}`)}</span>;
-  }
-  return <span className={`race-kind cat-${cat}`}>{t(`races.cat.${cat}.one`)}</span>;
-}
 
 /** The race's picture from the page, or a drawn stand-in when there is none (or it fails). */
 function RaceArt({ race }: { race: Race }) {
@@ -817,45 +771,24 @@ export function RacesPage() {
   const { t } = useT();
   const online = useTelemetry((s) => s.socket === "open");
   const now = useNow(20_000);
-  const [enabled, setEnabled] = useState<boolean | null>(null);
-  const [data, setData] = useState<RaceSources | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [settings, setSettings] = useState<RaceSettings | null>(null);
+  // The schedule pages and the race settings are shared with the home page (one copy).
+  const { data, error: sourcesError, loading } = useRaceSources();
+  const { settings, error: settingsError } = useRaceSettings();
+  const error = sourcesError ?? settingsError;
+  const [setting, setSetting] = useState<boolean | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const { picks } = usePicks();
   const reported = useRef(new Set<string>());
 
-  const load = async (force: boolean) => {
-    setLoading(true);
-    try {
-      const d = await fetchRaceSources(force);
-      setData(d);
-      setEnabled(d.enabled);
-      setError(null);
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: load once online, then on a timer
+  // The setting answers faster than the sites: the « off » card shows without waiting.
   useEffect(() => {
     if (!online) return;
     void fetchSettings()
-      .then((s) => setEnabled(s.online_schedule === true))
+      .then((s) => setSetting(s.online_schedule === true))
       .catch(() => {});
-    void fetchRaceSettings()
-      .then(setSettings)
-      .catch((e: unknown) => setError(errorMessage(e)));
-    void load(false);
-    const id = setInterval(() => {
-      if (document.visibilityState !== "hidden") void load(false);
-    }, SOURCES_EVERY_MS);
-    return () => clearInterval(id);
   }, [online]);
+  const enabled = data ? data.enabled : setting;
 
   const view = useMemo(() => (data ? buildSchedule(data) : null), [data]);
 
@@ -879,48 +812,39 @@ export function RacesPage() {
 
   const saveSettingsPatch = (patch: RaceSettingsPatch) => {
     // Optimistic: the page follows at once, the server answer replaces it.
-    setSettings((s) => (s ? mergeSettings(s, patch) : s));
+    setRaceSettings((s) => mergeSettings(s, patch));
     saveRaceSettings(patch)
       .then((s) => {
-        setSettings(s);
+        setRaceSettings(s);
         if (patch.hour_fix !== undefined) useRaces.getState().bumpPicks();
       })
       .catch((e: unknown) => {
         setActionError(errorMessage(e));
-        void fetchRaceSettings().then(setSettings);
+        void loadRaceSettings().catch(() => {});
       });
   };
 
   const toggle = async (race: Race, start: number) => {
-    const pick = pickOf(race, start);
-    const current = useRaces.getState().picks ?? [];
-    const on = current.some((p) => p.id === pick.id);
-    setBusy(pick.id);
+    const id = `${race.id}@${race.cat === "special" ? race.remindAt : start}`;
+    setBusy(id);
     setActionError(null);
-    useRaces.getState().setPicks(on ? current.filter((p) => p.id !== pick.id) : [...current, pick]);
     try {
-      if (on) await deletePick(pick.id);
-      else await savePick(pick);
+      await togglePick(race, start);
     } catch (e) {
-      setActionError(
-        e instanceof ApiError && e.status === 409 ? t("races.error.full") : errorMessage(e),
-      );
+      setActionError(isFull(e) ? t("races.error.full") : errorMessage(e));
     } finally {
       setBusy(null);
-      useRaces.getState().bumpPicks();
     }
   };
 
   const remove = async (p: RacePick) => {
     setBusy(p.id);
-    useRaces.getState().setPicks((useRaces.getState().picks ?? []).filter((x) => x.id !== p.id));
     try {
-      await deletePick(p.id);
+      await removePick(p);
     } catch (e) {
-      if (!(e instanceof ApiError && e.status === 404)) setActionError(errorMessage(e));
+      setActionError(errorMessage(e));
     } finally {
       setBusy(null);
-      useRaces.getState().bumpPicks();
     }
   };
 
@@ -929,8 +853,8 @@ export function RacesPage() {
     setActionError(null);
     try {
       await saveSettings({ online_schedule: on });
-      setEnabled(on);
-      await load(false);
+      setSetting(on);
+      await loadSources(false);
     } catch (e) {
       setActionError(e instanceof ApiError && e.status === 403 ? t(remoteKey()) : errorMessage(e));
     } finally {
@@ -1052,7 +976,7 @@ export function RacesPage() {
               <button
                 type="button"
                 className="btn is-cta"
-                onClick={() => void load(true)}
+                onClick={() => void loadSources(true)}
                 disabled={loading}
                 title={t("races.refreshHint")}
               >

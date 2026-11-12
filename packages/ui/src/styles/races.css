@@ -780,50 +780,6 @@ fieldset.races-seg {
   height: 15px;
 }
 
-/* ---- home: next race --------------------------------------------------------------- */
-.home-nextrace {
-  display: flex;
-  align-items: center;
-  gap: 8px 14px;
-  padding: 10px 16px;
-  border-radius: var(--radius);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--accent);
-  background: var(--panel);
-  color: var(--text);
-  text-decoration: none;
-  font-size: 14px;
-}
-.home-nextrace:hover {
-  border-color: var(--line-strong);
-}
-.home-nextrace.is-soon {
-  border-left-color: var(--hot);
-}
-.home-nextrace-label {
-  flex: none;
-  font-size: 11px;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-}
-.home-nextrace-what {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.home-nextrace-when {
-  flex: none;
-  font-size: 17px;
-  font-weight: 600;
-  color: var(--accent);
-}
-.home-nextrace.is-soon .home-nextrace-when {
-  color: var(--hot);
-}
-
 /* ---- narrow screens ------------------------------------------------------------------ */
 @media (max-width: 1100px) {
   .races-layout {
@@ -856,16 +812,5 @@ fieldset.races-seg {
   }
   .race-banner-view {
     margin-left: 22px;
-  }
-  .home-nextrace {
-    flex-wrap: wrap;
-  }
-  .home-nextrace-what {
-    order: 3;
-    flex-basis: 100%;
-    white-space: normal;
-  }
-  .home-nextrace-when {
-    margin-left: auto;
   }
 }

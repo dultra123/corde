@@ -261,7 +261,7 @@ button.link:disabled {
   background: var(--slower);
 }
 
-/* ---- the cards: last session on the left, races / phone / OBS on the right ---------- */
+/* ---- the cards: last session and online races on the left, races / phone / OBS on the right */
 .home-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
@@ -269,8 +269,12 @@ button.link:disabled {
   gap: 14px;
   align-items: start;
 }
-.home-last {
+.home-col {
   grid-row: span 3;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
 }
 .card.home-card {
   padding: 16px 20px 18px;
@@ -649,6 +653,284 @@ button.link:disabled {
   margin-left: auto;
 }
 
+/* ---- online races: one race per slide (races/slides.ts) ------------------------------ */
+.home-live .home-card-head {
+  margin-bottom: 12px;
+}
+.live-viewport {
+  display: grid;
+  border-radius: 4px;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+.live-slide {
+  --live-ease: 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  grid-area: 1 / 1;
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 232px;
+  overflow: hidden;
+  border-radius: 4px;
+  border-bottom: 2px solid var(--cat);
+  background: var(--panel-raised);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(16px);
+  transition:
+    opacity var(--live-ease),
+    transform var(--live-ease),
+    visibility 0s linear 420ms;
+}
+.live-slide.is-current {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition:
+    opacity var(--live-ease),
+    transform var(--live-ease),
+    visibility 0s;
+}
+.home-live.is-still .live-slide {
+  transition: none;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-slide,
+  .live-slide.is-current {
+    transition: none;
+    transform: none;
+  }
+}
+/* the picture, or the stand-in: livery stripes in the colour of the category */
+.live-art {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      112deg,
+      transparent 0 50%,
+      color-mix(in srgb, var(--cat) 80%, transparent) 50% 57%,
+      transparent 57% 60%,
+      rgba(255, 255, 255, 0.3) 60% 61.2%,
+      transparent 61.2%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--cat) 34%, var(--panel-raised)) 0%,
+      var(--panel) 100%
+    );
+}
+.live-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.live-art-mark {
+  position: absolute;
+  left: 14px;
+  top: 10px;
+  font-family: var(--font-num);
+  font-size: 92px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.07);
+}
+/* the veil: the text stays readable on any picture */
+.live-veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(11, 14, 18, 0.55) 0%,
+    rgba(11, 14, 18, 0) 30%,
+    rgba(11, 14, 18, 0.4) 52%,
+    rgba(11, 14, 18, 0.94) 100%
+  );
+}
+.live-body {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px 14px;
+}
+.live-badges,
+.live-act {
+  position: relative;
+  z-index: 1;
+}
+.live-mine {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.live-name {
+  margin: auto 0 0;
+  padding-top: 18px;
+  font-family: var(--font-num);
+  font-size: 27px;
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.005em;
+  color: #fff;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+/* the whole slide opens the Courses page; the button stays above the link */
+.live-link {
+  color: inherit;
+  text-decoration: none;
+}
+.live-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+}
+.live-link:focus-visible {
+  outline: none;
+}
+.live-link:focus-visible::after {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.live-slide:hover .live-name {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.home-page .live-meta {
+  margin-top: 4px;
+  font-size: 13.5px;
+  color: rgba(233, 237, 242, 0.82);
+  overflow-wrap: anywhere;
+}
+.live-foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: 12px;
+}
+.live-when {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.live-start {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(233, 237, 242, 0.75);
+}
+.live-count {
+  font-size: 25px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--accent);
+}
+.live-count.is-soon {
+  color: var(--hot);
+}
+.live-act {
+  height: 34px;
+  padding: 0 14px;
+}
+.live-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.live-arrow {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: var(--panel-raised);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.live-arrow:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.live-arrow svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.live-dots {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+.live-dot {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.live-dot::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 4px;
+  transform: translate(-50%, -50%);
+  background: var(--line-strong);
+  transition: width 200ms;
+}
+.live-dot:hover::before {
+  background: var(--text-faint);
+}
+.live-dot.is-on::before {
+  width: 18px;
+  background: var(--cat);
+}
+.live-pos {
+  flex: none;
+  min-width: 34px;
+  font-size: 12px;
+  text-align: right;
+}
+.home-page .live-note,
+.home-page .live-error {
+  margin-top: 8px;
+  font-size: 12.5px;
+}
+
 /* ---- quick-start guide -------------------------------------------------------- */
 dialog.sheet.guide {
   width: min(540px, calc(100vw - 24px));
@@ -831,7 +1113,7 @@ dialog.sheet.guide {
   .home-grid {
     grid-template-columns: 1fr;
   }
-  .home-last {
+  .home-col {
     grid-row: auto;
   }
 }
@@ -924,6 +1206,18 @@ dialog.sheet.guide {
   .home-foot-guide {
     margin-left: 0;
   }
+  .live-slide {
+    min-height: 224px;
+  }
+  .live-body {
+    padding: 10px 12px 12px;
+  }
+  .live-name {
+    font-size: 23px;
+  }
+  .live-art-mark {
+    font-size: 72px;
+  }
 }
 @media (max-width: 420px) {
   .home-phone-on {
@@ -942,5 +1236,8 @@ dialog.sheet.guide {
   .home-race-link {
     grid-template-columns: 54px minmax(0, 1fr) auto;
     gap: 10px;
+  }
+  .live-pos {
+    display: none;
   }
 }
