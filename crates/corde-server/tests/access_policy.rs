@@ -330,7 +330,7 @@ async fn the_interface_is_revalidated_and_only_hashed_bundles_are_cached() {
     for path in [
         "/",
         "/index.html",
-        "/?v=0.5.1",
+        "/?v=0.6.0",
         "/favicon.svg",
         "/sessions/anything",
     ] {
