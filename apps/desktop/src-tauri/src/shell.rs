@@ -137,8 +137,16 @@ pub fn main_window(app: &AppHandle) -> Option<WebviewWindow> {
 }
 
 /// Adresse de l'UI dans la fenêtre : toujours la boucle locale, quel que soit `lan_access`.
+///
+/// Le paramètre `v` (version de l'application) change l'adresse du document à chaque mise à
+/// jour : la webview ne peut pas resservir l'`index.html` d'une version précédente depuis son
+/// cache (vu en 0.5.0 : nouvelle version installée, ancienne interface affichée). L'interface
+/// ignore ce paramètre.
 pub fn ui_url(port: u16, route: Route) -> String {
-    server::local_url(port, &format!("/{}", route.hash()))
+    server::local_url(
+        port,
+        &format!("/?v={}{}", env!("CARGO_PKG_VERSION"), route.hash()),
+    )
 }
 
 fn notify(app: &AppHandle, body: &str) {

@@ -231,7 +231,8 @@ pub fn router(state: Arc<AppState>, ui_dir: Option<PathBuf>) -> Router {
     // request before CORS answers a preflight. See `guard` and
     // docs/SECURITY-MODEL.md.
     let policy = Arc::new(crate::guard::HostPolicy::for_listener(state.listen));
-    app.layer(DefaultBodyLimit::max(crate::guard::MAX_BODY_BYTES))
+    app.layer(axum::middleware::from_fn(static_cache_policy))
+        .layer(DefaultBodyLimit::max(crate::guard::MAX_BODY_BYTES))
         .layer(crate::guard::cors_layer())
         .layer(axum::middleware::from_fn_with_state(
             policy,
@@ -239,6 +240,58 @@ pub fn router(state: Arc<AppState>, ui_dir: Option<PathBuf>) -> Router {
         ))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
+}
+
+/// `Cache-Control` of the web UI's files.
+///
+/// Without it a browser falls back on *heuristic* freshness (a tenth of the age of
+/// `Last-Modified`): after an update the embedded webview, a phone or an OBS browser source kept
+/// showing the previous interface — `index.html` and the bundles it names, all from the cache —
+/// for minutes to days, while the API already answered with the new version.
+///
+/// * `/assets/*` (file names carry a content hash): cached for good;
+/// * every other UI file (`index.html`, the SPA fallback, icons, manifest): always revalidated;
+/// * `/api/*` and `/ws`: untouched.
+pub(crate) fn static_cache_control(path: &str) -> Option<&'static str> {
+    if path == "/ws" || path == "/api" || path.starts_with("/api/") {
+        None
+    } else if path.starts_with("/assets/") {
+        Some("public, max-age=31536000, immutable")
+    } else {
+        Some("no-cache")
+    }
+}
+
+async fn static_cache_policy(
+    req: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> Response {
+    let path = req.uri().path().to_owned();
+    let Some(value) = static_cache_control(&path) else {
+        return next.run(req).await;
+    };
+    let mut res = next.run(req).await;
+    if path.starts_with("/assets/") {
+        // A bundle that is not there (a previous version's) gets the SPA fallback from the
+        // file service: HTML under a script's address, which would then be cached for good.
+        let is_html = res
+            .headers()
+            .get(header::CONTENT_TYPE)
+            .is_some_and(|v| v.as_bytes().starts_with(b"text/html"));
+        if is_html || !(res.status().is_success() || res.status() == StatusCode::NOT_MODIFIED) {
+            return (
+                StatusCode::NOT_FOUND,
+                [(header::CACHE_CONTROL, "no-store")],
+                "not found",
+            )
+                .into_response();
+        }
+    }
+    res.headers_mut().insert(
+        header::CACHE_CONTROL,
+        header::HeaderValue::from_static(value),
+    );
+    res
 }
 
 async fn health(State(state): State<Arc<AppState>>) -> Json<Value> {

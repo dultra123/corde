@@ -305,6 +305,81 @@ async fn static_files_stay_inside_the_ui_folder() {
     let _ = std::fs::remove_dir_all(&root);
 }
 
+/// After an update the window, a phone or an OBS source must not keep the
+/// previous interface: `index.html` (and the SPA fallback) is revalidated on
+/// every load, only the content-hashed bundles are cached for good.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn the_interface_is_revalidated_and_only_hashed_bundles_are_cached() {
+    let root = temp_dir("cache");
+    let ui = root.join("ui");
+    std::fs::create_dir_all(ui.join("assets")).unwrap();
+    std::fs::write(ui.join("index.html"), "<!doctype html>corde-index").unwrap();
+    std::fs::write(ui.join("favicon.svg"), "<svg/>").unwrap();
+    std::fs::write(ui.join("assets").join("index-AbC123.js"), "export {}").unwrap();
+    let data = root.join("data");
+    let ui_dir = ui.clone();
+    let server = Running::start(&data, move |c| c.ui_dir = Some(ui_dir)).await;
+    let host = format!("127.0.0.1:{}", server.port());
+    let cache_control = |head: &str| {
+        head.lines().find_map(|l| {
+            l.strip_prefix("cache-control:")
+                .map(|v| v.trim().to_string())
+        })
+    };
+
+    for path in [
+        "/",
+        "/index.html",
+        "/?v=0.5.1",
+        "/favicon.svg",
+        "/sessions/anything",
+    ] {
+        let r = raw(server.bound, "GET", path, &[("Host", &host)], b"").await;
+        assert_eq!(r.status, 200, "{path}");
+        assert_eq!(
+            cache_control(&r.head).as_deref(),
+            Some("no-cache"),
+            "{path}"
+        );
+    }
+
+    let r = raw(
+        server.bound,
+        "GET",
+        "/assets/index-AbC123.js",
+        &[("Host", &host)],
+        b"",
+    )
+    .await;
+    assert_eq!(r.status, 200);
+    assert_eq!(
+        cache_control(&r.head).as_deref(),
+        Some("public, max-age=31536000, immutable")
+    );
+
+    // A bundle of a previous version is gone: a plain 404, not the SPA
+    // fallback kept for a year under the bundle's address.
+    let r = raw(
+        server.bound,
+        "GET",
+        "/assets/index-OLD999.js",
+        &[("Host", &host)],
+        b"",
+    )
+    .await;
+    assert_eq!(r.status, 404);
+    assert_eq!(cache_control(&r.head).as_deref(), Some("no-store"));
+    assert!(!r.body.contains("corde-index"));
+
+    // The API keeps its own headers.
+    let r = raw(server.bound, "GET", "/api/health", &[("Host", &host)], b"").await;
+    assert_eq!(r.status, 200);
+    assert_eq!(cache_control(&r.head), None);
+
+    server.stop().await;
+    let _ = std::fs::remove_dir_all(&root);
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_phone_of_the_lan_keeps_the_dashboard_not_the_pc_only_routes() {
     // Needs an address of this machine other than the loopback: the request
