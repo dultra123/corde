@@ -7,7 +7,7 @@ import {
   startRecording,
   stopRecording,
 } from "../net/sessions-api";
-import { isHub } from "./hub";
+import { useHub } from "./hub";
 import { freshEvents, useTelemetry } from "./telemetry";
 
 const POLL_MS = 2000;
@@ -76,7 +76,7 @@ useTelemetry.subscribe((s) => {
   if (s.socket !== seenSocket) {
     seenSocket = s.socket;
     // the server just answered: do not wait for the next poll to know what it records
-    if (s.socket === "open" && timer) void useRecording.getState().refresh();
+    if (s.socket === "open" && timer && worthAsking()) void useRecording.getState().refresh();
   }
   if (s.events === seenEvents) return;
   const fresh = freshEvents(seenEvents, s.events);
@@ -93,11 +93,18 @@ useTelemetry.subscribe((s) => {
  * on purpose: the server may well be there.
  */
 function worthAsking(): boolean {
-  // The home server records nothing (the PC does).
-  if (isHub()) return false;
+  // The home server records nothing (the PC does); until the server has said which it is, wait.
+  if (useHub.getState().role !== "desktop") return false;
   const { socket, demo } = useTelemetry.getState();
   return socket === "open" || demo === "manual";
 }
+
+// The PC answers at once that it is a PC: ask then, rather than at the next tick.
+useHub.subscribe((s, prev) => {
+  if (s.role === "desktop" && prev.role !== "desktop" && timer && worthAsking()) {
+    void useRecording.getState().refresh();
+  }
+});
 
 function startPolling(): void {
   if (timer) return;

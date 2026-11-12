@@ -42,8 +42,7 @@ const dist = join(root, "dist");
 const outDir = join(root, "screenshots");
 const docImage = join(repo, "docs", "images", "serveur.png");
 const bin = join(
-  repo,
-  "target",
+  process.env.CARGO_TARGET_DIR ?? join(repo, "target"),
   "debug",
   `corde-server${process.platform === "win32" ? ".exe" : ""}`,
 );
@@ -83,10 +82,10 @@ function startServer(name, args) {
       "--ui-dir",
       dist,
       "--log",
-      "warn",
+      process.env.HUBSHOT_LOGS ? "info,tower_http=debug" : "warn",
       ...args,
     ],
-    { stdio: ["ignore", "ignore", "inherit"] },
+    { stdio: ["ignore", "ignore", process.env.HUBSHOT_LOGS ? "inherit" : "ignore"] },
   );
   const base = `http://127.0.0.1:${port}`;
   console.log(`${name}: ${base} (data in ${dataDir})`);
@@ -171,8 +170,9 @@ try {
   const page = await phone.newPage();
   page.on("console", (msg) => {
     if (msg.type() !== "error") return;
-    // Before pairing, every API call and the live socket are refused (401): expected.
-    if (!paired && /401|WebSocket/i.test(msg.text())) return;
+    // Before pairing, every API call and the live socket are refused (401), and the wrong code
+    // typed on purpose is refused (400): expected.
+    if (!paired && /40[01]|WebSocket/i.test(msg.text())) return;
     errors.push(msg.text());
   });
   page.on("pageerror", (err) => errors.push(String(err)));
@@ -249,7 +249,12 @@ try {
 
   // ---- the server's home page
   await page.goto(`${hub.base}/#/home`, { waitUntil: "load" });
-  await page.waitForSelector(".hub-session", { timeout: 20_000 });
+  await page.reload({ waitUntil: "load" });
+  await page.waitForSelector(".hub-session", { timeout: 20_000 }).catch(async (e) => {
+    await page.screenshot({ path: join(outDir, "hub-home-failed.png") });
+    console.error(JSON.stringify(await pc.api("/api/hub-link")));
+    throw e;
+  });
   await page.waitForSelector(".hub-sync .home-when", { timeout: 20_000 });
   await settle(page);
   await page.screenshot({ path: join(outDir, "hub-home.png") });
@@ -272,7 +277,11 @@ try {
   check((await page.$$(".grid-stack-item")).length === 0, "no live dashboard on the server");
 
   // ---- the PC's settings: « Serveur Corde »
-  const desk = await browser.newContext({ viewport: { width: 1280, height: 1000 }, locale: "fr-FR" });
+  const desk = await browser.newContext({
+    viewport: { width: 1280, height: 1000 },
+    deviceScaleFactor: 2,
+    locale: "fr-FR",
+  });
   const pcPage = await desk.newPage();
   pcPage.on("console", (m) => {
     if (m.type() === "error") errors.push(`PC: ${m.text()}`);
@@ -291,7 +300,7 @@ try {
   await settle(pcPage);
   const state = await pcPage.textContent(".hub-link-state b");
   check(state === "Connecté", `PC settings: « ${state} »`);
-  const dialog = pcPage.locator("dialog.sheet");
+  const dialog = pcPage.locator("dialog.sheet[open]");
   const box = await pcPage.locator(".sheet-section", { hasText: "Serveur Corde" }).boundingBox();
   const end = await pcPage.locator(".hub-link").boundingBox();
   const dbox = await dialog.boundingBox();

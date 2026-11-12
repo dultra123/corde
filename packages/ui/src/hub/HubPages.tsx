@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { IconLive, IconSessions } from "../dashboard/icons";
 import { useT } from "../i18n";
 import { fmtLapTime, fmtRelativeDay } from "../lib/format";
@@ -15,6 +15,9 @@ import { errorMessage, Notice, PageHeader, useAsync } from "../sessions/shared";
 import { useHub } from "../store/hub";
 import { liveUrl } from "./lib";
 
+/** How often the server's home page asks again (a PC may send a session meanwhile). */
+const REFRESH_MS = 30_000;
+
 /* ------------------------------------------------------------------ home */
 
 /**
@@ -25,6 +28,16 @@ export function HubHomePage() {
   const { t, lang, nOf } = useT();
   const status = useAsync((signal) => fetchHubStatus(signal), []);
   const sessions = useAsync((signal) => fetchSessions({ limit: 5 }, signal), []);
+  // What a PC sends shows up without reloading the page.
+  const { reload: reloadStatus } = status;
+  const { reload: reloadSessions } = sessions;
+  useEffect(() => {
+    const timer = setInterval(() => {
+      reloadStatus();
+      reloadSessions();
+    }, REFRESH_MS);
+    return () => clearInterval(timer);
+  }, [reloadStatus, reloadSessions]);
   const s = status.data;
   const pc = s?.last_pc ?? null;
 
