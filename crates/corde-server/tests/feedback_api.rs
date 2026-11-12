@@ -351,7 +351,10 @@ async fn stores_and_lists_driver_feedback() {
         .query_row("SELECT COUNT(*) FROM plan_iterations", [], |r| r.get(0))
         .unwrap();
     assert_eq!(n, 0, "cascade on disk (iterations)");
-    assert_eq!(store.db().schema_version().unwrap(), 6);
+    assert_eq!(
+        store.db().schema_version().unwrap(),
+        corde_store::db::SCHEMA_VERSION
+    );
     drop(store);
     let _ = std::fs::remove_dir_all(&data_dir);
 }
