@@ -1,5 +1,6 @@
 import { useT } from "../i18n";
 import { fmtNum } from "../lib/format";
+import { useHub } from "../store/hub";
 import { type ConnectionPhase, useConnectionPhase, useTelemetry } from "../store/telemetry";
 
 const LABEL: Record<
@@ -27,6 +28,9 @@ export function StatusPill({ onClick }: { onClick: () => void }) {
   const phase = useConnectionPhase();
   const rxHz = useTelemetry((s) => s.rxHz);
   const attempt = useTelemetry((s) => s.reconnectAttempt);
+  // The home server never has a game: « connected » is all there is to say.
+  const onHub = useHub((s) => s.role === "hub");
+  const label = onHub && phase === "waiting-game" ? "status.hub" : LABEL[phase];
   const showHz =
     phase === "live" || phase === "demo" || phase === "demo-auto" || phase === "monitor";
   return (
@@ -38,7 +42,7 @@ export function StatusPill({ onClick }: { onClick: () => void }) {
     >
       <span className="status-dot" />
       <span className="status-text">
-        {t(LABEL[phase])}
+        {t(label)}
         {phase === "offline" && attempt > 0 ? ` (${attempt})` : ""}
       </span>
       {showHz && (

@@ -1,4 +1,5 @@
 import type { GameId, LapRecord, SessionType, VehicleClass, Weather } from "@corde/protocol";
+import { notifyUnauthorized } from "./auth-events";
 import { connection } from "./connection";
 
 /**
@@ -169,6 +170,8 @@ export async function request<T>(path: string, init?: RequestInit, timeoutMs = 1
       headers: { Accept: "application/json", ...(init?.headers ?? {}) },
     });
     if (!res.ok) {
+      // Home server: this device is not paired (any more) → the pairing screen.
+      if (res.status === 401) notifyUnauthorized();
       let msg = `${res.status} ${res.statusText}`;
       try {
         const body = (await res.json()) as { error?: unknown };

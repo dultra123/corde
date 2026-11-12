@@ -1,7 +1,9 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { IconFlag, IconRefresh } from "../dashboard/icons";
+import { hubPageUrl } from "../hub/lib";
 import { useT } from "../i18n";
 import { isDesktop, isLocalPage } from "../lib/desktop";
+import { fetchHubLink, type HubLinkStatus } from "../net/hub-api";
 import {
   deletePick,
   fetchRaceSettings,
@@ -19,6 +21,7 @@ import {
 import { ApiError } from "../net/sessions-api";
 import { fetchSettings, saveSettings } from "../net/system-api";
 import { errorMessage } from "../sessions/shared";
+import { isHub, isHubAdmin } from "../store/hub";
 import { useRaces } from "../store/races";
 import { useSettings } from "../store/settings";
 import { useTelemetry } from "../store/telemetry";
@@ -51,8 +54,44 @@ const SITE: Record<string, string> = {
   lmutools: "lmu.tools",
 };
 
-/** The settings may only be changed from the PC that runs Corde (the server says so too). */
-const onThisPc = () => isDesktop() || isLocalPage();
+/**
+ * The settings may only be changed from the PC that runs Corde — on the home server, from a
+ * device marked administrator (the server says so too).
+ */
+const onThisPc = () => (isHub() ? isHubAdmin() : isDesktop() || isLocalPage());
+
+/** Why the switch is not here, worded for where the page is open. */
+const remoteKey = (): "races.off.remoteHub" | "races.off.remote" =>
+  isHub() ? "races.off.remoteHub" : "races.off.remote";
+
+/**
+ * On a PC paired with a home server: « your races are on your server too » (picks are not
+ * synchronised between the two: each keeps its own).
+ */
+function HubRacesLink() {
+  const { t } = useT();
+  const [link, setLink] = useState<HubLinkStatus | null>(null);
+  useEffect(() => {
+    if (isHub()) return;
+    const ctrl = new AbortController();
+    fetchHubLink(ctrl.signal)
+      .then(setLink)
+      .catch(() => {
+        // no link route (older server) or no answer: nothing to show
+      });
+    return () => ctrl.abort();
+  }, []);
+  const url = hubPageUrl(link, "#/races");
+  if (!url) return null;
+  return (
+    <p className="races-hub-link">
+      <a className="link" href={url} target="_blank" rel="noreferrer noopener">
+        {t("races.hubLink")}
+      </a>{" "}
+      <span className="faint">{t("races.hubLink.hint")}</span>
+    </p>
+  );
+}
 
 /* ------------------------------------------------------------------ small pieces */
 
@@ -755,7 +794,7 @@ function OffCard({
             {t("races.off.enable")}
           </button>
         ) : (
-          <p className="faint">{t("races.off.remote")}</p>
+          <p className="faint">{t(remoteKey())}</p>
         )}
         {error && (
           <p className="form-error" role="alert">
@@ -893,9 +932,7 @@ export function RacesPage() {
       setEnabled(on);
       await load(false);
     } catch (e) {
-      setActionError(
-        e instanceof ApiError && e.status === 403 ? t("races.off.remote") : errorMessage(e),
-      );
+      setActionError(e instanceof ApiError && e.status === 403 ? t(remoteKey()) : errorMessage(e));
     } finally {
       setBusy(null);
     }
@@ -1026,6 +1063,7 @@ export function RacesPage() {
           )}
         </div>
       </header>
+      <HubRacesLink />
       {body}
       <footer className="page-foot races-foot dim">
         <span>{t("races.foot.join")}</span>

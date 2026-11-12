@@ -18,6 +18,7 @@ import { useSyncExternalStore } from "react";
  *   #/profile                            driver profile (imported results)
  *   #/profile?track=<course>             …filtered on one track
  *   #/results/<id>                       one imported result (classification, player laps)
+ *   #/devices                            home server only: the paired devices
  *
  * The query string of the page (`?server=…`) is left untouched: only the hash changes, so a
  * phone that reached the UI with `?server=192.168.1.20:8471` keeps it while browsing.
@@ -33,7 +34,8 @@ export type Route =
   | { page: "races" }
   | { page: "obs" }
   | { page: "profile"; track?: string }
-  | { page: "result"; id: number };
+  | { page: "result"; id: number }
+  | { page: "devices" };
 
 export type Section = "home" | "dashboard" | "sessions" | "races" | "profile";
 
@@ -77,6 +79,7 @@ export function parseRoute(hash: string): Route {
   if (parts[0] === "home") return { page: "home" };
   if (parts[0] === "races") return { page: "races" };
   if (parts[0] === "obs") return { page: "obs" };
+  if (parts[0] === "devices") return { page: "devices" };
   if (parts[0] === "profile") {
     const track = query.get("track")?.trim();
     return track ? { page: "profile", track } : { page: "profile" };
@@ -132,6 +135,8 @@ export function routeHash(route: Route): string {
       return route.track ? `#/profile?track=${encodeURIComponent(route.track)}` : "#/profile";
     case "result":
       return `#/results/${route.id}`;
+    case "devices":
+      return "#/devices";
   }
 }
 
@@ -161,7 +166,7 @@ export function useRoute(): Route {
 
 /** Which top-level tab a route belongs to. */
 export function sectionOf(route: Route): Section {
-  if (route.page === "home") return "home";
+  if (route.page === "home" || route.page === "devices") return "home";
   if (route.page === "dashboard" || route.page === "obs") return "dashboard";
   if (route.page === "races") return "races";
   if (route.page === "profile" || route.page === "result") return "profile";

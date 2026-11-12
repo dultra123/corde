@@ -131,6 +131,14 @@ describe("parseRoute", () => {
   });
 });
 
+describe("the devices page (home server)", () => {
+  it("is #/devices, under the home tab", () => {
+    expect(parseRoute("#/devices")).toEqual({ page: "devices" });
+    expect(routeHash({ page: "devices" })).toBe("#/devices");
+    expect(sectionOf({ page: "devices" })).toBe("home");
+  });
+});
+
 describe("the OBS page", () => {
   it("is #/obs, under the dashboard tab", () => {
     expect(parseRoute("#/obs")).toEqual({ page: "obs" });

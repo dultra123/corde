@@ -11,6 +11,7 @@ import {
   type SessionRow,
   type StorageStats,
 } from "../net/sessions-api";
+import { isHub, isHubAdmin } from "../store/hub";
 import { useRecording } from "../store/recording";
 import { sessionDurationS } from "./lib/stats";
 import { RecordingBanner } from "./RecordingBanner";
@@ -228,16 +229,18 @@ export function SessionsPage() {
                     >
                       <IconEngineer />
                     </a>
-                    <button
-                      type="button"
-                      className="btn is-icon is-danger"
-                      aria-label={t("common.delete")}
-                      title={live ? t("sessions.delete.busy") : t("common.delete")}
-                      disabled={live}
-                      onClick={() => setVictim(s)}
-                    >
-                      <IconTrash />
-                    </button>
+                    {(!isHub() || isHubAdmin()) && (
+                      <button
+                        type="button"
+                        className="btn is-icon is-danger"
+                        aria-label={t("common.delete")}
+                        title={live ? t("sessions.delete.busy") : t("common.delete")}
+                        disabled={live}
+                        onClick={() => setVictim(s)}
+                      >
+                        <IconTrash />
+                      </button>
+                    )}
                   </td>
                 </tr>
               );
@@ -250,7 +253,7 @@ export function SessionsPage() {
 
   return (
     <div className="sessions-page">
-      <RecordingBanner trackOf={trackOf} />
+      {!isHub() && <RecordingBanner trackOf={trackOf} />}
       <PageHeader
         title={t("sessions.title")}
         subtitle={

@@ -6,6 +6,7 @@ import { isAutoNavDisabled } from "../nav/auto";
 import { connection } from "../net/connection";
 import { type Lang, useSettings } from "../store/settings";
 import { useConnectionPhase, useTelemetry } from "../store/telemetry";
+import { HubDeviceSection, HubLinkSection } from "./HubSection";
 import { UpdatesSection } from "./UpdatesSection";
 
 interface Props {
@@ -261,6 +262,8 @@ export function SettingsDialog({ open, onClose }: Props) {
           </div>
           <DesktopSection open={open} />
           <UpdatesSection open={open} />
+          <HubLinkSection open={open} />
+          <HubDeviceSection />
           <div className="sheet-info">
             <span>{t("settings.connectionState")}</span>
             <b>{phaseLabel[phase]}</b>

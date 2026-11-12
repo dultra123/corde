@@ -4,11 +4,13 @@ import { SettingsDialog } from "../dashboard/SettingsDialog";
 import { TopBar } from "../dashboard/TopBar";
 import { EngineerPage } from "../engineer/EngineerPage";
 import { HomePage } from "../home/HomePage";
+import { DevicesPage, HubDirectPage, HubHomePage } from "../hub/HubPages";
 import { type Route, sectionOf } from "../nav/routes";
 import { ObsPage } from "../overlay/ObsPage";
 import { ProfilePage } from "../profile/ProfilePage";
 import { ResultPage } from "../profile/ResultPage";
 import { RacesPage } from "../races/RacesPage";
+import { useHub } from "../store/hub";
 import { useRecordingWatch } from "../store/recording";
 import { LapPage } from "./LapPage";
 import { SessionPage } from "./SessionPage";
@@ -30,18 +32,26 @@ function useIsMobile(): boolean {
 
 /**
  * Shell of every section but the dashboard — `#/home`, `#/sessions…`, `#/races`, `#/obs`,
- * `#/profile`, `#/results/…`: top bar, scrolling page, settings dialog.
+ * `#/profile`, `#/results/…`: top bar, scrolling page, settings dialog. On the home server it
+ * also shows `#/` (the live view is on the PC) and `#/devices`.
  */
-export function SessionsShell({ route }: { route: Exclude<Route, { page: "dashboard" }> }) {
+export function SessionsShell({ route }: { route: Route }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const mobile = useIsMobile();
+  const onHub = useHub((s) => s.role === "hub");
   useRecordingWatch();
   const section = sectionOf(route);
 
   let page: React.ReactNode;
   switch (route.page) {
     case "home":
-      page = <HomePage onSettings={() => setSettingsOpen(true)} />;
+      page = onHub ? <HubHomePage /> : <HomePage onSettings={() => setSettingsOpen(true)} />;
+      break;
+    case "dashboard":
+      page = <HubDirectPage />;
+      break;
+    case "devices":
+      page = onHub ? <DevicesPage /> : <HomePage onSettings={() => setSettingsOpen(true)} />;
       break;
     case "sessions":
       page = <SessionsPage />;
@@ -62,7 +72,7 @@ export function SessionsShell({ route }: { route: Exclude<Route, { page: "dashbo
       page = <RacesPage />;
       break;
     case "obs":
-      page = <ObsPage />;
+      page = onHub ? <HubDirectPage /> : <ObsPage />;
       break;
     case "profile":
       page = <ProfilePage track={route.track} />;

@@ -4,6 +4,7 @@ import { hasUpdate } from "../lib/updates";
 import { routeHash, type Section } from "../nav/routes";
 import { connection } from "../net/connection";
 import { useDashboard } from "../store/dashboard";
+import { useHub } from "../store/hub";
 import { useTelemetry } from "../store/telemetry";
 import { useUpdates } from "../store/updates";
 import {
@@ -83,7 +84,9 @@ export function TopBar({ onSettings, section = "dashboard" }: Props) {
   const [fs, toggleFs] = useFullscreen();
   const updateKnown = useUpdates((s) => hasUpdate(s.status));
   const demoManual = demo === "manual";
-  const onDashboard = section === "dashboard";
+  // On the home server `#/` explains where the live view is: no dashboard controls.
+  const onHub = useHub((s) => s.role === "hub");
+  const onDashboard = section === "dashboard" && !onHub;
 
   return (
     <header className={`topbar is-${section}`}>

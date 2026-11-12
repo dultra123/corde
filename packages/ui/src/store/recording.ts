@@ -7,6 +7,7 @@ import {
   startRecording,
   stopRecording,
 } from "../net/sessions-api";
+import { isHub } from "./hub";
 import { freshEvents, useTelemetry } from "./telemetry";
 
 const POLL_MS = 2000;
@@ -92,6 +93,8 @@ useTelemetry.subscribe((s) => {
  * on purpose: the server may well be there.
  */
 function worthAsking(): boolean {
+  // The home server records nothing (the PC does).
+  if (isHub()) return false;
   const { socket, demo } = useTelemetry.getState();
   return socket === "open" || demo === "manual";
 }

@@ -13,6 +13,7 @@ import {
   type TrackSummary,
 } from "../net/profile-api";
 import { errorMessage, Notice, PageHeader, SessionTypeTag, useAsync } from "../sessions/shared";
+import { useHub } from "../store/hub";
 import { BestLapChart } from "./BestLapChart";
 import { bestLapSeries, classLabel, fmtPos } from "./lib";
 
@@ -130,6 +131,8 @@ function ImportFooter({
   const { t, nOf, lang } = useT();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The home server reads no game file: its results come from the PC.
+  const onHub = useHub((s) => s.role === "hub");
   const imp = profile?.import ?? null;
 
   const run = async () => {
@@ -172,16 +175,18 @@ function ImportFooter({
         )}
       </div>
       <div className="import-foot-actions">
-        <button
-          type="button"
-          className="btn"
-          onClick={() => void run()}
-          disabled={busy || !imp || (!imp.enabled && !imp.results_dir)}
-          title={t("profile.import.rescanHint")}
-        >
-          {busy ? <span className="spinner is-small" /> : <IconRefresh />}
-          <span>{t("profile.import.rescan")}</span>
-        </button>
+        {!onHub && (
+          <button
+            type="button"
+            className="btn"
+            onClick={() => void run()}
+            disabled={busy || !imp || (!imp.enabled && !imp.results_dir)}
+            title={t("profile.import.rescanHint")}
+          >
+            {busy ? <span className="spinner is-small" /> : <IconRefresh />}
+            <span>{t("profile.import.rescan")}</span>
+          </button>
+        )}
       </div>
       {(error || imp?.error) && (
         <p className="form-error import-foot-error" role="alert">
