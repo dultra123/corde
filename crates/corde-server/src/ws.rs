@@ -72,7 +72,11 @@ pub async fn ws_handler(
         (Some(hub), Some(axum::Extension(d))) => Some((d.id, hub.auth.subscribe_revocations())),
         _ => None,
     };
-    ws.max_message_size(crate::guard::WS_MAX_MESSAGE_BYTES)
+    // The iPhone application asks for `corde.v1` (plus, on the home server, its device token
+    // as a second entry, read by the hub guard): the answer names `corde.v1` only — never the
+    // token entry. A browser that asks for nothing gets no subprotocol, as before.
+    ws.protocols([crate::hub::auth::WS_PROTOCOL])
+        .max_message_size(crate::guard::WS_MAX_MESSAGE_BYTES)
         .max_frame_size(crate::guard::WS_MAX_MESSAGE_BYTES)
         .on_upgrade(move |socket| client_loop(socket, state, rate, revocation))
 }

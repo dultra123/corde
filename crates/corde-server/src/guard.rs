@@ -8,8 +8,9 @@
 //!    apply CORS to WebSockets): a request that carries one is accepted only
 //!    from the page's own server (same scheme, host and port as `Host`), from
 //!    a page of this PC (`http://127.0.0.1:*`, `http://localhost:*`,
-//!    `http://[::1]:*`) or from the desktop shell (`tauri://localhost`,
-//!    `http(s)://tauri.localhost`). Otherwise 403, `GET` included. No
+//!    `http://[::1]:*`), from the desktop shell (`tauri://localhost`,
+//!    `http(s)://tauri.localhost`) or from the iPhone application
+//!    (`capacitor://localhost`, never a page of this PC). Otherwise 403, `GET` included. No
 //!    `Origin` (curl, a direct visit) is accepted. The CORS headers reflect
 //!    those origins only.
 //! 3. **Routes "this PC only"** ([`route_access`]): whatever deletes data,
@@ -20,8 +21,8 @@
 //!    details (they may name a folder of the PC); they stay in the log.
 
 use crate::net::{
-    listens_on_lan, may_change_settings, origin_is_local, parse_ip_host, peer_is_local,
-    split_host_port, split_origin,
+    listens_on_lan, may_change_settings, origin_is_local, origin_is_mobile_app, parse_ip_host,
+    peer_is_local, split_host_port, split_origin,
 };
 use axum::body::Body;
 use axum::extract::connect_info::MockConnectInfo;
@@ -237,7 +238,9 @@ pub fn machine_names() -> Vec<String> {
 /// `true` when a browser page of `origin` may call this server, reached as
 /// `host` (the request's `Host` header).
 pub fn origin_allowed(origin: &str, host: Option<&str>) -> bool {
-    origin_is_local(origin) || host.is_some_and(|h| same_origin(origin, h))
+    origin_is_local(origin)
+        || origin_is_mobile_app(origin)
+        || host.is_some_and(|h| same_origin(origin, h))
 }
 
 /// The page comes from this very server: `http://<Host>`.
@@ -271,7 +274,9 @@ pub fn cors_layer() -> CorsLayer {
             Method::PATCH,
             Method::DELETE,
         ])
-        .allow_headers([header::CONTENT_TYPE, header::ACCEPT])
+        // `Authorization`: the iPhone application sends its device token to the home server
+        // in `Authorization: Bearer` (a cookie of the server is not sent from its origin).
+        .allow_headers([header::CONTENT_TYPE, header::ACCEPT, header::AUTHORIZATION])
         .max_age(Duration::from_secs(600))
 }
 
@@ -480,9 +485,32 @@ mod tests {
             ("file://", host),
             ("tauri://evil.example", host),
             ("http://192.168.1.20:8471", None),
+            // Only the exact origin of the iPhone application.
+            ("capacitor://evil.example", host),
+            ("capacitor://localhost:8080", host),
+            ("capacitor://localhost@evil.example", host),
+            ("ionic://localhost", host),
+            ("http://capacitor.localhost", host),
         ] {
             assert!(!origin_allowed(bad, host), "{bad:?} on {host:?}");
         }
+    }
+
+    #[test]
+    fn the_iphone_application_is_allowed_but_never_counts_as_this_pc() {
+        for host in [
+            Some("192.168.1.20:8471"),
+            Some("10.8.0.1:8471"),
+            Some("pc-jeu.local:8471"),
+            None,
+        ] {
+            assert!(origin_allowed("capacitor://localhost", host), "{host:?}");
+            assert!(origin_allowed("Capacitor://LOCALHOST/", host), "{host:?}");
+        }
+        assert!(!origin_is_local("capacitor://localhost"));
+        // Even from the loopback (which a phone never is), its pages cannot change the settings.
+        let lo: IpAddr = "127.0.0.1".parse().unwrap();
+        assert!(!may_change_settings(lo, Some("capacitor://localhost")));
     }
 
     #[test]
@@ -747,6 +775,76 @@ mod tests {
         assert_eq!(r.status(), StatusCode::NO_CONTENT);
         let r = send(app(true, local), Method::DELETE, "/api/sessions/x", &[]).await;
         assert_eq!(r.status(), StatusCode::NO_CONTENT, "curl on the PC");
+    }
+
+    #[tokio::test]
+    async fn the_iphone_application_reads_the_api_but_not_the_pc_only_routes() {
+        let phone = "192.168.1.42:50000";
+        let lan_host = ("host", "192.168.1.20:8471");
+        let app_origin = ("origin", "capacitor://localhost");
+
+        let r = send(
+            app(true, phone),
+            Method::GET,
+            "/api/health",
+            &[lan_host, app_origin],
+        )
+        .await;
+        assert_eq!(r.status(), StatusCode::OK);
+        assert_eq!(
+            r.headers().get("access-control-allow-origin").unwrap(),
+            "capacitor://localhost"
+        );
+        let r = send(
+            app(true, phone),
+            Method::GET,
+            "/ws",
+            &[lan_host, app_origin],
+        )
+        .await;
+        assert_eq!(r.status(), StatusCode::OK, "WebSocket upgrade");
+        // The preflight of a request that carries the device token.
+        let pre = [
+            lan_host,
+            app_origin,
+            ("access-control-request-method", "PUT"),
+            (
+                "access-control-request-headers",
+                "authorization,content-type",
+            ),
+        ];
+        let r = send(app(true, phone), Method::OPTIONS, "/api/layouts", &pre).await;
+        assert!(r.status().is_success(), "{}", r.status());
+        assert_eq!(
+            r.headers().get("access-control-allow-origin").unwrap(),
+            "capacitor://localhost"
+        );
+        let allowed = r
+            .headers()
+            .get("access-control-allow-headers")
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_ascii_lowercase();
+        assert!(allowed.contains("authorization"), "{allowed}");
+        // The routes of the PC stay closed to it.
+        let r = send(
+            app(true, phone),
+            Method::DELETE,
+            "/api/sessions/x",
+            &[lan_host, app_origin],
+        )
+        .await;
+        assert_eq!(r.status(), StatusCode::FORBIDDEN);
+        // With the LAN closed the phone cannot reach the server at all (Host refused).
+        let r = send(
+            app(false, phone),
+            Method::GET,
+            "/api/health",
+            &[lan_host, app_origin],
+        )
+        .await;
+        assert_eq!(r.status(), StatusCode::FORBIDDEN);
     }
 
     #[tokio::test]

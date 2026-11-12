@@ -570,7 +570,17 @@ impl HubAuth {
     }
 }
 
-/// The token of a request: `Authorization: Bearer …`, else the `corde_device` cookie.
+/// The WebSocket subprotocol the iPhone application asks for (the server answers with it,
+/// see `ws::ws_handler`).
+pub const WS_PROTOCOL: &str = "corde.v1";
+/// Prefix of the subprotocol entry that carries a device token on the WebSocket handshake:
+/// `corde.token.<64 hex>`. A web page cannot put `Authorization` on a WebSocket, and a token
+/// in the address (`?token=`) would end up in request logs; the `Sec-WebSocket-Protocol`
+/// header is never logged by the server and the server never echoes this entry back.
+pub const WS_TOKEN_PREFIX: &str = "corde.token.";
+
+/// The token of a request: `Authorization: Bearer …`, else the `corde_device` cookie, else —
+/// on a WebSocket handshake only — a `corde.token.<token>` subprotocol entry.
 pub fn token_of(headers: &axum::http::HeaderMap) -> Option<String> {
     use axum::http::header;
     if let Some(v) = headers
@@ -590,6 +600,22 @@ pub fn token_of(headers: &axum::http::HeaderMap) -> Option<String> {
             if let Some((k, val)) = part.trim().split_once('=') {
                 if k.trim() == COOKIE_NAME {
                     return Some(val.trim().to_string());
+                }
+            }
+        }
+    }
+    let upgrade = headers
+        .get(header::UPGRADE)
+        .and_then(|v| v.to_str().ok())
+        .is_some_and(|v| v.eq_ignore_ascii_case("websocket"));
+    if upgrade {
+        for v in headers.get_all(header::SEC_WEBSOCKET_PROTOCOL) {
+            let Ok(v) = v.to_str() else { continue };
+            for proto in v.split(',') {
+                if let Some(t) = proto.trim().strip_prefix(WS_TOKEN_PREFIX) {
+                    if !t.is_empty() {
+                        return Some(t.to_string());
+                    }
                 }
             }
         }
@@ -826,6 +852,36 @@ mod tests {
             clean_name(&"é".repeat(100), "x").chars().count(),
             DEVICE_NAME_MAX
         );
+    }
+
+    #[test]
+    fn a_websocket_handshake_may_carry_the_token_in_its_subprotocols_only() {
+        use axum::http::{HeaderMap, HeaderValue};
+        let mut h = HeaderMap::new();
+        h.insert(
+            "sec-websocket-protocol",
+            HeaderValue::from_static("corde.v1, corde.token.abc123"),
+        );
+        assert_eq!(token_of(&h), None, "not a WebSocket handshake");
+        h.insert("upgrade", HeaderValue::from_static("websocket"));
+        assert_eq!(token_of(&h).as_deref(), Some("abc123"));
+        h.insert(
+            "sec-websocket-protocol",
+            HeaderValue::from_static("corde.v1, corde.token."),
+        );
+        assert_eq!(token_of(&h), None, "empty token");
+        h.insert(
+            "sec-websocket-protocol",
+            HeaderValue::from_static("corde.v1"),
+        );
+        assert_eq!(token_of(&h), None);
+        // A header token wins over the subprotocol.
+        h.insert(
+            "sec-websocket-protocol",
+            HeaderValue::from_static("corde.token.zzz"),
+        );
+        h.insert("authorization", HeaderValue::from_static("Bearer def"));
+        assert_eq!(token_of(&h).as_deref(), Some("def"));
     }
 
     #[test]

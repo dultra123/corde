@@ -124,6 +124,26 @@ pub fn origin_is_local(origin: &str) -> bool {
     }
 }
 
+/// Origin of the pages of the Corde iPhone application (`apps/mobile`, Capacitor): the
+/// webview serves the bundled interface from `capacitor://localhost` (Capacitor's default
+/// `server.iosScheme` and `server.hostname`, left unchanged in `capacitor.config.json`).
+///
+/// Accepted by the `Origin` check and by CORS ([`crate::guard::origin_allowed`]), **never**
+/// as a page of this PC: the application runs on a phone, so the "this PC only" routes stay
+/// closed to it ([`may_change_settings`] only trusts [`origin_is_local`]). Accepting it adds
+/// nothing a native program could not already do — a program is not a browser, it can send
+/// any `Origin`, or none, which is accepted — while a web page opened in a browser can never
+/// carry it.
+pub const MOBILE_APP_ORIGIN: &str = "capacitor://localhost";
+
+/// `true` for the origin of the Corde iPhone application ([`MOBILE_APP_ORIGIN`]).
+pub fn origin_is_mobile_app(origin: &str) -> bool {
+    match split_origin(origin) {
+        Some((scheme, authority)) => scheme == "capacitor" && authority == "localhost",
+        None => false,
+    }
+}
+
 /// `("http", "pc-jeu:8471")` from `http://PC-Jeu:8471`, lower case. `None`
 /// when it is not `scheme://authority` (with nothing after but an optional
 /// `/`), or the authority carries credentials.
