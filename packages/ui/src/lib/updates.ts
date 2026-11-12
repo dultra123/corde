@@ -150,16 +150,25 @@ export function releaseDate(date: string | null, lang: string): string | null {
 }
 
 /**
- * Release notes as a list of lines, without Markdown headings markers and empty lines; a list
- * item keeps its bullet. Notes come from CHANGELOG.md through `latest.json`.
+ * Release notes as a list of lines, without Markdown heading markers, emphasis or empty lines; a
+ * list item keeps its bullet, and the indented lines that continue it (CHANGELOG.md is wrapped
+ * at ~110 columns) are joined back to it. Notes come from CHANGELOG.md through `latest.json`.
  */
 export function noteLines(notes: string | null, max = 30): string[] {
   if (!notes) return [];
-  const lines = notes
-    .split(/\r?\n/)
-    .map((l) => l.trimEnd())
-    .filter((l) => l.trim() !== "")
+  const lines: string[] = [];
+  for (const raw of notes.split(/\r?\n/)) {
+    const line = raw.trimEnd();
+    if (line.trim() === "") continue;
+    const continuation = /^\s+\S/.test(line) && !/^\s*([*-]|\d+\.)\s/.test(line);
+    if (continuation && lines.length > 0) {
+      lines[lines.length - 1] += ` ${line.trim()}`;
+    } else {
+      lines.push(line);
+    }
+  }
+  const out = lines
     .map((l) => l.replace(/^#{1,6}\s+/, "").replace(/^(\s*)[*-]\s+/, "$1• "))
     .map((l) => l.replace(/\*\*(.+?)\*\*/g, "$1").replace(/`([^`]+)`/g, "$1"));
-  return lines.length > max ? [...lines.slice(0, max), "…"] : lines;
+  return out.length > max ? [...out.slice(0, max), "…"] : out;
 }

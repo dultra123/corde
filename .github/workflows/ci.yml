@@ -4,19 +4,39 @@
 # rust       : fmt, clippy (toléré), tests, build release des binaires (corde-server, lmu-probe, corde-sim, corde-store),
 #              artefacts corde-linux / corde-windows (binaires + ui/ + docs/TESTING-ON-PC.md)
 # desktop    : application de bureau (coquille Tauri 2, apps/desktop — workspace Cargo à part) sur windows-latest :
-#              installeur NSIS, artefact corde-setup (Corde_<version>_x64-setup.exe). C'est le seul endroit où la
-#              coquille est compilée.
+#              installeur NSIS, artefact corde-setup (Corde_<version>_x64-setup.exe, et sa signature de mise à
+#              jour Corde_<version>_x64-setup.exe.sig quand le secret TAURI_SIGNING_PRIVATE_KEY existe). C'est le
+#              seul endroit où la coquille est compilée.
 # continuous : sur push main seulement, pré-release glissante étiquetée `continuous` (« Corde — dernière version ») :
 #              installeur + zip portable, anciens fichiers remplacés
-# release    : sur tag v*, zip Windows + tar.gz Linux + installeur attachés à une GitHub Release
+# version    : sur push main seulement, release NUMÉROTÉE v<version> (version de tauri.conf.json) si elle n'existe
+#              pas encore et que la signature de mise à jour a été produite : installeur, .sig, zip portable et
+#              latest.json (lu par le bouton « Rechercher une mise à jour » de l'application)
+# release    : sur tag v* poussé à la main, zip Windows + tar.gz Linux + installeur attachés à une GitHub Release
+#              d'archive (jamais « latest », sautée si la release du tag existe déjà)
 # deny       : licences, avis de sécurité et sources des dépendances Rust (cargo-deny, deny.toml) —
 #              informatif : n'empêche ni les autres jobs ni la publication
 #
+# Articulation des trois publications (aucun doublon) :
+#   - `continuous` : la pré-release glissante, recréée à chaque poussée sur main, pour essayer le dernier état.
+#     Une pré-release n'est jamais « latest » : elle n'est pas vue par les mises à jour de l'application.
+#   - `version` : la voie normale des versions. Changer le numéro (tauri.conf.json, Cargo.toml, package.json,
+#     section du CHANGELOG.md) et pousser sur main suffit : la release v<version> est créée une fois, marquée
+#     « latest », et son latest.json est servi à
+#     https://github.com/dultra123/corde/releases/latest/download/latest.json (adresse fixée dans l'application).
+#     Les poussées suivantes avec le même numéro ne recréent rien. L'étiquette v<version> est créée par l'API
+#     avec le jeton du workflow : GitHub ne relance donc PAS ce workflow pour elle (pas de job `release` en double).
+#   - `release` : seulement pour une étiquette v* poussée à la main (version spéciale, archive Linux). Si la
+#     release existe déjà (créée par `version`), le job ne fait rien. Sinon il crée une release d'archive qui
+#     n'est jamais « latest » : elle ne peut pas détourner les mises à jour vers une release sans latest.json.
+#     Ne pas pousser à la main l'étiquette d'une version que `version` doit publier (elle serait sautée).
+#
 # Sécurité (dépôt public) : jeton en lecture seule par défaut, `contents: write` seulement dans
-# `continuous` et `release`, qui ne tournent que sur une poussée du dépôt d'origine (jamais sur
-# une PR ni sur un fork) ; pas de `pull_request_target` ; secrets de signature jamais exposés au
-# code d'une PR ; aucune valeur contrôlable par un tiers (titre de PR, nom de branche ou
-# d'étiquette) n'est collée dans un script `run:`, elle passe par une variable d'environnement.
+# `continuous`, `version` et `release`, qui ne tournent que sur une poussée du dépôt d'origine (jamais
+# sur une PR ni sur un fork) ; pas de `pull_request_target` ; secrets de signature (code Windows et
+# mises à jour) jamais exposés au code d'une PR ni d'un fork ; aucune valeur contrôlable par un tiers
+# (titre de PR, nom de branche ou d'étiquette) n'est collée dans un script `run:`, elle passe par une
+# variable d'environnement.
 
 name: CI
 
@@ -187,6 +207,12 @@ jobs:
       ARTIFACT_SIGNING_ENDPOINT: ${{ vars.ARTIFACT_SIGNING_ENDPOINT }}
       ARTIFACT_SIGNING_ACCOUNT: ${{ vars.ARTIFACT_SIGNING_ACCOUNT }}
       ARTIFACT_SIGNING_PROFILE: ${{ vars.ARTIFACT_SIGNING_PROFILE }}
+      # Signature des MISES À JOUR (clé minisign de Tauri, sans mot de passe ; sa clé publique est dans
+      # tauri.conf.json > plugins > updater > pubkey) — rien à voir avec la signature de code ci-dessus.
+      # "true" seulement sur une poussée du dépôt d'origine dont le secret existe : jamais sur une PR ni
+      # un fork. Sinon l'installeur est construit sans artefacts de mise à jour (et le build réussit).
+      # Le secret lui-même n'est passé qu'à l'étape de construction.
+      UPDATER_KEY_PRESENT: ${{ github.event_name == 'push' && github.repository == 'dultra123/corde' && secrets.TAURI_SIGNING_PRIVATE_KEY != '' }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -244,10 +270,32 @@ jobs:
           EOF
           echo "TAURI_SIGN_ARGS=--config tauri.sign.conf.json" >> "$GITHUB_ENV"
 
+      # tauri.conf.json demande les artefacts de mise à jour (bundle.createUpdaterArtifacts) : sans clé
+      # privée, la CLI Tauri refuserait de finir le build (« A public key has been found, but no private
+      # key »). Cette surcouche (fichier ignoré par git) les désactive pour ce build seulement.
+      - name: Sans clé de mise à jour, installeur sans artefacts de mise à jour
+        if: env.UPDATER_KEY_PRESENT != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '{ "bundle": { "createUpdaterArtifacts": false } }' > apps/desktop/tauri.noupdater.conf.json
+          echo "TAURI_UPDATER_ARGS=--config tauri.noupdater.conf.json" >> "$GITHUB_ENV"
+          echo "::notice::pas de secret TAURI_SIGNING_PRIVATE_KEY (ou PR, ou fork) : installeur construit sans signature de mise à jour, pas de release numérotée"
+
       - name: Construire l'installeur (Tauri → NSIS)
         shell: bash
         working-directory: apps/desktop
-        run: pnpm dlx "@tauri-apps/cli@${TAURI_CLI_VERSION}" build --ci ${TAURI_SIGN_ARGS:-}
+        env:
+          # Lus par la CLI Tauri (bundle.rs, sign_updaters) quand les artefacts de mise à jour sont
+          # demandés ; vides (et inutilisés) sinon.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ env.UPDATER_KEY_PRESENT == 'true' && secrets.TAURI_SIGNING_PRIVATE_KEY || '' }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+        run: |
+          set -euo pipefail
+          # La clé est une ligne base64 : un retour à la ligne collé avec le secret la rendrait illisible.
+          TAURI_SIGNING_PRIVATE_KEY="$(printf '%s' "${TAURI_SIGNING_PRIVATE_KEY}" | tr -d '[:space:]')"
+          export TAURI_SIGNING_PRIVATE_KEY
+          pnpm dlx "@tauri-apps/cli@${TAURI_CLI_VERSION}" build --ci ${TAURI_SIGN_ARGS:-} ${TAURI_UPDATER_ARGS:-}
 
       - name: Contrôler l'installeur
         shell: bash
@@ -274,6 +322,16 @@ jobs:
             echo ""
             echo "\`$(basename "$setup")\` — $((size / 1024 / 1024)) Mo ($size octets)"
           } >> "$GITHUB_STEP_SUMMARY"
+          # Signature de mise à jour : écrite par la CLI à côté de l'installeur (<installeur>.sig).
+          if [ "${UPDATER_KEY_PRESENT}" = "true" ]; then
+            if [ ! -s "${setup}.sig" ]; then
+              echo "::error::signature de mise à jour attendue et absente : $(basename "$setup").sig"
+              exit 1
+            fi
+            echo "Signature de mise à jour : $(basename "$setup").sig"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Signature de mise à jour : \`$(basename "$setup").sig\`" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Contrôler la signature (si signé)
         if: env.AZURE_CLIENT_ID != '' && env.ARTIFACT_SIGNING_ACCOUNT != ''
@@ -284,10 +342,13 @@ jobs:
           $signature | Format-List Status, StatusMessage, SignerCertificate
           if ($signature.Status -ne 'Valid') { throw "signature invalide : $($signature.Status)" }
 
+      # Installeur et, s'il existe, sa signature de mise à jour (les deux à la racine de l'artefact).
       - uses: actions/upload-artifact@v4
         with:
           name: corde-setup
-          path: apps/desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
+          path: |
+            apps/desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
+            apps/desktop/src-tauri/target/release/bundle/nsis/*-setup.exe.sig
           if-no-files-found: error
           retention-days: 30
 
@@ -324,6 +385,8 @@ jobs:
       - name: Préparer les fichiers et les notes
         run: |
           set -euo pipefail
+          # La signature de mise à jour ne sert que dans la release numérotée (job `version`).
+          rm -f release/*.sig
           (cd corde-windows && zip -qr ../release/corde-portable-windows.zip .)
           ls -l release
           setup=$(basename release/*-setup.exe)
@@ -341,6 +404,8 @@ jobs:
             echo "3. Suis l'installeur — il ne demande pas de droits administrateur — puis lance **Corde** depuis le menu Démarrer."
             echo ""
             echo "Pour mettre à jour, fais exactement la même chose : le nouvel installeur remplace l'ancienne version. Tes sessions, tes dispositions et tes réglages (\`%LOCALAPPDATA%\\Corde\`) sont conservés. Quitte Corde avant (clic droit sur l'icône près de l'horloge → Quitter)."
+            echo ""
+            echo "Depuis la 0.6.0, les versions numérotées (pas cette version de développement) s'installent aussi depuis l'application : **Réglages → Mises à jour → Rechercher une mise à jour**."
             echo ""
             echo "Tu avais l'ancienne version (avant 0.3.0, logo « M ») ? Quitte-la, installe Corde : au premier lancement, Corde reprend toutes tes données. Ensuite, désinstalle l'ancienne version. Détails : [passer de l'ancienne version à Corde](${docs}/TESTING-ON-PC.md#passer-de-lancienne-version-avant-030-logo--m--à-corde)."
             echo ""
@@ -385,8 +450,124 @@ jobs:
           done
           exit 1
 
+  version:
+    name: Version numérotée (release v<version> et mises à jour)
+    # Uniquement quand `main` du dépôt d'origine avance : jamais sur une branche, une PR, un tag ni un fork.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'dultra123/corde'
+    needs: [rust, desktop]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      # tauri.conf.json (version, clé publique), CHANGELOG.md (notes) et le script de publication.
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      # La version vient de tauri.conf.json (la même que celle de l'installeur et de l'application).
+      # Une release déjà publiée pour v<version> : rien à faire. Un brouillon (publication interrompue
+      # par une exécution annulée) : supprimé puis refait.
+      - name: Une release v<version> existe-t-elle ?
+        id: plan
+        run: |
+          set -euo pipefail
+          version=$(python3 -I .github/scripts/updater_manifest.py version apps/desktop/src-tauri/tauri.conf.json)
+          tag="v${version}"
+          gh release list --limit 1000 --json tagName,isDraft > releases.json
+          state=$(python3 -I .github/scripts/updater_manifest.py release-state "$tag" < releases.json)
+          echo "Version ${version} (${tag}) : release ${state}"
+          if [ "$state" = "draft" ]; then
+            echo "::warning::brouillon ${tag} laissé par une publication interrompue : supprimé, puis refait"
+            gh release delete "$tag" --yes
+            state=absent
+          fi
+          {
+            echo "version=${version}"
+            echo "tag=${tag}"
+            echo "publish=$([ "$state" = "absent" ] && echo true || echo false)"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: actions/download-artifact@v4
+        if: steps.plan.outputs.publish == 'true'
+        with:
+          name: corde-setup
+          path: release
+
+      - uses: actions/download-artifact@v4
+        if: steps.plan.outputs.publish == 'true'
+        with:
+          name: corde-windows
+          path: corde-windows
+
+      # Sans signature de mise à jour (secret absent), pas de release numérotée : l'application ne
+      # pourrait pas l'installer. La pré-release `continuous` reste publiée.
+      - name: Signature de mise à jour présente ?
+        id: sig
+        if: steps.plan.outputs.publish == 'true'
+        env:
+          VERSION: ${{ steps.plan.outputs.version }}
+        run: |
+          set -euo pipefail
+          ls -l release
+          setup="release/Corde_${VERSION}_x64-setup.exe"
+          if [ ! -f "$setup" ]; then
+            echo "::error::installeur attendu introuvable : $(basename "$setup")"
+            exit 1
+          fi
+          if [ -s "${setup}.sig" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::pas de signature de mise à jour (secret TAURI_SIGNING_PRIVATE_KEY absent ?) : release v${VERSION} non créée"
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # latest.json au format de tauri-plugin-updater ; le script vérifie aussi que la signature a été
+      # faite par la clé dont la clé publique est dans tauri.conf.json, pour cette version et ce fichier.
+      - name: Préparer latest.json, l'archive portable et les notes
+        if: steps.plan.outputs.publish == 'true' && steps.sig.outputs.ok == 'true'
+        env:
+          VERSION: ${{ steps.plan.outputs.version }}
+        run: |
+          set -euo pipefail
+          python3 -I .github/scripts/updater_manifest.py manifest \
+            --conf apps/desktop/src-tauri/tauri.conf.json \
+            --changelog CHANGELOG.md \
+            --setup "release/Corde_${VERSION}_x64-setup.exe" \
+            --repo "$GITHUB_REPOSITORY" \
+            --out release/latest.json \
+            --notes-out notes.md
+          (cd corde-windows && zip -qr "../release/corde-${VERSION}-portable-windows.zip" .)
+          ls -l release
+          cat release/latest.json
+
+      # Créée en brouillon (fichiers envoyés), puis publiée et marquée « latest » : une exécution
+      # interrompue ne laisse jamais une release publiée sans latest.json. L'étiquette est créée à la
+      # publication, sur le commit construit.
+      - name: Publier la release v<version>
+        if: steps.plan.outputs.publish == 'true' && steps.sig.outputs.ok == 'true'
+        env:
+          VERSION: ${{ steps.plan.outputs.version }}
+          TAG: ${{ steps.plan.outputs.tag }}
+        run: |
+          set -euo pipefail
+          gh release create "$TAG" release/* \
+            --draft \
+            --target "$GITHUB_SHA" \
+            --title "Corde ${VERSION}" \
+            --notes-file notes.md
+          gh release edit "$TAG" --draft=false --latest
+          gh release view "$TAG"
+          {
+            echo "### Release ${TAG} publiée"
+            echo ""
+            echo "Mises à jour : https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/latest.json"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   release:
-    name: Release GitHub
+    name: Release GitHub (étiquette manuelle)
     # Uniquement sur une étiquette v* poussée dans le dépôt d'origine (jamais sur une PR ni un fork).
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && github.repository == 'dultra123/corde'
     needs: [rust, desktop]
@@ -396,23 +577,41 @@ jobs:
     env:
       # Nom de l'étiquette : passé par l'environnement, jamais collé dans le script.
       VERSION: ${{ github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
     steps:
+      # Déjà publiée par le job `version` (même numéro) : on n'y touche pas.
+      - name: La release de cette étiquette existe-t-elle déjà ?
+        id: existing
+        run: |
+          set -euo pipefail
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            echo "::notice::release ${VERSION} déjà publiée (job version) : rien à faire"
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/download-artifact@v4
+        if: steps.existing.outputs.found != 'true'
         with:
           name: corde-windows
           path: corde-windows
 
       - uses: actions/download-artifact@v4
+        if: steps.existing.outputs.found != 'true'
         with:
           name: corde-linux
           path: corde-linux
 
       - uses: actions/download-artifact@v4
+        if: steps.existing.outputs.found != 'true'
         with:
           name: corde-setup
           path: corde-setup
 
       - name: Créer les archives
+        if: steps.existing.outputs.found != 'true'
         run: |
           set -euo pipefail
           (cd corde-windows && zip -r "../corde-${VERSION}-windows.zip" \
@@ -420,7 +619,10 @@ jobs:
           tar -C corde-linux -czf "corde-${VERSION}-linux.tar.gz" .
           ls -l corde-*.zip corde-*.tar.gz corde-setup
 
+      # Jamais « latest » : la release « latest » est celle du job `version`, la seule qui porte un
+      # latest.json (adresse lue par les mises à jour de l'application).
       - uses: softprops/action-gh-release@v2
+        if: steps.existing.outputs.found != 'true'
         with:
           files: |
             corde-setup/*-setup.exe
@@ -428,6 +630,7 @@ jobs:
             corde-*-linux.tar.gz
           generate_release_notes: true
           fail_on_unmatched_files: true
+          make_latest: "false"
 
   deny:
     name: Dépendances Rust (cargo-deny, informatif)

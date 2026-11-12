@@ -205,6 +205,10 @@ describe("helpers", () => {
     expect(
       noteLines("### Nouveautés\n\n- **Mises à jour** depuis les réglages\n  - `latest.json`\n"),
     ).toEqual(["Nouveautés", "• Mises à jour depuis les réglages", "  • latest.json"]);
+    // Wrapped list items (as in CHANGELOG.md) are joined back.
+    expect(
+      noteLines("- **Mise à jour** : Réglages, puis\n  « Installer et redémarrer ».\n- Deux"),
+    ).toEqual(["• Mise à jour : Réglages, puis « Installer et redémarrer ».", "• Deux"]);
     const long = Array.from({ length: 40 }, (_, i) => `- ligne ${i}`).join("\n");
     const lines = noteLines(long, 30);
     expect(lines).toHaveLength(31);
