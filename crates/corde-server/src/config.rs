@@ -14,6 +14,8 @@ pub const DEFAULT_RATE_HZ: u8 = 20;
 pub const MAX_RATE_HZ: u8 = 60;
 /// Default sample rate of the recorder, Hz.
 pub const DEFAULT_RECORD_RATE_HZ: f32 = 50.0;
+/// Seconds between two rounds of sending to the home server.
+pub const DEFAULT_SYNC_INTERVAL_S: u64 = 300;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum, Default)]
 #[clap(rename_all = "lower")]
@@ -26,6 +28,18 @@ pub enum SourceKind {
     Sim,
     /// Le Mans Ultimate shared memory.
     Lmu,
+}
+
+/// What this process is (`--role`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum, Default)]
+#[clap(rename_all = "lower")]
+pub enum Role {
+    /// The PC that runs the game (default): reads the game, records, serves the live view.
+    #[default]
+    Desktop,
+    /// The always-on home server (ADR 0010): no game, no recorder; keeps what a paired PC
+    /// sends and serves it to paired devices only. Listens on every interface.
+    Hub,
 }
 
 /// Which extractor reads the driver's feedback (`--llm`).
@@ -46,6 +60,19 @@ pub enum LlmKind {
     about = "Serveur local Corde : télémétrie → WebSocket/HTTP pour les tableaux de bord"
 )]
 pub struct ServerConfig {
+    /// `desktop` (default: the PC that runs the game) or `hub` (the home server: no game,
+    /// pairing required, see docs/SERVEUR.md).
+    #[arg(long, value_enum, default_value_t = Role::Desktop)]
+    pub role: Role,
+    /// Another host name this server answers to (`Host` header), besides IP addresses and
+    /// this machine's own name: e.g. a name your VPN or your router gives the server. Repeat
+    /// the option for several names.
+    #[arg(long = "allow-host", value_name = "NAME")]
+    pub allow_host: Vec<String>,
+    /// PC paired with a home server: seconds between two rounds of sending (0 = only after
+    /// a recording stops and when asked). Start-up and the end of every recording send too.
+    #[arg(long, default_value_t = DEFAULT_SYNC_INTERVAL_S, hide = true)]
+    pub sync_interval_s: u64,
     /// TCP port to listen on (0 = pick a free port).
     #[arg(long, default_value_t = DEFAULT_PORT)]
     pub port: u16,
@@ -148,6 +175,9 @@ pub struct ServerConfig {
 impl Default for ServerConfig {
     fn default() -> Self {
         Self {
+            role: Role::Desktop,
+            allow_host: Vec::new(),
+            sync_interval_s: DEFAULT_SYNC_INTERVAL_S,
             port: DEFAULT_PORT,
             bind: None,
             lan: false,
@@ -310,6 +340,8 @@ pub enum BindOrigin {
     Setting,
     /// Nothing asked for the network: this PC only.
     Default,
+    /// `--role hub`: the home server listens on every interface (pairing required).
+    Hub,
 }
 
 /// The address the server listens on, in order of priority:
@@ -330,6 +362,9 @@ pub fn resolve_bind(cfg: &ServerConfig, settings: &Settings) -> IpAddr {
 pub fn resolve_bind_origin(cfg: &ServerConfig, settings: &Settings) -> (IpAddr, BindOrigin) {
     if let Some(ip) = cfg.bind {
         return (ip, BindOrigin::Explicit);
+    }
+    if cfg.role == Role::Hub {
+        return (IpAddr::V4(Ipv4Addr::UNSPECIFIED), BindOrigin::Hub);
     }
     if cfg.lan {
         return (IpAddr::V4(Ipv4Addr::UNSPECIFIED), BindOrigin::LanFlag);
@@ -429,6 +464,17 @@ mod tests {
         assert_eq!(resolve_bind_origin(&c, &on).1, BindOrigin::Explicit);
         let c = ServerConfig::parse_from(["corde-server", "--bind", "192.168.1.20"]);
         assert_eq!(resolve_bind(&c, &off), IpAddr::from([192, 168, 1, 20]));
+
+        // The home server listens on every interface, whatever the setting says.
+        let c = ServerConfig::parse_from(["corde-server", "--role", "hub"]);
+        assert_eq!(c.role, Role::Hub);
+        assert_eq!(resolve_bind_origin(&c, &off), (any, BindOrigin::Hub));
+        let c = ServerConfig::parse_from(["corde-server", "--role", "hub", "--bind", "127.0.0.1"]);
+        assert_eq!(resolve_bind(&c, &off), local);
+        assert_eq!(
+            ServerConfig::parse_from(["corde-server"]).role,
+            Role::Desktop
+        );
         assert!(ServerConfig::try_parse_from(["corde-server", "--bind", "pc-jeu"]).is_err());
     }
 

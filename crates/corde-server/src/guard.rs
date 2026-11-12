@@ -73,6 +73,13 @@ pub fn route_access(method: &Method, route: &str) -> Access {
             // Opens or closes the server to the network; lets it read the
             // race schedule on the web (`online_schedule`).
             | ("PUT", "/api/settings")
+            // The link to the home server: its address, pairing (the PC then holds a
+            // device token), sending everything again, unpairing.
+            | ("PUT", "/api/hub-link")
+            | ("DELETE", "/api/hub-link")
+            | ("POST", "/api/hub-link/pair")
+            | ("POST", "/api/hub-link/sync")
+            | ("POST", "/api/hub-link/resend")
     );
     // Deliberately open (the phone uses them), bounded by their handlers:
     // GET /api/races/sources (fetches only the closed list of `races::sources`,
@@ -88,19 +95,81 @@ pub fn route_access(method: &Method, route: &str) -> Access {
     }
 }
 
+/// Who may call a route of the home server (`--role hub`, ADR 0010). Every route not listed
+/// needs a paired device ([`HubAccess::Device`]): unknown routes too (closed by default).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HubAccess {
+    /// Anyone who reaches the server: the pairing state and the typed code only.
+    Public,
+    /// The commands run on the server itself (`corde-server pair | devices | revoke`):
+    /// loopback, no `Origin`, the control key of `<data>/hub/control.json`.
+    LocalControl,
+    /// Any paired device.
+    Device,
+    /// A paired device marked administrator (the first one paired).
+    Admin,
+    /// Never on the server, with the reason shown.
+    Refused(&'static str),
+}
+
+/// The access rule of a route on the home server. Kept in sync with the table of
+/// `docs/SECURITY-MODEL.md` §7.
+pub fn hub_route_access(method: &Method, route: &str) -> HubAccess {
+    use HubAccess::*;
+    match (method.as_str(), route) {
+        ("GET", "/api/hub/pairing") | ("POST", "/api/hub/pair") => Public,
+        (_, r) if r.starts_with("/api/hub/local/") => LocalControl,
+        // Deletes data (a deleted session is not sent again by the PC: tombstone), heavy
+        // work, settings (the online schedule makes the server read two web pages).
+        ("DELETE", "/api/layouts")
+        | ("DELETE", "/api/layouts/{id}")
+        | ("DELETE", "/api/sessions/{id}")
+        | ("POST", "/api/sessions/{id}/analysis/recompute")
+        | ("PUT", "/api/settings") => Admin,
+        // The game's folders are on the PC, not on the server.
+        ("POST", "/api/sessions/{id}/setup-files") => Refused(
+            "le serveur Corde n'écrit pas dans les dossiers du jeu : crée les fichiers de réglage depuis le PC",
+        ),
+        ("POST", "/api/profile/import") => Refused(
+            "le serveur Corde ne lit pas les fichiers du jeu : les résultats arrivent du PC à chaque synchronisation",
+        ),
+        ("POST", "/api/recording/start") | ("POST", "/api/recording/stop") => Refused(
+            "le serveur Corde n'enregistre pas : l'enregistrement se fait sur le PC qui fait tourner le jeu",
+        ),
+        _ => Device,
+    }
+}
+
 /// The `Host` values this server answers to.
 #[derive(Debug, Clone)]
 pub struct HostPolicy {
     /// The server listens on the LAN (decided at start-up).
     lan: bool,
-    /// This machine's names, lower case (`pc-jeu`, `pc-jeu.local`).
+    /// This machine's names, lower case (`pc-jeu`, `pc-jeu.local`), plus `--allow-host`.
     machine_names: Vec<String>,
+    /// Home server: the "this PC only" rule gives way to the paired devices
+    /// ([`hub_route_access`], enforced by `hub::hub_guard`).
+    hub: bool,
 }
 
 impl HostPolicy {
     /// For a server bound to `listen`, with this machine's names.
     pub fn for_listener(listen: SocketAddr) -> Self {
         Self::new(listens_on_lan(listen.ip()), &machine_names())
+    }
+
+    /// For a server bound to `listen`, with this machine's names and `extra` ones
+    /// (`--allow-host`), as a home server when `hub`.
+    pub fn for_server(listen: SocketAddr, extra: &[String], hub: bool) -> Self {
+        let mut names = machine_names();
+        names.extend(extra.iter().cloned());
+        let mut p = Self::new(listens_on_lan(listen.ip()), &names);
+        p.hub = hub;
+        p
+    }
+
+    pub fn hub(&self) -> bool {
+        self.hub
     }
 
     pub fn new(lan: bool, names: &[String]) -> Self {
@@ -117,7 +186,11 @@ impl HostPolicy {
                 }
             }
         }
-        Self { lan, machine_names }
+        Self {
+            lan,
+            machine_names,
+            hub: false,
+        }
     }
 
     pub fn lan(&self) -> bool {
@@ -191,7 +264,13 @@ pub fn cors_layer() -> CorsLayer {
                 .and_then(|h| h.to_str().ok());
             origin.to_str().is_ok_and(|o| origin_allowed(o, host))
         }))
-        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::PATCH,
+            Method::DELETE,
+        ])
         .allow_headers([header::CONTENT_TYPE, header::ACCEPT])
         .max_age(Duration::from_secs(600))
 }
@@ -243,7 +322,8 @@ pub async fn guard(State(policy): State<Arc<HostPolicy>>, req: Request, next: Ne
                 .map(|c| c.0.ip())
         });
     if let Some(route) = req.extensions().get::<MatchedPath>() {
-        if route_access(req.method(), route.as_str()) == Access::ThisPcOnly
+        if !policy.hub
+            && route_access(req.method(), route.as_str()) == Access::ThisPcOnly
             && !peer.is_some_and(|p| may_change_settings(p, origin))
         {
             return forbidden(
@@ -440,6 +520,54 @@ mod tests {
         ];
         for (m, r, want) in cases {
             assert_eq!(route_access(&m, r), want, "{m} {r}");
+        }
+        for (m, r) in [
+            (Method::PUT, "/api/hub-link"),
+            (Method::DELETE, "/api/hub-link"),
+            (Method::POST, "/api/hub-link/pair"),
+            (Method::POST, "/api/hub-link/sync"),
+            (Method::POST, "/api/hub-link/resend"),
+        ] {
+            assert_eq!(route_access(&m, r), ThisPcOnly, "{m} {r}");
+        }
+        assert_eq!(route_access(&Method::GET, "/api/hub-link"), Open);
+    }
+
+    #[test]
+    fn hub_route_classes() {
+        use HubAccess::*;
+        let cases = [
+            (Method::GET, "/api/hub/pairing", Public),
+            (Method::POST, "/api/hub/pair", Public),
+            (Method::POST, "/api/hub/local/pairing-code", LocalControl),
+            (Method::GET, "/api/hub/local/devices", LocalControl),
+            (Method::DELETE, "/api/hub/local/devices/{id}", LocalControl),
+            (Method::GET, "/api/health", Device),
+            (Method::GET, "/api/sessions", Device),
+            (Method::GET, "/ws", Device),
+            (Method::GET, "/api/hub/devices", Device),
+            (Method::PATCH, "/api/hub/devices/{id}", Device),
+            (Method::DELETE, "/api/hub/devices/{id}", Device),
+            (Method::POST, "/api/sync/hello", Device),
+            (Method::PUT, "/api/sync/sessions/{id}", Device),
+            (Method::POST, "/api/sessions/{id}/feedback", Device),
+            (Method::PUT, "/api/races/picks/{id}", Device),
+            (Method::DELETE, "/api/sessions/{id}", Admin),
+            (Method::POST, "/api/sessions/{id}/analysis/recompute", Admin),
+            (Method::PUT, "/api/settings", Admin),
+            (Method::DELETE, "/api/layouts", Admin),
+            (Method::GET, "/api/does-not-exist", Device),
+        ];
+        for (m, r, want) in cases {
+            assert_eq!(hub_route_access(&m, r), want, "{m} {r}");
+        }
+        for (m, r) in [
+            (Method::POST, "/api/sessions/{id}/setup-files"),
+            (Method::POST, "/api/profile/import"),
+            (Method::POST, "/api/recording/start"),
+            (Method::POST, "/api/recording/stop"),
+        ] {
+            assert!(matches!(hub_route_access(&m, r), Refused(_)), "{m} {r}");
         }
     }
 

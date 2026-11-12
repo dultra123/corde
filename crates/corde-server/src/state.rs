@@ -1,6 +1,6 @@
 //! Shared state between the source thread, the WebSocket clients and the HTTP API.
 
-use crate::config::LlmKind;
+use crate::config::{LlmKind, Role};
 use crate::layouts::LayoutStore;
 use crate::results_import::ResultsImporter;
 use crate::settings::SettingsStore;
@@ -162,6 +162,19 @@ pub struct AppState {
     pub engineer: Engineer,
     /// Online race schedule, picks and reminders (page « Courses »).
     pub races: crate::races::Races,
+    /// `desktop` (the PC) or `hub` (the home server).
+    pub role: Role,
+    /// Home server only: paired devices, last PC seen.
+    pub hub: Option<Arc<crate::hub::Hub>>,
+    /// PC only: the link to the home server and what it still lacks.
+    pub link: Option<Arc<crate::hub_link::HubLink>>,
+}
+
+/// What differs between the PC and the home server, for [`AppState::new`].
+pub struct RoleState {
+    pub role: Role,
+    pub hub: Option<Arc<crate::hub::Hub>>,
+    pub link: Option<Arc<crate::hub_link::HubLink>>,
 }
 
 impl AppState {
@@ -176,6 +189,7 @@ impl AppState {
         listen: SocketAddr,
         engineer: Engineer,
         data_dir: PathBuf,
+        role: RoleState,
     ) -> Arc<Self> {
         let (frame_tx, frame_rx) = watch::channel(None);
         let (bus, _) = broadcast::channel(256);
@@ -204,7 +218,15 @@ impl AppState {
             shutdown,
             engineer,
             races,
+            role: role.role,
+            hub: role.hub,
+            link: role.link,
         })
+    }
+
+    /// `true` on the home server.
+    pub fn is_hub(&self) -> bool {
+        self.role == Role::Hub
     }
 
     /// Use this `UserData` folder whatever the game announces (`--game-user-data`).
@@ -239,6 +261,10 @@ impl AppState {
     /// installation found through the Steam libraries. The setups are read
     /// after the race, most often with the game closed.
     pub fn game_user_data_or_located(&self) -> Option<PathBuf> {
+        // The home server has no game: never look for one there.
+        if self.is_hub() {
+            return None;
+        }
         self.game_user_data().or_else(|| {
             self.located_user_data
                 .get_or_init(|| {

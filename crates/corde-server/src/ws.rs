@@ -18,6 +18,7 @@ use corde_protocol::{ClientMessage, ServerMessage, PROTOCOL_VERSION};
 use serde::Deserialize;
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::broadcast;
 use tokio::sync::broadcast::error::RecvError;
 use tokio::time::{interval, MissedTickBehavior};
 
@@ -32,6 +33,7 @@ pub struct WsQuery {
 pub async fn ws_handler(
     State(state): State<Arc<AppState>>,
     Query(q): Query<WsQuery>,
+    device: Option<axum::Extension<crate::hub::auth::DeviceCtx>>,
     ws: Result<WebSocketUpgrade, WebSocketUpgradeRejection>,
 ) -> Response {
     // Format is checked first so that a plain GET /ws?format=msgpack answers 501.
@@ -65,9 +67,28 @@ pub async fn ws_handler(
         Err(rejection) => return rejection.into_response(),
     };
     let rate = q.rate.map(clamp_rate).unwrap_or(state.default_rate);
+    // Home server: the socket closes as soon as its device is revoked.
+    let revocation = match (&state.hub, device) {
+        (Some(hub), Some(axum::Extension(d))) => Some((d.id, hub.auth.subscribe_revocations())),
+        _ => None,
+    };
     ws.max_message_size(crate::guard::WS_MAX_MESSAGE_BYTES)
         .max_frame_size(crate::guard::WS_MAX_MESSAGE_BYTES)
-        .on_upgrade(move |socket| client_loop(socket, state, rate))
+        .on_upgrade(move |socket| client_loop(socket, state, rate, revocation))
+}
+
+/// Resolves when `device` is revoked (never without a device).
+async fn revoked(rev: &mut Option<(String, broadcast::Receiver<String>)>) {
+    match rev {
+        Some((device, rx)) => loop {
+            match rx.recv().await {
+                Ok(id) if id == *device => return,
+                Ok(_) | Err(RecvError::Lagged(_)) => continue,
+                Err(RecvError::Closed) => std::future::pending::<()>().await,
+            }
+        },
+        None => std::future::pending::<()>().await,
+    }
 }
 
 fn clamp_rate(hz: u8) -> u8 {
@@ -94,7 +115,12 @@ async fn send_json(socket: &mut WebSocket, msg: &ServerMessage) -> bool {
     }
 }
 
-async fn client_loop(mut socket: WebSocket, state: Arc<AppState>, initial_rate: u8) {
+async fn client_loop(
+    mut socket: WebSocket,
+    state: Arc<AppState>,
+    initial_rate: u8,
+    mut revocation: Option<(String, broadcast::Receiver<String>)>,
+) {
     let _guard = state.client_connected();
     let mut rate = initial_rate;
     let mut shutdown = state.shutdown.subscribe();
@@ -123,6 +149,17 @@ async fn client_loop(mut socket: WebSocket, state: Arc<AppState>, initial_rate: 
 
             _ = shutdown.changed() => {
                 let _ = socket.send(Message::Close(None)).await;
+                break;
+            }
+
+            _ = revoked(&mut revocation) => {
+                tracing::info!("ws: device revoked, connection closed");
+                let _ = socket
+                    .send(Message::Close(Some(axum::extract::ws::CloseFrame {
+                        code: 4401,
+                        reason: Utf8Bytes::from_static("device revoked"),
+                    })))
+                    .await;
                 break;
             }
 

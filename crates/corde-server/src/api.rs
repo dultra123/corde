@@ -154,6 +154,72 @@ impl IntoResponse for ApiError {
 }
 
 pub fn router(state: Arc<AppState>, ui_dir: Option<PathBuf>) -> Router {
+    router_with(state, ui_dir, &[])
+}
+
+/// The routes of the home server (`--role hub`): pairing, devices, receiving a PC's data.
+fn hub_routes(api: Router<Arc<AppState>>) -> Router<Arc<AppState>> {
+    use crate::hub::{receive, routes};
+    use crate::sync_wire::{BUNDLE_MAX, CHUNK_MAX};
+    use axum::routing::{patch, put};
+    let bundle_limit = DefaultBodyLimit::max(BUNDLE_MAX);
+    let chunk_limit = DefaultBodyLimit::max(CHUNK_MAX + 64 * 1024);
+    api.route("/api/hub/pairing", get(routes::pairing_state))
+        .route("/api/hub/pair", post(routes::pair))
+        .route("/api/hub/status", get(routes::status))
+        .route("/api/hub/devices", get(routes::list_devices))
+        .route(
+            "/api/hub/devices/{id}",
+            patch(routes::patch_device).delete(routes::delete_device),
+        )
+        .route(
+            "/api/hub/local/pairing-code",
+            post(routes::local_pairing_code),
+        )
+        .route("/api/hub/local/devices", get(routes::local_devices))
+        .route(
+            "/api/hub/local/devices/{id}",
+            axum::routing::delete(routes::local_revoke),
+        )
+        .route("/api/sync/hello", post(receive::hello))
+        .route(
+            "/api/sync/results",
+            post(receive::put_result).layer(bundle_limit),
+        )
+        .route(
+            "/api/sync/files/{id}/{name}",
+            put(receive::put_chunk).layer(chunk_limit),
+        )
+        .route(
+            "/api/sync/files/{id}/{name}/commit",
+            post(receive::commit_file),
+        )
+        .route(
+            "/api/sync/sessions/{id}",
+            put(receive::put_session).layer(bundle_limit),
+        )
+        .route(
+            "/api/sync/sessions/{id}/feedback",
+            get(receive::get_feedback)
+                .post(receive::post_feedback)
+                .layer(bundle_limit),
+        )
+}
+
+/// The routes of the PC's link to its home server.
+fn link_routes(api: Router<Arc<AppState>>) -> Router<Arc<AppState>> {
+    use crate::hub_link as l;
+    api.route(
+        "/api/hub-link",
+        get(l::get_link).put(l::put_link).delete(l::delete_link),
+    )
+    .route("/api/hub-link/pair", post(l::pair_route))
+    .route("/api/hub-link/sync", post(l::sync_route))
+    .route("/api/hub-link/resend", post(l::resend_route))
+}
+
+/// [`router`] with extra host names this server answers to (`--allow-host`).
+pub fn router_with(state: Arc<AppState>, ui_dir: Option<PathBuf>, allow_host: &[String]) -> Router {
     let api = Router::new()
         .route("/api/health", get(health))
         .route("/api/status", get(status))
@@ -218,6 +284,11 @@ pub fn router(state: Arc<AppState>, ui_dir: Option<PathBuf>) -> Router {
             get(crate::races::get_settings).put(crate::races::put_settings),
         )
         .route("/ws", any(ws_handler));
+    let api = if state.is_hub() {
+        hub_routes(api)
+    } else {
+        link_routes(api)
+    };
 
     let app = match ui_dir {
         Some(dir) => {
@@ -230,9 +301,18 @@ pub fn router(state: Arc<AppState>, ui_dir: Option<PathBuf>) -> Router {
     // Outermost last: the guard (Host, Origin, PC-only routes) sees every
     // request before CORS answers a preflight. See `guard` and
     // docs/SECURITY-MODEL.md.
-    let policy = Arc::new(crate::guard::HostPolicy::for_listener(state.listen));
+    // On the home server, the paired-device check runs right after the guard.
+    let policy = Arc::new(crate::guard::HostPolicy::for_server(
+        state.listen,
+        allow_host,
+        state.is_hub(),
+    ));
     app.layer(axum::middleware::from_fn(static_cache_policy))
         .layer(DefaultBodyLimit::max(crate::guard::MAX_BODY_BYTES))
+        .layer(axum::middleware::from_fn_with_state(
+            Arc::clone(&state),
+            crate::hub::hub_guard,
+        ))
         .layer(crate::guard::cors_layer())
         .layer(axum::middleware::from_fn_with_state(
             policy,
@@ -301,6 +381,7 @@ async fn health(State(state): State<Arc<AppState>>) -> Json<Value> {
         "protocol_version": corde_protocol::PROTOCOL_VERSION,
         "uptime_s": state.uptime_s(),
         "llm": state.engineer.llm,
+        "role": if state.is_hub() { "hub" } else { "desktop" },
     }))
 }
 
@@ -440,7 +521,17 @@ async fn get_session(State(state): State<Arc<AppState>>, Path(id): Path<String>)
 
 async fn delete_session(State(state): State<Arc<AppState>>, Path(id): Path<String>) -> AppResult {
     let store = store_of(&state)?;
-    tokio::task::spawn_blocking(move || store.delete_session(&id)).await??;
+    let hub = state.is_hub();
+    tokio::task::spawn_blocking(move || -> Result<(), StoreError> {
+        store.delete_session(&id)?;
+        // On the home server, remembered so that the PC does not send it again.
+        if hub {
+            store.db().add_tombstone(&id)?;
+            tracing::info!("session {id} deleted on the server (not received again)");
+        }
+        Ok(())
+    })
+    .await??;
     Ok(StatusCode::NO_CONTENT.into_response())
 }
 
@@ -759,13 +850,29 @@ struct ProfileResponse {
 
 async fn profile(State(state): State<Arc<AppState>>) -> AppResult {
     let store = store_of(&state)?;
-    let importer = importer_of(&state)?;
-    let summary = tokio::task::spawn_blocking(move || store.profile_summary()).await??;
-    Ok(Json(ProfileResponse {
-        summary,
-        import: importer.status(),
-    })
-    .into_response())
+    let import = if state.is_hub() {
+        // The server reads no game file: the results come from the PC.
+        ImportStatus {
+            error: Some(
+                "Sur le serveur Corde, les résultats arrivent du PC à chaque synchronisation."
+                    .into(),
+            ),
+            ..Default::default()
+        }
+    } else {
+        importer_of(&state)?.status()
+    };
+    let st = Arc::clone(&store);
+    let summary = tokio::task::spawn_blocking(move || st.profile_summary()).await??;
+    let import = if state.is_hub() {
+        ImportStatus {
+            total_imported: summary.totals.sessions,
+            ..import
+        }
+    } else {
+        import
+    };
+    Ok(Json(ProfileResponse { summary, import }).into_response())
 }
 
 /// `POST /api/profile/import`: scan now (re-examining skipped files) and
@@ -899,13 +1006,19 @@ async fn put_settings(
         Some(v) => Some(v.to_str().unwrap_or("")),
         None => None,
     };
-    if !crate::net::may_change_settings(peer.ip(), origin) {
+    // On the home server the hub guard already required an administrator device.
+    if !state.is_hub() && !crate::net::may_change_settings(peer.ip(), origin) {
         return Err(ApiError(
             StatusCode::FORBIDDEN,
             "les réglages ne se changent que depuis le PC qui fait tourner Corde".into(),
         ));
     }
     let patch = validate_settings(&body)?;
+    if state.is_hub() && patch.lan_access.is_some() {
+        return Err(ApiError::bad_request(
+            "sans objet sur le serveur Corde : il écoute toujours sur le réseau local (appareils appairés seulement)",
+        ));
+    }
     let listen = state.listen;
     let saved = tokio::task::spawn_blocking(move || {
         state.settings.update(|s| {

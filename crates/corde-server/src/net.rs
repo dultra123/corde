@@ -204,7 +204,7 @@ pub fn banner_lines(
         let why = match origin {
             BindOrigin::Explicit => format!("--bind {}", bound.ip()),
             BindOrigin::LanFlag => "--lan".to_string(),
-            BindOrigin::Setting | BindOrigin::Default => {
+            BindOrigin::Setting | BindOrigin::Default | BindOrigin::Hub => {
                 "réglage « accès depuis mon téléphone »".to_string()
             }
         };
@@ -245,9 +245,57 @@ pub fn banner_lines(
     lines
 }
 
+/// Lines of the start-up banner of the home server (`--role hub`).
+pub fn hub_banner_lines(
+    bound: SocketAddr,
+    ui: Option<&std::path::Path>,
+    data_dir: &std::path::Path,
+) -> Vec<String> {
+    let mut lines = vec![format!(
+        "corde-server {} — serveur Corde (rôle hub)",
+        crate::state::SERVER_VERSION
+    )];
+    let endpoints = lan_endpoints(bound);
+    if endpoints.is_empty() {
+        lines.push(format!(
+            "  Adresse : http://127.0.0.1:{}   (aucune adresse réseau trouvée)",
+            bound.port()
+        ));
+    }
+    for (name, url) in endpoints {
+        lines.push(format!("  Adresse : {url}   ({name})"));
+    }
+    lines.push(
+        "  Accès   : appareils appairés seulement. Code d'appairage : sudo corde-server pair"
+            .to_string(),
+    );
+    lines.push(
+        "            Ne redirige jamais ce port depuis ta box : l'accès extérieur passe par un VPN."
+            .to_string(),
+    );
+    lines.push(match ui {
+        Some(dir) => format!("  UI      : {}", dir.display()),
+        None => "  UI      : aucune (API seule — --ui-dir <dossier>)".to_string(),
+    });
+    lines.push(format!("  Data    : {}", data_dir.display()));
+    lines
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_hub_banner_names_the_pairing_command() {
+        let lines = hub_banner_lines(
+            "0.0.0.0:8471".parse().unwrap(),
+            None,
+            std::path::Path::new("/var/lib/corde"),
+        );
+        assert!(lines[0].contains("hub"));
+        assert!(lines.iter().any(|l| l.contains("sudo corde-server pair")));
+        assert!(lines.iter().any(|l| l.contains("VPN")));
+    }
 
     #[test]
     fn banner_says_whether_the_lan_is_open_and_how_to_open_it() {
