@@ -3,7 +3,7 @@
 > Corde s'appelait anciennement Muret (nom de travail) ; renommée le 11 novembre 2026 (version 0.3.0).
 
 > Fichier de reprise : n'importe qui (humain ou agent) doit pouvoir repartir d'ici.
-> Mis à jour à chaque jalon. Dernière mise à jour : 2026-11-12 (« Application iPhone », version 0.8.0 ; avant : « Défilé des courses en ligne sur l'Accueil », 0.7.1 ; lot « Corde serveur » — serveur domestique Raspberry Pi, appairage, synchronisation depuis le PC —, version 0.7.0 ; avant : « Mises à jour depuis l'application », 0.6.0 ; « Widgets dans OBS », 0.5.0, et son correctif 0.5.1 ; « Courses en ligne », 0.4.0 ; publication dans `dultra123/corde`, sécurité réseau, adresse masquée sur l'accueil ; lot « Corde : renommage, migration des données, licence GPL, logo » ; avant : « S2 — calibration de l'ingénieur sur des données réelles », « réglages réels : fichiers .svm lus et écrits », « ressenti → symptômes → itération du plan », « Précision des tours », « Accueil » et « Application de bureau »).
+> Mis à jour à chaque jalon. Dernière mise à jour : 2026-11-14 (premier build iPhone dans TestFlight ; « Application iPhone », version 0.8.0, le 12 ; avant : « Défilé des courses en ligne sur l'Accueil », 0.7.1 ; lot « Corde serveur » — serveur domestique Raspberry Pi, appairage, synchronisation depuis le PC —, version 0.7.0 ; avant : « Mises à jour depuis l'application », 0.6.0 ; « Widgets dans OBS », 0.5.0, et son correctif 0.5.1 ; « Courses en ligne », 0.4.0 ; publication dans `dultra123/corde`, sécurité réseau, adresse masquée sur l'accueil ; lot « Corde : renommage, migration des données, licence GPL, logo » ; avant : « S2 — calibration de l'ingénieur sur des données réelles », « réglages réels : fichiers .svm lus et écrits », « ressenti → symptômes → itération du plan », « Précision des tours », « Accueil » et « Application de bureau »).
 
 ## Où on en est
 
@@ -49,19 +49,23 @@
 - **SignPath Foundation** (signature gratuite) : le propriétaire a préparé le formulaire mais attend d'avoir une réputation à montrer. Conditions relues le 11 nov. : projet public et déjà publié, politique de confidentialité, désinstallation documentée, options pour couper les connexions, double authentification, approbation manuelle de chaque version. Ne pas ajouter la mention « Code signing policy » avant la demande.
 - **Releases numérotées** : créées par la CI elle-même (job `version`, 0.6.0) quand le numéro de `tauri.conf.json` change sur `main` — plus besoin de pousser une étiquette `v*` (impossible depuis la session d'agent). Publier une version : `apps/desktop/README.md` → « Publier une version ». La pré-release `continuous` reste, pour essayer le dernier état.
 - **Corde serveur** (0.7.0, demande du propriétaire) : **à faire chez le pilote** : installer Raspberry Pi OS Lite 64 bits sur le Pi 5, copier l'archive `corde-server-0.7.0-linux-arm64.tar.gz` (dépôt privé : la télécharger sur le PC puis `scp`), `sudo ./install.sh`, appairer le PC puis le téléphone (`docs/SERVEUR.md`) ; puis, s'il veut l'accès dehors, WireGuard (`docs/ACCES-EXTERIEUR.md`). **À vérifier à ce moment-là** : démarrage réel sous systemd avec le durcissement (`SystemCallFilter`, `MemoryDenyWriteExecute`, `RestrictAddressFamilies` : rien de cela n'a tourné sous un vrai systemd ici, seulement `systemd-analyze verify`) ; la bannière et l'adresse affichées par `install.sh` ; la première synchronisation de ses vraies sessions (volume, durée sur son réseau) ; le montage WireGuard du guide (paquet `wireguard` de Raspberry Pi OS, téléphone limité à l'adresse du Pi dans le tunnel `10.8.0.1`, pas de routage ; PiVPN écarté : développement arrêté en 2024) et les menus des applications mobiles, jamais essayés sur un vrai Pi ; la règle `ufw route deny in on wg0`.
-- **Application iPhone** (0.8.0) : côté Apple (`docs/IOS.md` §3), le propriétaire a fait le 14 nov. :
-  compte développeur actif, identifiant `io.github.dultra123.corde`, fiche de l'application dans App Store
-  Connect (nom **« Corde Racing »**, « Corde » étant pris ; le nom sous l'icône reste « Corde »), clé d'API
-  et les quatre secrets. **Constaté sur les exécutions n° 3 et 4 de `ios.yml`** : compilation Xcode du projet
-  SPM et des six modules, démarrage dans le simulateur, **archive Release pour iPhone** (provisionnement
-  automatique avec la clé d'API) : passent. L'étape de la clé (« printf | grep -q » sous pipefail, formes
-  de collage non prévues) a été remplacée par `apps/mobile/scripts/asc-key.sh` (essais :
-  `asc-key.test.sh`) et un job `cle-api` qui contrôle les secrets en une minute. **Bloqué** : l'export
-  s'arrête sur `Cloud signing permission error` — la clé « Gestionnaire d'apps » n'a pas droit à la
-  signature dans le cloud ; **il faut une clé Admin** (le propriétaire doit en générer une et remplacer
-  `APPSTORE_API_KEY` et `APPSTORE_API_KEY_ID`). Ensuite : envoi vers TestFlight, testeur interne. **Reste
-  connu** : `simctl openurl corde://races` ne change pas de page dans l'essai de fumée (les deux captures
-  sont identiques). **À vérifier sur l'iPhone** : autorisation « Réseau local » et accès HTTP au PC par son
+- **Application iPhone** (0.8.0) : **premier build dans TestFlight le 14 nov.** (0.8.0, build 6, exécution
+  n° 6 de `ios.yml` : « Upload succeeded »). Côté Apple, le propriétaire a fait : compte développeur actif,
+  identifiant `io.github.dultra123.corde`, fiche de l'application (nom **« Corde Racing »**, « Corde » étant
+  pris ; le nom sous l'icône reste « Corde »), clé d'API **Admin** et les quatre secrets. **Ce qui a été
+  appris en route** (exécutions n° 3 à 6) : (1) l'étape de la clé (« printf | grep -q » sous pipefail,
+  formes de collage non prévues) a été remplacée par `apps/mobile/scripts/asc-key.sh` et un job `cle-api`
+  qui contrôle les secrets en une minute ; (2) une clé « Gestionnaire d'apps » s'arrête sur `Cloud signing
+  permission error` ; (3) avec une clé Admin, l'archive signée ad hoc puis re-signée « dans le cloud » part
+  chez Apple, qui la refuse (`Invalid Signature`, 90035) ; (4) **méthode retenue** : certificat « Apple
+  Distribution » et profil App Store créés par l'API pour chaque exécution (`asc-api.mjs`,
+  `ios-signing.sh`, `xcode-signing.mjs`, essais `signing.test.mjs` et `asc-key.test.sh`), archive signée en
+  manuel, signature contrôlée avant l'envoi. Le certificat d'une exécution est révoqué par la suivante
+  (retrouvé par le profil « Corde CI … »). **Reste à faire par le propriétaire** : groupe de testeurs
+  internes dans TestFlight, installation sur l'iPhone. **Reste connu** : `simctl openurl corde://races` ne
+  change pas de page dans l'essai de fumée (les deux captures sont identiques) ; un e-mail d'Apple
+  « certificat révoqué » est possible à chaque envoi (pour l'éviter : garder un certificat fixe dans les
+  secrets, non fait). **À vérifier sur l'iPhone** : autorisation « Réseau local » et accès HTTP au PC par son
   adresse IP (ATS) et par le VPN (`10.8.0.1`) ; WebSocket du direct depuis WKWebView ; notifications
   application fermée, son `corde-reminder.wav`, catégorie « Voir » ; lecture des deux sites par le HTTP
   natif (forme réelle de lmu.tools jamais vue) ; QR code ; paysage sur le Direct ; clavier.

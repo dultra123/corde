@@ -477,3 +477,26 @@ L'accès réseau reste désactivé par défaut, et le serveur Corde exige toujou
   l'application. Dehors : le VPN.
 - Un **iPhone volé et déverrouillé** ouvre l'application et donc le serveur Corde jusqu'à la révocation de
   cet appareil (page Appareils, `sudo corde-server revoke`).
+
+### 8.4 Signature et envoi vers TestFlight (CI)
+
+Workflow `.github/workflows/ios.yml`, scripts `apps/mobile/scripts/` (`asc-key.sh`, `asc-api.mjs`,
+`ios-signing.sh`, `xcode-signing.mjs`).
+
+- **Secrets** : `APPSTORE_API_KEY` (clé d'API App Store Connect, accès Admin), son ID, l'ID d'émetteur et
+  le Team ID. Ils ne sont lus que par les jobs `cle-api` et `testflight`, qui ne tournent que sur
+  `dultra123/corde`, sur une poussée vers `main` ou un lancement manuel — jamais sur une demande de fusion
+  ni sur un fork. La clé n'est écrite que dans un dossier temporaire du runner (0600), effacée à la fin.
+- **Rien n'est affiché** : un secret mal collé n'est décrit que par sa longueur et sa forme ; le nom du
+  certificat, qui contient le nom du titulaire du compte, est masqué dans le journal.
+- **Certificat de distribution** : sa clé privée est créée sur le runner, rangée dans un trousseau
+  temporaire ouvert au seul outil de signature, et disparaît avec la machine. Elle n'est ni dans le dépôt,
+  ni dans les secrets, ni dans un cache. Un certificat ne sert donc qu'à une exécution.
+- **Ce que le script peut révoquer** : uniquement un certificat de type « Distribution » attaché à un profil
+  dont le nom commence par « Corde CI » — c'est-à-dire ceux qu'il a créés. Jamais un certificat géré par
+  Apple, de développement, ou attaché à un autre profil.
+- **Le jeton de l'API** (ES256, 10 minutes) n'est envoyé qu'à `api.appstoreconnect.apple.com` ; une adresse
+  de « page suivante » qui pointerait ailleurs est refusée.
+- **Limite assumée** : une clé Admin peut tout faire dans App Store Connect, sauf ce qui est réservé au
+  titulaire du compte. C'est l'accès avec lequel l'envoi a été vérifié ; qui a la main sur les secrets du
+  dépôt a donc la main sur le compte App Store Connect.

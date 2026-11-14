@@ -42,10 +42,14 @@ poussée sur `main` qui touche `apps/mobile/`, `packages/ui/` ou le workflow lui
    `-----BEGIN CORDE SCREENSHOT <nom>-----` et `-----END CORDE SCREENSHOT-----` (image JPEG en base64), avec
    les dernières lignes du journal de l'application. Les mêmes fichiers sont joints à l'exécution
    (artefact `ios-smoke`, téléchargeable par le propriétaire du dépôt).
-2. **TestFlight** (seulement sur `dultra123/corde`, jamais sur un fork, et seulement si les **quatre secrets**
-   du §3 existent) : archive, signature automatique par Apple avec la clé d'API, envoi vers TestFlight. Le
-   numéro de build est le numéro d'exécution du workflow (il augmente toujours, comme Apple l'exige) ; la
-   version affichée est celle de `apps/mobile/package.json` (0.8.0).
+2. **Clé d'API** (une minute) : essaie les scripts de signature, puis contrôle que les quatre secrets sont
+   utilisables (sans jamais afficher une valeur).
+3. **TestFlight** (seulement sur `dultra123/corde`, jamais sur un fork, et seulement si les **quatre secrets**
+   du §3 existent) : avec la clé d'API, crée pour cette exécution un **certificat de distribution** et un
+   **profil App Store** (ceux de l'exécution précédente sont retirés), compile et signe l'application,
+   contrôle la signature, puis l'envoie vers TestFlight. Le numéro de build est le numéro d'exécution du
+   workflow (il augmente toujours, comme Apple l'exige) ; la version affichée est celle de
+   `apps/mobile/package.json` (0.8.0).
 
 Sans les secrets, le job TestFlight affiche une note et ne fait rien : le simulateur suffit à vérifier que
 tout compile.
@@ -104,12 +108,12 @@ Tout se fait dans un navigateur, sans Mac.
    Connect API** → **Clés d'équipe** → **Générer une clé API** (la première fois : **Demander l'accès** et
    accepter les conditions) → nom `GitHub Actions`, accès **Admin** → **Générer**.
 
-   Pourquoi **Admin** : c'est Apple qui signe l'application au moment de l'envoi (« signature dans le
-   cloud »), et Apple ne l'accorde qu'à une clé Admin. Avec « Gestionnaire d'apps », la compilation passe
-   mais l'envoi s'arrête sur `Cloud signing permission error` (constaté à la première tentative). Une clé
-   ne se modifie pas après coup : pour changer son accès, il faut en générer une nouvelle. Cette clé peut
-   tout faire dans App Store Connect sauf ce qui est réservé au titulaire du compte (contrats, paiements) :
-   elle ne va **que** dans les secrets GitHub.
+   Pourquoi **Admin** : à chaque envoi, la compilation crée avec cette clé le certificat qui signe
+   l'application (voir « Ce que tu verras dans ton compte Apple », plus bas). C'est le seul accès avec
+   lequel l'envoi a été vérifié ; avec « Gestionnaire d'apps », le premier essai s'est arrêté sur une erreur
+   de permission. Une clé ne se modifie pas après coup : pour changer son accès, il faut en générer une
+   nouvelle. Cette clé peut tout faire dans App Store Connect sauf ce qui est réservé au titulaire du compte
+   (contrats, paiements) : elle ne va **que** dans les secrets GitHub.
 
    Où est « Utilisateurs et accès » : dans la barre du haut (Apps, Xcode Cloud, Tendances, Rapports,
    Business…). Quand la fenêtre est étroite, il est rangé derrière les **trois points « … »** à droite de
@@ -145,12 +149,31 @@ nouvelle valeur → **Update secret**), puis relancer (**Actions** → **iOS** �
 `APPSTORE_API_KEY` accepte le contenu du fichier `.p8` même avec des fins de ligne Windows ou sur une seule
 ligne ; l'important est de coller **tout** le fichier.
 
-Si l'export échoue avec `Cloud signing permission error` (suivi de `No signing certificate "iOS
-Distribution" found`), la clé d'API n'a pas l'accès **Admin**. Générer une nouvelle clé avec l'accès
-**Admin** (étape 5), remplacer les deux secrets `APPSTORE_API_KEY` (contenu du nouveau fichier `.p8`) et
-`APPSTORE_API_KEY_ID` (nouvel ID de clé) — l'ID d'émetteur et le Team ID ne changent pas —, relancer, puis
-révoquer l'ancienne clé (page des clés → **Modifier** → cocher la clé → **Révoquer la clé**). Si l'envoi échoue parce que l'application « n'existe pas »,
+Si l'étape **« Certificat et profil de distribution »** échoue :
+
+- avec `403` ou `FORBIDDEN` : la clé d'API n'a pas l'accès **Admin**. Générer une nouvelle clé avec l'accès
+  **Admin** (étape 5), remplacer les deux secrets `APPSTORE_API_KEY` (contenu du nouveau fichier `.p8`) et
+  `APPSTORE_API_KEY_ID` (nouvel ID de clé) — l'ID d'émetteur et le Team ID ne changent pas —, relancer, puis
+  révoquer l'ancienne clé (page des clés → **Modifier** → cocher la clé → **Révoquer la clé**) ;
+- avec `409` et « nombre maximal de certificats » : le compte a déjà trop de certificats de distribution.
+  En révoquer un sur developer.apple.com → **Certificates, IDs & Profiles** → **Certificates**, puis relancer.
+
+Si l'envoi échoue parce que l'application « n'existe pas »,
 l'étape 4 manque.
+
+### Ce que tu verras dans ton compte Apple
+
+Sur developer.apple.com → **Certificates, IDs & Profiles**, la compilation laisse deux choses, à ne pas
+toucher :
+
+- sous **Certificates**, un certificat **Distribution** (créé « via API ») ;
+- sous **Profiles**, un profil nommé **`Corde CI <numéro>`**.
+
+À chaque nouvel envoi, la compilation **révoque ce certificat et supprime ce profil**, puis en crée de
+nouveaux : il n'y en a jamais plus d'un à la fois. Elle ne touche qu'au certificat attaché à un profil
+« Corde CI … » — jamais à un autre. Apple peut envoyer un e-mail « certificat révoqué » à ce moment-là :
+c'est normal, et sans effet sur les builds déjà envoyés. La clé privée du certificat n'existe que le temps
+de la compilation, sur la machine de GitHub ; elle n'est enregistrée nulle part.
 
 ## 4. Durée de vie d'un build
 
