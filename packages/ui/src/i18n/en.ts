@@ -1479,6 +1479,7 @@ export const en: Record<TranslationKey, string> = {
   "settings.liveViewHint":
     "Automatic: the dashboard on a phone, the widgets elsewhere. The address …#/dash always opens the dashboard.",
   "settings.keepAwake": "Keep the screen on with the dashboard",
+  "mobile.demo.title": "Demo",
   "mobile.demo.start": "See a demo",
   "mobile.demo.quit": "Leave the demo",
   "mobile.demo.hint":

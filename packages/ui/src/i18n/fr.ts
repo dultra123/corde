@@ -1528,6 +1528,7 @@ export const fr = {
   "settings.liveViewHint":
     "Automatique : le tableau de bord sur un téléphone, les widgets ailleurs. L'adresse …#/dash ouvre toujours le tableau de bord.",
   "settings.keepAwake": "Garder l'écran allumé sur le tableau de bord",
+  "mobile.demo.title": "Démonstration",
   "mobile.demo.start": "Voir une démonstration",
   "mobile.demo.quit": "Quitter la démonstration",
   "mobile.demo.hint":

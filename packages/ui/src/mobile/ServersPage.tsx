@@ -4,6 +4,7 @@ import { codeDigits, formatCode } from "../net/hub-api";
 import { appController, useApp } from "./app-state";
 import { traitsOf } from "./device";
 import type { ProbeResult, ServerEntry } from "./servers";
+import { DemoOffer } from "./ui";
 
 const ERR_KEYS: Record<string, TranslationKey> = {
   empty: "servers.err.empty",
@@ -341,6 +342,12 @@ export function ServersPage() {
         </ul>
       )}
       <AddForm />
+      <section className="card app-demo-card" aria-labelledby="app-demo-title">
+        <h2 id="app-demo-title" className="home-card-title">
+          {t("mobile.demo.title")}
+        </h2>
+        <DemoOffer />
+      </section>
       <p className="faint app-privacy">{t("servers.privacy")}</p>
     </div>
   );

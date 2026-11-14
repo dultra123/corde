@@ -75,8 +75,13 @@ class ConnectionManager {
     return this.overlay;
   }
 
-  /** (Re)connects to the address currently configured in settings. */
+  /**
+   * (Re)connects to the address currently configured in settings. Never while the demo was
+   * asked for (`setDemo(true)`): a server that comes back (the phone application tests its
+   * server again on its own) must not mix its data with the demo's; `setDemo(false)` connects.
+   */
   connect(): void {
+    if (useTelemetry.getState().demo === "manual") return;
     this.disconnect();
     if (this.source) {
       const ep = this.source();
