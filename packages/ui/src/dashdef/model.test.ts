@@ -319,6 +319,10 @@ describe("grid operations", () => {
     expect(slug("GT3 · Nuit à Spa !")).toBe("gt3-nuit-a-spa");
     expect(freshId("Corde", [])).toBe("corde-2");
     expect(freshId("GT3", ["gt3", "gt3-2"])).toBe("gt3-3");
+    // Un nom de périphérique de Windows ne devient jamais un identifiant (donc un nom de fichier).
+    expect(freshId("NUL", [])).toBe("nul-2");
+    expect(freshId("Con", [])).toBe("con-2");
+    expect(freshId("COM1", [])).toBe("com1-2");
     const d = newDefinition("blank", [], "fr");
     expect(ok(d)).toBe(true);
     const copy = duplicateDefinition(CORDE, [d.id], "fr");

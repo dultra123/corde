@@ -43,6 +43,15 @@ pub const MAX_FORMAT_RATIO: f64 = 8.0;
 /// The dashboard shipped with Corde (`packages/ui/src/dashdef/builtin.ts`): never stored.
 pub const BUILTIN_ID: &str = "corde";
 
+/// Device names of Windows: a file called `con.json` or `nul.json` there is the device, not a
+/// file, so such an id can never be stored (the Studio never makes one, `freshId`).
+pub fn windows_device_name(id: &str) -> bool {
+    matches!(id, "con" | "prn" | "aux" | "nul")
+        || (id.len() == 4
+            && (id.starts_with("com") || id.starts_with("lpt"))
+            && id.as_bytes()[3].is_ascii_digit())
+}
+
 /// Ids of definitions, pages and elements: `[a-z0-9-]{1,40}` (also a file name on the PC).
 pub fn valid_id(id: &str) -> bool {
     !id.is_empty()
@@ -354,6 +363,11 @@ impl DashStore {
     pub fn upsert(&self, d: DashDefinition) -> Result<DashDefinition, DashError> {
         if d.id == BUILTIN_ID {
             return Err(DashError::Invalid("the id « corde » is reserved".into()));
+        }
+        if windows_device_name(&d.id) {
+            return Err(DashError::Invalid(
+                "this id is a device name on Windows".into(),
+            ));
         }
         validate(&d).map_err(DashError::Invalid)?;
         let mut cache = self.lock();
@@ -710,6 +724,24 @@ pub(crate) mod tests {
         assert!(!again.delete("../gt3").unwrap());
         assert_eq!(again.clear().unwrap(), 1);
         assert!(again.list().is_empty());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn store_refuses_windows_device_names() {
+        let dir = tmp_dir("devices");
+        let store = DashStore::open(&dir).unwrap();
+        for id in ["con", "prn", "aux", "nul", "com1", "lpt9"] {
+            assert!(windows_device_name(id), "{id}");
+            assert!(
+                matches!(store.upsert(dash(id)), Err(DashError::Invalid(_))),
+                "{id}"
+            );
+        }
+        for id in ["con-2", "console", "com", "com10", "nul-1", "lpt"] {
+            assert!(!windows_device_name(id), "{id}");
+        }
+        assert!(store.upsert(dash("con-2")).is_ok());
         let _ = fs::remove_dir_all(&dir);
     }
 

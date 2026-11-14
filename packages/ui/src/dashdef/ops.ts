@@ -39,10 +39,24 @@ export function slug(name: string): string {
   return s || "tableau";
 }
 
-/** A new id `[a-z0-9-]{1,40}` not in `taken` (never `corde`). */
+/** Device names of Windows: `con.json` or `nul.json` there is the device, not a file. */
+const WINDOWS_DEVICES = [
+  "con",
+  "prn",
+  "aux",
+  "nul",
+  ...Array.from({ length: 10 }, (_, i) => `com${i}`),
+  ...Array.from({ length: 10 }, (_, i) => `lpt${i}`),
+];
+
+/**
+ * A new id `[a-z0-9-]{1,40}` not in `taken` (never `corde`, never a device name of Windows: the
+ * server refuses those).
+ */
 export function freshId(base: string, taken: Iterable<string>): string {
   const used = new Set(taken);
   used.add(BUILTIN_ID);
+  for (const name of WINDOWS_DEVICES) used.add(name);
   const root = slug(base).slice(0, MAX_ID_LEN - 4) || "x";
   if (!used.has(root)) return root;
   for (let i = 2; i < 10_000; i += 1) {
