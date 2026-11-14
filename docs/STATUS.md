@@ -39,6 +39,11 @@
 
 ## Points bloqués / dépendants du pilote
 
+- **1.2.1 (15 nov.)** — premier retour du propriétaire sur le Studio, dans l'application Windows 1.2.0 :
+  changer la couleur d'une Valeur ne faisait rien avant d'enregistrer et de rouvrir. Cause : les éléments
+  Valeur et Barre n'écrivaient leur couleur qu'à l'arrivée d'une trame de télémétrie (jeu fermé, démo
+  arrêtée : jamais). Ils se redessinent maintenant après chaque changement de réglage ; essai de
+  non-régression (échoue sans la correction). Confirme au passage que la 1.2.0 s'installe par le bouton.
 - **Site officiel** (15 nov.) : <http://corderacing.com/>, fait par le propriétaire en dehors de ce dépôt ;
   lien ajouté en tête du README et dans `docs/PRESENTATION.md`. Le 15 nov., `https://corderacing.com/`
   renvoie vers `http://` (HTTPS pas encore actif) : passer les liens en `https://` dès qu'il le sera. Le

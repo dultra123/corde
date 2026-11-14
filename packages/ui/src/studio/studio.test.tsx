@@ -83,6 +83,49 @@ describe("every element", () => {
     }
   });
 
+  it("a changed colour shows at once, with no telemetry frame arriving (game closed)", () => {
+    const div = document.createElement("div");
+    document.body.append(div);
+    const root = createRoot(div);
+    const show = (type: string, color?: string) =>
+      act(() =>
+        root.render(
+          <ElementView
+            el={{
+              id: "e1",
+              type,
+              x: 0,
+              y: 0,
+              w: 4,
+              h: 2,
+              props: { field: "throttle", ...(color ? { color } : {}) },
+            }}
+            data={EMPTY_PAGE}
+            lang="fr"
+            u={4}
+          />,
+        ),
+      );
+    // Valeur : la couleur du texte suit le réglage sans attendre une trame.
+    const text = () => (div.querySelector(".del-v span") as HTMLElement).style.color;
+    show("value", "#ff0000");
+    const red = text();
+    expect(red).not.toBe("");
+    show("value", "#00ff00");
+    expect(text()).not.toBe("");
+    expect(text()).not.toBe(red);
+    show("value");
+    expect(text()).toBe("");
+    // Barre : la couleur de la jauge aussi.
+    const fill = () => (div.querySelector(".del-track i") as HTMLElement).style.background;
+    show("bar", "#ff0000");
+    const redBar = fill();
+    show("bar", "#00ff00");
+    expect(fill()).not.toBe(redBar);
+    act(() => root.unmount());
+    div.remove();
+  });
+
   it("an unknown type is shown as such, kept as data", () => {
     const el = { id: "e1", type: "gauge.from-the-future", x: 0, y: 0, w: 4, h: 3, props: {} };
     const { div, unmount } = render(<ElementView el={el} data={EMPTY_PAGE} lang="fr" u={4} />);

@@ -8,6 +8,14 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [1.2.1] — 2026-11-15
+
+### Corrections
+
+- **Studio** : la couleur choisie pour une **Valeur** ou une **Barre** s'applique tout de suite. Avant, quand
+  le jeu était fermé et la course de démonstration arrêtée, il fallait enregistrer et rouvrir le tableau de
+  bord pour la voir ; pareil pour un changement de donnée ou de décimales.
+
 ## [1.2.0] — 2026-11-15
 
 **Le tableau de bord arrive sur le PC**, sans quitter la page Direct.
