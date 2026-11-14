@@ -17,18 +17,25 @@
 #              Les mêmes fichiers sont aussi joints à l'exécution (artefact). Enfin, compilation
 #              Release pour un iPhone, sans signature (contrôle du code de TestFlight).
 # cle-api    : en une minute, sans attendre le simulateur : essais des scripts (clé d'API avec une
-#              clé jetable, signature avec un faux serveur d'Apple et un faux codesign, cohérence
-#              du projet Xcode), puis contrôle des quatre secrets s'ils existent. Un secret mal
-#              collé donne ici un message clair (longueur et forme seulement, jamais la valeur).
+#              clé jetable, signature avec un faux serveur d'Apple et un faux codesign, clé stable
+#              du certificat avec des clés jetables, cohérence du projet Xcode), puis contrôle des
+#              quatre secrets s'ils existent. Un secret mal collé donne ici un message clair
+#              (longueur et forme seulement, jamais la valeur).
 # testflight : seulement sur le dépôt d'origine, jamais sur une PR ni un fork, et seulement si les
 #              quatre secrets APPSTORE_API_KEY, APPSTORE_API_KEY_ID, APPSTORE_API_ISSUER_ID et
 #              APPLE_TEAM_ID existent (clé d'API d'accès Admin). Un certificat « Apple
 #              Distribution » et un profil App Store par identifiant (l'application et son
-#              extension de widgets, dont l'identifiant est créé s'il manque) sont créés pour
-#              l'exécution par l'API App Store Connect (apps/mobile/scripts/ios-signing.sh ; ceux
-#              de l'exécution précédente sont révoqués / supprimés), l'archive Release est signée
-#              avec, contrôlée, puis exportée avec envoi direct vers TestFlight. Numéro de build =
-#              numéro d'exécution de ce workflow (le même pour l'application et l'extension).
+#              extension de widgets, dont l'identifiant est créé s'il manque) sont obtenus par
+#              l'API App Store Connect (apps/mobile/scripts/ios-signing.sh), l'archive Release est
+#              signée avec, contrôlée, puis exportée avec envoi direct vers TestFlight. Numéro de
+#              build = numéro d'exécution de ce workflow (le même pour l'application et
+#              l'extension).
+#              Certificat : avec le cinquième secret, facultatif, APPLE_DIST_KEY_BASE64 (clé privée
+#              RSA 2048 au format PEM, encodée en base64), le certificat du compte qui porte cette
+#              clé est réutilisé d'un build à l'autre, et recréé avec la même clé seulement à moins
+#              de 30 jours de son expiration : plus d'e-mail « certificat révoqué » à chaque build.
+#              Sans ce secret, comme avant : un certificat par exécution, révoqué par la suivante.
+#              Les profils, eux, sont toujours créés par exécution et supprimés par la suivante.
 #
 # Branches : lancé à la main sur une autre branche que `main` (Run workflow → choisir la branche),
 # le workflow compile pour le simulateur et essaie les scripts, sans lire aucun secret et sans rien
@@ -37,8 +44,11 @@
 # Sécurité : jeton en lecture seule ; aucune valeur venant d'un tiers (nom de branche…) n'est
 # collée dans un script ; la clé .p8 n'est écrite que dans un dossier temporaire du runner, en
 # 0600, et effacée à la fin même en cas d'échec ; elle n'est jamais affichée. La clé privée du
-# certificat de distribution naît sur le runner, va dans un trousseau temporaire et disparaît avec
-# lui. Le nom du certificat (qui contient le nom du titulaire du compte) est masqué dans le journal.
+# certificat de distribution naît sur le runner (sans APPLE_DIST_KEY_BASE64) ou vient de ce secret,
+# donné à la seule étape « Certificat et profils… » ; dans les deux cas elle n'est écrite que dans
+# un dossier temporaire (0600) et un trousseau temporaire, effacés à la fin, et jamais affichée.
+# Le nom du certificat (qui contient le nom du titulaire du compte) est masqué dans le journal ;
+# son contenu et son sujet ne sont jamais affichés.
 
 name: iOS
 
@@ -388,7 +398,7 @@ jobs:
       - name: Essais des scripts de signature (faux serveur d'Apple)
         run: node --test apps/mobile/scripts/signing.test.mjs
 
-      - name: Essais du contrôle de l'archive (faux codesign)
+      - name: Essais du contrôle de l'archive (faux codesign) et de la clé du certificat (clés jetables)
         run: bash apps/mobile/scripts/ios-signing.test.sh
 
       - name: Cohérence du projet Xcode (deux cibles, extension embarquée, réglages)
@@ -463,12 +473,18 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: bash apps/mobile/scripts/asc-key.sh "$RUNNER_TEMP/asc"
 
-      # Signature : un certificat « Apple Distribution » et un profil App Store sont créés pour
-      # cette exécution par l'API App Store Connect ; la clé privée naît sur ce runner et n'en sort
-      # pas. (La « signature dans le cloud » d'Apple, essayée d'abord sur une archive signée
-      # ad hoc, donne un fichier qu'Apple refuse à l'envoi : « Invalid Signature », code 90035.)
+      # Signature : un certificat « Apple Distribution » et un profil App Store par identifiant,
+      # par l'API App Store Connect. Sans APPLE_DIST_KEY_BASE64 (secret facultatif), la clé
+      # privée naît sur ce runner et n'en sort pas, et le certificat ne sert qu'à cette exécution.
+      # Avec, la clé vient du secret (jamais affichée) et le certificat qui la porte est réutilisé
+      # tant qu'il reste plus de 30 jours avant son expiration. (La « signature dans le cloud »
+      # d'Apple, essayée d'abord sur une archive signée ad hoc, donne un fichier qu'Apple refuse à
+      # l'envoi : « Invalid Signature », code 90035.)
       - name: Certificat et profils de distribution (application et widgets, pour cette exécution)
         if: env.ASC_READY == 'true'
+        env:
+          # Vide si le secret n'existe pas : le script garde alors l'ancien mode.
+          APPLE_DIST_KEY_BASE64: ${{ secrets.APPLE_DIST_KEY_BASE64 }}
         run: bash apps/mobile/scripts/ios-signing.sh setup "$RUNNER_TEMP/signing"
 
       - name: Archive Release (signée pour la distribution)
