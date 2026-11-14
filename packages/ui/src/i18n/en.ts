@@ -1490,4 +1490,5 @@ export const en: Record<TranslationKey, string> = {
   "dash.corde": "Corde",
   "dash.fullscreen": "Full screen",
   "dash.exitFullscreen": "Exit full screen",
+  "dash.brakes": "Brakes",
 };

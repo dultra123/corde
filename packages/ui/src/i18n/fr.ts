@@ -1539,6 +1539,7 @@ export const fr = {
   "dash.corde": "Corde",
   "dash.fullscreen": "Plein écran",
   "dash.exitFullscreen": "Quitter le plein écran",
+  "dash.brakes": "Freins",
 } as const;
 
 export type TranslationKey = keyof typeof fr;
