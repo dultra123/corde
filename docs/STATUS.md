@@ -45,6 +45,10 @@
   demande une fiche (textes, captures), les déclarations d'Apple, un manifeste de confidentialité
   (`PrivacyInfo.xcprivacy`, absent aujourd'hui) et un moyen pour le relecteur d'Apple d'essayer
   l'application sans PC.
+  **Publiée le 14 nov.** : release `v1.0.0` (CI n° 30 : installeur Windows, archive portable, Corde serveur
+  arm64 et x64, `latest.json` 1.0.0 avec signature et notes), marquée « latest » ; application iPhone 1.0.0
+  (build 16, iOS n° 16) dans TestFlight, avec le premier ménage réel à deux profils (« 2 profils supprimés,
+  1 certificat révoqué »). **Lot suivant en cours** : application Android (branche `android-app`).
 
 - **Forme réelle de `getPlayerGarageData`** (et des 7 autres réponses du garage) : à lire dans `%LOCALAPPDATA%\Corde\diagnostics\lmu-api\garage\<voiture>\` après un passage au garage avec Corde ouverte. Tant qu'elle n'est pas confirmée, l'extracteur des bornes accepte des formes supposées et Corde limite toute hausse à +2 crans (« maximum inconnu »). À vérifier aussi chez le pilote : le chargement d'un `Corde_….svm` dans le garage (rafraîchir la liste), les libellés réécrits par le jeu, le choix automatique de la base sur ses sessions.
 
