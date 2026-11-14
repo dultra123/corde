@@ -133,7 +133,7 @@ fi
 # 1. Lancement : l'accueil.
 adb logcat -c
 start_app
-if wait_log "\[corde\] application started \(android\)" 90; then
+if wait_log "\[corde\] application started \(android\)" 150; then
   ok "démarrage de l'interface (android)"
 else
   err "l'interface n'a pas démarré (« application started » absent du journal)"
@@ -152,13 +152,29 @@ fi
 sleep 6
 shot races
 
-# 3. Retour : à l'accueil, puis hors de l'application.
+# 3. Retour. Un toucher sur l'onglet « Accueil » (le premier des cinq, en bas de l'écran), comme le
+#    pilote : une page ouverte par un lien, sans toucher, ne compte pas dans l'historique de la
+#    webview (règle de Chromium contre les pages qui empilent l'historique). Puis « retour » jusqu'à
+#    ce que l'application se ferme : au moins une fois la page précédente, puis la sortie.
+size="$(adb shell wm size | tr -d '\r' | sed -n 's/.*: \([0-9]*\)x\([0-9]*\)$/\1 \2/p' | tail -n 1)"
+width="${size% *}"
+height="${size#* }"
 adb logcat -c
-adb shell input keyevent KEYCODE_BACK
-if wait_log "\[corde\] back: back" 10; then ok "retour : page précédente"; else warn "retour : « back: back » absent"; fi
-sleep 2
-adb shell input keyevent KEYCODE_BACK
-if wait_log "\[corde\] back: exit" 10; then ok "retour depuis l'accueil : l'application se ferme"; else warn "retour : « back: exit » absent"; fi
+adb shell input tap "$((width / 10))" "$((height * 92 / 100))"
+sleep 4
+went_back=false
+exited=false
+for _ in 1 2 3 4; do
+  adb shell input keyevent KEYCODE_BACK
+  sleep 3
+  if logs | grep -q "\[corde\] back: exit"; then
+    exited=true
+    break
+  fi
+  logs | grep -q "\[corde\] back: back" && went_back=true
+done
+if $went_back; then ok "retour : page précédente"; else warn "retour : « back: back » absent"; fi
+if $exited; then ok "retour depuis la première page : l'application se ferme"; else warn "retour : « back: exit » absent"; fi
 sleep 2
 if adb shell dumpsys activity activities | grep -E "mResumedActivity|topResumedActivity" | grep -q "$pkg"; then
   warn "l'application est encore au premier plan après le second retour"

@@ -2,7 +2,8 @@
 
 - **Statut** : **décidée** — 2026-11-12 (le propriétaire a souscrit au programme développeur d'Apple et veut
   Corde sur son iPhone ; il n'a pas de Mac). Livrée en 0.8.0. Complétée par l'ADR 0012 (widgets, activité
-  en direct ; iOS 17 minimum depuis 0.9.0, signature manuelle par certificat créé à chaque envoi).
+  en direct ; iOS 17 minimum depuis 0.9.0, signature manuelle par certificat créé à chaque envoi) et par
+  l'ADR 0013 (la même application pour Android, 1.0.0).
 - **Source** : `docs/IOS.md`, `docs/SECURITY-MODEL.md` §8, `PRIVACY.md`, ADR 0001 (pile), ADR 0006 (local
   d'abord), ADR 0010 (serveur domestique).
 
