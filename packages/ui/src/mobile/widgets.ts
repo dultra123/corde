@@ -81,7 +81,10 @@ export interface WidgetPayload {
   at: number;
   lang: Lang;
   sched: ScheduleState;
-  /** After this, nothing in here is still to come: « Ouvre Corde pour actualiser ». */
+  /**
+   * After this, nothing in here is still to come: « Ouvre Corde pour actualiser ». `0` when the
+   * block announces nothing (schedule off, no pick): then only its age counts (4 days).
+   */
   until: number;
   /** The schedule through the driver's filters (categories, levels), by category then name. */
   races: WidgetRace[];
@@ -212,9 +215,9 @@ export interface PayloadInput {
   now: number;
 }
 
-/** Last instant at which something of the block is still to come. */
-function lastInstant(races: WidgetRace[], mine: WidgetPick[], now: number): number {
-  let until = now;
+/** Last instant at which something of the block is still to come (0: nothing at all). */
+function lastInstant(races: WidgetRace[], mine: WidgetPick[]): number {
+  let until = 0;
   for (const r of races) {
     const last = Math.max(r.s.at(-1) ?? 0, r.x?.at(-1) ?? 0, r.to ?? 0);
     if (last > until) until = last;
@@ -239,7 +242,7 @@ export function buildPayload(input: PayloadInput): WidgetPayload {
     at: now,
     lang: input.lang,
     sched,
-    until: lastInstant(races, mine, now),
+    until: lastInstant(races, mine),
     races,
     mine,
   });

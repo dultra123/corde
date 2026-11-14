@@ -81,21 +81,16 @@ struct ActivityLockView: View {
     }
 }
 
-/// Dynamic Island déployée : les quatre régions.
+/// Dynamic Island déployée : les quatre régions (à gauche et à droite de la caméra : le drapeau
+/// et le décompte ; au centre : le nom ; en bas : circuit, classes, catégorie, heure).
 struct IslandLeading: View {
     let model: ActivityModel
 
     var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "flag.checkered")
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(model.color)
-            Text(model.l10n.cat(model.attributes.cat))
-                .font(.system(size: 12, weight: .heavy))
-                .foregroundStyle(model.color)
-                .lineLimit(1)
-        }
-        .padding(.leading, 4)
+        Image(systemName: "flag.checkered")
+            .font(.system(size: 18, weight: .bold))
+            .foregroundStyle(model.color)
+            .padding(.leading, 6)
     }
 }
 
@@ -127,16 +122,22 @@ struct IslandBottom: View {
     let model: ActivityModel
 
     var body: some View {
-        HStack {
-            Text(model.detail)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(model.detail)
+                    .lineLimit(1)
+                Spacer(minLength: 6)
+                Text("\(model.l10n.startAt) \(model.l10n.hm(model.start))")
+                    .monospacedDigit()
+            }
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(.white.opacity(0.75))
+            Text(model.l10n.kind(model.attributes.cat, model.attributes.level))
+                .font(.system(size: 10, weight: .heavy))
+                .foregroundStyle(model.color)
                 .lineLimit(1)
-            Spacer(minLength: 6)
-            Text("\(model.l10n.startAt) \(model.l10n.hm(model.start))")
-                .monospacedDigit()
         }
-        .font(.system(size: 13, weight: .semibold))
-        .foregroundStyle(.white.opacity(0.75))
-        .padding(.horizontal, 4)
+        .padding(.horizontal, 6)
     }
 }
 

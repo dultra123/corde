@@ -177,10 +177,11 @@ private func catRank(_ cat: String) -> Int {
 }
 
 extension WidgetPayload {
-    /// Rien n'est plus à venir, ou le bloc a plus de 4 jours : « Ouvre Corde pour actualiser ».
+    /// Le bloc a plus de 4 jours, ou tout ce qu'il annonçait est passé (`until`, 0 quand il
+    /// n'annonçait rien) : « Ouvre Corde pour actualiser ».
     func isStale(at date: Date) -> Bool {
         let now = date.timeIntervalSince1970 * 1000
-        return now > until || now - at > 4 * 86_400_000
+        return now - at > 4 * 86_400_000 || (until > 0 && now > until)
     }
 
     /// La liste du widget « Courses » à l'instant `date`. Miroir de `racesAt` (widgets.ts) :
@@ -244,7 +245,7 @@ extension WidgetPayload {
             if p.t > t { all.insert(p.t) }
             if p.t - 3_600_000 > t { all.insert(p.t - 3_600_000) }
         }
-        all.insert(until)
+        if until > 0 { all.insert(until) }
         return all.filter { $0 > t }.sorted().prefix(limit).map(dateOf)
     }
 }

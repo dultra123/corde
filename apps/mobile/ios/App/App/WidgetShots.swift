@@ -10,6 +10,8 @@
 //                              en base64 dans le journal. Lit aussi le bloc écrit par
 //                              l'application (même code que l'extension) et le dit dans le
 //                              journal.
+//   -CordeDemoActivity         démarre une activité en direct d'exemple (la vraie extension la
+//                              dessine ; l'essai de fumée la photographie dans la Dynamic Island).
 //   -CordeOpenURL <lien>       l'application ouvre elle-même ce lien après -CordeOpenDelay
 //   -CordeOpenDelay <s>        secondes (15 par défaut) : même chemin qu'un toucher de widget
 //                              (scene(_:openURLContexts:)), sans la fenêtre « Ouvrir dans
@@ -18,6 +20,7 @@
 // Rien de ceci n'existe dans le build Release (TestFlight).
 
 #if DEBUG
+import ActivityKit
 import SwiftUI
 import UIKit
 import WidgetKit
@@ -31,11 +34,37 @@ enum CordeDebug {
     }
 
     static func didFinishLaunching() {
-        guard args.contains("-CordeRenderShots") else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            Task { @MainActor in
-                WidgetShots.renderAll()
+        if args.contains("-CordeRenderShots") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                Task { @MainActor in
+                    WidgetShots.renderAll()
+                }
             }
+        }
+        if args.contains("-CordeDemoActivity") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                Task { @MainActor in
+                    startDemoActivity()
+                }
+            }
+        }
+    }
+
+    /// Une activité d'exemple (départ dans 25 min), dessinée par la vraie extension : l'essai de
+    /// fumée met ensuite une autre application au premier plan pour voir la Dynamic Island.
+    @MainActor
+    private static func startDemoActivity() {
+        let lang = L10n.device.fr ? "fr" : "en"
+        let start = Date().addingTimeInterval(25 * 60)
+        let state = CordeRaceAttributes.ContentState(startMs: start.timeIntervalSince1970 * 1000)
+        let allowed = ActivityAuthorizationInfo().areActivitiesEnabled
+        do {
+            _ = try Activity.request(attributes: SampleData.activity(lang: lang),
+                                     content: ActivityContent(state: state, staleDate: start),
+                                     pushType: nil)
+            NSLog("[corde-native] %@", "demo activity: started (allowed \(allowed), \(Activity<CordeRaceAttributes>.activities.count) running)")
+        } catch {
+            NSLog("[corde-native] %@", "demo activity: refused (allowed \(allowed)): \(error.localizedDescription)")
         }
     }
 

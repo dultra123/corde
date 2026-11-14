@@ -17,25 +17,41 @@ extension Color {
     }
 }
 
+/// Couleurs de Corde ; en mode clair, des teintes plus foncées (lisibles sur fond blanc).
 enum CordeColor {
     static let accent = Color(hex: 0xFFB454)
     static let urgent = Color(hex: 0xF0503C)
 
-    static func cat(_ cat: String) -> Color {
+    static func accent(_ scheme: ColorScheme) -> Color {
+        scheme == .dark ? accent : Color(hex: 0xB05F00)
+    }
+
+    static func urgent(_ scheme: ColorScheme) -> Color {
+        scheme == .dark ? urgent : Color(hex: 0xC8321F)
+    }
+
+    static func cat(_ cat: String, _ scheme: ColorScheme = .dark) -> Color {
+        let dark = scheme == .dark
         switch cat {
-        case "weekly": return Color(hex: 0x4EA1E6)
-        case "special": return Color(hex: 0xF0503C)
-        case "champ": return Color(hex: 0xB982FF)
-        default: return Color(hex: 0xF2B63C)
+        case "weekly": return Color(hex: dark ? 0x4EA1E6 : 0x1F6DB5)
+        case "special": return Color(hex: dark ? 0xF0503C : 0xC8321F)
+        case "champ": return Color(hex: dark ? 0xB982FF : 0x7647C9)
+        default: return Color(hex: dark ? 0xF2B63C : 0xA86F00)
         }
     }
 
-    static func level(_ level: String?) -> Color {
+    static func level(_ level: String?, _ scheme: ColorScheme = .dark) -> Color {
+        let dark = scheme == .dark
         switch level {
-        case "intermediate": return Color(hex: 0xF2B63C)
-        case "advanced": return Color(hex: 0xFF5A5A)
-        default: return Color(hex: 0x37D08A)
+        case "intermediate": return Color(hex: dark ? 0xF2B63C : 0xA86F00)
+        case "advanced": return Color(hex: dark ? 0xFF5A5A : 0xCC3333)
+        default: return Color(hex: dark ? 0x37D08A : 0x16935A)
         }
+    }
+
+    /// La couleur d'une course : son niveau pour une quotidienne, sa catégorie sinon.
+    static func mark(_ cat: String, _ level: String?, _ scheme: ColorScheme = .dark) -> Color {
+        cat == "daily" ? CordeColor.level(level, scheme) : CordeColor.cat(cat, scheme)
     }
 
     /// Fond des widgets : sombre comme l'application, clair en mode clair.
@@ -117,6 +133,7 @@ struct L10n {
     var scheduleOff: String { t("Active le planning dans Corde", "Turn the schedule on in Corde") }
     var noRace: String { t("Aucune course à venir", "No race coming up") }
     var started: String { t("Départ donné", "Race started") }
+    var inWord: String { t("dans ", "in ") }
     var startAt: String { t("Départ", "Start") }
     var ongoing: String { t("en cours", "on now") }
     var tomorrow: String { t("demain", "tomorrow") }
@@ -164,7 +181,8 @@ struct Countdown: View {
     }
 }
 
-/// Le temps restant en clair : compte à rebours sous l'heure, « dans 2 h 5 min » au-delà.
+/// Le temps restant en clair, « dans 12 min 5 s », « dans 3 h et 9 min » : il avance seul, et ne
+/// se confond pas avec une heure de départ (ce que ferait un décompte `12:05` dans une liste).
 struct TimeLeft: View {
     let start: Date
     let now: Date
@@ -173,11 +191,8 @@ struct TimeLeft: View {
     var body: some View {
         if start <= now {
             Text(l10n.started)
-        } else if start.timeIntervalSince(now) <= 3600 {
-            Text(timerInterval: now...start, countsDown: true)
-                .monospacedDigit()
         } else {
-            Text(start, style: .relative)
+            Text(l10n.inWord) + Text(start, style: .relative)
         }
     }
 }

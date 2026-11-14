@@ -2,25 +2,30 @@
 # de Mac. Voir docs/IOS.md.
 #
 # simulator  : toujours. Interface en mode mobile, `cap sync ios`, compilation Debug pour le
-#              simulateur SANS signature (aucun secret), puis essai de fumée : un simulateur
-#              iPhone choisi dans `xcrun simctl list`, installation, lancement, captures d'écran
-#              (Accueil, puis Courses par le lien corde://races) réduites à 390 px en JPEG et
+#              simulateur (application et extension de widgets) avec une signature locale ad hoc
+#              (aucun certificat, aucun secret), puis essai de fumée : un simulateur iPhone choisi
+#              dans `xcrun simctl list`, installation, trois lancements — Accueil ; Courses par le
+#              lien corde://races, ouvert par l'application elle-même comme un toucher de widget ;
+#              planches des vues des widgets et de l'activité en direct dessinées par
+#              l'application (build Debug, données inventées) —, images réduites en JPEG et
 #              écrites EN BASE64 DANS LE JOURNAL entre deux marqueurs
 #                -----BEGIN CORDE SCREENSHOT <nom>-----
 #                -----END CORDE SCREENSHOT-----
-#              (le seul moyen pour l'équipe de voir l'écran), et les dernières lignes du journal
-#              de l'application. Les mêmes fichiers sont aussi joints à l'exécution (artefact).
-# cle-api    : en une minute, sans attendre le simulateur : essais du script qui prépare la clé
-#              d'API (apps/mobile/scripts/asc-key.sh, avec une clé jetable), puis contrôle des
-#              quatre secrets s'ils existent. Un secret mal collé donne ici un message clair
-#              (longueur et forme seulement, jamais la valeur).
+#              (le seul moyen pour l'équipe de voir l'écran), et les journaux de l'application.
+#              Les mêmes fichiers sont aussi joints à l'exécution (artefact).
+# cle-api    : en une minute, sans attendre le simulateur : essais des scripts (clé d'API avec une
+#              clé jetable, signature avec un faux serveur d'Apple et un faux codesign, cohérence
+#              du projet Xcode), puis contrôle des quatre secrets s'ils existent. Un secret mal
+#              collé donne ici un message clair (longueur et forme seulement, jamais la valeur).
 # testflight : seulement sur le dépôt d'origine, jamais sur une PR ni un fork, et seulement si les
 #              quatre secrets APPSTORE_API_KEY, APPSTORE_API_KEY_ID, APPSTORE_API_ISSUER_ID et
 #              APPLE_TEAM_ID existent (clé d'API d'accès Admin). Un certificat « Apple
-#              Distribution » et un profil App Store sont créés pour l'exécution par l'API App Store
-#              Connect (apps/mobile/scripts/ios-signing.sh ; celui de l'exécution précédente est
-#              révoqué), l'archive Release est signée avec, contrôlée, puis exportée avec envoi
-#              direct vers TestFlight. Numéro de build = numéro d'exécution de ce workflow.
+#              Distribution » et un profil App Store par identifiant (l'application et son
+#              extension de widgets, dont l'identifiant est créé s'il manque) sont créés pour
+#              l'exécution par l'API App Store Connect (apps/mobile/scripts/ios-signing.sh ; ceux
+#              de l'exécution précédente sont révoqués / supprimés), l'archive Release est signée
+#              avec, contrôlée, puis exportée avec envoi direct vers TestFlight. Numéro de build =
+#              numéro d'exécution de ce workflow (le même pour l'application et l'extension).
 #
 # Branches : lancé à la main sur une autre branche que `main` (Run workflow → choisir la branche),
 # le workflow compile pour le simulateur et essaie les scripts, sans lire aucun secret et sans rien
@@ -56,10 +61,12 @@ defaults:
 
 env:
   BUNDLE_ID: io.github.dultra123.corde
+  # Extension de widgets (cible CordeWidgets) : son identifiant est créé par l'API au premier envoi.
+  WIDGETS_BUNDLE_ID: io.github.dultra123.corde.widgets
 
 jobs:
   simulator:
-    name: Simulateur (compilation sans signature et essai de fumée)
+    name: Simulateur (compilation, essai de fumée, vues des widgets)
     runs-on: macos-latest
     timeout-minutes: 60
     steps:
@@ -270,10 +277,22 @@ jobs:
             echo "::warning::les vues des widgets n'ont pas été dessinées (voir le journal du lancement 3)"
           fi
 
+          # 4. Une activité en direct d'exemple, dessinée cette fois par la vraie extension : Corde
+          #    la démarre, puis Réglages passe au premier plan — la Dynamic Island (simulateur
+          #    d'un iPhone qui en a une) montre alors la vue compacte de l'activité.
+          xcrun simctl terminate "$UDID" "$BUNDLE_ID" || true
+          sleep 2
+          launch 4 -CordeDemoActivity
+          sleep 12
+          xcrun simctl launch "$UDID" com.apple.Preferences > /dev/null || echo "::warning::Réglages ne s'ouvre pas"
+          sleep 6
+          shot island
+          xcrun simctl launch "$UDID" "$BUNDLE_ID" > /dev/null || true
+
           echo "::group::Lignes de Corde (tous les lancements)"
           grep -h -E '\[corde(-native)?\]' "$out"/run*-std*.log || echo "(aucune)"
           echo "::endgroup::"
-          for n in 1 2 3; do
+          for n in 1 2 3 4; do
             echo "::group::Journal du lancement ${n} (stdout, 120 dernières lignes)"
             tail -n 120 "$out/run${n}-stdout.log" || true
             echo "::endgroup::"
@@ -288,7 +307,8 @@ jobs:
           echo "::endgroup::"
 
           # L'application tourne-t-elle encore ?
-          if xcrun simctl spawn "$UDID" launchctl list | grep -q "$BUNDLE_ID"; then
+          running="$(xcrun simctl spawn "$UDID" launchctl list 2> /dev/null || true)"
+          if printf '%s\n' "$running" | grep -q "$BUNDLE_ID"; then
             echo "L'application tourne toujours."
           else
             echo "::warning::l'application ne semble plus tourner (voir les journaux ci-dessus)"
@@ -309,6 +329,7 @@ jobs:
           check "lien corde://races reçu par l'interface" "link: #/races" "$out/run2-stdout.log"
           check "bloc relu comme le lit l'extension" "store read: OSStatus 0, [0-9]+ bytes, version 1" "$out/run3-stderr.log"
           check "vues des widgets dessinées" "shots: [1-9]" "$out/run3-stderr.log"
+          check "activité en direct d'exemple démarrée" "demo activity: started" "$out/run4-stderr.log"
           echo "Signature du simulateur : ${SIM_SIGNING:-?}"
 
       - name: Joindre les captures et les journaux
@@ -340,6 +361,9 @@ jobs:
 
       - name: Essais des scripts de signature (faux serveur d'Apple)
         run: node --test apps/mobile/scripts/signing.test.mjs
+
+      - name: Essais du contrôle de l'archive (faux codesign)
+        run: bash apps/mobile/scripts/ios-signing.test.sh
 
       - name: Cohérence du projet Xcode (deux cibles, extension embarquée, réglages)
         run: node --test apps/mobile/scripts/xcodeproj.test.mjs
@@ -417,7 +441,7 @@ jobs:
       # cette exécution par l'API App Store Connect ; la clé privée naît sur ce runner et n'en sort
       # pas. (La « signature dans le cloud » d'Apple, essayée d'abord sur une archive signée
       # ad hoc, donne un fichier qu'Apple refuse à l'envoi : « Invalid Signature », code 90035.)
-      - name: Certificat et profil de distribution (pour cette exécution)
+      - name: Certificat et profils de distribution (application et widgets, pour cette exécution)
         if: env.ASC_READY == 'true'
         run: bash apps/mobile/scripts/ios-signing.sh setup "$RUNNER_TEMP/signing"
 
@@ -467,6 +491,8 @@ jobs:
             <dict>
               <key>${BUNDLE_ID}</key>
               <string>${SIGN_PROFILE_NAME}</string>
+              <key>${WIDGETS_BUNDLE_ID}</key>
+              <string>${SIGN_PROFILE_NAME_WIDGETS}</string>
             </dict>
             <key>teamID</key>
             <string>${ASC_TEAM_ID}</string>

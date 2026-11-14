@@ -175,6 +175,12 @@ describe("buildPayload", () => {
     expect(buildPayload({ ...base, races, enabled: false }).sched).toBe("off");
     expect(buildPayload({ ...base, races, enabled: false }).races).toEqual([]);
     expect(buildPayload({ ...base, races: null, enabled: true }).sched).toBe("none");
+    // Nothing announced: `until` is 0, and the block does not change with time (no rewrite).
+    const off = buildPayload({ ...base, races, enabled: false });
+    expect(off.until).toBe(0);
+    expect(payloadKey(buildPayload({ ...base, now: NOW + 5000, races, enabled: false }))).toBe(
+      payloadKey(off),
+    );
   });
 
   it("stays under the size limit with a huge schedule", () => {

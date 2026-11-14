@@ -16,11 +16,12 @@ struct KindBadge: View {
     let level: String?
     let l10n: L10n
     var small = false
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         HStack(spacing: 4) {
             Circle()
-                .fill(cat == "daily" ? CordeColor.level(level) : CordeColor.cat(cat))
+                .fill(CordeColor.mark(cat, level, scheme))
                 .frame(width: small ? 6 : 7, height: small ? 6 : 7)
             Text(l10n.kind(cat, level))
                 .font(.system(size: small ? 9 : 10, weight: .heavy))
@@ -29,14 +30,39 @@ struct KindBadge: View {
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 3)
-        .background(CordeColor.cat(cat).opacity(0.18), in: Capsule())
-        .foregroundStyle(CordeColor.cat(cat))
+        .background(CordeColor.cat(cat, scheme).opacity(scheme == .dark ? 0.18 : 0.12), in: Capsule())
+        .foregroundStyle(CordeColor.cat(cat, scheme))
     }
 }
 
 /// `Monza · GT3 · LMP2`.
 func trackLine(_ track: String, _ classes: [String]) -> String {
     ([track] + classes.prefix(3)).filter { !$0.isEmpty }.joined(separator: " · ")
+}
+
+/// Titre d'un widget : icône, nom, « Corde » à droite.
+struct WidgetHeader: View {
+    let title: String
+    var symbol = "flag.checkered"
+    var brand = true
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: symbol)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(CordeColor.accent(scheme))
+            Text(title)
+                .font(.system(size: 12, weight: .heavy))
+                .lineLimit(1)
+            Spacer(minLength: 0)
+            if brand {
+                Text("Corde")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
 }
 
 /// Un message à la place du contenu (planning éteint, rien à venir, ouvrir Corde).
@@ -47,13 +73,7 @@ struct WidgetMessage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 5) {
-                Image(systemName: symbol)
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(CordeColor.accent)
-                Text(title)
-                    .font(.system(size: 13, weight: .heavy))
-            }
+            WidgetHeader(title: title, symbol: symbol, brand: false)
             Spacer(minLength: 0)
             Text(message)
                 .font(.system(size: 13, weight: .semibold))
@@ -76,11 +96,12 @@ struct RaceRow: View {
     let estimated: Bool
     let ongoing: Bool
     let l10n: L10n
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         HStack(spacing: 8) {
             RoundedRectangle(cornerRadius: 2)
-                .fill(cat == "daily" ? CordeColor.level(level) : CordeColor.cat(cat))
+                .fill(CordeColor.mark(cat, level, scheme))
                 .frame(width: 4)
             VStack(alignment: .leading, spacing: 1) {
                 Text(name)
@@ -96,7 +117,7 @@ struct RaceRow: View {
                 if ongoing {
                     Text(l10n.ongoing)
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(CordeColor.cat(cat))
+                        .foregroundStyle(CordeColor.cat(cat, scheme))
                 } else {
                     Text((estimated ? "≈ " : "") + l10n.when(start, now: now))
                         .font(.system(size: 13, weight: .bold))
@@ -107,7 +128,8 @@ struct RaceRow: View {
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.trailing)
                         .lineLimit(1)
-                        .frame(maxWidth: 92, alignment: .trailing)
+                        .minimumScaleFactor(0.8)
+                        .frame(maxWidth: 120, alignment: .trailing)
                 }
             }
             .layoutPriority(1)
@@ -139,10 +161,10 @@ struct RacesWidgetView: View {
 
     @ViewBuilder
     private var content: some View {
-        if let message = blockMessage(load, at: date, l10n: l10n) {
-            WidgetMessage(title: l10n.racesTitle, message: message)
-        } else if let p = load.payload, p.sched == "off" {
+        if let p = load.payload, p.sched == "off" {
             WidgetMessage(title: l10n.racesTitle, message: l10n.scheduleOff)
+        } else if let message = blockMessage(load, at: date, l10n: l10n) {
+            WidgetMessage(title: l10n.racesTitle, message: message)
         } else if let p = load.payload {
             let count = family == .systemLarge ? 6 : family == .systemMedium ? 3 : 1
             let list = p.races(at: date, max: count)
@@ -162,6 +184,7 @@ private struct SmallRace: View {
     let item: ListedRace
     let now: Date
     let l10n: L10n
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
@@ -177,25 +200,21 @@ private struct SmallRace: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
             Spacer(minLength: 2)
-            HStack(alignment: .firstTextBaseline) {
-                if item.ongoing {
-                    Text(l10n.ongoing)
-                        .font(.system(size: 18, weight: .heavy))
-                        .foregroundStyle(CordeColor.cat(item.race.cat))
-                } else {
-                    Text((item.estimated ? "≈ " : "") + l10n.when(item.start, now: now))
-                        .font(.system(size: 18, weight: .heavy))
-                        .monospacedDigit()
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                    Spacer(minLength: 2)
-                    TimeLeft(start: item.start, now: now, l10n: l10n)
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(CordeColor.accent)
-                        .multilineTextAlignment(.trailing)
-                        .lineLimit(1)
-                        .frame(maxWidth: 70, alignment: .trailing)
-                }
+            if item.ongoing {
+                Text(l10n.ongoing)
+                    .font(.system(size: 20, weight: .heavy))
+                    .foregroundStyle(CordeColor.cat(item.race.cat, scheme))
+            } else {
+                Text((item.estimated ? "≈ " : "") + l10n.when(item.start, now: now))
+                    .font(.system(size: 22, weight: .heavy))
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                TimeLeft(start: item.start, now: now, l10n: l10n)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(CordeColor.accent(scheme))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -212,17 +231,7 @@ private struct RaceList: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: roomy ? 9 : 6) {
-            HStack(spacing: 5) {
-                Image(systemName: "flag.checkered")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(CordeColor.accent)
-                Text(title)
-                    .font(.system(size: 12, weight: .heavy))
-                Spacer()
-                Text("Corde")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(.secondary)
-            }
+            WidgetHeader(title: title)
             ForEach(items, id: \.self) { item in
                 RaceRow(
                     cat: item.race.cat,
@@ -235,6 +244,11 @@ private struct RaceList: View {
                     ongoing: item.ongoing,
                     l10n: l10n
                 )
+            }
+            if roomy, items.contains(where: { $0.estimated }) {
+                Text("≈ \(l10n.estimated)")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
         }
@@ -264,35 +278,14 @@ struct MyRacesWidgetView: View {
             if family == .systemSmall {
                 SmallPick(pick: next, now: date, l10n: l10n)
             } else {
-                HStack(spacing: 12) {
+                HStack(alignment: .top, spacing: 14) {
                     SmallPick(pick: next, now: date, l10n: l10n)
-                        .frame(maxWidth: .infinity)
-                    let rest = Array(p.picks(at: date).filter { $0.id != next.id }.prefix(3))
-                    VStack(alignment: .leading, spacing: 6) {
-                        if rest.isEmpty {
-                            Spacer(minLength: 0)
-                            Text(l10n.pickInCorde)
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(.secondary)
-                            Spacer(minLength: 0)
-                        } else {
-                            ForEach(rest, id: \.self) { pick in
-                                RaceRow(
-                                    cat: pick.cat,
-                                    level: pick.lvl,
-                                    name: pick.name,
-                                    detail: trackLine(pick.track, pick.cls),
-                                    start: pick.start,
-                                    now: date,
-                                    estimated: false,
-                                    ongoing: false,
-                                    l10n: l10n
-                                )
-                            }
-                            Spacer(minLength: 0)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        .frame(width: 150)
+                    NextPicks(
+                        picks: Array(p.picks(at: date).filter { $0.id != next.id }.prefix(3)),
+                        now: date,
+                        l10n: l10n
+                    )
                 }
             }
         } else {
@@ -306,6 +299,7 @@ private struct SmallPick: View {
     let pick: WidgetPick
     let now: Date
     let l10n: L10n
+    @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
@@ -332,13 +326,57 @@ private struct SmallPick: View {
             Spacer(minLength: 2)
             Countdown(start: pick.start, now: now, l10n: l10n)
                 .font(.system(size: 24, weight: .heavy))
-                .foregroundStyle(pick.start.timeIntervalSince(now) <= 300 ? CordeColor.urgent : CordeColor.accent)
+                .foregroundStyle(pick.start.timeIntervalSince(now) <= 300 ? CordeColor.urgent(scheme) : CordeColor.accent(scheme))
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
             Text("\(l10n.startAt) \(l10n.when(pick.start, now: now))")
                 .font(.system(size: 10.5, weight: .semibold))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+}
+
+/// Moyen widget, à droite : les départs choisis suivants (heure, nom).
+private struct NextPicks: View {
+    let picks: [WidgetPick]
+    let now: Date
+    let l10n: L10n
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            if picks.isEmpty {
+                Spacer(minLength: 0)
+                Text(l10n.pickInCorde)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+                Spacer(minLength: 0)
+            } else {
+                Text(l10n.mineTitle.uppercased(with: l10n.locale))
+                    .font(.system(size: 10, weight: .heavy))
+                    .foregroundStyle(.secondary)
+                ForEach(picks, id: \.self) { pick in
+                    HStack(alignment: .top, spacing: 7) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(CordeColor.mark(pick.cat, pick.lvl, scheme))
+                            .frame(width: 3, height: 28)
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(l10n.when(pick.start, now: now))
+                                .font(.system(size: 12, weight: .bold))
+                                .monospacedDigit()
+                                .lineLimit(1)
+                            Text(pick.name)
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                }
+                Spacer(minLength: 0)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
@@ -398,7 +436,8 @@ struct LockRectangularView: View {
                     Text("Corde")
                         .font(.system(size: 14, weight: .bold))
                 }
-                Text(load.payload == nil || load.payload?.isStale(at: date) == true ? l10n.openCorde : l10n.noRace)
+                Text(load.payload?.sched == "off" ? l10n.scheduleOff
+                     : load.payload == nil || load.payload?.isStale(at: date) == true ? l10n.openCorde : l10n.noRace)
                     .font(.system(size: 12))
                     .lineLimit(2)
                     .opacity(0.8)
