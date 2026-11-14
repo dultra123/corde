@@ -1337,6 +1337,21 @@ export const fr = {
   "mobile.notif.prompt":
     "L'iPhone te demandera d'autoriser les notifications à ton premier choix de course.",
   "mobile.notif.ask": "Autoriser maintenant",
+  // Android application (apps/mobile/android)
+  "races.reminders.hintPhone.android":
+    "Une notification du téléphone à chaque rappel, même application fermée ou téléphone verrouillé.",
+  "mobile.notif.denied.android":
+    "Notifications refusées : les rappels ne sonneront pas. Pour les autoriser : Paramètres du téléphone → Applications → Corde → Notifications.",
+  "mobile.notif.prompt.android":
+    "Android te demandera d'autoriser les notifications à ton premier choix de course.",
+  "mobile.exact.granted": "Les rappels sonnent à la minute près, même téléphone en veille.",
+  "mobile.exact.denied":
+    "Rappels à l'heure exacte non autorisés : Android peut livrer un rappel avec quelques minutes de retard quand le téléphone est en veille. Pour les autoriser : « Alarmes et rappels ».",
+  "mobile.exact.ask": "Autoriser",
+  "mobile.exact.confirm":
+    "Pour que les rappels sonnent à la minute près, même téléphone en veille, Android demande d'autoriser « Alarmes et rappels » pour Corde. Ouvrir ce réglage maintenant ?",
+  "mobile.channel.name": "Rappels des courses",
+  "mobile.channel.description": "Avant les départs choisis sur la page Courses.",
   "mobile.live.label": "Compte à rebours sur l'écran verrouillé et dans la Dynamic Island",
   "mobile.live.hint":
     "Il démarre tout seul quand ton prochain départ choisi est dans moins de 2 h et que Corde est ouverte (ou avec « Compte à rebours » sur un départ, jusqu'à 8 h avant). Après le départ, il reste affiché jusqu'à la prochaine ouverture de Corde ou jusqu'à ce que tu le balaies.",

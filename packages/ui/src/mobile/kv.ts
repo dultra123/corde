@@ -1,8 +1,9 @@
 import type { PrefsPort } from "./ports";
 
 /**
- * JSON values in the phone's native storage (Capacitor Preferences: `UserDefaults` on iOS, in
- * the application's own sandbox). Every key of the application starts with `corde.`.
+ * JSON values in the phone's native storage (Capacitor Preferences: `UserDefaults` on iOS,
+ * `SharedPreferences` on Android, in the application's own sandbox). Every key of the
+ * application starts with `corde.`.
  */
 export const KEYS = {
   servers: "corde.servers.v1",
@@ -14,6 +15,8 @@ export const KEYS = {
   raceSettings: "corde.races.settings.v1",
   /** Notifications already asked for (the system asks the driver once). */
   notifAsked: "corde.races.notifications.asked",
+  /** Android: « Alarmes et rappels » already offered (once, after the notifications). */
+  exactAsked: "corde.races.exactAlarms.asked",
 } as const;
 
 /** The value of `key`, `null` when absent or unreadable (broken JSON = absent). */

@@ -26,6 +26,7 @@ que l'on vise à chaque tour. Corde s'appelait anciennement Muret (nom de travai
   - [Le tableau de bord en direct](#le-tableau-de-bord-en-direct)
   - [Sur le téléphone](#sur-le-téléphone)
   - [L'application iPhone](#lapplication-iphone)
+  - [L'application Android](#lapplication-android)
   - [Sessions et tours](#sessions-et-tours)
   - [Profil et résultats de course](#profil-et-résultats-de-course)
   - [L'ingénieur de course](#lingénieur-de-course)
@@ -116,6 +117,15 @@ photo et le SR / DR requis). Compilée uniquement par GitHub (aucun Mac nécessa
 *Aperçu du mode application rendu dans Chromium à 390 px avec un faux pont Capacitor
 (`packages/ui/scripts/screenshot-app.mjs`) — ce n'est pas une capture d'iPhone : sur le téléphone, la
 page est affichée par WebKit, sous la barre d'état et au-dessus de la barre d'accueil de l'iPhone.*
+
+### L'application Android
+
+La même application pour Android 8 ou plus récent, **sans aucune bibliothèque Google** (elle marche sur un
+téléphone sans services Google) : courses sans PC, rappels en notifications à l'heure exacte même
+application fermée, « Mes serveurs », direct, sessions, ingénieur et profil. Pas encore de widgets ni de
+compte à rebours. Elle s'installe à partir du fichier **`Corde_<version>_android.apk`** des
+[releases](https://github.com/dultra123/corde/releases) (pas encore sur le Play Store). Compilée et essayée
+sur un émulateur par GitHub, **pas encore essayée sur un vrai téléphone** : [docs/ANDROID.md](docs/ANDROID.md).
 
 ### Sessions et tours
 
@@ -252,7 +262,7 @@ Pas à pas pour un non-informaticien : [docs/SERVEUR.md](docs/SERVEUR.md) · acc
 | Application iPhone (Capacitor) : courses sans PC avec rappels en notifications, connexion au PC et au serveur Corde | fait ; installée par TestFlight sur l'iPhone du pilote (14 nov.), en test sur invitation ; pas encore sur l'App Store |
 | Widgets iPhone (écran d'accueil, écran verrouillé) et compte à rebours dans la Dynamic Island | fait (0.9.0, iPhone seulement) ; fonctionnent sur l'iPhone du pilote (TestFlight) |
 | Widget iPhone « Courses en images » (une course par page, photo, SR / DR requis) | fait (0.10.0, iPhone seulement) ; vu sur le simulateur de la CI, pas encore confirmé sur un iPhone |
-| Application Android | à venir |
+| Application Android (Capacitor) : courses sans PC avec rappels en notifications, connexion au PC et au serveur Corde, sans services Google | fait (lot 1, sans widgets) ; compilée et essayée sur un émulateur Android 15 sans services Google par la CI (démarrage, lien, rappel reçu application tuée et téléphone en veille) ; **jamais vue sur un vrai téléphone** ; APK signé publié quand la clé de signature est fournie |
 | Linux (le jeu tourne sous Proton) | serveur compilé, non testé avec le jeu |
 | Autres simulateurs (ACC, Assetto Corsa EVO, iRacing, rFactor 2…) | à venir |
 
@@ -315,11 +325,11 @@ corde/
 │  └─ ui/                     # @corde/ui : interface React (accueil, dashboard, sessions, courses, ingénieur)
 ├─ apps/
 │  ├─ desktop/                # application Windows (Tauri 2) + installeur, workspace Cargo à part
-│  └─ mobile/                 # application iPhone (Capacitor 8, Swift Package Manager), compilée par la CI
+│  └─ mobile/                 # applications iPhone (ios/, Swift Package Manager) et Android (android/, Gradle) — Capacitor 8, compilées par la CI
 ├─ docs/                      # SPEC, ARCHITECTURE, ADR, guides, research/
 ├─ knowledge/                 # base de connaissances « ingénieur » (YAML + méthodologie)
 ├─ reference/                 # layout mémoire calculé, échantillons de résultats (noms remplacés)
-└─ .github/workflows/         # CI Linux + Windows, installeur, version continue ; ios.yml (simulateur, TestFlight)
+└─ .github/workflows/         # CI Linux + Windows, installeur, version continue ; ios.yml (simulateur, TestFlight) ; android.yml (émulateur, APK signé)
 ```
 
 ## Documentation
@@ -338,11 +348,13 @@ corde/
   [mises à jour signées](docs/adr/0009-mises-a-jour-releases-github-signees.md),
   [serveur domestique](docs/adr/0010-serveur-domestique.md),
   [application iPhone](docs/adr/0011-application-mobile-capacitor.md),
-  [widgets iOS et activité en direct](docs/adr/0012-widgets-activite-en-direct.md)
+  [widgets iOS et activité en direct](docs/adr/0012-widgets-activite-en-direct.md),
+  [application Android](docs/adr/0013-application-android.md)
 - [docs/TESTING-ON-PC.md](docs/TESTING-ON-PC.md) — installer et utiliser Corde sur Windows, dépannage
 - [docs/SERVEUR.md](docs/SERVEUR.md) — installer Corde serveur sur un Raspberry Pi, appairer, sauvegarder
 - [docs/ACCES-EXTERIEUR.md](docs/ACCES-EXTERIEUR.md) — ouvrir le serveur depuis l'extérieur par un VPN, sans exposer Corde
 - [docs/IOS.md](docs/IOS.md) — l'application iPhone : ce qu'elle fait, comment sortent les versions (CI, TestFlight), ce qu'il faut faire côté Apple
+- [docs/ANDROID.md](docs/ANDROID.md) — l'application Android : l'installer (APK), ses autorisations, quoi essayer, la clé de signature et la CI
 - [docs/STATUS.md](docs/STATUS.md) — état détaillé du projet, tenu à jour à chaque étape
 - [CHANGELOG.md](CHANGELOG.md) — nouveautés de chaque version (affichées par l'application avant une mise à jour)
 - [docs/ENGINEER.md](docs/ENGINEER.md) — comment l'ingénieur analyse une session et ajuste un réglage
@@ -355,8 +367,10 @@ corde/
 - **Vie privée** : tout reste sur ton PC — pas de compte, pas de télémétrie, rien n'est envoyé sur Internet
   sauf si tu actives l'extracteur LLM optionnel ; le planning des courses en ligne, s'il est activé, lit
   deux pages publiques sans rien y envoyer de toi ; la recherche de mises à jour (désactivable) lit un
-  fichier public sur GitHub, qui voit ton adresse IP. L'application iPhone garde tout sur le téléphone et
-  ne parle qu'aux serveurs Corde que tu ajoutes (et, si tu l'actives, aux deux pages du planning).
+  fichier public sur GitHub, qui voit ton adresse IP. Les applications iPhone et Android gardent tout sur
+  le téléphone et ne parlent qu'aux serveurs Corde que tu ajoutes (et, si tu l'actives, aux deux pages du
+  planning) ; l'application Android n'a aucune bibliothèque Google et ses données ne partent pas dans les
+  sauvegardes.
   Détails : [PRIVACY.md](PRIVACY.md).
 - **Sécurité** : le serveur local n'écoute que sur ton PC par défaut ; ce qui est exposé quand l'accès
   depuis le téléphone est activé est décrit dans [docs/SECURITY-MODEL.md](docs/SECURITY-MODEL.md). Corde

@@ -21,6 +21,8 @@ code ; s'il devient faux, c'est un bogue à signaler.
 - **Application iPhone (0.8)** : elle garde tes serveurs, tes courses et tes réglages **sur le téléphone**,
   lit les deux pages du planning si tu l'actives, et ne parle qu'aux serveurs Corde que tu as ajoutés.
   Rien n'est envoyé ailleurs (voir plus bas).
+- **Application Android (1.0)** : la même, sans aucune bibliothèque Google ; ses données ne partent ni dans
+  la sauvegarde Google ni vers un nouveau téléphone (voir plus bas).
 
 ## Ce que Corde lit (en lecture seule)
 
@@ -150,6 +152,33 @@ n'a ni compte, ni statistiques d'usage, ni publicité, ni service à nous.
   photos ; le reste de cette copie est remplacé à la réinstallation). Pour qu'un serveur Corde l'oublie
   aussi : « Oublier l'appairage » dans « Mes serveurs » (ou la page Appareils du serveur).
 
+## Application Android
+
+L'application Android (1.0, [docs/ANDROID.md](docs/ANDROID.md)) est **la même que l'application iPhone**
+(section précédente) : mêmes lectures (les deux pages du planning si tu l'actives, leurs images, les serveurs
+Corde que tu as ajoutés), même stockage sur le téléphone, mêmes rappels en **notifications locales** (aucun
+service de notifications push). Elle n'a **ni widgets ni compte à rebours** pour l'instant, donc aucune copie
+pour eux. Ce qui diffère :
+
+- **Aucune bibliothèque Google** : pas de Google Play services, pas de Firebase, pas d'analyse d'usage, pas
+  de publicité. Le lecteur de QR code utilise ZXing (libre, tout sur le téléphone) ; la bibliothèque de Google
+  qu'il pourrait utiliser (ML Kit, qui envoie des statistiques d'usage à Google) est retirée de l'application.
+  Corde fonctionne sur un téléphone sans services Google.
+- **Pas de sauvegarde, pas de transfert** : ce que l'application garde (tes serveurs, la **clé
+  d'appairage** de ton serveur Corde, tes courses choisies, tes réglages) **ne part pas dans la sauvegarde
+  Google** de ton téléphone ni dans le **transfert vers un nouveau téléphone** (`allowBackup` coupé, règles
+  d'extraction qui excluent tout). Sur un nouveau téléphone, tu réinstalles Corde, rajoutes tes serveurs et
+  appaires à nouveau.
+- **Autorisations** : notifications (à ton premier choix de course), « Alarmes et rappels » (proposée juste
+  après, pour que les rappels sonnent à l'heure exacte), appareil photo (seulement au toucher de « Scanner
+  le QR code », aucune image gardée). **Pas de localisation.**
+- **Installée hors du Play Store** (fichier APK publié sur GitHub) : Google ne voit pas son installation par
+  le Play Store ; sur un téléphone avec les services Google, Play Protect peut proposer d'analyser
+  l'application à l'installation (c'est Android qui le propose, pas Corde).
+- **Effacer** : désinstaller l'application efface tout ce qu'elle garde (il n'y a rien hors de l'application
+  sur Android). Pour qu'un serveur Corde l'oublie aussi : « Oublier l'appairage » avant, ou la page Appareils
+  du serveur.
+
 ## Planning des courses en ligne (optionnel, désactivé par défaut)
 
 La page **Courses** affiche le planning en ligne de Le Mans Ultimate. Tant que tu ne l'actives pas (bouton
@@ -265,4 +294,9 @@ widget, the app itself downloads the pictures of the races those two pages cite 
 schedule on and the app open; the hosting server sees the phone's IP address, as when the interface shows
 them) and keeps reduced copies in the same keychain group; that copy also carries the SR / DR each race
 requires and whether your profile is below it (not your ratings). Keychain items outlive the app: turn the
-schedule off before deleting it to erase the pictures.
+schedule off before deleting it to erase the pictures. **Android app (1.0)**: the same as the iPhone app,
+without widgets for now, and **without any Google library** (no Play services, no Firebase, no analytics; the
+QR code scanner uses ZXing, Google's ML Kit is removed); what it keeps (servers, pairing key, picks,
+settings) is **excluded from Google backups and device-to-device transfers**; permissions: notifications,
+exact alarms (offered for on-time reminders), camera only to scan the QR code; no location. Uninstalling it
+erases everything.

@@ -1287,6 +1287,21 @@ export const en: Record<TranslationKey, string> = {
   "mobile.notif.prompt":
     "The iPhone will ask you to allow notifications when you pick your first race.",
   "mobile.notif.ask": "Allow now",
+  // Android application (apps/mobile/android)
+  "races.reminders.hintPhone.android":
+    "A notification on this phone for every reminder, even with the app closed or the phone locked.",
+  "mobile.notif.denied.android":
+    "Notifications denied: reminders will not ring. To allow them: phone Settings → Apps → Corde → Notifications.",
+  "mobile.notif.prompt.android":
+    "Android will ask you to allow notifications when you pick your first race.",
+  "mobile.exact.granted": "Reminders ring at the exact minute, even with the phone asleep.",
+  "mobile.exact.denied":
+    'Exact reminders not allowed: Android may deliver a reminder a few minutes late while the phone is asleep. To allow them: "Alarms & reminders".',
+  "mobile.exact.ask": "Allow",
+  "mobile.exact.confirm":
+    'For reminders to ring at the exact minute, even with the phone asleep, Android asks you to allow "Alarms & reminders" for Corde. Open that setting now?',
+  "mobile.channel.name": "Race reminders",
+  "mobile.channel.description": "Before the starts you picked on the Courses page.",
   "mobile.live.label": "Countdown on the lock screen and in the Dynamic Island",
   "mobile.live.hint":
     'It starts by itself when your next picked start is less than 2 h away and Corde is open (or with "Countdown" on a start, up to 8 h before). After the start, it stays shown until you next open Corde or swipe it away.',

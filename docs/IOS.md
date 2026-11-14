@@ -294,7 +294,7 @@ de la compilation, sur la machine de GitHub ; elle n'est enregistrée nulle part
 
 ## 6. Limites connues
 
-- **iPhone seulement, iOS 17 au minimum** depuis la 0.9 (un iPad l'ouvre en mode iPhone). Pas d'Android.
+- **iPhone seulement, iOS 17 au minimum** depuis la 0.9 (un iPad l'ouvre en mode iPhone). Android : application à part, même code ([ANDROID.md](ANDROID.md)).
 - **Widgets et compte à rebours** : limites au §2 (mise à jour à l'ouverture de Corde, « Départ donné »
   jusqu'à la prochaine ouverture). Pas de widget configurable (catégorie au choix) pour l'instant : ils
   suivent les filtres de la page Courses. **Courses en images** : la page change à la minute (pas plus

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Resources the code names at run time (the reminders, packages/ui/src/mobile/reminders.ts:
+     the channel's sound, the small icon): kept if resource shrinking is ever turned on. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@raw/corde_reminder,@drawable/ic_stat_corde" />

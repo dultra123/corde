@@ -6,6 +6,7 @@ import type { RacePick } from "../net/races-api";
 import { hm } from "../races/format";
 import { useTelemetry } from "../store/telemetry";
 import { appController, type ServerStatus, useApp } from "./app-state";
+import { phoneTextKey } from "./device";
 import type { NativeDiagnostics } from "./ports";
 import { MANUAL_LEAD_MS } from "./widgets";
 
@@ -57,6 +58,7 @@ export function NeedServer({ status }: { status: ServerStatus }) {
   const servers = useApp((s) => s.servers);
   const activeId = useApp((s) => s.activeId);
   const message = useApp((s) => s.statusMessage);
+  const os = useApp((s) => s.os);
   const name = servers.find((s) => s.id === activeId)?.name ?? "";
   const retry = (
     <button
@@ -95,7 +97,8 @@ export function NeedServer({ status }: { status: ServerStatus }) {
             <li>{t("mobile.gate.unreachable.on")}</li>
             <li>{t("mobile.gate.unreachable.lan")}</li>
             <li>{t("mobile.gate.unreachable.wifi")}</li>
-            <li>{t("mobile.gate.unreachable.local")}</li>
+            {/* Android has no « réseau local » permission. */}
+            {os === "ios" && <li>{t("mobile.gate.unreachable.local")}</li>}
           </ul>
         </>
       );
@@ -208,23 +211,46 @@ export function HomeServerCard() {
 export function ReminderStatus() {
   const { t } = useT();
   const permission = useApp((s) => s.permission);
+  const os = useApp((s) => s.os);
+  const exact = useApp((s) => s.exact);
   if (permission === null) return null;
   const ask = async () => {
     const p = await appController().races.askPermission();
     useApp.setState({ permission: p });
   };
+  const android = appController().android;
+  const askExact = async () => {
+    if (!android) return;
+    await android.askExact();
+    void appController().races.replan();
+  };
   return (
-    <p className={`races-hint app-notif is-${permission}`} role="status">
-      {t(`mobile.notif.${permission}`)}
-      {permission === "prompt" && (
-        <>
-          {" "}
-          <button type="button" className="link" onClick={() => void ask()}>
-            {t("mobile.notif.ask")}
-          </button>
-        </>
+    <>
+      <p className={`races-hint app-notif is-${permission}`} role="status">
+        {t(phoneTextKey(`mobile.notif.${permission}`, os))}
+        {permission === "prompt" && (
+          <>
+            {" "}
+            <button type="button" className="link" onClick={() => void ask()}>
+              {t("mobile.notif.ask")}
+            </button>
+          </>
+        )}
+      </p>
+      {android && permission === "granted" && exact !== null && (
+        <p className={`races-hint app-notif is-${exact}`} role="status">
+          {t(exact === "granted" ? "mobile.exact.granted" : "mobile.exact.denied")}
+          {exact === "denied" && (
+            <>
+              {" "}
+              <button type="button" className="link" onClick={() => void askExact()}>
+                {t("mobile.exact.ask")}
+              </button>
+            </>
+          )}
+        </p>
       )}
-    </p>
+    </>
   );
 }
 

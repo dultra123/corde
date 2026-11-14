@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Network security of Corde (docs/SECURITY-MODEL.md §9, ADR 0013).
+
+  The PC and the Corde server are reached in clear text (http://) on the home network or inside
+  the driver's VPN, as from a browser. Android cannot restrict clear text to private address
+  ranges (a domain-config takes host names, not address ranges): it is allowed for every
+  address here, and the application's code is what refuses `http://` to a public address
+  (packages/ui/src/mobile/addresses.ts, servers.ts).
+
+  The two pages of the race schedule are read in https only (packages/ui/src/mobile/schedule.ts);
+  the configuration refuses clear text to them as well. Only the system's certificate
+  authorities are trusted (none added by the user).
+-->
+<network-security-config xmlns:tools="http://schemas.android.com/tools">
+    <base-config
+        cleartextTrafficPermitted="true"
+        tools:ignore="InsecureBaseConfiguration">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">racecontrol.gg</domain>
+        <domain includeSubdomains="true">lmu.tools</domain>
+    </domain-config>
+</network-security-config>

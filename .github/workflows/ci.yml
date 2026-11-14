@@ -11,7 +11,8 @@
 #              jour Corde_<version>_x64-setup.exe.sig quand le secret TAURI_SIGNING_PRIVATE_KEY existe). C'est le
 #              seul endroit où la coquille est compilée.
 # continuous : sur push main seulement, pré-release glissante étiquetée `continuous` (« Corde — dernière version ») :
-#              installeur + zip portable + archives de Corde serveur, anciens fichiers remplacés
+#              installeur + zip portable + archives de Corde serveur, anciens fichiers remplacés ; l'APK Android
+#              signé qu'android.yml y a mis (Corde_<version>_android.apk) est repris avant la suppression
 # version    : sur push main seulement, release NUMÉROTÉE v<version> (version de tauri.conf.json) si elle n'existe
 #              pas encore et que la signature de mise à jour a été produite : installeur, .sig, zip portable et
 #              latest.json (lu par le bouton « Rechercher une mise à jour » de l'application)
@@ -510,6 +511,18 @@ jobs:
           name: corde-server-linux
           path: release
 
+      # L'APK Android signé (Corde_<version>_android.apk) est ajouté à cette pré-release par
+      # android.yml, qui ne tourne que quand l'application change : la recréer plus bas le
+      # perdrait. Il est repris de la pré-release actuelle avant qu'elle soit supprimée, puis
+      # republié avec le reste (android.yml attend la fin de ce workflow pour publier le sien).
+      - name: Reprendre l'APK Android de la pré-release actuelle
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release download "$TAG" --pattern 'Corde_*_android.apk' --dir release ||
+              echo "pas d'APK Android dans la pré-release actuelle"
+          fi
+
       - name: Préparer les fichiers et les notes
         run: |
           set -euo pipefail
@@ -556,6 +569,10 @@ jobs:
                 *) what="**Corde serveur** pour un PC Linux 64 bits (x86_64). Guide : [docs/SERVEUR.md](${docs}/SERVEUR.md)." ;;
               esac
               echo "| \`$(basename "$a")\` | ${what} |"
+            done
+            for a in release/Corde_*_android.apk; do
+              [ -e "$a" ] || continue
+              echo "| \`$(basename "$a")\` | **Corde pour Android** (téléphone, Android 8 ou plus récent), signé, à installer à la main. Guide : [docs/ANDROID.md](${docs}/ANDROID.md). |"
             done
             echo ""
             echo "## Pourquoi Windows affiche un avertissement"

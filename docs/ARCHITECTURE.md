@@ -114,5 +114,5 @@ il produit l'installeur `Corde_<version>_x64-setup.exe`.
 | 0 | protocole, adaptateur LMU, simulateur, serveur, dashboard v0 (6–8 widgets), layouts | `corde-server` + UI web (Linux build ici, Windows via CI) |
 | 1 | CI Windows, coquille Tauri desktop, enregistrement SQLite/Parquet, import résultats XML | installeur Windows, premières sessions enregistrées |
 | 2 | analyse post-session, diagnostics, 3 setups proposés, boucle de ressenti (LLM + règles), profil pilote | « l'ingénieur » |
-| 3 | application mobile : iPhone par Capacitor (ADR 0011, 0.8 : courses sur le téléphone, serveurs, appairage) ; Android, découverte mDNS à venir | app mobile |
+| 3 | application mobile : iPhone par Capacitor (ADR 0011, 0.8 : courses sur le téléphone, serveurs, appairage ; widgets ADR 0012) ; Android par le même projet (ADR 0013, 1.0, sans widgets) ; découverte mDNS à venir | app mobile |
 | 4 | adaptateurs ACC, AC EVO, iRacing, rF2, AMS2 | multi-jeux |
