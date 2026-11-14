@@ -10,12 +10,22 @@ final class DebugRequest {
 
     private DebugRequest() {}
 
+    /** The pages of the phone dashboard (packages/ui/src/dash/model.ts). */
+    static final String[] DASH_PAGES = {"course", "tyres", "energy", "timing"};
+
+    static String eventData(String action, int delaySec, String url) {
+        return eventData(action, delaySec, url, null, null);
+    }
+
     /**
      * The event's data (a JavaScript object literal, JSON) for {@code action}, or {@code null}
      * for an unknown action. {@code reminder}: in {@code delaySec} seconds (10 to 600);
-     * {@code fetch}: {@code url}, {@code http://} only; {@code scan}.
+     * {@code fetch}: {@code url}, {@code http://} only; {@code scan}; {@code demo}: the
+     * demonstration on the dashboard's page {@code page} (one of {@link #DASH_PAGES}, the first
+     * otherwise), the screen turned to {@code orientation} ({@code landscape} or
+     * {@code portrait}; left as it is otherwise).
      */
-    static String eventData(String action, int delaySec, String url) {
+    static String eventData(String action, int delaySec, String url, String page, String orientation) {
         if ("reminder".equals(action)) {
             int d = Math.max(10, Math.min(600, delaySec));
             return "{\"action\":\"reminder\",\"delaySec\":" + d + "}";
@@ -26,6 +36,14 @@ final class DebugRequest {
         }
         if ("scan".equals(action)) {
             return "{\"action\":\"scan\"}";
+        }
+        if ("demo".equals(action)) {
+            String p = DASH_PAGES[0];
+            for (String known : DASH_PAGES) {
+                if (known.equals(page)) p = known;
+            }
+            String o = "landscape".equals(orientation) || "portrait".equals(orientation) ? "\"" + orientation + "\"" : "null";
+            return "{\"action\":\"demo\",\"page\":\"" + p + "\",\"orientation\":" + o + "}";
         }
         return null;
     }

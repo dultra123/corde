@@ -14,6 +14,8 @@ import com.getcapacitor.BridgeActivity;
  * - edge to edge on every version (Android 15 imposes it): transparent system bars with light
  *   icons; the interface keeps its safe margins (SystemBars of Capacitor gives the insets to
  *   the page, `env(safe-area-inset-*)`);
+ * - the application's own module ({@link CordeNativePlugin}: the screen kept on by the phone
+ *   dashboard);
  * - in the Debug build only, the entries of the CI's smoke test ({@code DebugHooks}; the
  *   Release build has an empty one).
  */
@@ -23,6 +25,8 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         SplashScreen.installSplashScreen(this);
         EdgeToEdge.enable(this, SystemBarStyle.dark(Color.TRANSPARENT), SystemBarStyle.dark(Color.TRANSPARENT));
+        // Before super.onCreate: Capacitor creates the bridge there, with the plugins registered.
+        registerPlugin(CordeNativePlugin.class);
         super.onCreate(savedInstanceState);
     }
 

@@ -10,5 +10,9 @@ import UIKit
 class CordeBridgeViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(CordeNativePlugin())
+        #if DEBUG
+        // Essais de la CI (WidgetShots.swift) : la démonstration du tableau de bord.
+        CordeDebug.bridge = bridge
+        #endif
     }
 }

@@ -100,6 +100,18 @@ réglages restent réservés au PC ([pourquoi](docs/SECURITY-MODEL.md)).
 
 ![Accueil, tableau de bord et analyse d'un tour sur téléphone](docs/images/mobile.png)
 
+**Sur un téléphone, le Direct devient un vrai tableau de bord de course**, comme celui d'un volant ou de
+SimHub : plein écran, grand rapport au centre, rampe de régime qui clignote au passage, vitesse, écart au
+meilleur tour, tours, carburant. Quatre pages se font glisser du doigt — **Course**, **Pneus & freins**,
+**Carburant & énergie**, **Chronos & écarts** — et l'écran reste allumé tant qu'il est affiché. Pensé pour un
+téléphone posé en paysage à côté du volant ; en portrait, les cases s'empilent. Ce que la voiture n'a pas
+(pas d'ABS, pas d'énergie virtuelle…) ne s'affiche pas, et une donnée absente s'affiche « — ». Le bouton ☰
+mène aux autres pages, aux réglages et à « Passer aux widgets ». Une tablette ou un second écran l'ouvre à
+l'adresse **`…#/dash`**, ou avec le réglage **Affichage du Direct** (Automatique / Tableau de bord /
+Widgets).
+
+![Tableau de bord du téléphone, page Course (course de démonstration)](docs/images/tableau-de-bord-telephone.png)
+
 ### L'application iPhone
 
 La même interface dans une vraie application iPhone (en test par TestFlight, sur invitation ; pas encore
@@ -110,7 +122,9 @@ les sessions, l'ingénieur et le profil s'ouvrent dès qu'un PC ou un serveur Co
 « Mes serveurs » (adresse ou QR code, appairage par code pour le serveur Corde). Depuis la 0.9 : des
 **widgets** (prochaines courses, compte à rebours de tes départs, écran verrouillé) et le **compte à rebours
 dans la Dynamic Island** ; depuis la 0.10, le widget **Courses en images** (une course par page, avec sa
-photo et le SR / DR requis). Compilée uniquement par GitHub (aucun Mac nécessaire) : [docs/IOS.md](docs/IOS.md).
+photo et le SR / DR requis). Depuis la 1.1, le Direct est le **tableau de bord du téléphone** (ci-dessus), et
+**« Voir une démonstration »** (dans « Mes serveurs ») le montre avec une course inventée, sans PC.
+Compilée uniquement par GitHub (aucun Mac nécessaire) : [docs/IOS.md](docs/IOS.md).
 
 ![Aperçu du mode application : Accueil, Courses et « Mes serveurs »](docs/images/iphone.png)
 
@@ -122,7 +136,8 @@ page est affichée par WebKit, sous la barre d'état et au-dessus de la barre d'
 
 La même application pour Android 8 ou plus récent, **sans aucune bibliothèque Google** (elle marche sur un
 téléphone sans services Google) : courses sans PC, rappels en notifications à l'heure exacte même
-application fermée, « Mes serveurs », direct, sessions, ingénieur et profil. Pas encore de widgets ni de
+application fermée, « Mes serveurs », le tableau de bord du téléphone (et sa démonstration sans PC),
+sessions, ingénieur et profil. Pas encore de widgets ni de
 compte à rebours. Elle s'installe à partir du fichier **`Corde_<version>_android.apk`** des
 [releases](https://github.com/dultra123/corde/releases) (pas encore sur le Play Store). Compilée et essayée
 sur un émulateur par GitHub, **pas encore essayée sur un vrai téléphone** : [docs/ANDROID.md](docs/ANDROID.md).
@@ -263,6 +278,7 @@ Pas à pas pour un non-informaticien : [docs/SERVEUR.md](docs/SERVEUR.md) · acc
 | Widgets iPhone (écran d'accueil, écran verrouillé) et compte à rebours dans la Dynamic Island | fait (0.9.0, iPhone seulement) ; fonctionnent sur l'iPhone du pilote (TestFlight) |
 | Widget iPhone « Courses en images » (une course par page, photo, SR / DR requis) | fait (0.10.0, iPhone seulement) ; vu sur le simulateur de la CI, pas encore confirmé sur un iPhone |
 | Application Android (Capacitor) : courses sans PC avec rappels en notifications, connexion au PC et au serveur Corde, sans services Google | fait (lot 1, sans widgets) ; compilée et essayée sur un émulateur Android 15 sans services Google par la CI (démarrage, lien, rappel reçu application tuée et téléphone en veille) ; **jamais vue sur un vrai téléphone** ; APK signé publié quand la clé de signature est fournie |
+| Tableau de bord du téléphone (Direct plein écran, quatre pages, écran allumé, démonstration dans l'application) | fait (1.1.0) ; vérifié avec la course de démonstration dans Chromium (cinq tailles d'écran) et sur le simulateur iOS / l'émulateur Android de la CI ; **pas encore vu avec le jeu ni sur un vrai téléphone** |
 | Linux (le jeu tourne sous Proton) | serveur compilé, non testé avec le jeu |
 | Autres simulateurs (ACC, Assetto Corsa EVO, iRacing, rFactor 2…) | à venir |
 
@@ -349,7 +365,8 @@ corde/
   [serveur domestique](docs/adr/0010-serveur-domestique.md),
   [application iPhone](docs/adr/0011-application-mobile-capacitor.md),
   [widgets iOS et activité en direct](docs/adr/0012-widgets-activite-en-direct.md),
-  [application Android](docs/adr/0013-application-android.md)
+  [application Android](docs/adr/0013-application-android.md),
+  [tableau de bord du téléphone](docs/adr/0014-tableau-de-bord-telephone.md)
 - [docs/TESTING-ON-PC.md](docs/TESTING-ON-PC.md) — installer et utiliser Corde sur Windows, dépannage
 - [docs/SERVEUR.md](docs/SERVEUR.md) — installer Corde serveur sur un Raspberry Pi, appairer, sauvegarder
 - [docs/ACCES-EXTERIEUR.md](docs/ACCES-EXTERIEUR.md) — ouvrir le serveur depuis l'extérieur par un VPN, sans exposer Corde

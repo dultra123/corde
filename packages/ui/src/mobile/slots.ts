@@ -33,6 +33,11 @@ export interface AppSlots {
   PickAction?: ComponentType<{ pick: RacePick; now: number }>;
   /** A sentence that names the phone's system: its key for this phone (`mobile/device.ts`). */
   phoneText?: (key: TranslationKey) => TranslationKey;
+  /**
+   * Keeps the phone's screen on (`true`) or lets it sleep again: the phone dashboard
+   * (`dash/wake.ts`) calls it while it is shown. In a browser, `navigator.wakeLock` instead.
+   */
+  keepAwake?: (on: boolean) => Promise<void>;
 }
 
 export const appSlots: AppSlots = {};

@@ -155,7 +155,8 @@ function decide(prev: AutoNavState, now: number, ctx: AutoNavContext): AutoNavSt
   let state = prev;
 
   if (state.enter) {
-    if (!ctx.options.dashboardOnTrack || sameRoute(ctx.route, DASHBOARD)) {
+    // `#/` and `#/dash` are both the live dashboard: no jump from one to the other.
+    if (!ctx.options.dashboardOnTrack || ctx.route.page === "dashboard") {
       state = { ...state, enter: null };
     } else if (!inGrace(state, now)) {
       return { state: { ...state, enter: null }, go: DASHBOARD };

@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { useAutoPicksDash } from "../dash/view";
 import { useT } from "../i18n";
 import { hasUpdate } from "../lib/updates";
 import { routeHash, type Section } from "../nav/routes";
 import { connection } from "../net/connection";
 import { useDashboard } from "../store/dashboard";
 import { useHub } from "../store/hub";
+import { useSettings } from "../store/settings";
 import { useTelemetry } from "../store/telemetry";
 import { useUpdates } from "../store/updates";
 import {
@@ -14,6 +16,7 @@ import {
   IconExitFullscreen,
   IconFlag,
   IconFullscreen,
+  IconGauge,
   IconHome,
   IconLive,
   IconPlus,
@@ -87,6 +90,10 @@ export function TopBar({ onSettings, section = "dashboard" }: Props) {
   // On the home server `#/` explains where the live view is: no dashboard controls.
   const onHub = useHub((s) => s.role === "hub");
   const onDashboard = section === "dashboard" && !onHub;
+  // A phone (or the phone application) that chose the widgets: the way back to its dashboard.
+  // `auto` never picks the phone dashboard on a PC, so a PC never shows this button.
+  const autoDash = useAutoPicksDash();
+  const backToDash = onDashboard && autoDash && !editing;
 
   return (
     <header className={`topbar is-${section}`}>
@@ -111,6 +118,17 @@ export function TopBar({ onSettings, section = "dashboard" }: Props) {
         <StatusPill onClick={onSettings} />
       </div>
       <div className="topbar-right">
+        {backToDash && (
+          <button
+            type="button"
+            className="btn"
+            onClick={() => useSettings.getState().update({ liveView: "auto" })}
+            title={t("topbar.toDash")}
+          >
+            <IconGauge />
+            <span className="btn-label">{t("topbar.toDash")}</span>
+          </button>
+        )}
         {onDashboard && editing && (
           <button
             type="button"

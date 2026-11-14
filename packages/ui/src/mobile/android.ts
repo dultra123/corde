@@ -1,5 +1,6 @@
 import type { LocalNotificationsPlugin } from "@capacitor/local-notifications";
 import type { RaceReminder } from "@corde/protocol";
+import { DASH_PAGES, type DashPage, pageIndex } from "../dash/model";
 import { translate } from "../i18n";
 import type { Lang } from "../store/settings";
 import { KEYS, readJson, writeJson } from "./kv";
@@ -135,14 +136,18 @@ export function backAction(canGoBack: boolean): "back" | "exit" {
  *   races never cancels it;
  * - `fetch` — `fetch(url)` from the page (`http://` only, the address of the CI's machine as the
  *   emulator sees it), to check clear-text traffic and the page's origin;
- * - `scan` — opens the QR code scanner.
+ * - `scan` — opens the QR code scanner;
+ * - `demo` — the demonstration on the phone dashboard, at page `page`, the screen turned to
+ *   `orientation` (for the CI's screenshots). The iPhone's Debug build sends it too
+ *   (`-CordeDemoDash`, `WidgetShots.swift`).
  *
- * Each one only writes to the log; none changes the driver's data.
+ * Each one only writes to the log; none changes the driver's data (the demo is never kept).
  */
 export type DebugRequest =
   | { action: "reminder"; delaySec: number }
   | { action: "fetch"; url: string }
-  | { action: "scan" };
+  | { action: "scan" }
+  | { action: "demo"; page: DashPage; orientation: "landscape" | "portrait" | null };
 
 export function parseDebugRequest(ev: unknown): DebugRequest | null {
   if (typeof ev !== "object" || ev === null) return null;
@@ -163,6 +168,15 @@ export function parseDebugRequest(ev: unknown): DebugRequest | null {
     return { action, url };
   }
   if (action === "scan") return { action };
+  if (action === "demo") {
+    const page = d.page ?? o.page;
+    const orientation = d.orientation ?? o.orientation;
+    return {
+      action,
+      page: DASH_PAGES[pageIndex(typeof page === "string" ? page : null)] ?? "course",
+      orientation: orientation === "landscape" || orientation === "portrait" ? orientation : null,
+    };
+  }
   return null;
 }
 

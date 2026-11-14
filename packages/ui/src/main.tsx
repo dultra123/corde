@@ -20,6 +20,7 @@ import "./styles/races.css";
 import "./styles/obs.css";
 import "./styles/overlay.css";
 import "./styles/hub.css";
+import "./styles/dash.css";
 
 import { createRoot } from "react-dom/client";
 import { App } from "./App";

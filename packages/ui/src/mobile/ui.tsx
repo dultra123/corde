@@ -1,7 +1,8 @@
 import { type ReactNode, useState } from "react";
 import { IconFlag, IconHome, IconLive, IconProfile, IconSessions } from "../dashboard/icons";
 import { type TranslationKey, useT } from "../i18n";
-import { type Route, routeHash } from "../nav/routes";
+import { navigate, type Route, routeHash } from "../nav/routes";
+import { connection } from "../net/connection";
 import type { RacePick } from "../net/races-api";
 import { hm } from "../races/format";
 import { useTelemetry } from "../store/telemetry";
@@ -52,6 +53,51 @@ function serversLink(primary: boolean, label: string) {
   );
 }
 
+/**
+ * « Voir une démonstration »: the demo race, computed on the phone (no network), on the phone
+ * dashboard. Not remembered: the application opens without it next time.
+ */
+export function startDemo(): void {
+  connection.setDemo(true);
+  navigate({ page: "dashboard" });
+}
+
+/** Leaves the demo: the active server, if any, is connected again. */
+export function quitDemo(): void {
+  connection.setDemo(false);
+}
+
+/** The demo button and what it does, for the pages that tell how to add a server. */
+export function DemoOffer() {
+  const { t } = useT();
+  const demo = useTelemetry((s) => s.demo === "manual");
+  if (demo) {
+    return (
+      <div className="app-demo">
+        <p className="races-hint">{t("mobile.demo.on")}</p>
+        <div className="app-gate-actions">
+          <a className="home-btn is-primary" href={routeHash({ page: "dashboard" })}>
+            {t("home.openDashboard")}
+          </a>
+          <button type="button" className="home-btn" onClick={quitDemo}>
+            {t("mobile.demo.quit")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="app-demo">
+      <div className="app-gate-actions">
+        <button type="button" className="home-btn" onClick={startDemo}>
+          {t("mobile.demo.start")}
+        </button>
+      </div>
+      <p className="races-hint faint">{t("mobile.demo.hint")}</p>
+    </div>
+  );
+}
+
 /** Why a page that needs a server cannot be shown, and what to do. */
 export function NeedServer({ status }: { status: ServerStatus }) {
   const { t } = useT();
@@ -83,6 +129,12 @@ export function NeedServer({ status }: { status: ServerStatus }) {
     case "none":
       title = t("mobile.gate.none.title");
       body = <p>{t("mobile.gate.none.body")}</p>;
+      actions = (
+        <>
+          {serversLink(true, t("mobile.gate.servers"))}
+          <DemoOffer />
+        </>
+      );
       break;
     case "unpaired":
       title = t("mobile.gate.unpaired.title", { name });
@@ -160,7 +212,10 @@ export function NeedServer({ status }: { status: ServerStatus }) {
 /** `useServerGate` of the slots: the page, or why not. */
 export function useServerGate(route: Route): ReactNode | null {
   const status = useApp((s) => s.status);
+  // The demonstration runs on the phone: its dashboard needs no server.
+  const demo = useTelemetry((s) => s.demo === "manual");
   if (!needsServer(route) || status === "ok") return null;
+  if (demo && route.page === "dashboard") return null;
   return <NeedServer status={status} />;
 }
 

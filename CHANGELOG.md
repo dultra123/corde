@@ -8,6 +8,39 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [1.1.0] — 2026-11-14
+
+**Le Direct devient un vrai tableau de bord sur le téléphone**, comme l'écran d'un volant ou un tableau de
+bord SimHub.
+
+### Nouveautés
+
+- **Tableau de bord du téléphone** : sur un téléphone (navigateur, application iPhone et Android), la page
+  **Direct** n'est plus la grille de widgets rétrécie mais un écran de course plein écran — grand rapport,
+  rampe de régime qui clignote au passage (et alterne au limiteur), vitesse, écart au meilleur tour, position,
+  tours, secteurs, écarts devant et derrière, carburant, électronique et pneus. Feux de drapeau (jaune, bleu,
+  damier) quand le jeu les donne.
+- **Quatre pages à faire glisser du doigt** : Course, Pneus & freins, Carburant & énergie (autonomie, ce qui
+  manque pour finir, hybride, session, météo), Chronos & écarts (secteurs, derniers tours, les deux voitures
+  devant et derrière toi).
+- **L'écran reste allumé** tant que le tableau de bord est affiché (réglage, activé par défaut).
+- **Pensé pour le paysage**, à côté du volant ; en portrait, les cases s'empilent. De l'iPhone SE à la
+  tablette.
+- **Tablette ou second écran** : l'adresse **`…#/dash`** ouvre toujours le tableau de bord ; le réglage
+  **Affichage du Direct** (Automatique / Tableau de bord / Widgets) choisit pour chaque appareil. Sur le PC,
+  rien ne change : les widgets restent là.
+- **Application iPhone et Android : « Voir une démonstration »** (dans « Mes serveurs ») — une course inventée
+  sur le tableau de bord, sans PC, calculée sur le téléphone.
+
+### À savoir
+
+- Le tableau de bord a été vérifié avec la course de démonstration, pas encore avec le jeu ni sur un vrai
+  téléphone : dis-nous ce qui se lit mal à bout de bras.
+- Les widgets restent disponibles sur le téléphone : menu ☰ → « Passer aux widgets ».
+- **Application Android** : c'est sa première version. Quand le fichier `Corde_1.1.0_android.apk` figure sur
+  cette page, il s'installe à la main (voir `docs/ANDROID.md`) ; pas encore de widgets sur Android.
+- L'application iPhone passe par TestFlight, pas encore par l'App Store.
+
 ## [1.0.0] — 2026-11-14
 
 **Première version officielle de Corde.** Elle réunit tout ce qui a été construit depuis les premières

@@ -16,6 +16,9 @@
 #     CI vue de l'émulateur), un faux serveur Corde note l'en-tête Origin (attendu : http://localhost) ;
 #  5. lecteur de QR code (ZXing, sans ML Kit ni services Google) : il s'ouvre sans planter,
 #     capture « scan » ;
+#  5 bis. le tableau de bord du téléphone en démonstration (calculée sur le téléphone), par
+#     l'entrée de débogage « demo » (pas de lien public) : captures « dash-course-landscape »,
+#     « dash-tyres-landscape », « dash-course-portrait » ;
 #  6. rappel de test dans 60 s, programmé par la page comme un vrai (canal, son, icône, alarme
 #     exacte), puis l'application est TUÉE et le téléphone mis en veille (écran éteint, Doze
 #     forcé) : la notification doit arriver quand même (dumpsys notification), capture
@@ -258,6 +261,26 @@ else
 fi
 adb shell input keyevent KEYCODE_BACK
 wait_log "\[corde\] debug: scan" 15 && logs | grep -E -o "\[corde\] debug: scan.*" | tail -n 1
+
+# 5 bis. Le tableau de bord en démonstration : la page tourne l'écran elle-même (verrou
+#        d'orientation), la rotation imposée ci-dessous ne fait que le suivre.
+for spec in "course landscape 1" "tyres landscape 1" "course portrait 0"; do
+  read -r page orientation rot <<< "$spec"
+  adb shell settings put system user_rotation "$rot" || true
+  adb logcat -c
+  start_app --es cordeDebug demo --es cordePage "$page" --es cordeOrientation "$orientation"
+  if wait_log "\[corde\] debug: demo ${page} ${orientation}" 40; then
+    ok "tableau de bord en démonstration : ${page}, ${orientation}"
+  else
+    warn "tableau de bord en démonstration : « debug: demo ${page} ${orientation} » absent du journal"
+  fi
+  sleep 6
+  shot "dash-${page}-${orientation}"
+  logs | has "\[corde\] screen kept on: true" && ok "écran gardé allumé par le tableau de bord"
+done
+adb shell settings put system user_rotation 0 || true
+keep 5-dash
+sleep 2
 
 # 6. Rappel application fermée, téléphone en veille.
 adb shell pm grant "$pkg" android.permission.POST_NOTIFICATIONS || true

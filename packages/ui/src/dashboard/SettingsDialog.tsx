@@ -6,7 +6,7 @@ import { appSlots } from "../mobile/slots";
 import { isAutoNavDisabled } from "../nav/auto";
 import { routeHash } from "../nav/routes";
 import { connection } from "../net/connection";
-import { type Lang, useSettings } from "../store/settings";
+import { type Lang, type LiveView, useSettings } from "../store/settings";
 import { useConnectionPhase, useTelemetry } from "../store/telemetry";
 import { HubDeviceSection, HubLinkSection } from "./HubSection";
 import { UpdatesSection } from "./UpdatesSection";
@@ -132,6 +132,8 @@ export function SettingsDialog({ open, onClose }: Props) {
   const [demoOn, setDemoOn] = useState(demo === "manual");
   const [autoDashboard, setAutoDashboard] = useState(settings.autoDashboard);
   const [autoSummary, setAutoSummary] = useState(settings.autoSummary);
+  const [liveView, setLiveView] = useState<LiveView>(settings.liveView);
+  const [keepAwake, setKeepAwake] = useState(settings.keepAwake);
   const pinned = isAutoNavDisabled();
 
   useEffect(() => {
@@ -144,6 +146,8 @@ export function SettingsDialog({ open, onClose }: Props) {
       setDemoOn(demo === "manual");
       setAutoDashboard(settings.autoDashboard);
       setAutoSummary(settings.autoSummary);
+      setLiveView(settings.liveView);
+      setKeepAwake(settings.keepAwake);
       d.showModal();
     } else if (!open && d.open) d.close();
   }, [
@@ -153,11 +157,21 @@ export function SettingsDialog({ open, onClose }: Props) {
     settings.lang,
     settings.autoDashboard,
     settings.autoSummary,
+    settings.liveView,
+    settings.keepAwake,
     demo,
   ]);
 
   const save = () => {
-    settings.update({ server: server.trim(), rateHz: rate, lang, autoDashboard, autoSummary });
+    settings.update({
+      server: server.trim(),
+      rateHz: rate,
+      lang,
+      autoDashboard,
+      autoSummary,
+      liveView,
+      keepAwake,
+    });
     if (demoOn !== (demo === "manual")) connection.setDemo(demoOn);
     onClose();
   };
@@ -272,6 +286,32 @@ export function SettingsDialog({ open, onClose }: Props) {
             <span className="hint">
               {pinned ? t("settings.autoNavPinned") : t("settings.autoNavHint")}
             </span>
+          </div>
+          <div className="sheet-section">{t("settings.section.dash")}</div>
+          <div className="field">
+            <label htmlFor="set-live-view">{t("settings.liveView")}</label>
+            <select
+              id="set-live-view"
+              className="select"
+              value={liveView}
+              onChange={(e) => setLiveView(e.target.value as LiveView)}
+            >
+              <option value="auto">{t("settings.liveView.auto")}</option>
+              <option value="dash">{t("settings.liveView.dash")}</option>
+              <option value="widgets">{t("settings.liveView.widgets")}</option>
+            </select>
+            <span className="hint">{t("settings.liveViewHint")}</span>
+          </div>
+          <div className="field is-switches">
+            <label className="switch is-wrap">
+              <input
+                className="switch-toggle"
+                type="checkbox"
+                checked={keepAwake}
+                onChange={(e) => setKeepAwake(e.target.checked)}
+              />
+              {t("settings.keepAwake")}
+            </label>
           </div>
           <DesktopSection open={open} />
           <UpdatesSection open={open} />

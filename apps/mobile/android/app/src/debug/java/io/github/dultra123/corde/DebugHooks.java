@@ -18,6 +18,7 @@ import com.getcapacitor.WebViewListener;
  * am start -n io.github.dultra123.corde/.MainActivity --es cordeDebug reminder --ei cordeDelay 60
  * am start -n io.github.dultra123.corde/.MainActivity --es cordeDebug fetch --es cordeUrl http://10.0.2.2:8471/api/health
  * am start -n io.github.dultra123.corde/.MainActivity --es cordeDebug scan
+ * am start -n io.github.dultra123.corde/.MainActivity --es cordeDebug demo --es cordePage tyres --es cordeOrientation landscape
  * </pre>
  *
  * Each one becomes a {@code cordeDebug} event of the page, once the page is loaded and the
@@ -28,6 +29,8 @@ final class DebugHooks {
     static final String EXTRA_ACTION = "cordeDebug";
     static final String EXTRA_DELAY = "cordeDelay";
     static final String EXTRA_URL = "cordeUrl";
+    static final String EXTRA_PAGE = "cordePage";
+    static final String EXTRA_ORIENTATION = "cordeOrientation";
     private static final String TAG = "CordeDebug";
     /** After the page is loaded, the interface still starts (boot.ts): leave it the time. */
     private static final long AFTER_LOAD_MS = 4000;
@@ -40,7 +43,13 @@ final class DebugHooks {
         if (action == null) return;
         // Once: not again when the activity is created again with the same intent.
         intent.removeExtra(EXTRA_ACTION);
-        String data = DebugRequest.eventData(action, intent.getIntExtra(EXTRA_DELAY, 60), intent.getStringExtra(EXTRA_URL));
+        String data = DebugRequest.eventData(
+            action,
+            intent.getIntExtra(EXTRA_DELAY, 60),
+            intent.getStringExtra(EXTRA_URL),
+            intent.getStringExtra(EXTRA_PAGE),
+            intent.getStringExtra(EXTRA_ORIENTATION)
+        );
         Bridge bridge = activity.getBridge();
         if (data == null || bridge == null) {
             Log.w(TAG, "request refused: " + action);

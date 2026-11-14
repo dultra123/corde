@@ -23,6 +23,8 @@ code ; s'il devient faux, c'est un bogue à signaler.
   Rien n'est envoyé ailleurs (voir plus bas).
 - **Application Android (1.0)** : la même, sans aucune bibliothèque Google ; ses données ne partent ni dans
   la sauvegarde Google ni vers un nouveau téléphone (voir plus bas).
+- **Tableau de bord du téléphone (1.1)** : garder l'écran allumé et « Voir une démonstration » ne font aucun
+  appel réseau ; la démonstration est calculée sur l'appareil et n'est pas gardée (voir plus bas).
 
 ## Ce que Corde lit (en lecture seule)
 
@@ -151,6 +153,11 @@ n'a ni compte, ni statistiques d'usage, ni publicité, ni service à nous.
   le trousseau (plus haut : coupe le planning avant de supprimer l'application pour effacer aussi les
   photos ; le reste de cette copie est remplacé à la réinstallation). Pour qu'un serveur Corde l'oublie
   aussi : « Oublier l'appairage » dans « Mes serveurs » (ou la page Appareils du serveur).
+- **Tableau de bord et démonstration (1.1)** : garder l'écran allumé sur le tableau de bord passe par un
+  réglage de l'iPhone (`isIdleTimerDisabled`), sans autorisation, et ne dit rien à personne. « Voir une
+  démonstration » calcule une course inventée **sur le téléphone** : aucun appel réseau, rien n'est
+  enregistré ni gardé au prochain lancement. La page du tableau de bord retenue (Course, Pneus…) et le
+  choix « Affichage du Direct » restent sur le téléphone, avec les autres réglages.
 
 ## Application Android
 
@@ -175,6 +182,8 @@ pour eux. Ce qui diffère :
 - **Installée hors du Play Store** (fichier APK publié sur GitHub) : Google ne voit pas son installation par
   le Play Store ; sur un téléphone avec les services Google, Play Protect peut proposer d'analyser
   l'application à l'installation (c'est Android qui le propose, pas Corde).
+- **Écran allumé et démonstration** : comme sur iPhone (l'écran reste allumé par un drapeau de la fenêtre,
+  `FLAG_KEEP_SCREEN_ON`, sans autorisation ; la démonstration est calculée sur le téléphone, sans réseau).
 - **Effacer** : désinstaller l'application efface tout ce qu'elle garde (il n'y a rien hors de l'application
   sur Android). Pour qu'un serveur Corde l'oublie aussi : « Oublier l'appairage » avant, ou la page Appareils
   du serveur.
@@ -299,4 +308,4 @@ without widgets for now, and **without any Google library** (no Play services, n
 QR code scanner uses ZXing, Google's ML Kit is removed); what it keeps (servers, pairing key, picks,
 settings) is **excluded from Google backups and device-to-device transfers**; permissions: notifications,
 exact alarms (offered for on-time reminders), camera only to scan the QR code; no location. Uninstalling it
-erases everything.
+erases everything. **Phone dashboard (1.1)**: keeping the screen on (Screen Wake Lock in a browser, `isIdleTimerDisabled` on iPhone, `FLAG_KEEP_SCREEN_ON` on Android, no permission) and the in-app demo (a made-up race computed on the device) make no network request; the demo is never kept.

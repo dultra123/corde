@@ -24,9 +24,10 @@ export const notifications: NotificationsPort = LocalNotifications;
 export const androidNotifications: AndroidNotificationsPort = LocalNotifications;
 /**
  * The application's own module (`CordeNativePlugin.swift`, registered by
- * `CordeBridgeViewController`): widgets and Live Activity. No JavaScript package: the bridge
- * calls the Swift methods by name. iPhone only: on Android (`traits.widgets` false) nothing
- * calls it (`registerPlugin` itself calls nothing).
+ * `CordeBridgeViewController`): widgets, Live Activity, screen kept on. No JavaScript package:
+ * the bridge calls the native methods by name. On Android the module of the same name
+ * (`CordeNativePlugin.java`) only has `setKeepAwake`: nothing else is called there
+ * (`traits.widgets` false).
  */
 export const native: NativePort = registerPlugin<NativePort>("CordeNative");
 export { App, Keyboard, KeyboardResize, KeyboardStyle, LocalNotifications, ScreenOrientation };

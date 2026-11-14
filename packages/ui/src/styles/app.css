@@ -165,6 +165,21 @@ html.is-app .board {
   flex-direction: column;
   gap: 10px;
 }
+.card.app-demo-card {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+.app-demo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.app-demo .races-hint {
+  margin: 0;
+}
 .card.app-server.is-active {
   border-color: rgba(255, 180, 84, 0.45);
 }
