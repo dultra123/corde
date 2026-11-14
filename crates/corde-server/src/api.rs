@@ -11,6 +11,12 @@
 //! GET    /api/layouts/{id}   DashboardLayout
 //! PUT    /api/layouts/{id}   upsert (the body's id is overridden by the path)
 //! DELETE /api/layouts/{id}   204 / 404
+//! GET    /api/dashes         DashDefinition[] — race dashboards made in the Studio (ADR 0015)
+//! DELETE /api/dashes         remove every dashboard (this PC only)
+//! GET    /api/dashes/{id}    DashDefinition / 404
+//! PUT    /api/dashes/{id}    body DashDefinition (its id must be the path's) → stored definition
+//!                            · 400 invalid (`dashes::validate`) or reserved id · 409 already 50
+//! DELETE /api/dashes/{id}    204 / 404 (this PC only)
 //! GET    /api/sessions?limit=&track=&type=         SessionRow[] (most recent first)
 //! GET    /api/sessions/{id}                        session + laps + events + setups + files
 //! GET    /api/sessions/{id}/laps/{lap}/samples?channels=speed_kmh,throttle&points=2000
@@ -232,6 +238,11 @@ pub fn router_with(state: Arc<AppState>, ui_dir: Option<PathBuf>, allow_host: &[
         .route(
             "/api/layouts/{id}",
             get(get_layout).put(put_layout).delete(delete_layout),
+        )
+        .route("/api/dashes", get(list_dashes).delete(delete_dashes))
+        .route(
+            "/api/dashes/{id}",
+            get(get_dash).put(put_dash).delete(delete_dash),
         )
         .route("/api/sessions", get(list_sessions))
         .route(
@@ -463,6 +474,65 @@ async fn delete_layout(State(state): State<Arc<AppState>>, Path(id): Path<String
         Ok(StatusCode::NO_CONTENT.into_response())
     } else {
         Err(ApiError::not_found("layout_not_found"))
+    }
+}
+
+// --- race dashboards (Studio, ADR 0015) ------------------------------------------
+
+async fn list_dashes(
+    State(state): State<Arc<AppState>>,
+) -> Json<Vec<corde_protocol::DashDefinition>> {
+    Json(state.dashes.list())
+}
+
+async fn delete_dashes(State(state): State<Arc<AppState>>) -> AppResult {
+    let n = tokio::task::spawn_blocking(move || state.dashes.clear()).await??;
+    Ok(Json(json!({ "deleted": n })).into_response())
+}
+
+async fn get_dash(State(state): State<Arc<AppState>>, Path(id): Path<String>) -> AppResult {
+    match state.dashes.get(&id) {
+        Some(d) => Ok(Json(d).into_response()),
+        None => Err(ApiError::not_found("dash_not_found")),
+    }
+}
+
+/// The body is parsed here (not by the `Json` extractor) so that a refused definition always
+/// answers 400 with the reason, whatever is wrong with it.
+async fn put_dash(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    body: Bytes,
+) -> AppResult {
+    use crate::dashes::{valid_id, DashError, MAX_DASH_BYTES};
+    if !valid_id(&id) {
+        return Err(ApiError::bad_request("invalid dashboard id"));
+    }
+    // The pretty-printed form of a definition at the limit can be a little larger.
+    if body.len() > MAX_DASH_BYTES * 2 {
+        return Err(ApiError::bad_request("invalid dashboard: too large"));
+    }
+    let dash: corde_protocol::DashDefinition = serde_json::from_slice(&body)
+        .map_err(|e| ApiError::bad_request(format!("invalid dashboard: {e}")))?;
+    if dash.id != id {
+        return Err(ApiError::bad_request(
+            "invalid dashboard: the id does not match the address",
+        ));
+    }
+    match tokio::task::spawn_blocking(move || state.dashes.upsert(dash)).await? {
+        Ok(stored) => Ok(Json(stored).into_response()),
+        Err(DashError::Invalid(m)) => Err(ApiError::bad_request(format!("invalid dashboard: {m}"))),
+        Err(DashError::Full) => Err(ApiError::new(StatusCode::CONFLICT, "too_many_dashes")),
+        Err(DashError::Io(e)) => Err(e.into()),
+    }
+}
+
+async fn delete_dash(State(state): State<Arc<AppState>>, Path(id): Path<String>) -> AppResult {
+    let existed = tokio::task::spawn_blocking(move || state.dashes.delete(&id)).await??;
+    if existed {
+        Ok(StatusCode::NO_CONTENT.into_response())
+    } else {
+        Err(ApiError::not_found("dash_not_found"))
     }
 }
 
@@ -1087,7 +1157,7 @@ async fn landing(State(state): State<Arc<AppState>>) -> Html<String> {
 <body><h1>corde-server {version}</h1>
 <p>Source : <code>{source}</code> — {state} · {clients} client(s) · entrée {rate:.0} Hz</p>
 <p>Aucun tableau de bord n'est servi (pas de dossier UI : <code>--ui-dir</code>). L'API reste disponible :</p>
-<ul><li><a href="/api/status">/api/status</a></li><li><a href="/api/frame">/api/frame</a></li><li><a href="/api/laps">/api/laps</a></li><li><a href="/api/layouts">/api/layouts</a></li><li><a href="/api/sessions">/api/sessions</a> (+ <code>/{{id}}/analysis</code>, <code>/{{id}}/feedback</code>, <code>/{{id}}/iterations</code>) · <a href="/api/recording">/api/recording</a> · <a href="/api/storage">/api/storage</a></li><li><a href="/api/profile">/api/profile</a> · <a href="/api/results">/api/results</a></li><li><a href="/api/settings">/api/settings</a> · <a href="/api/network">/api/network</a></li><li><a href="/api/health">/api/health</a></li><li>WebSocket <code>/ws</code></li></ul>
+<ul><li><a href="/api/status">/api/status</a></li><li><a href="/api/frame">/api/frame</a></li><li><a href="/api/laps">/api/laps</a></li><li><a href="/api/layouts">/api/layouts</a> · <a href="/api/dashes">/api/dashes</a></li><li><a href="/api/sessions">/api/sessions</a> (+ <code>/{{id}}/analysis</code>, <code>/{{id}}/feedback</code>, <code>/{{id}}/iterations</code>) · <a href="/api/recording">/api/recording</a> · <a href="/api/storage">/api/storage</a></li><li><a href="/api/profile">/api/profile</a> · <a href="/api/results">/api/results</a></li><li><a href="/api/settings">/api/settings</a> · <a href="/api/network">/api/network</a></li><li><a href="/api/health">/api/health</a></li><li>WebSocket <code>/ws</code></li></ul>
 </body></html>"#,
         version = SERVER_VERSION,
         source = s.source,

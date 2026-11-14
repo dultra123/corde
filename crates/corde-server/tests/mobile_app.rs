@@ -190,6 +190,13 @@ async fn the_application_reaches_a_pc_with_the_network_access_open() {
     let layout = r#"{"id":"phone","name":"iPhone","device":"mobile","columns":4,"widgets":[],"updated_ms":0}"#;
     let r = raw(to, "PUT", "/api/layouts", &h, layout).await;
     assert_eq!(r.status, 200, "{}", r.body);
+    // A race dashboard: the same rule as the layouts (stored from any device, deleted from the PC).
+    let dash = r##"{"v":1,"id":"gt3","name":"GT3","format":{"preset":"phone-landscape","width":852,"height":393},"theme":{"background":"#000000","panel":"#0d1116","line":"#1f2731","text":"#f2f5f8","dim":"#93a0ae","accent":"#ffb454"},"pages":[{"id":"p1","name":"Course","cols":24,"rows":12,"elements":[]}],"updated_ms":1}"##;
+    let r = raw(to, "PUT", "/api/dashes/gt3", &h, dash).await;
+    assert_eq!(r.status, 200, "{}", r.body);
+    let r = raw(to, "GET", "/api/dashes", &h, "").await;
+    assert_eq!(r.status, 200, "{}", r.body);
+    assert_eq!(r.json()[0]["id"], "gt3");
 
     // Preflight of a JSON request carrying a token.
     let pre = [
@@ -224,6 +231,8 @@ async fn the_application_reaches_a_pc_with_the_network_access_open() {
         ("PUT", "/api/settings", r#"{"lan_access":false}"#),
         ("DELETE", "/api/sessions/20260101-000000-nowhere", ""),
         ("DELETE", "/api/layouts/phone", ""),
+        ("DELETE", "/api/dashes/gt3", ""),
+        ("DELETE", "/api/dashes", ""),
         ("POST", "/api/profile/import", ""),
         ("POST", "/api/hub-link/sync", ""),
     ] {

@@ -65,6 +65,8 @@ pub fn route_access(method: &Method, route: &str) -> Access {
         // Deletes data.
         ("DELETE", "/api/layouts")
             | ("DELETE", "/api/layouts/{id}")
+            | ("DELETE", "/api/dashes")
+            | ("DELETE", "/api/dashes/{id}")
             | ("DELETE", "/api/sessions/{id}")
             // Heavy work (full analysis, scan of every results file).
             | ("POST", "/api/sessions/{id}/analysis/recompute")
@@ -124,6 +126,8 @@ pub fn hub_route_access(method: &Method, route: &str) -> HubAccess {
         // work, settings (the online schedule makes the server read two web pages).
         ("DELETE", "/api/layouts")
         | ("DELETE", "/api/layouts/{id}")
+        | ("DELETE", "/api/dashes")
+        | ("DELETE", "/api/dashes/{id}")
         | ("DELETE", "/api/sessions/{id}")
         | ("POST", "/api/sessions/{id}/analysis/recompute")
         | ("PUT", "/api/settings") => Admin,
@@ -543,6 +547,12 @@ mod tests {
             (Method::DELETE, "/api/layouts/{id}", ThisPcOnly),
             (Method::PUT, "/api/layouts", Open),
             (Method::PUT, "/api/layouts/{id}", Open),
+            // Race dashboards: exactly the rule of the layouts (ADR 0015).
+            (Method::GET, "/api/dashes", Open),
+            (Method::GET, "/api/dashes/{id}", Open),
+            (Method::PUT, "/api/dashes/{id}", Open),
+            (Method::DELETE, "/api/dashes", ThisPcOnly),
+            (Method::DELETE, "/api/dashes/{id}", ThisPcOnly),
             (Method::POST, "/api/sessions/{id}/feedback", Open),
             (Method::POST, "/api/recording/start", Open),
             (Method::POST, "/api/recording/stop", Open),
@@ -604,6 +614,10 @@ mod tests {
             (Method::POST, "/api/sessions/{id}/analysis/recompute", Admin),
             (Method::PUT, "/api/settings", Admin),
             (Method::DELETE, "/api/layouts", Admin),
+            (Method::GET, "/api/dashes", Device),
+            (Method::PUT, "/api/dashes/{id}", Device),
+            (Method::DELETE, "/api/dashes", Admin),
+            (Method::DELETE, "/api/dashes/{id}", Admin),
             (Method::GET, "/api/does-not-exist", Device),
         ];
         for (m, r, want) in cases {
