@@ -131,6 +131,13 @@ Tout se fait dans un navigateur, sans Mac.
    de **testeurs internes**, s'y ajouter, puis installer l'application **TestFlight** sur l'iPhone et
    accepter l'invitation : Corde s'installe.
 
+Si le job **« Clé d'API (script et secrets) »** échoue, un secret est mal collé : son message dit lequel
+et pourquoi (« on dirait un identifiant », « pas de ligne END »…), sans jamais afficher la valeur. Corriger
+le secret (GitHub → Settings → Secrets and variables → Actions → le crayon à droite du nom → coller la
+nouvelle valeur → **Update secret**), puis relancer (**Actions** → **iOS** → **Run workflow**). Le secret
+`APPSTORE_API_KEY` accepte le contenu du fichier `.p8` même avec des fins de ligne Windows ou sur une seule
+ligne ; l'important est de coller **tout** le fichier.
+
 Si l'archive ou l'export échoue avec une erreur de **permission de signature dans le cloud**
 (« Cloud signing permission error », « cloud-managed distribution certificate »), recréer la clé d'API avec
 l'accès **Admin** au lieu de « Gestionnaire d'apps » et remplacer les deux secrets `APPSTORE_API_KEY` et

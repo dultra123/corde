@@ -10,6 +10,10 @@
 #                -----END CORDE SCREENSHOT-----
 #              (le seul moyen pour l'équipe de voir l'écran), et les dernières lignes du journal
 #              de l'application. Les mêmes fichiers sont aussi joints à l'exécution (artefact).
+# cle-api    : en une minute, sans attendre le simulateur : essais du script qui prépare la clé
+#              d'API (apps/mobile/scripts/asc-key.sh, avec une clé jetable), puis contrôle des
+#              quatre secrets s'ils existent. Un secret mal collé donne ici un message clair
+#              (longueur et forme seulement, jamais la valeur).
 # testflight : seulement sur le dépôt d'origine, jamais sur une PR ni un fork, et seulement si les
 #              quatre secrets APPSTORE_API_KEY, APPSTORE_API_KEY_ID, APPSTORE_API_ISSUER_ID et
 #              APPLE_TEAM_ID existent : archive Release signée automatiquement avec la clé d'API
@@ -213,9 +217,40 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  # Réponse en une minute, sans attendre le simulateur : le script qui prépare la clé d'API est
+  # essayé avec une clé jetable (même bash 3.2, même openssl que le job TestFlight), puis, si les
+  # secrets existent, avec les vrais — rien n'est affiché que la forme des valeurs.
+  cle-api:
+    name: Clé d'API (script et secrets)
+    if: github.repository == 'dultra123/corde' && github.event_name != 'pull_request'
+    runs-on: macos-latest
+    timeout-minutes: 10
+    env:
+      ASC_READY: ${{ secrets.APPSTORE_API_KEY != '' && secrets.APPSTORE_API_KEY_ID != '' && secrets.APPSTORE_API_ISSUER_ID != '' && secrets.APPLE_TEAM_ID != '' }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Essais du script (clé jetable)
+        run: bash apps/mobile/scripts/asc-key.test.sh
+
+      - name: Les quatre secrets sont-ils utilisables ?
+        if: env.ASC_READY == 'true'
+        env:
+          APPSTORE_API_KEY: ${{ secrets.APPSTORE_API_KEY }}
+          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: bash apps/mobile/scripts/asc-key.sh "$RUNNER_TEMP/asc-check"
+
+      - name: Effacer la clé
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/asc-check"
+
   testflight:
     name: TestFlight (archive signée et envoi)
-    needs: simulator
+    needs: [simulator, cle-api]
     # Jamais sur un fork ni une PR (ce workflow n'a pas de déclencheur pull_request : la
     # condition le garantit aussi s'il en recevait un).
     if: github.repository == 'dultra123/corde' && github.event_name != 'pull_request'
@@ -254,26 +289,19 @@ jobs:
           cd apps/mobile
           pnpm exec cap sync ios
 
-      # La clé .p8 (texte « -----BEGIN PRIVATE KEY----- … », ou ce même texte en base64) est
-      # écrite dans un dossier temporaire du runner, lisible par ce seul compte, jamais affichée.
+      # La clé .p8 est écrite dans un dossier temporaire du runner, lisible par ce seul compte,
+      # jamais affichée. Le script accepte les façons courantes de coller la clé (fins de ligne
+      # Windows, une seule ligne, sans les lignes BEGIN/END, fichier en base64), retire les
+      # espaces autour des identifiants et donne ASC_KEY_PATH, ASC_KEY_ID, ASC_ISSUER_ID et
+      # ASC_TEAM_ID aux étapes suivantes.
       - name: Clé d'API App Store Connect (fichier temporaire)
         if: env.ASC_READY == 'true'
         env:
           APPSTORE_API_KEY: ${{ secrets.APPSTORE_API_KEY }}
           APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
-        run: |
-          set -euo pipefail
-          umask 077
-          dir="$RUNNER_TEMP/asc"
-          mkdir -p "$dir"
-          key="$dir/AuthKey_${APPSTORE_API_KEY_ID}.p8"
-          if printf '%s' "$APPSTORE_API_KEY" | grep -q -- "-----BEGIN PRIVATE KEY-----"; then
-            printf '%s\n' "$APPSTORE_API_KEY" > "$key"
-          else
-            printf '%s' "$APPSTORE_API_KEY" | tr -d '[:space:]' | base64 --decode > "$key"
-          fi
-          grep -q -- "-----BEGIN PRIVATE KEY-----" "$key" || { echo "::error::APPSTORE_API_KEY n'est pas une clé .p8"; exit 1; }
-          echo "ASC_KEY_PATH=${key}" >> "$GITHUB_ENV"
+          APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: bash apps/mobile/scripts/asc-key.sh "$RUNNER_TEMP/asc"
 
       # L'archive est signée « ad hoc » (CODE_SIGN_IDENTITY=-), comme le fait Xcode Cloud : ni
       # certificat de développement, ni profil, ni iPhone enregistré ne sont nécessaires sur ce
@@ -283,9 +311,6 @@ jobs:
         if: env.ASC_READY == 'true'
         working-directory: apps/mobile/ios/App
         env:
-          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
-          APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           BUILD_NUMBER: ${{ github.run_number }}
         run: |
           set -euo pipefail
@@ -300,9 +325,9 @@ jobs:
             -quiet \
             -allowProvisioningUpdates \
             -authenticationKeyPath "$ASC_KEY_PATH" \
-            -authenticationKeyID "$APPSTORE_API_KEY_ID" \
-            -authenticationKeyIssuerID "$APPSTORE_API_ISSUER_ID" \
-            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$ASC_TEAM_ID" \
             CODE_SIGN_STYLE=Automatic \
             CODE_SIGN_IDENTITY=- \
             AD_HOC_CODE_SIGNING_ALLOWED=YES \
@@ -312,10 +337,6 @@ jobs:
 
       - name: Exporter et envoyer vers TestFlight
         if: env.ASC_READY == 'true'
-        env:
-          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
-          APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           set -euo pipefail
           plist="$RUNNER_TEMP/exportOptions.plist"
@@ -331,7 +352,7 @@ jobs:
             <key>signingStyle</key>
             <string>automatic</string>
             <key>teamID</key>
-            <string>${APPLE_TEAM_ID}</string>
+            <string>${ASC_TEAM_ID}</string>
             <key>uploadSymbols</key>
             <true/>
             <key>manageAppVersionAndBuildNumber</key>
@@ -347,8 +368,8 @@ jobs:
             -exportPath "$RUNNER_TEMP/export" \
             -allowProvisioningUpdates \
             -authenticationKeyPath "$ASC_KEY_PATH" \
-            -authenticationKeyID "$APPSTORE_API_KEY_ID" \
-            -authenticationKeyIssuerID "$APPSTORE_API_ISSUER_ID"
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
           {
             echo "### Envoyé vers TestFlight"
             echo ""
