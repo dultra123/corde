@@ -85,10 +85,18 @@ Tout se fait dans un navigateur, sans Mac.
    sera le cas d'**App Groups** le jour où Corde aura des widgets d'écran d'accueil. Le **Bundle ID**, lui,
    ne se modifie plus après l'enregistrement.
 4. **La fiche de l'application** : [App Store Connect](https://appstoreconnect.apple.com) → **Apps** → **+**
-   → **Nouvelle app** : plateforme **iOS**, nom **Corde** (s'il est déjà pris sur l'App Store, un nom proche,
-   par exemple « Corde – télémétrie LMU » : le nom sous l'icône reste « Corde »), langue principale
-   **Français**, identifiant de bundle **io.github.dultra123.corde** (dans la liste), SKU `corde-ios`, accès
-   complet. La fiche publique (description, captures) n'est **pas** nécessaire pour TestFlight.
+   → **Nouvelle app**. La fenêtre se remplit ainsi :
+
+   | Champ | Quoi mettre |
+   |---|---|
+   | **Plateformes** | cocher **iOS** seulement |
+   | **Nom** | `Corde` ; si Apple répond que le nom est déjà utilisé, un nom proche, par exemple `Corde Racing` (le nom sous l'icône de l'iPhone reste « Corde ») |
+   | **Langue principale** | **Français** |
+   | **Identifiant de lot** | `Corde - io.github.dultra123.corde` dans la liste (c'est l'identifiant de l'étape 3) |
+   | **UGS** | `corde-ios` — une référence interne, jamais montrée au public |
+   | **Accès utilisateur** | **Accès complet** : tous les membres du compte voient l'application (« Accès limité » sert à la cacher à une partie d'une équipe) ; le bouton **Créer** reste gris tant qu'aucun des deux n'est choisi |
+
+   Puis **Créer**. La fiche publique (description, captures) n'est **pas** nécessaire pour TestFlight.
 5. **La clé d'API** : App Store Connect → **Utilisateurs et accès** → **Intégrations** → **Clés API**
    (« Clés d'équipe ») → **Générer une clé API** (la première fois : accepter les conditions) → nom
    `GitHub Actions`, accès **Gestionnaire d'apps** → **Générer**. Puis :
