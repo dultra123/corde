@@ -39,6 +39,11 @@
 
 ## Points bloqués / dépendants du pilote
 
+- **Site officiel** (15 nov.) : <http://corderacing.com/>, fait par le propriétaire en dehors de ce dépôt ;
+  lien ajouté en tête du README et dans `docs/PRESENTATION.md`. Le 15 nov., `https://corderacing.com/`
+  renvoie vers `http://` (HTTPS pas encore actif) : passer les liens en `https://` dès qu'il le sera. Le
+  champ « Website » du dépôt GitHub est à remplir par le propriétaire. `tauri.conf.json` garde l'adresse du
+  dépôt comme page d'accueil de l'application tant que le site n'est pas en HTTPS.
 - **Certificat de distribution stable** (iOS, 14 nov., branche `ios-cert-stable` relue et **fusionnée dans
   `main`** sans relancer de build ; la clé a été créée hors du dépôt et remise au propriétaire seul) : le
   propriétaire recevait un e-mail d'Apple « certificate revoked » à chaque build (quatre). Nouveau secret

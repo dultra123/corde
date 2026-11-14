@@ -2,6 +2,8 @@
 
 **Télémétrie en direct, analyse des tours et ingénieur de course pour Le Mans Ultimate.**
 
+Site officiel : **[corderacing.com](http://corderacing.com/)**
+
 Corde est une application Windows qui tourne à côté du jeu. Elle lit la télémétrie de Le Mans Ultimate,
 l'affiche en direct dans un tableau de bord fait de widgets, enregistre chaque session, puis analyse ta
 conduite et te propose des ajustements de réglage que tu affines avec ton ressenti. Tout reste sur ton PC :

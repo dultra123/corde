@@ -29,6 +29,7 @@ Le nom vient du **point de corde** : l'endroit où la trajectoire idéale touche
 | Serveur maison (facultatif) | Corde serveur, pour Raspberry Pi 5 (Linux arm64) ou Linux x64 |
 | Langues | Français et anglais |
 | Auteur | dultra__ et les contributeurs |
+| Site officiel | <http://corderacing.com/> |
 | Dépôt | <https://github.com/dultra123/corde> |
 
 ## Ce que fait Corde
@@ -204,6 +205,7 @@ Détails : [PRIVACY.md](../PRIVACY.md), [SECURITY-MODEL.md](SECURITY-MODEL.md).
 
 ## Liens utiles
 
+- Site officiel : <http://corderacing.com/>
 - Télécharger la dernière version : <https://github.com/dultra123/corde/releases/latest>
 - Toutes les versions : <https://github.com/dultra123/corde/releases>
 - Version et lien de l'installeur lisibles par un programme :
