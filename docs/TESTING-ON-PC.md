@@ -148,9 +148,15 @@ tableau de bord est affiché (si le navigateur le permet ; sinon, règle la mise
 - **Une tablette ou un second écran du PC** : ouvre l'adresse du téléphone suivie de **`#/dash`** (par
   exemple `http://192.168.1.20:8471/#/dash`, ou `http://127.0.0.1:8471/#/dash` sur le PC lui-même) : c'est
   toujours le tableau de bord, quel que soit l'appareil. Sur le PC, les flèches ← → changent de page.
-- **Préférer les widgets sur le téléphone** (ou le tableau de bord sur la tablette) : Réglages →
-  **Affichage du Direct** → Widgets (ou Tableau de bord). « Automatique » choisit le tableau de bord sur un
-  téléphone et les widgets ailleurs. Le menu **☰** du tableau de bord propose aussi « Passer aux widgets ».
+- **Le tableau de bord sur le PC** : dans le Direct, ouvre le menu des dispositions (le bouton avec le nom
+  de la disposition, en haut à gauche) et choisis **Tableaux de bord → Corde**. Le tableau de bord prend la
+  place des widgets, la barre du haut reste ; le bouton **Plein écran** (en haut à droite du tableau de
+  bord, à côté de ☰) l'agrandit, **Échap** ou le même bouton le remet dans la page. Pour revenir aux
+  widgets, choisis une disposition (« Course »…) dans le même menu. Le choix est retenu sur ce PC.
+- **Préférer les widgets sur le téléphone** : le menu **☰** du tableau de bord propose « Passer aux
+  widgets » ; le bouton **Tableau de bord** de la barre (ou le menu des dispositions) y ramène. Le réglage
+  **Affichage du Direct** (Automatique / Tableau de bord / Widgets) est le même état que ce menu :
+  « Automatique » choisit le tableau de bord sur un téléphone et les widgets ailleurs.
 - **L'essayer sans le jeu** : `http://127.0.0.1:8471/?demo=1#/dash` montre une course de démonstration.
 
 ---

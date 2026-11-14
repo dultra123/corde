@@ -106,9 +106,10 @@ meilleur tour, tours, carburant. Quatre pages se font glisser du doigt — **Cou
 **Carburant & énergie**, **Chronos & écarts** — et l'écran reste allumé tant qu'il est affiché. Pensé pour un
 téléphone posé en paysage à côté du volant ; en portrait, les cases s'empilent. Ce que la voiture n'a pas
 (pas d'ABS, pas d'énergie virtuelle…) ne s'affiche pas, et une donnée absente s'affiche « — ». Le bouton ☰
-mène aux autres pages, aux réglages et à « Passer aux widgets ». Une tablette ou un second écran l'ouvre à
-l'adresse **`…#/dash`**, ou avec le réglage **Affichage du Direct** (Automatique / Tableau de bord /
-Widgets).
+mène aux autres pages, aux réglages et à « Passer aux widgets ». **Sur le PC** (et une tablette), il se
+choisit dans le menu des dispositions du Direct (groupe **Tableaux de bord**) et s'affiche dans la page,
+sous la barre du haut ; un bouton **Plein écran** l'agrandit (Échap pour revenir), et une disposition de
+widgets du même menu ramène la grille. Un second écran l'ouvre en plein écran à l'adresse **`…#/dash`**.
 
 ![Tableau de bord du téléphone, page Course (course de démonstration)](docs/images/tableau-de-bord-telephone.png)
 
