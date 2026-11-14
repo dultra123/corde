@@ -85,6 +85,8 @@
   et a refusé la seconde révocation (`409`, « not in an "issued" state »), ce qui arrêtait tout.
   `cleanPrevious` ne révoque plus un certificat qu'une fois et tient un `409` pour « déjà révoqué » ; le
   faux serveur des essais se comporte maintenant comme Apple (certificat révoqué toujours listé, `409`).
+  **Exécution n° 15 : réussie** — Corde 0.10.0 (build 15) dans TestFlight, ménage « 1 profil supprimé,
+  0 certificat révoqué » (le reste de l'exécution n° 14), contrôle de l'archive vert, « Upload succeeded ».
 - **Widget « Courses en images »** (0.10.0, fusionné dans `main` le 14 nov.) :
   **à essayer sur l'iPhone** dans l'ordre de `docs/IOS.md` §2 (« Ce qu'il faut essayer… 0.10 ») : diagnostic
   (photos gardées, poids, code), widget moyen, changement de page à la minute, ‹ ›, petit widget sur
