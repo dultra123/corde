@@ -40,7 +40,9 @@
 - **Application Android (1.0.0, 14 nov.)** : branche `android-app` relue (manifeste, configuration
   réseau, workflows, script de signature, captures de l'émulateur) et fusionnée dans `main`. La clé de
   signature (PKCS12, clé `corde`, certificat `CN=Corde`, sans nom de personne) a été créée hors du dépôt
-  et remise au propriétaire seul. **Reste au propriétaire** : coller les deux secrets
+  et remise au propriétaire seul (empreinte SHA-256 du certificat, publique :
+  `60ebca7c5c5788aef1d49f7b9ddea7ec60fd32f44ab5c7dd7c21f9f8c38e6dff` ; à comparer à celle qu'affiche le job
+  « APK signé et publication », puis à écrire dans `docs/ANDROID.md` §2). **Reste au propriétaire** : coller les deux secrets
   `ANDROID_KEYSTORE_BASE64` / `ANDROID_KEYSTORE_PASSWORD` (`docs/ANDROID.md` §6) et garder la clé ; sans eux, aucun APK signé n'est publié (l'APK Debug
   de chaque exécution reste dans l'artefact `android-debug`). **Reste au pilote** : la liste du §4 de
   `docs/ANDROID.md` sur un vrai téléphone (marges sous la barre d'état et la barre de gestes, rappel à
