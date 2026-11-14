@@ -23,3 +23,7 @@
 
 # Worktrees temporaires des agents (outillage, jamais du contenu du projet)
 /.claude/worktrees/
+
+# Python (scripts de la CI)
+__pycache__/
+*.pyc

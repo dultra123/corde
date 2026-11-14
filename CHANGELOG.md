@@ -8,6 +8,38 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [1.0.0] — 2026-11-14
+
+**Première version officielle de Corde.** Elle réunit tout ce qui a été construit depuis les premières
+versions de test ; les nouveautés suivantes arriveront par les mises à jour.
+
+### Ce que fait Corde 1.0
+
+- **Sur le PC (Windows), à côté de Le Mans Ultimate** : la télémétrie en direct dans un tableau de bord
+  fait de widgets, l'enregistrement de chaque session, la comparaison de tours, le profil et les résultats
+  de course, l'ingénieur (analyse de ta conduite, trois orientations de réglage, ajustement d'après ton
+  ressenti, fichiers `.svm` prêts à charger), la page Courses (planning en ligne, tes départs, rappel
+  sonore), les widgets à fond transparent pour OBS, et les mises à jour depuis l'application.
+- **Sur le téléphone** : la même interface dans le navigateur, sur le Wi-Fi de la maison.
+- **Application iPhone** (en test par TestFlight) : les courses sans PC avec rappels en notifications, les
+  widgets (« Courses », « Mes courses », « Courses en images », écran verrouillé), le compte à rebours dans
+  la Dynamic Island, et la connexion à ton PC ou à ton serveur Corde.
+- **Corde serveur** (Raspberry Pi ou Linux) : tes sessions gardées à la maison, synchronisées depuis le PC.
+
+### Ce qui change depuis la version précédente
+
+- **Sur le PC et sur Corde serveur** (0.8.0 → 1.0.0) : rien d'autre que le numéro de version. Tes sessions,
+  tes dispositions et tes réglages sont conservés.
+- **Sur iPhone** (0.10.0 → 1.0.0) : rien d'autre que le numéro de version.
+
+### À savoir
+
+- L'installeur Windows n'est pas encore signé : au premier lancement, Windows affiche « Windows a protégé
+  votre ordinateur » → **Informations complémentaires** → **Exécuter quand même**.
+- L'application iPhone n'est pas encore sur l'App Store.
+- Ce qui a été vérifié avec le jeu et ce qui ne l'a pas encore été est dit, ligne par ligne, dans le
+  tableau « Où en est le projet » du README.
+
 ## [iPhone 0.10.0] — 2026-11-14
 
 Application iPhone seulement : Corde sur le PC et Corde serveur restent en 0.8.0.

@@ -1,7 +1,7 @@
 # Corde sur iPhone
 
-> Version 0.10.0 — widget « Courses en images » (0.9.0 : widgets et compte à rebours dans la Dynamic
-> Island ; iOS 17 au minimum ; 0.8.0 : première version). Décisions :
+> Version 1.0.0 — première version officielle (0.10.0 : widget « Courses en images » ; 0.9.0 : widgets et
+> compte à rebours dans la Dynamic Island, iOS 17 au minimum ; 0.8.0 : première version). Décisions :
 > [ADR 0011](adr/0011-application-mobile-capacitor.md),
 > [ADR 0012](adr/0012-widgets-activite-en-direct.md).
 > Sécurité : [SECURITY-MODEL.md §8](SECURITY-MODEL.md#8-lapplication-iphone). Vie privée :
@@ -147,7 +147,7 @@ poussée sur `main` qui touche `apps/mobile/`, `packages/ui/` ou le workflow lui
    l'identifiant est créé s'il manque ; ceux de l'exécution précédente sont retirés), compile et signe,
    contrôle la signature de l'application et de l'extension, puis l'envoie vers TestFlight. Le numéro de
    build est le numéro d'exécution du workflow (il augmente toujours, comme Apple l'exige), le même pour
-   l'application et l'extension ; la version affichée est celle de `apps/mobile/package.json` (0.10.0).
+   l'application et l'extension ; la version affichée est celle de `apps/mobile/package.json` (1.0.0).
 
 Lancé à la main sur une autre branche que `main`, le workflow s'arrête après les deux premiers jobs : c'est
 le moyen d'essayer du code Swift avant de le fusionner.
@@ -327,7 +327,7 @@ apps/mobile/
 ├─ www/                    # l'interface construite en mode mobile (ignoré par git)
 ├─ scripts/*.test.*       # essais des scripts de la CI et du projet Xcode (voir plus bas)
 └─ ios/App/                # projet Xcode généré par `cap add ios` (gabarit Swift Package Manager), complété
-   ├─ App.xcodeproj        #   deux cibles (App, CordeWidgets), iOS 17, iPhone, 0.10.0, schéma partagé « App »
+   ├─ App.xcodeproj        #   deux cibles (App, CordeWidgets), iOS 17, iPhone, 1.0.0, schéma partagé « App »
    ├─ App/                 #   cible de l'application
    │  ├─ Info.plist        #     réseau local, ATS, appareil photo, corde://, chiffrement, activités en direct
    │  ├─ App.entitlements  #     keychain-access-groups (trousseau partagé avec les widgets)

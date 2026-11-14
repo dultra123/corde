@@ -3,7 +3,7 @@
 > Corde s'appelait anciennement Muret (nom de travail) ; renommée le 11 novembre 2026 (version 0.3.0).
 
 > Fichier de reprise : n'importe qui (humain ou agent) doit pouvoir repartir d'ici.
-> Mis à jour à chaque jalon. Dernière mise à jour : 2026-11-14 (widget « Courses en images », application iPhone 0.10.0, fusionné dans `main` ; avant, le même jour : « Widgets iOS et activité en direct », application iPhone 0.9.0, branche `ios-widgets` ; premier build iPhone dans TestFlight ; « Application iPhone », version 0.8.0, le 12 ; avant : « Défilé des courses en ligne sur l'Accueil », 0.7.1 ; lot « Corde serveur » — serveur domestique Raspberry Pi, appairage, synchronisation depuis le PC —, version 0.7.0 ; avant : « Mises à jour depuis l'application », 0.6.0 ; « Widgets dans OBS », 0.5.0, et son correctif 0.5.1 ; « Courses en ligne », 0.4.0 ; publication dans `dultra123/corde`, sécurité réseau, adresse masquée sur l'accueil ; lot « Corde : renommage, migration des données, licence GPL, logo » ; avant : « S2 — calibration de l'ingénieur sur des données réelles », « réglages réels : fichiers .svm lus et écrits », « ressenti → symptômes → itération du plan », « Précision des tours », « Accueil » et « Application de bureau »).
+> Mis à jour à chaque jalon. Dernière mise à jour : 2026-11-14 (**version 1.0.0, première version officielle** : PC, Corde serveur et application iPhone au même numéro, demandée par le propriétaire ; avant, le même jour : widget « Courses en images », application iPhone 0.10.0, fusionné dans `main` ; avant, le même jour : « Widgets iOS et activité en direct », application iPhone 0.9.0, branche `ios-widgets` ; premier build iPhone dans TestFlight ; « Application iPhone », version 0.8.0, le 12 ; avant : « Défilé des courses en ligne sur l'Accueil », 0.7.1 ; lot « Corde serveur » — serveur domestique Raspberry Pi, appairage, synchronisation depuis le PC —, version 0.7.0 ; avant : « Mises à jour depuis l'application », 0.6.0 ; « Widgets dans OBS », 0.5.0, et son correctif 0.5.1 ; « Courses en ligne », 0.4.0 ; publication dans `dultra123/corde`, sécurité réseau, adresse masquée sur l'accueil ; lot « Corde : renommage, migration des données, licence GPL, logo » ; avant : « S2 — calibration de l'ingénieur sur des données réelles », « réglages réels : fichiers .svm lus et écrits », « ressenti → symptômes → itération du plan », « Précision des tours », « Accueil » et « Application de bureau »).
 
 ## Où on en est
 
@@ -35,6 +35,16 @@
 | 4 — Autres jeux | À faire | ACC, AC EVO, iRacing… |
 
 ## Points bloqués / dépendants du pilote
+
+- **Version 1.0.0 (14 nov.)** : décidée par le propriétaire (« on peut officiellement sortir l'app en
+  version 1 et rajouter par la suite les nouvelles fonctions »). Aucun changement de code par rapport à la
+  0.8.0 (PC, serveur) et à la 0.10.0 (iPhone) : numéros alignés, section `## [1.0.0]` du journal, README et
+  guide PC pointant vers `releases/latest`. **Le passage 0.8.0 → 1.0.0 est le premier essai réel du bouton
+  de mise à jour** chez le pilote. **Application iPhone** : toujours en TestFlight interne ; la publication
+  sur l'App Store (ou un lien TestFlight public) est une décision du propriétaire, pas encore prise — elle
+  demande une fiche (textes, captures), les déclarations d'Apple, un manifeste de confidentialité
+  (`PrivacyInfo.xcprivacy`, absent aujourd'hui) et un moyen pour le relecteur d'Apple d'essayer
+  l'application sans PC.
 
 - **Forme réelle de `getPlayerGarageData`** (et des 7 autres réponses du garage) : à lire dans `%LOCALAPPDATA%\Corde\diagnostics\lmu-api\garage\<voiture>\` après un passage au garage avec Corde ouverte. Tant qu'elle n'est pas confirmée, l'extracteur des bornes accepte des formes supposées et Corde limite toute hausse à +2 crans (« maximum inconnu »). À vérifier aussi chez le pilote : le chargement d'un `Corde_….svm` dans le garage (rafraîchir la liste), les libellés réécrits par le jeu, le choix automatique de la base sur ses sessions.
 

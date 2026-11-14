@@ -9,7 +9,7 @@
 ## En bref
 
 1. Activer les « plugins » dans LMU (une case, une fois pour toutes).
-2. Télécharger l'installeur sur la page **Corde — dernière version**.
+2. Télécharger l'installeur sur la page de la **dernière version**.
 3. Le lancer, passer l'avertissement de Windows (expliqué plus bas), installer.
 4. Ouvrir **Corde** depuis le menu Démarrer, puis lancer le jeu.
 
@@ -32,15 +32,14 @@ L'option `Automatically Record Telemetry` peut rester désactivée : Corde enreg
 
 ## 2. Télécharger l'installeur
 
-1. Ouvre la page (tant que le dépôt est privé, connecte-toi d'abord à GitHub)
-   **<https://github.com/dultra123/corde/releases/tag/continuous>** — elle s'appelle
-   « Corde — dernière version » et elle est reconstruite à chaque modification du projet.
+1. Ouvre la page de la dernière version :
+   **<https://github.com/dultra123/corde/releases/latest>**.
 2. Tout en bas, section **Assets**, clique sur le fichier dont le nom finit par **`-setup.exe`**
-   (par exemple `Corde_0.8.0_x64-setup.exe`).
+   (par exemple `Corde_1.0.0_x64-setup.exe`).
 3. Ton navigateur peut hésiter : Edge affiche parfois « … n'est pas couramment téléchargé ». Clique sur
    les **…** à côté du fichier → **Conserver** → **Conserver quand même**.
 
-L'autre fichier, `corde-portable-windows.zip`, est l'ancien mode console : tu n'en as pas besoin (voir
+L'autre fichier Windows, `corde-…-portable-windows.zip`, est l'ancien mode console : tu n'en as pas besoin (voir
 l'annexe).
 
 ---
@@ -381,8 +380,9 @@ Bon à savoir :
   envoyé (voir `PRIVACY.md`).
 - **La 0.6.0 elle-même s'installe encore à la main** (ci-dessous) : c'est elle qui apporte le bouton. Les
   versions suivantes arrivent par le bouton.
-- Les mises à jour du bouton sont les **versions numérotées** (page des versions, « Corde 0.6.x »). La
-  version de développement « Corde — dernière version » (§ 2) s'installe toujours à la main.
+- Les mises à jour du bouton sont les **versions numérotées** (page des versions, « Corde 1.0.0 »…). La
+  version de développement « Corde — dernière version » (pré-version reconstruite à chaque modification
+  du projet, <https://github.com/dultra123/corde/releases/tag/continuous>) s'installe toujours à la main.
 
 ### À la main (toutes versions)
 

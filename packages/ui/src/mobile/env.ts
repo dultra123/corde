@@ -10,7 +10,7 @@ export const APP_BUILD: boolean = import.meta.env.MODE === "mobile";
 export const APP_VERSION: string =
   typeof __CORDE_VERSION__ === "string" ? __CORDE_VERSION__ : "0.0.0";
 
-/** `Corde/0.8.0 (+https://github.com/dultra123/corde)` — same form as the server's. */
+/** `Corde/1.0.0 (+https://github.com/dultra123/corde)` — same form as the server's. */
 export function userAgent(version: string = APP_VERSION): string {
   return `Corde/${version} (+https://github.com/dultra123/corde)`;
 }

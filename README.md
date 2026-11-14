@@ -12,9 +12,10 @@ que l'on vise à chaque tour. Corde s'appelait anciennement Muret (nom de travai
 
 ![Écran d'accueil de Corde](docs/images/accueil.png)
 
-> **Version de test (novembre 2026).** Corde fonctionne avec le jeu réel, mais elle est jeune : certaines
-> parties n'ont été vérifiées qu'avec le simulateur intégré, et l'installeur n'est pas encore signé
-> (voir [Installer](#installer-windows)). Les captures de cette page viennent du simulateur intégré.
+> **Version 1.0 (novembre 2026), première version officielle.** Corde fonctionne avec le jeu réel, mais
+> elle est jeune : certaines parties n'ont pas encore été essayées en conditions réelles (le tableau
+> [Où en est le projet](#où-en-est-le-projet) le dit ligne par ligne), et l'installeur n'est pas encore
+> signé (voir [Installer](#installer-windows)). Les captures de cette page viennent du simulateur intégré.
 
 ## Sommaire
 
@@ -24,7 +25,7 @@ que l'on vise à chaque tour. Corde s'appelait anciennement Muret (nom de travai
 - [Ce que fait Corde](#ce-que-fait-corde)
   - [Le tableau de bord en direct](#le-tableau-de-bord-en-direct)
   - [Sur le téléphone](#sur-le-téléphone)
-  - [L'application iPhone](#lapplication-iphone-08-en-préparation)
+  - [L'application iPhone](#lapplication-iphone)
   - [Sessions et tours](#sessions-et-tours)
   - [Profil et résultats de course](#profil-et-résultats-de-course)
   - [L'ingénieur de course](#lingénieur-de-course)
@@ -39,7 +40,7 @@ que l'on vise à chaque tour. Corde s'appelait anciennement Muret (nom de travai
 
 ## Installer (Windows)
 
-1. Ouvre la page [Corde — dernière version](https://github.com/dultra123/corde/releases/tag/continuous) et télécharge
+1. Ouvre la page de la [dernière version](https://github.com/dultra123/corde/releases/latest) et télécharge
    `Corde_…_x64-setup.exe` (section *Assets*).
 2. Lance-le. Windows affiche « Windows a protégé votre ordinateur » parce que l'installeur n'est pas signé :
    **Informations complémentaires**, puis **Exécuter quand même**. L'installation ne demande pas les droits
@@ -98,15 +99,17 @@ réglages restent réservés au PC ([pourquoi](docs/SECURITY-MODEL.md)).
 
 ![Accueil, tableau de bord et analyse d'un tour sur téléphone](docs/images/mobile.png)
 
-### L'application iPhone (0.8, en préparation)
+### L'application iPhone
 
-La même interface dans une vraie application iPhone, distribuée par TestFlight : onglets en bas de l'écran,
+La même interface dans une vraie application iPhone (en test par TestFlight, sur invitation ; pas encore
+sur l'App Store) : onglets en bas de l'écran,
 notifications, et surtout la page **Courses sans PC** — le téléphone lit lui-même le planning de
 racecontrol.gg et lmu.tools, garde tes choix et **sonne les rappels même application fermée**. Le direct,
 les sessions, l'ingénieur et le profil s'ouvrent dès qu'un PC ou un serveur Corde est ajouté dans
 « Mes serveurs » (adresse ou QR code, appairage par code pour le serveur Corde). Depuis la 0.9 : des
 **widgets** (prochaines courses, compte à rebours de tes départs, écran verrouillé) et le **compte à rebours
-dans la Dynamic Island**. Compilée uniquement par GitHub (aucun Mac nécessaire) : [docs/IOS.md](docs/IOS.md).
+dans la Dynamic Island** ; depuis la 0.10, le widget **Courses en images** (une course par page, avec sa
+photo et le SR / DR requis). Compilée uniquement par GitHub (aucun Mac nécessaire) : [docs/IOS.md](docs/IOS.md).
 
 ![Aperçu du mode application : Accueil, Courses et « Mes serveurs »](docs/images/iphone.png)
 
@@ -236,19 +239,19 @@ Pas à pas pour un non-informaticien : [docs/SERVEUR.md](docs/SERVEUR.md) · acc
 | Partie | État |
 |---|---|
 | Lecture de la télémétrie de Le Mans Ultimate (Windows) | fait, testé avec le jeu |
-| Application Windows : écran d'accueil, tableau de bord, icône de zone de notification | fait, premiers essais réels en cours |
+| Application Windows : écran d'accueil, tableau de bord, icône de zone de notification | fait, utilisée avec le jeu |
 | Enregistrement des sessions, temps officiels du jeu, comparaison de tours | fait, testé avec le jeu |
 | Profil et résultats de course | fait |
 | Ingénieur : analyse, trois orientations de réglage, ressenti → ajustement | fait, à calibrer sur des données réelles |
 | Fichiers de réglage `.svm` prêts à charger dans le jeu | fait (lecture de tes réglages, crans réels, écriture à la demande) ; bornes exactes à lire dans le garage du jeu sur ton PC |
 | Page des courses en ligne (planning, mes courses, rappel sonore avant le départ) | fait ; lecture des vrais sites, son dans l'application Windows et rappels sur le téléphone à vérifier chez le pilote |
 | Widgets dans OBS (fond transparent, page « OBS », dispositions overlay) | fait, vérifié dans Chromium ; à essayer dans une vraie source OBS |
-| Mises à jour depuis l'application (releases numérotées signées) | fait (0.6.0) ; à essayer pour de vrai avec la 0.6.1, une fois le dépôt public |
+| Mises à jour depuis l'application (releases numérotées signées) | fait ; pas encore confirmé par un essai réel (le passage de la 0.8.0 à la 1.0.0 est le premier) |
 | Corde serveur (Raspberry Pi) : appairage, synchronisation depuis le PC, paquet Linux arm64 / x64 | fait (0.7.0), vérifié entre deux serveurs et sous émulation arm64 ; à installer sur un vrai Pi |
 | Signature de l'installeur (plus d'avertissement Windows) | à décider |
-| Application iPhone (Capacitor) : courses sans PC avec rappels en notifications, connexion au PC et au serveur Corde | fait (0.8.0) ; compilée par la CI seulement, jamais vue sur un iPhone ; TestFlight dès que le compte Apple est activé et les secrets ajoutés |
+| Application iPhone (Capacitor) : courses sans PC avec rappels en notifications, connexion au PC et au serveur Corde | fait ; installée par TestFlight sur l'iPhone du pilote (14 nov.), en test sur invitation ; pas encore sur l'App Store |
 | Widgets iPhone (écran d'accueil, écran verrouillé) et compte à rebours dans la Dynamic Island | fait (0.9.0, iPhone seulement) ; fonctionnent sur l'iPhone du pilote (TestFlight) |
-| Widget iPhone « Courses en images » (une course par page, photo, SR / DR requis) | fait (0.10.0, iPhone seulement) ; vu sur le simulateur de la CI, pas encore sur un iPhone |
+| Widget iPhone « Courses en images » (une course par page, photo, SR / DR requis) | fait (0.10.0, iPhone seulement) ; vu sur le simulateur de la CI, pas encore confirmé sur un iPhone |
 | Application Android | à venir |
 | Linux (le jeu tourne sous Proton) | serveur compilé, non testé avec le jeu |
 | Autres simulateurs (ACC, Assetto Corsa EVO, iRacing, rFactor 2…) | à venir |
