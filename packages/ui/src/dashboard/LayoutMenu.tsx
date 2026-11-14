@@ -1,6 +1,8 @@
 import type { DashboardLayout, DeviceKind } from "@corde/protocol";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { showDash, showWidgets, useLiveView } from "../dash/view";
+import { cordeDefinition } from "../dashdef/builtin";
+import { useActiveDash, useDashes } from "../dashdef/store";
 import { useT } from "../i18n";
 import { type Route, routeHash } from "../nav/routes";
 import { activeSlot, useDashboard } from "../store/dashboard";
@@ -15,7 +17,7 @@ const LIVE: Route = { page: "dashboard" };
  * « Affichage du Direct » (`dash/view.ts`).
  */
 export function LayoutMenu() {
-  const { t } = useT();
+  const { t, lang, nOf } = useT();
   const layouts = useDashboard((s) => s.layouts);
   const device = useDashboard((s) => s.device);
   const slot = useDashboard(activeSlot);
@@ -29,6 +31,9 @@ export function LayoutMenu() {
   const rootRef = useRef<HTMLDivElement>(null);
   const current = layouts.find((l) => l.id === currentId);
   const onDash = useLiveView(LIVE) === "dash";
+  const dashes = useDashes((s) => s.defs);
+  const active = useActiveDash();
+  const corde = cordeDefinition(lang);
 
   useEffect(() => {
     if (!open) return;
@@ -84,7 +89,7 @@ export function LayoutMenu() {
         aria-expanded={open}
         aria-haspopup="menu"
       >
-        <span className="layoutmenu-name">{onDash ? t("dash.corde") : (current?.name ?? "—")}</span>
+        <span className="layoutmenu-name">{onDash ? active.name : (current?.name ?? "—")}</span>
         <IconChevron />
       </button>
       {open && (
@@ -98,20 +103,36 @@ export function LayoutMenu() {
             </Fragment>
           ))}
           <div className="menu-section dim">{t("layout.device.dashes")}</div>
-          <button
-            type="button"
-            role="menuitemradio"
-            aria-checked={onDash}
-            className={`menu-item${onDash ? " is-current" : ""}`}
-            onClick={() => {
-              setEditing(false);
-              showDash();
-              setOpen(false);
-            }}
-          >
-            {t("dash.corde")}
-            <small className="dim">{t("layout.dashPages", { n: 4 })}</small>
-          </button>
+          {[corde, ...dashes].map((d) => {
+            const on = onDash && d.id === active.id;
+            return (
+              <button
+                key={d.id}
+                type="button"
+                role="menuitemradio"
+                aria-checked={on}
+                className={`menu-item${on ? " is-current" : ""}`}
+                onClick={() => {
+                  setEditing(false);
+                  useDashes.getState().select(d.id);
+                  showDash();
+                  setOpen(false);
+                }}
+              >
+                {d.name}
+                <small className="dim">{nOf(d.pages.length, "studio.page", "studio.pages")}</small>
+              </button>
+            );
+          })}
+          {device === "desktop" && (
+            <a
+              className="menu-item"
+              href={routeHash({ page: "studio" })}
+              onClick={() => setOpen(false)}
+            >
+              {t("studio.openShort")}
+            </a>
+          )}
           {others.length > 0 && (
             <>
               <div className="menu-section dim">

@@ -1486,7 +1486,6 @@ export const en: Record<TranslationKey, string> = {
     "A made-up race, computed on this phone: nothing is sent, no server is needed.",
   "mobile.demo.on": "The demo is running: what you see is made up.",
   "layout.device.dashes": "Dashboards",
-  "layout.dashPages": "{n} pages",
   "dash.corde": "Corde",
   "dash.fullscreen": "Full screen",
   "dash.exitFullscreen": "Exit full screen",
@@ -1611,4 +1610,6 @@ export const en: Record<TranslationKey, string> = {
   "studio.savedState": "Saved",
   "studio.draftRestored": "Draft restored: some changes had not been saved.",
   "studio.demoHint": "“Demo race” brings the page to life.",
+  "settings.dashUsedHint":
+    "Remembered on this device. Dashboards are made in the Studio, on the PC (layouts menu of the Live page).",
 };

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useDashes } from "../dashdef/store";
 import { useT } from "../i18n";
 import { appVersion, getAutostart, isDesktop, restartApp, setAutostart } from "../lib/desktop";
 import { fmtNum } from "../lib/format";
@@ -133,6 +134,9 @@ export function SettingsDialog({ open, onClose }: Props) {
   const [autoDashboard, setAutoDashboard] = useState(settings.autoDashboard);
   const [autoSummary, setAutoSummary] = useState(settings.autoSummary);
   const [liveView, setLiveView] = useState<LiveView>(settings.liveView);
+  const dashes = useDashes((s) => s.defs);
+  const dashSelected = useDashes((s) => s.selected);
+  const [dashId, setDashId] = useState(dashSelected);
   const [keepAwake, setKeepAwake] = useState(settings.keepAwake);
   const pinned = isAutoNavDisabled();
 
@@ -147,6 +151,7 @@ export function SettingsDialog({ open, onClose }: Props) {
       setAutoDashboard(settings.autoDashboard);
       setAutoSummary(settings.autoSummary);
       setLiveView(settings.liveView);
+      setDashId(useDashes.getState().selected);
       setKeepAwake(settings.keepAwake);
       d.showModal();
     } else if (!open && d.open) d.close();
@@ -172,6 +177,7 @@ export function SettingsDialog({ open, onClose }: Props) {
       liveView,
       keepAwake,
     });
+    if (dashId !== useDashes.getState().selected) useDashes.getState().select(dashId);
     if (demoOn !== (demo === "manual")) connection.setDemo(demoOn);
     onClose();
   };
@@ -301,6 +307,28 @@ export function SettingsDialog({ open, onClose }: Props) {
               <option value="widgets">{t("settings.liveView.widgets")}</option>
             </select>
             <span className="hint">{t("settings.liveViewHint")}</span>
+          </div>
+          <div className="field">
+            <label htmlFor="set-dash-used">{t("studio.used")}</label>
+            <select
+              id="set-dash-used"
+              className="select"
+              value={dashes.some((d) => d.id === dashId) ? dashId : "corde"}
+              onChange={(e) => setDashId(e.target.value)}
+            >
+              <option value="corde">{t("dash.corde")}</option>
+              {dashes.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+            <span className="hint">{t("settings.dashUsedHint")}</span>
+            {!appSlots.ServersPage && (
+              <a className="link" href={routeHash({ page: "studio" })} onClick={onClose}>
+                {t("studio.open")}
+              </a>
+            )}
           </div>
           <div className="field is-switches">
             <label className="switch is-wrap">

@@ -1535,7 +1535,6 @@ export const fr = {
     "Une course inventée, calculée sur ce téléphone : rien n'est envoyé, aucun serveur n'est nécessaire.",
   "mobile.demo.on": "La démonstration tourne : les données affichées sont inventées.",
   "layout.device.dashes": "Tableaux de bord",
-  "layout.dashPages": "{n} pages",
   "dash.corde": "Corde",
   "dash.fullscreen": "Plein écran",
   "dash.exitFullscreen": "Quitter le plein écran",
@@ -1663,6 +1662,8 @@ export const fr = {
   "studio.savedState": "Enregistré",
   "studio.draftRestored": "Brouillon repris : des modifications n'avaient pas été enregistrées.",
   "studio.demoHint": "« Course de démonstration » anime la page.",
+  "settings.dashUsedHint":
+    "Retenu sur cet appareil. Les tableaux de bord se créent dans le Studio, sur le PC (menu des dispositions du Direct).",
 } as const;
 
 export type TranslationKey = keyof typeof fr;
