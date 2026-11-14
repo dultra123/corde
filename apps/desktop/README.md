@@ -200,8 +200,8 @@ La signature de mise à jour est produite par la CLI (`tauri-cli/src/bundle.rs`,
 
 - Jamais exécuté sous Windows par ses auteurs : compilé par la CI, logique sans Tauri testée sous Linux.
   Voir `docs/STATUS.md` pour la liste des points à vérifier sur le PC du pilote.
-- Mises à jour depuis l'application à partir de 0.6.0 (la 0.6.0 s'installe à la main) ; pas encore
-  confirmées par un essai réel chez le pilote (premier essai : le passage de la 0.8.0 à la 1.0.0).
+- Mises à jour depuis l'application à partir de 0.6.0 (la 0.6.0 s'installe à la main) ; confirmées chez
+  le pilote (14 nov. 2026 : il n'installe plus que par le bouton, jusqu'à la 1.1.0).
   Pas de signature de code (ADR 0007) : la signature de mise à jour n'en est pas une.
 - Fenêtre cachée après un premier affichage : l'UI reste chargée et continue de recevoir la télémétrie
   (un peu de CPU) ; la mettre en veille serait une optimisation possible.

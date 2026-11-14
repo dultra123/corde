@@ -271,7 +271,7 @@ Pas à pas pour un non-informaticien : [docs/SERVEUR.md](docs/SERVEUR.md) · acc
 | Fichiers de réglage `.svm` prêts à charger dans le jeu | fait (lecture de tes réglages, crans réels, écriture à la demande) ; bornes exactes à lire dans le garage du jeu sur ton PC |
 | Page des courses en ligne (planning, mes courses, rappel sonore avant le départ) | fait ; lecture des vrais sites, son dans l'application Windows et rappels sur le téléphone à vérifier chez le pilote |
 | Widgets dans OBS (fond transparent, page « OBS », dispositions overlay) | fait, vérifié dans Chromium ; à essayer dans une vraie source OBS |
-| Mises à jour depuis l'application (releases numérotées signées) | fait ; pas encore confirmé par un essai réel (le passage de la 0.8.0 à la 1.0.0 est le premier) |
+| Mises à jour depuis l'application (releases numérotées signées) | fait ; confirmé par le propriétaire sur son PC (il n'installe plus que par le bouton, jusqu'à la 1.1.0) |
 | Corde serveur (Raspberry Pi) : appairage, synchronisation depuis le PC, paquet Linux arm64 / x64 | fait (0.7.0), vérifié entre deux serveurs et sous émulation arm64 ; à installer sur un vrai Pi |
 | Signature de l'installeur (plus d'avertissement Windows) | à décider |
 | Application iPhone (Capacitor) : courses sans PC avec rappels en notifications, connexion au PC et au serveur Corde | fait ; installée par TestFlight sur l'iPhone du pilote (14 nov.), en test sur invitation ; pas encore sur l'App Store |
