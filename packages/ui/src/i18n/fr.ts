@@ -1526,7 +1526,7 @@ export const fr = {
   "settings.liveView.dash": "Tableau de bord",
   "settings.liveView.widgets": "Widgets",
   "settings.liveViewHint":
-    "Automatique : le tableau de bord sur un téléphone, les widgets ailleurs. L'adresse …#/dash ouvre toujours le tableau de bord.",
+    "Automatique : le tableau de bord en plein écran sur un téléphone, les widgets ailleurs. Sur un PC, le menu des dispositions du Direct passe de l'un à l'autre (même réglage). L'adresse …#/dash ouvre toujours le tableau de bord en plein écran.",
   "settings.keepAwake": "Garder l'écran allumé sur le tableau de bord",
   "mobile.demo.title": "Démonstration",
   "mobile.demo.start": "Voir une démonstration",
@@ -1534,6 +1534,11 @@ export const fr = {
   "mobile.demo.hint":
     "Une course inventée, calculée sur ce téléphone : rien n'est envoyé, aucun serveur n'est nécessaire.",
   "mobile.demo.on": "La démonstration tourne : les données affichées sont inventées.",
+  "layout.device.dashes": "Tableaux de bord",
+  "layout.dashPages": "{n} pages",
+  "dash.corde": "Corde",
+  "dash.fullscreen": "Plein écran",
+  "dash.exitFullscreen": "Quitter le plein écran",
 } as const;
 
 export type TranslationKey = keyof typeof fr;

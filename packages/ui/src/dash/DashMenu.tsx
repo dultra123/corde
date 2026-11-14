@@ -3,10 +3,10 @@ import { type TranslationKey, useT } from "../i18n";
 import { appSlots } from "../mobile/slots";
 import { navigate, type Route } from "../nav/routes";
 import { connection } from "../net/connection";
-import { useSettings } from "../store/settings";
 import { useTelemetry } from "../store/telemetry";
 import { DASH_PAGES, type DashPage } from "./model";
 import { useDashPage } from "./store";
+import { showWidgets } from "./view";
 
 export const PAGE_TITLE: Record<DashPage, TranslationKey> = {
   course: "dash.page.course",
@@ -49,7 +49,7 @@ export function DashMenu({ open, onClose, onSettings }: Props) {
     navigate(route);
   };
   const toWidgets = () => {
-    useSettings.getState().update({ liveView: "widgets" });
+    showWidgets();
     go({ page: "dashboard" });
   };
   const links: { key: TranslationKey; route: Route }[] = [

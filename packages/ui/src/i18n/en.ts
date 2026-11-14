@@ -1477,7 +1477,7 @@ export const en: Record<TranslationKey, string> = {
   "settings.liveView.dash": "Dashboard",
   "settings.liveView.widgets": "Widgets",
   "settings.liveViewHint":
-    "Automatic: the dashboard on a phone, the widgets elsewhere. The address …#/dash always opens the dashboard.",
+    "Automatic: the dashboard in full screen on a phone, the widgets elsewhere. On a PC, the layouts menu of the Live page switches between them (same setting). The address …#/dash always opens the dashboard in full screen.",
   "settings.keepAwake": "Keep the screen on with the dashboard",
   "mobile.demo.title": "Demo",
   "mobile.demo.start": "See a demo",
@@ -1485,4 +1485,9 @@ export const en: Record<TranslationKey, string> = {
   "mobile.demo.hint":
     "A made-up race, computed on this phone: nothing is sent, no server is needed.",
   "mobile.demo.on": "The demo is running: what you see is made up.",
+  "layout.device.dashes": "Dashboards",
+  "layout.dashPages": "{n} pages",
+  "dash.corde": "Corde",
+  "dash.fullscreen": "Full screen",
+  "dash.exitFullscreen": "Exit full screen",
 };

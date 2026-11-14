@@ -1,11 +1,19 @@
 import type { DashboardLayout, DeviceKind } from "@corde/protocol";
 import { Fragment, useEffect, useRef, useState } from "react";
+import { showDash, showWidgets, useLiveView } from "../dash/view";
 import { useT } from "../i18n";
-import { routeHash } from "../nav/routes";
+import { type Route, routeHash } from "../nav/routes";
 import { activeSlot, useDashboard } from "../store/dashboard";
 import { IconChevron } from "./icons";
 
-/** Layout switcher + management (new / rename / duplicate / delete) in a small popover. */
+const LIVE: Route = { page: "dashboard" };
+
+/**
+ * Layout switcher + management (new / rename / duplicate / delete) in a small popover. Its
+ * « Tableaux de bord » group switches the Direct page to the race dashboard (`dash/`), a
+ * layout switches it back to the widgets: one click each way, the same state as the setting
+ * « Affichage du Direct » (`dash/view.ts`).
+ */
 export function LayoutMenu() {
   const { t } = useT();
   const layouts = useDashboard((s) => s.layouts);
@@ -20,6 +28,7 @@ export function LayoutMenu() {
   const [name, setName] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
   const current = layouts.find((l) => l.id === currentId);
+  const onDash = useLiveView(LIVE) === "dash";
 
   useEffect(() => {
     if (!open) return;
@@ -48,10 +57,11 @@ export function LayoutMenu() {
       key={l.id}
       type="button"
       role="menuitemradio"
-      aria-checked={l.id === currentId}
-      className={`menu-item${l.id === currentId ? " is-current" : ""}`}
+      aria-checked={!onDash && l.id === currentId}
+      className={`menu-item${!onDash && l.id === currentId ? " is-current" : ""}`}
       onClick={() => {
         selectLayout(l.id);
+        if (onDash) showWidgets();
         setOpen(false);
       }}
     >
@@ -74,7 +84,7 @@ export function LayoutMenu() {
         aria-expanded={open}
         aria-haspopup="menu"
       >
-        <span className="layoutmenu-name">{current?.name ?? "—"}</span>
+        <span className="layoutmenu-name">{onDash ? t("dash.corde") : (current?.name ?? "—")}</span>
         <IconChevron />
       </button>
       {open && (
@@ -87,6 +97,21 @@ export function LayoutMenu() {
               {layouts.filter((l) => slotOf(l) === kind).map(item)}
             </Fragment>
           ))}
+          <div className="menu-section dim">{t("layout.device.dashes")}</div>
+          <button
+            type="button"
+            role="menuitemradio"
+            aria-checked={onDash}
+            className={`menu-item${onDash ? " is-current" : ""}`}
+            onClick={() => {
+              setEditing(false);
+              showDash();
+              setOpen(false);
+            }}
+          >
+            {t("dash.corde")}
+            <small className="dim">{t("layout.dashPages", { n: 4 })}</small>
+          </button>
           {others.length > 0 && (
             <>
               <div className="menu-section dim">
@@ -128,6 +153,7 @@ export function LayoutMenu() {
                 className="menu-item"
                 onClick={() => {
                   createLayout(t("layout.new"));
+                  if (onDash) showWidgets();
                   setEditing(true);
                   setOpen(false);
                 }}
@@ -140,6 +166,7 @@ export function LayoutMenu() {
                   className="menu-item"
                   onClick={() => {
                     createLayout(t("layout.newOverlay"), "overlay");
+                    if (onDash) showWidgets();
                     setEditing(true);
                     setOpen(false);
                   }}
@@ -147,37 +174,43 @@ export function LayoutMenu() {
                   {t("layout.newOverlay")}
                 </button>
               )}
-              <button
-                type="button"
-                className="menu-item"
-                onClick={() => {
-                  setName(current?.name ?? "");
-                  setRenaming(true);
-                }}
-              >
-                {t("layout.rename")}
-              </button>
-              <button
-                type="button"
-                className="menu-item"
-                onClick={() => {
-                  if (current) duplicateLayout(current.id);
-                  setOpen(false);
-                }}
-              >
-                {t("layout.duplicate")}
-              </button>
-              <button
-                type="button"
-                className="menu-item is-danger"
-                onClick={() => {
-                  if (current && window.confirm(t("layout.deleteConfirm")))
-                    deleteLayout(current.id);
-                  setOpen(false);
-                }}
-              >
-                {t("layout.delete")}
-              </button>
+              {!onDash && (
+                <button
+                  type="button"
+                  className="menu-item"
+                  onClick={() => {
+                    setName(current?.name ?? "");
+                    setRenaming(true);
+                  }}
+                >
+                  {t("layout.rename")}
+                </button>
+              )}
+              {!onDash && (
+                <>
+                  <button
+                    type="button"
+                    className="menu-item"
+                    onClick={() => {
+                      if (current) duplicateLayout(current.id);
+                      setOpen(false);
+                    }}
+                  >
+                    {t("layout.duplicate")}
+                  </button>
+                  <button
+                    type="button"
+                    className="menu-item is-danger"
+                    onClick={() => {
+                      if (current && window.confirm(t("layout.deleteConfirm")))
+                        deleteLayout(current.id);
+                      setOpen(false);
+                    }}
+                  >
+                    {t("layout.delete")}
+                  </button>
+                </>
+              )}
             </>
           )}
           <div className="menu-sep" />

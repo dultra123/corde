@@ -4,6 +4,7 @@ import {
   chooseView,
   classCount,
   DASH_PAGES,
+  dashPresentation,
   deltaView,
   energyAutonomy,
   flagsOf,
@@ -96,6 +97,15 @@ describe("which view the Direct page shows", () => {
   });
   it("#/dash is always the dashboard", () => {
     expect(chooseView("widgets", { ...pc, forced: true })).toBe("dash");
+  });
+  it("the dashboard: full screen on a phone, inside the page on a PC or a tablet", () => {
+    expect(dashPresentation(phone, false)).toBe("full");
+    expect(dashPresentation({ ...tablet, app: true }, false)).toBe("full");
+    expect(dashPresentation({ ...pc, forced: true }, false)).toBe("full");
+    expect(dashPresentation(pc, false)).toBe("page");
+    expect(dashPresentation(tablet, false)).toBe("page");
+    // full screen on request
+    expect(dashPresentation(pc, true)).toBe("full");
   });
   it("a phone is a touch screen with a short side of 500 px at most", () => {
     expect(isPhone({ coarse: true, width: 932, height: 430 })).toBe(true);

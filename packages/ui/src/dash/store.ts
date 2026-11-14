@@ -36,3 +36,30 @@ export const useDashPage = create<DashPageState>((set, get) => ({
     get().show(stepPage(get().index, delta));
   },
 }));
+
+interface DashFullState {
+  /** The driver asked for the dashboard in full screen (PC, tablet). Not remembered. */
+  full: boolean;
+  setFull(full: boolean): void;
+}
+
+/**
+ * Full screen on request (PC, tablet): the dashboard covers the window, and the browser's own
+ * full screen is asked for when it allows it. Esc or the same button leave it.
+ */
+export const useDashFull = create<DashFullState>((set) => ({
+  full: false,
+  setFull(full) {
+    set({ full });
+    if (typeof document === "undefined") return;
+    try {
+      if (full && !document.fullscreenElement) {
+        void document.documentElement.requestFullscreen?.()?.catch(() => {});
+      } else if (!full && document.fullscreenElement) {
+        void document.exitFullscreen?.()?.catch(() => {});
+      }
+    } catch {
+      // no Fullscreen API (some webviews): the dashboard still covers the window
+    }
+  },
+}));
