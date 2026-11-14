@@ -152,6 +152,34 @@ jobs:
             exit 1
           fi
 
+          # Le manifeste fusionné : sauvegardes coupées, configuration réseau, composants exportés
+          # (l'activité principale seulement, plus ceux qu'une autorisation du système protège).
+          analyzer="$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer"
+          "$analyzer" manifest print "$apk" > "$RUNNER_TEMP/manifest.xml"
+          python3 -I - "$RUNNER_TEMP/manifest.xml" << 'PY'
+          import sys, xml.etree.ElementTree as ET
+          A = "{http://schemas.android.com/apk/res/android}"
+          app = ET.parse(sys.argv[1]).getroot().find("application")
+          bad = []
+          if app.get(A + "allowBackup") != "false":
+              bad.append("allowBackup n'est pas false")
+          for attr in ("dataExtractionRules", "networkSecurityConfig"):
+              if not app.get(A + attr):
+                  bad.append(f"{attr} absent")
+          print("Composants exportés :")
+          for tag in ("activity", "activity-alias", "service", "receiver", "provider"):
+              for e in app.findall(tag):
+                  exported = e.get(A + "exported")
+                  if exported == "true" or (exported is None and e.find("intent-filter") is not None):
+                      name, perm = e.get(A + "name"), e.get(A + "permission")
+                      print(f"  {tag} {name}" + (f" (réservé à {perm})" if perm else ""))
+                      if name != "io.github.dultra123.corde.MainActivity" and not perm:
+                          bad.append(f"{tag} {name} exporté sans protection")
+          for b in bad:
+              print(f"::error::{b}")
+          sys.exit(1 if bad else 0)
+          PY
+
           # Aucune bibliothèque Google Play services, Firebase ni ML Kit : ni dans les
           # dépendances, ni dans le code de l'APK.
           ./gradlew --no-daemon -q :app:dependencies --configuration releaseRuntimeClasspath > "$RUNNER_TEMP/deps.txt"
@@ -161,7 +189,6 @@ jobs:
           fi
           # Le code de l'APK (classes définies, pas seulement citées : le lecteur de QR code cite
           # ML Kit, qu'il n'appelle que si on le lui demande — Corde lui demande ZXing).
-          analyzer="$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer"
           google='^com\.google\.(android\.gms|firebase|mlkit|android\.datatransport)(\.|$)'
           # Colonnes : type (P paquet, C classe…), état (d défini, r cité), méthodes, méthodes, taille, nom.
           "$analyzer" dex packages --defined-only "$apk" | awk '$1 == "P" || $1 == "C" {print $6}' > "$RUNNER_TEMP/defined.txt"
@@ -223,6 +250,13 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules > /dev/null
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+
+      # Pour réduire les captures en JPEG (convert).
+      - name: Installer ImageMagick
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends imagemagick > /dev/null
+          convert -version | head -n 1
 
       # Image AOSP « default » : Android sans aucun service Google (comme un téléphone sans
       # Google), Android 15 (bord à bord imposé). Téléphone de la taille d'un Pixel 6, en français.

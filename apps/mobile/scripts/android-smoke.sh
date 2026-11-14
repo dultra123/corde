@@ -49,11 +49,11 @@ shot() {
     warn "capture ${name} impossible"
     return
   }
-  if command -v convert > /dev/null; then
-    convert "$out/${name}.png" -resize 390x -quality 70 "$out/${name}.jpg"
-  else
-    ffmpeg -loglevel error -y -i "$out/${name}.png" -vf scale=390:-2 -q:v 5 "$out/${name}.jpg"
-  fi
+  # ImageMagick (installé par le workflow avant l'émulateur).
+  convert "$out/${name}.png" -resize 390x -quality 70 "$out/${name}.jpg" || {
+    warn "capture ${name} : conversion en JPEG impossible"
+    return
+  }
   echo "-----BEGIN CORDE SCREENSHOT ${name}-----"
   base64 -w 76 "$out/${name}.jpg"
   echo "-----END CORDE SCREENSHOT-----"
@@ -61,6 +61,15 @@ shot() {
 
 # Le journal du système depuis le dernier `adb logcat -c`.
 logs() { adb logcat -d 2> /dev/null; }
+
+# keep <nom> : garde le journal (artefact) et montre les lignes de Corde depuis le dernier effacement.
+keep() {
+  logs > "$out/logcat-$1.txt"
+  echo "::group::Journal : $1"
+  grep -E "\[corde\]|CordeDebug|AndroidRuntime|FATAL|ANR in|not responding" "$out/logcat-$1.txt" |
+    sed 's/.*Msg: //' | tail -n 60 | tr -d '\r'
+  echo "::endgroup::"
+}
 
 # wait_log <motif> <secondes> : le motif apparaît dans le journal.
 wait_log() {
@@ -97,16 +106,21 @@ server_pid=$!
 trap 'kill "$server_pid" 2> /dev/null || true' EXIT
 
 adb wait-for-device
+# Un émulateur qui vient de démarrer affiche parfois « L'interface système ne répond pas » : laisser
+# finir le démarrage, puis fermer les fenêtres du système.
+sleep 15
+adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS > /dev/null 2>&1 || true
 adb shell input keyevent KEYCODE_WAKEUP || true
 adb shell wm dismiss-keyguard || true
 adb shell settings put system screen_off_timeout 1800000 || true
 echo "Android $(adb shell getprop ro.build.version.release | tr -d '\r') (API $(adb shell getprop ro.build.version.sdk | tr -d '\r')), WebView $(adb shell dumpsys package com.android.webview 2> /dev/null | sed -n 's/^ *versionName=//p' | head -n 1 | tr -d '\r')"
-echo "Langue : $(adb shell getprop persist.sys.locale | tr -d '\r')"
-
 adb install -r "$apk" > /dev/null || {
   err "installation de l'APK refusée"
   exit 1
 }
+# En français (langue de l'application seulement, Android 13+ : sans redémarrer le téléphone).
+adb shell cmd locale set-app-locales "$pkg" --locales fr-FR > /dev/null 2>&1 || true
+echo "Langue de l'application : $(adb shell cmd locale get-app-locales "$pkg" 2> /dev/null | tr -d '\r') ; du téléphone : $(adb shell settings get system system_locales 2> /dev/null | tr -d '\r')"
 echo "::group::Autorisations demandées par l'application (manifeste fusionné)"
 adb shell dumpsys package "$pkg" | sed -n '/requested permissions:/,/install permissions:/p' | tr -d '\r'
 echo "::endgroup::"
@@ -126,6 +140,7 @@ else
 fi
 sleep 6
 shot home
+keep 1-start
 
 # 2. Lien corde://races.
 adb shell am start -W -a android.intent.action.VIEW -d "corde://races" "$pkg" > /dev/null
@@ -138,6 +153,7 @@ sleep 6
 shot races
 
 # 3. Retour : à l'accueil, puis hors de l'application.
+adb logcat -c
 adb shell input keyevent KEYCODE_BACK
 if wait_log "\[corde\] back: back" 10; then ok "retour : page précédente"; else warn "retour : « back: back » absent"; fi
 sleep 2
@@ -149,6 +165,7 @@ if adb shell dumpsys activity activities | grep -E "mResumedActivity|topResumedA
 else
   ok "l'application n'est plus au premier plan"
 fi
+keep 3-back
 
 # 4. Trafic en clair vers une adresse privée, origine de la page.
 start_app --es cordeDebug fetch --es cordeUrl "http://10.0.2.2:8471/api/health"
@@ -206,8 +223,12 @@ else
 fi
 adb shell dumpsys battery unplug || true
 adb shell input keyevent KEYCODE_SLEEP || true
-if adb shell dumpsys deviceidle force-idle 2>&1 | tr -d '\r' | grep -q -i "forced in.*idle"; then
-  ok "téléphone en veille (Doze forcé, écran éteint)"
+sleep 2
+adb shell dumpsys deviceidle enable > /dev/null 2>&1 || true
+idle="$(adb shell dumpsys deviceidle force-idle deep 2>&1 | tr -d '\r')"
+echo "deviceidle force-idle : ${idle}"
+if adb shell dumpsys deviceidle get deep 2>&1 | tr -d '\r' | grep -q -x "IDLE"; then
+  ok "téléphone en veille (Doze profond forcé, écran éteint)"
 else
   warn "Doze n'a pas pu être forcé : le rappel est essayé écran éteint seulement"
 fi
@@ -244,9 +265,7 @@ sleep 3
 shot notification
 adb shell cmd statusbar collapse || true
 
-echo "::group::Lignes de Corde et de Capacitor (journal)"
-adb logcat -d -s "Capacitor/Console:*" "Capacitor:*" "CordeDebug:*" "AndroidRuntime:E" | tail -n 150 | tr -d '\r'
-echo "::endgroup::"
+keep 6-reminder
 
 if [ "$errors" -gt 0 ]; then
   echo "${errors} point(s) exigé(s) en échec"

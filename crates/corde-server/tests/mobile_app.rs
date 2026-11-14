@@ -378,3 +378,75 @@ async fn the_application_pairs_with_the_home_server_and_uses_its_token() {
     server.stop().await;
     let _ = std::fs::remove_dir_all(&data);
 }
+
+/// The Android application (ADR 0013): its pages come from `http://localhost`
+/// (`server.androidScheme: "http"`), an origin every server already accepts. On the home
+/// server it pairs and uses its token like the iPhone application; without a token it gets
+/// nothing, even though that origin is also the one of a page of the machine itself.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn the_android_application_pairs_with_the_home_server_from_its_origin() {
+    const ANDROID: &str = "http://localhost";
+    let data = temp_dir("hub-android");
+    let server = Running::start(ServerConfig {
+        role: Role::Hub,
+        port: 0,
+        bind: Some([127, 0, 0, 1].into()),
+        data_dir: Some(data.clone()),
+        ..Default::default()
+    })
+    .await;
+    let to = server.to();
+    let host = to.to_string();
+    let h = [("Host", host.as_str()), ("Origin", ANDROID)];
+
+    let r = raw(to, "GET", "/api/hub/pairing", &h, "").await;
+    assert_eq!(r.status, 200, "{}", r.body);
+    assert_eq!(
+        r.header("access-control-allow-origin").as_deref(),
+        Some(ANDROID)
+    );
+    assert_eq!(raw(to, "GET", "/api/health", &h, "").await.status, 401);
+    assert_eq!(raw(to, "GET", "/api/sessions", &h, "").await.status, 401);
+
+    let data2 = data.clone();
+    let code = tokio::task::spawn_blocking(move || cli::pair(&data2, false).unwrap().code)
+        .await
+        .unwrap();
+    let r = raw(
+        to,
+        "POST",
+        "/api/hub/pair",
+        &h,
+        &format!(r#"{{"code":"{code}","name":"Android","kind":"app"}}"#),
+    )
+    .await;
+    assert_eq!(r.status, 201, "{}", r.body);
+    assert!(r.header("set-cookie").is_none(), "{}", r.head);
+    let token = r.json()["token"].as_str().unwrap().to_string();
+
+    let bearer = format!("Bearer {token}");
+    let auth = [
+        ("Host", host.as_str()),
+        ("Origin", ANDROID),
+        ("Authorization", bearer.as_str()),
+    ];
+    let r = raw(to, "GET", "/api/health", &auth, "").await;
+    assert_eq!(r.status, 200, "{}", r.body);
+    assert_eq!(
+        r.header("access-control-allow-origin").as_deref(),
+        Some(ANDROID)
+    );
+    let r = raw(to, "GET", "/api/hub/pairing", &auth, "").await;
+    assert_eq!(r.json()["device"]["name"], "Android");
+    let pre = [
+        ("Host", host.as_str()),
+        ("Origin", ANDROID),
+        ("Access-Control-Request-Method", "GET"),
+        ("Access-Control-Request-Headers", "authorization"),
+    ];
+    let r = raw(to, "OPTIONS", "/api/sessions", &pre, "").await;
+    assert!((200..300).contains(&r.status), "{} {}", r.status, r.head);
+
+    server.stop().await;
+    let _ = std::fs::remove_dir_all(&data);
+}
