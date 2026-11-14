@@ -16,13 +16,17 @@
 #              (longueur et forme seulement, jamais la valeur).
 # testflight : seulement sur le dépôt d'origine, jamais sur une PR ni un fork, et seulement si les
 #              quatre secrets APPSTORE_API_KEY, APPSTORE_API_KEY_ID, APPSTORE_API_ISSUER_ID et
-#              APPLE_TEAM_ID existent : archive Release signée automatiquement avec la clé d'API
-#              App Store Connect, export « App Store Connect » avec envoi direct vers TestFlight.
-#              Numéro de build = numéro d'exécution de ce workflow.
+#              APPLE_TEAM_ID existent (clé d'API d'accès Admin). Un certificat « Apple
+#              Distribution » et un profil App Store sont créés pour l'exécution par l'API App Store
+#              Connect (apps/mobile/scripts/ios-signing.sh ; celui de l'exécution précédente est
+#              révoqué), l'archive Release est signée avec, contrôlée, puis exportée avec envoi
+#              direct vers TestFlight. Numéro de build = numéro d'exécution de ce workflow.
 #
 # Sécurité : jeton en lecture seule ; aucune valeur venant d'un tiers (nom de branche…) n'est
 # collée dans un script ; la clé .p8 n'est écrite que dans un dossier temporaire du runner, en
-# 0600, et effacée à la fin même en cas d'échec ; elle n'est jamais affichée.
+# 0600, et effacée à la fin même en cas d'échec ; elle n'est jamais affichée. La clé privée du
+# certificat de distribution naît sur le runner, va dans un trousseau temporaire et disparaît avec
+# lui. Le nom du certificat (qui contient le nom du titulaire du compte) est masqué dans le journal.
 
 name: iOS
 
@@ -235,6 +239,9 @@ jobs:
       - name: Essais du script (clé jetable)
         run: bash apps/mobile/scripts/asc-key.test.sh
 
+      - name: Essais des scripts de signature (faux serveur d'Apple)
+        run: node --test apps/mobile/scripts/signing.test.mjs
+
       - name: Les quatre secrets sont-ils utilisables ?
         if: env.ASC_READY == 'true'
         env:
@@ -303,11 +310,15 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: bash apps/mobile/scripts/asc-key.sh "$RUNNER_TEMP/asc"
 
-      # L'archive est signée « ad hoc » (CODE_SIGN_IDENTITY=-), comme le fait Xcode Cloud : ni
-      # certificat de développement, ni profil, ni iPhone enregistré ne sont nécessaires sur ce
-      # runner. La vraie signature (distribution) est posée à l'export, par la signature
-      # automatique dans le cloud d'Apple (« cloud signing ») avec la clé d'API.
-      - name: Archive Release (signature automatique par la clé d'API)
+      # Signature : un certificat « Apple Distribution » et un profil App Store sont créés pour
+      # cette exécution par l'API App Store Connect ; la clé privée naît sur ce runner et n'en sort
+      # pas. (La « signature dans le cloud » d'Apple, essayée d'abord sur une archive signée
+      # ad hoc, donne un fichier qu'Apple refuse à l'envoi : « Invalid Signature », code 90035.)
+      - name: Certificat et profil de distribution (pour cette exécution)
+        if: env.ASC_READY == 'true'
+        run: bash apps/mobile/scripts/ios-signing.sh setup "$RUNNER_TEMP/signing"
+
+      - name: Archive Release (signée pour la distribution)
         if: env.ASC_READY == 'true'
         working-directory: apps/mobile/ios/App
         env:
@@ -323,17 +334,13 @@ jobs:
             -destination "generic/platform=iOS" \
             -archivePath "$RUNNER_TEMP/Corde.xcarchive" \
             -quiet \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$ASC_KEY_PATH" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
-            DEVELOPMENT_TEAM="$ASC_TEAM_ID" \
-            CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY=- \
-            AD_HOC_CODE_SIGNING_ALLOWED=YES \
             MARKETING_VERSION="${version}" \
             CURRENT_PROJECT_VERSION="${BUILD_NUMBER}" \
             archive
+
+      - name: Contrôler la signature de l'archive
+        if: env.ASC_READY == 'true'
+        run: bash apps/mobile/scripts/ios-signing.sh check "$RUNNER_TEMP/Corde.xcarchive/Products/Applications/App.app"
 
       - name: Exporter et envoyer vers TestFlight
         if: env.ASC_READY == 'true'
@@ -350,7 +357,14 @@ jobs:
             <key>destination</key>
             <string>upload</string>
             <key>signingStyle</key>
-            <string>automatic</string>
+            <string>manual</string>
+            <key>signingCertificate</key>
+            <string>Apple Distribution</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>${BUNDLE_ID}</key>
+              <string>${SIGN_PROFILE_NAME}</string>
+            </dict>
             <key>teamID</key>
             <string>${ASC_TEAM_ID}</string>
             <key>uploadSymbols</key>
@@ -366,7 +380,6 @@ jobs:
             -archivePath "$RUNNER_TEMP/Corde.xcarchive" \
             -exportOptionsPlist "$plist" \
             -exportPath "$RUNNER_TEMP/export" \
-            -allowProvisioningUpdates \
             -authenticationKeyPath "$ASC_KEY_PATH" \
             -authenticationKeyID "$ASC_KEY_ID" \
             -authenticationKeyIssuerID "$ASC_ISSUER_ID"
@@ -375,6 +388,13 @@ jobs:
             echo ""
             echo "Build ${GITHUB_RUN_NUMBER} : il apparaît dans App Store Connect → TestFlight après le traitement par Apple (souvent 5 à 30 minutes)."
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Effacer le trousseau et le profil
+        if: always()
+        run: |
+          if [ -f apps/mobile/scripts/ios-signing.sh ]; then
+            bash apps/mobile/scripts/ios-signing.sh teardown "$RUNNER_TEMP/signing"
+          fi
 
       - name: Effacer la clé
         if: always()
