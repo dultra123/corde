@@ -140,7 +140,7 @@ Par défaut c'est désactivé, pour que Windows ne te demande rien. Pour l'activ
 ### Le téléphone (ou une tablette) comme tableau de bord
 
 Sur un téléphone, la page **Direct** n'est plus la grille de widgets mais un **tableau de bord de course**,
-comme sur un volant ou dans SimHub : grand rapport, rampe de régime, vitesse, écart au meilleur tour,
+comme sur l'écran d'un volant de course : grand rapport, rampe de régime, vitesse, écart au meilleur tour,
 carburant, et trois autres pages (pneus et freins, carburant et énergie, chronos et écarts) qu'on fait
 glisser du doigt. Pose le téléphone **en paysage** à côté du volant : l'écran reste allumé tant que le
 tableau de bord est affiché (si le navigateur le permet ; sinon, règle la mise en veille du téléphone).

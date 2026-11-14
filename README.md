@@ -102,8 +102,8 @@ réglages restent réservés au PC ([pourquoi](docs/SECURITY-MODEL.md)).
 
 ![Accueil, tableau de bord et analyse d'un tour sur téléphone](docs/images/mobile.png)
 
-**Sur un téléphone, le Direct devient un vrai tableau de bord de course**, comme celui d'un volant ou de
-SimHub : plein écran, grand rapport au centre, rampe de régime qui clignote au passage, vitesse, écart au
+**Sur un téléphone, le Direct devient un vrai tableau de bord de course**, comme l'écran d'un volant de
+course : plein écran, grand rapport au centre, rampe de régime qui clignote au passage, vitesse, écart au
 meilleur tour, tours, carburant. Quatre pages se font glisser du doigt — **Course**, **Pneus & freins**,
 **Carburant & énergie**, **Chronos & écarts** — et l'écran reste allumé tant qu'il est affiché. Pensé pour un
 téléphone posé en paysage à côté du volant ; en portrait, les cases s'empilent. Ce que la voiture n'a pas

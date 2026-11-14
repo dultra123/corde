@@ -35,7 +35,7 @@ lancement, notifications, onglets en bas de l'écran).
 
 ### Le tableau de bord (1.1)
 
-Le Direct de l'application est un **tableau de bord de course**, comme celui d'un volant ou de SimHub, pensé
+Le Direct de l'application est un **tableau de bord de course**, comme l'écran d'un volant de course, pensé
 pour un téléphone posé en paysage à côté du volant (en portrait, les cases s'empilent) :
 
 - **Plein écran** : ni barre en haut ni onglets en bas. Le bouton **☰** (coin en haut à droite) ouvre les

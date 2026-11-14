@@ -10,8 +10,7 @@ dans `docs/STATUS.md` et l'historique git.
 
 ## [1.1.0] — 2026-11-14
 
-**Le Direct devient un vrai tableau de bord sur le téléphone**, comme l'écran d'un volant ou un tableau de
-bord SimHub.
+**Le Direct devient un vrai tableau de bord sur le téléphone**, comme l'écran d'un volant de course.
 
 ### Nouveautés
 
