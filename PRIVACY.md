@@ -114,7 +114,8 @@ n'a ni compte, ni statistiques d'usage, ni publicité, ni service à nous.
   - **les photos des courses, pour le widget « Courses en images » (0.10)** : l'application télécharge
     elle-même les photos des courses que ces deux pages citent, **au plus 8** (celles des courses que montre
     le widget), **seulement quand le planning est activé et que Corde est ouverte**, depuis l'adresse
-    `https://` donnée par le site (jamais une adresse IP écrite telle quelle, ni le réseau local), sans
+    `https://` donnée par le site (jamais une adresse IP écrite telle quelle, ni `localhost`, ni un nom en
+    `.local`), sans
     cookie, sans `Referer`, avec le même `User-Agent`. L'hébergeur de ces images voit **l'adresse IP du
     téléphone**, comme quand l'interface les affiche ;
   - les serveurs Corde **que tu as ajoutés** dans « Mes serveurs » (ton PC, ton serveur Corde), à l'adresse
