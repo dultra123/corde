@@ -428,6 +428,22 @@ try {
   await sleep(400);
   await page.screenshot({ path: join(outDir, "app-races.png") });
 
+  // « Courses en images » : the pictures asked of the native side are named by the block (≤ 8),
+  // and the diagnosis tells how many are kept.
+  const keys = new Set([...block.races, ...block.mine].map((r) => r.img).filter(Boolean));
+  const asked = await page.evaluate(() => window.__fake.log.images);
+  check(
+    asked.length <= 8 && asked.every((k) => keys.has(k)),
+    `widgets: ${asked.length} picture(s) asked, all named by the block`,
+  );
+  await page.locator(".app-diag summary").click();
+  await page.waitForSelector(".app-diag-list");
+  const diagText = (await page.locator(".app-diag-list").textContent()) ?? "";
+  check(
+    /Photos des courses|Race pictures/.test(diagText),
+    "courses: diagnosis lists the race pictures",
+  );
+
   // Mes serveurs.
   await page.evaluate(() => {
     window.location.hash = "#/servers";
