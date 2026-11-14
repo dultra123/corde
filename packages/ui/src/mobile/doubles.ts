@@ -3,7 +3,15 @@ import type {
   LocalNotificationSchema,
   PendingLocalNotificationSchema,
 } from "@capacitor/local-notifications";
-import type { HttpPort, NotificationsPort, PrefsPort } from "./ports";
+import type {
+  HttpPort,
+  NativeActivity,
+  NativeActivityStart,
+  NativeDiagnostics,
+  NativePort,
+  NotificationsPort,
+  PrefsPort,
+} from "./ports";
 
 /**
  * Doubles of the Capacitor plugins for the tests of `src/mobile/` (same method names and
@@ -78,5 +86,51 @@ export class FakeNotifications implements NotificationsPort {
     const ids = notifications.map((n) => n.id);
     this.cancelled.push(ids);
     this.pending = this.pending.filter((p) => !ids.includes(p.id));
+  }
+}
+
+/** Double of the application's native module (`CordeNative`). */
+export class FakeNative implements NativePort {
+  written: string[] = [];
+  /** `OSStatus` the next writes answer (0 = success). */
+  status = 0;
+  allowed = true;
+  running: NativeActivity[] = [];
+  started: NativeActivityStart[] = [];
+  ended: string[][] = [];
+  private next = 1;
+
+  async setWidgetData({ json }: { json: string }) {
+    if (this.status !== 0) return { ok: false, status: this.status, bytes: 0 };
+    this.written.push(json);
+    return { ok: true, status: 0, bytes: new TextEncoder().encode(json).length };
+  }
+  async activities() {
+    return { allowed: this.allowed, running: this.running.map((a) => ({ ...a })) };
+  }
+  async startActivity(o: NativeActivityStart) {
+    this.started.push(o);
+    const id = `A${this.next++}`;
+    this.running.push({ id, pickId: o.pickId, startMs: o.startMs });
+    return { id };
+  }
+  async endActivities({ ids }: { ids?: string[] }) {
+    const gone = ids ?? this.running.map((a) => a.id);
+    this.ended.push(gone);
+    this.running = this.running.filter((a) => !gone.includes(a.id));
+  }
+  async diagnostics(): Promise<NativeDiagnostics> {
+    const last = this.written.at(-1);
+    return {
+      store: this.status !== 0 ? "error" : last ? "ok" : "empty",
+      status: this.status,
+      group: true,
+      bytes: last ? new TextEncoder().encode(last).length : 0,
+      writtenAt: last ? (JSON.parse(last) as { at: number }).at : 0,
+      version: last ? 1 : 0,
+      activitiesAllowed: this.allowed,
+      activities: this.running.length,
+      ios: "18.1",
+    };
   }
 }

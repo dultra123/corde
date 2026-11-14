@@ -392,6 +392,7 @@ function MyRaces({
   const { t, lang, nOf } = useT();
   const list = upcomingPicks(picks, now);
   const next = list.find((p) => p.cat !== "special") ?? list[0] ?? null;
+  const PickAction = appSlots.PickAction;
   const leads = settings?.leads ?? [];
   const before = leads.filter((l) => l > 0);
   let leadText = t("races.leads.none");
@@ -437,6 +438,7 @@ function MyRaces({
                     </span>
                     <span className="races-mine-side">
                       <span className="dim num">{relLabel(p.start_ms, now, lang)}</span>
+                      {PickAction && <PickAction pick={p} now={now} />}
                       <button
                         type="button"
                         className="link"
@@ -566,6 +568,7 @@ function RemindersCard({
     setTest(ok ? "ok" : "blocked");
   };
   const Status = appSlots.ReminderStatus;
+  const Extra = appSlots.RemindersExtra;
   return (
     <section className="card races-card" aria-labelledby="races-reminders-title">
       <div className="card-head">
@@ -608,6 +611,7 @@ function RemindersCard({
             ? t("races.sound.blocked")
             : t("races.sound.hint")}
       </p>
+      {Extra && <Extra />}
     </section>
   );
 }

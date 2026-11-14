@@ -1,9 +1,13 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { IconFlag, IconHome, IconLive, IconProfile, IconSessions } from "../dashboard/icons";
-import { useT } from "../i18n";
+import { type TranslationKey, useT } from "../i18n";
 import { type Route, routeHash } from "../nav/routes";
+import type { RacePick } from "../net/races-api";
+import { hm } from "../races/format";
 import { useTelemetry } from "../store/telemetry";
 import { appController, type ServerStatus, useApp } from "./app-state";
+import type { NativeDiagnostics } from "./ports";
+import { MANUAL_LEAD_MS } from "./widgets";
 
 /** The pages that read a Corde server (everything but Home, Courses and « Mes serveurs »). */
 export function needsServer(route: Route): boolean {
@@ -221,5 +225,106 @@ export function ReminderStatus() {
         </>
       )}
     </p>
+  );
+}
+
+/** « Compte à rebours » on a pick of « Mes courses » (up to 8 h before its start). */
+export function PickAction({ pick, now }: { pick: RacePick; now: number }) {
+  const { t } = useT();
+  const activity = useApp((s) => s.activity);
+  const [busy, setBusy] = useState(false);
+  const widgets = appController().widgets;
+  if (!widgets || !activity?.enabled || !activity.allowed) return null;
+  if (pick.cat === "special" || pick.start_ms <= now) return null;
+  if (activity.pickId === pick.id) {
+    return <span className="app-live-on">{t("mobile.live.on")}</span>;
+  }
+  if (pick.start_ms - now > MANUAL_LEAD_MS) return null;
+  const start = async () => {
+    setBusy(true);
+    try {
+      await widgets.activity({ kind: "manual", pickId: pick.id });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <button type="button" className="link" disabled={busy} onClick={() => void start()}>
+      {t("mobile.live.start")}
+    </button>
+  );
+}
+
+type Tr = (key: TranslationKey, params?: Record<string, string | number>) => string;
+
+function storeLine(d: NativeDiagnostics, t: Tr): string {
+  if (d.store === "error") return t("mobile.widgets.diag.error", { code: d.status });
+  if (d.store === "empty") return t("mobile.widgets.diag.empty");
+  return t("mobile.widgets.diag.ok", {
+    time: d.writtenAt ? hm(d.writtenAt) : "?",
+    kb: Math.max(1, Math.round(d.bytes / 1024)),
+    v: d.version,
+  });
+}
+
+/** After the reminders: the Live Activity setting, how to add a widget, the diagnosis. */
+export function RemindersExtra() {
+  const { t } = useT();
+  const activity = useApp((s) => s.activity);
+  const [diag, setDiag] = useState<NativeDiagnostics | null>(null);
+  const [diagError, setDiagError] = useState<string | null>(null);
+  const widgets = appController().widgets;
+  if (!widgets) return null;
+  const enabled = activity?.enabled ?? true;
+  const loadDiag = async () => {
+    try {
+      setDiag(await widgets.diagnostics());
+      setDiagError(null);
+    } catch (e) {
+      setDiagError(e instanceof Error ? e.message : String(e));
+    }
+  };
+  return (
+    <div className="app-live">
+      <label className="switch">
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={(e) => void widgets.setLiveActivityEnabled(e.target.checked)}
+        />
+        {t("mobile.live.label")}
+      </label>
+      <p className="races-hint faint">{t("mobile.live.hint")}</p>
+      {activity && !activity.allowed && enabled && (
+        <p className="races-hint app-notif is-denied">{t("mobile.live.denied")}</p>
+      )}
+      <p className="races-hint faint">{t("mobile.widgets.hint")}</p>
+      <details
+        className="app-diag"
+        onToggle={(e) => {
+          if ((e.target as HTMLDetailsElement).open) void loadDiag();
+        }}
+      >
+        <summary>{t("mobile.widgets.diag.title")}</summary>
+        {diagError && <p className="races-hint">{diagError}</p>}
+        {diag && (
+          <ul className="races-hint faint app-diag-list">
+            <li>{storeLine(diag, t)}</li>
+            <li>
+              {t(diag.group ? "mobile.widgets.diag.groupOk" : "mobile.widgets.diag.groupMissing")}
+            </li>
+            <li>
+              {t(
+                diag.activitiesAllowed
+                  ? "mobile.widgets.diag.liveAllowed"
+                  : "mobile.widgets.diag.liveDenied",
+                { n: diag.activities },
+              )}
+            </li>
+            <li>{t("mobile.widgets.diag.ios", { v: diag.ios })}</li>
+          </ul>
+        )}
+      </details>
+    </div>
   );
 }

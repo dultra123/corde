@@ -1287,6 +1287,24 @@ export const en: Record<TranslationKey, string> = {
   "mobile.notif.prompt":
     "The iPhone will ask you to allow notifications when you pick your first race.",
   "mobile.notif.ask": "Allow now",
+  "mobile.live.label": "Countdown on the lock screen and in the Dynamic Island",
+  "mobile.live.hint":
+    'It starts by itself when your next picked start is less than 2 h away and Corde is open (or with "Countdown" on a start, up to 8 h before). After the start, it stays shown until you next open Corde or swipe it away.',
+  "mobile.live.denied":
+    "iOS does not allow the countdown for Corde: iPhone Settings → Corde → Live Activities.",
+  "mobile.live.start": "Countdown",
+  "mobile.live.on": "On the lock screen",
+  "mobile.widgets.hint":
+    "Widgets: touch and hold the Home Screen (or the Lock Screen) → Edit → Add Widget → Corde. They update when Corde is open.",
+  "mobile.widgets.diag.title": "Widget diagnosis",
+  "mobile.widgets.diag.ok": "Widget data: written at {time} ({kb} KB, format {v}).",
+  "mobile.widgets.diag.empty": "Widget data: nothing written yet.",
+  "mobile.widgets.diag.error": "Widget data: refused by iOS (code {code}).",
+  "mobile.widgets.diag.groupOk": "Shared keychain: group found.",
+  "mobile.widgets.diag.groupMissing": "Shared keychain: group missing from the app.",
+  "mobile.widgets.diag.liveAllowed": "Live Activities: allowed ({n} running).",
+  "mobile.widgets.diag.liveDenied": "Live Activities: refused by iOS ({n} running).",
+  "mobile.widgets.diag.ios": "iOS {v}.",
   "mobile.gate.none.title": "No Corde server",
   "mobile.gate.none.body":
     'This page shows the data of your gaming PC (or of your Corde server). Add it in "My servers": on the PC, Home → "Allow access from my phone", then type the address shown or scan the QR code.',

@@ -6,6 +6,7 @@ import { useTelemetry } from "../store/telemetry";
 import type { PhoneRaces } from "./phone-races";
 import type { PermissionView } from "./reminders";
 import type { PairResult, ProbeResult, ServerBook, ServerEntry } from "./servers";
+import type { ActivityView, WidgetSync } from "./widget-sync";
 
 /**
  * State of the iPhone application around the shared interface: the servers of « Mes
@@ -28,6 +29,8 @@ export interface AppState {
   permission: PermissionView | null;
   /** The keyboard is open (the tab bar hides). */
   keyboard: boolean;
+  /** The Live Activity: allowed by iOS, the pick it follows, the driver's setting. */
+  activity: ActivityView | null;
 }
 
 export const useApp = create<AppState>(() => ({
@@ -39,6 +42,7 @@ export const useApp = create<AppState>(() => ({
   version: null,
   permission: null,
   keyboard: false,
+  activity: null,
 }));
 
 /** `http://192.168.1.20:8471` → the endpoint of the shared connection layer. */
@@ -75,6 +79,8 @@ export type ScanFn = () => Promise<string | null>;
 export class AppController {
   private refreshing: Promise<void> | null = null;
   private dropTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Widgets and Live Activity (installed by `boot.ts`). */
+  widgets: WidgetSync | null = null;
 
   constructor(
     readonly book: ServerBook,
@@ -210,6 +216,10 @@ export class AppController {
   /** The application came back to the front: the server may have changed, reminders too. */
   async resume(): Promise<void> {
     void this.races.replan();
+    if (this.widgets) {
+      void this.widgets.update();
+      void this.widgets.activity({ kind: "foreground" });
+    }
     useApp.setState({ permission: await this.races.permission().catch(() => null) });
     if (useTelemetry.getState().socket !== "open") await this.refresh();
   }

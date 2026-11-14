@@ -19,6 +19,7 @@ import {
   KeyboardStyle,
   LocalNotifications,
   log,
+  native,
   notifications,
   prefs,
   ScreenOrientation,
@@ -30,7 +31,16 @@ import { ServersPage } from "./ServersPage";
 import { PhoneSchedule } from "./schedule";
 import { ServerBook } from "./servers";
 import { appSlots } from "./slots";
-import { BottomTabs, HomeServerCard, ReminderStatus, useServerGate, useServerOnline } from "./ui";
+import {
+  BottomTabs,
+  HomeServerCard,
+  PickAction,
+  ReminderStatus,
+  RemindersExtra,
+  useServerGate,
+  useServerOnline,
+} from "./ui";
+import { WidgetSync } from "./widget-sync";
 
 /** Errors of the native side never stop the interface: they are written to the log. */
 function quiet(p: Promise<unknown>, what: string): void {
@@ -63,6 +73,8 @@ export async function bootApp(): Promise<void> {
 
   const book = new RaceBook(prefs);
   const schedule = new PhoneSchedule({ http, cookies, userAgent: userAgent(), log });
+  // Widgets and Live Activity follow every change of the races (created just below).
+  let widgets: WidgetSync | null = null;
   const races = new PhoneRaces({
     prefs,
     schedule,
@@ -71,9 +83,25 @@ export async function bootApp(): Promise<void> {
     lang: () => useSettings.getState().lang,
     log,
     onPermission: (p) => useApp.setState({ permission: p }),
+    onChange: (what) => {
+      void widgets?.update();
+      if (what === "picks") void widgets?.activity({ kind: "picks" });
+    },
+  });
+  widgets = new WidgetSync({
+    prefs,
+    native,
+    picks: () => book.list(),
+    settings: () => book.getSettings(),
+    enabled: () => races.fetchEnabled(),
+    sources: () => races.lastSources,
+    lang: () => useSettings.getState().lang,
+    log,
+    onActivity: (a) => useApp.setState({ activity: a }),
   });
   const servers = new ServerBook({ prefs, fetch: (u, i) => window.fetch(u, i), log });
   const controller = new AppController(servers, races, () => scanQrCode(t("servers.add.scan")));
+  controller.widgets = widgets;
   setController(controller);
 
   // The shared interface, wired to the phone.
@@ -88,6 +116,8 @@ export async function bootApp(): Promise<void> {
     HomeServerCard,
     useServerOnline,
     ReminderStatus,
+    RemindersExtra,
+    PickAction,
   });
 
   // A reminder rung while the application is open: the banner of the interface too (the phone
@@ -116,10 +146,14 @@ export async function bootApp(): Promise<void> {
     "notifications",
   );
 
-  // `corde://races` and friends (see `links.ts`), at launch and while running.
+  // `corde://races` and friends (see `links.ts`), at launch and while running: the widgets and
+  // the Live Activity open `corde://races`.
   const openLink = (url: string | undefined) => {
     const hash = url ? hashOfAppLink(url) : null;
-    if (hash) window.location.hash = hash;
+    if (hash) {
+      log(`link: ${hash}`);
+      if (window.location.hash !== hash) window.location.hash = hash;
+    }
   };
   quiet(
     App.getLaunchUrl().then((r) => openLink(r?.url)),
@@ -158,5 +192,12 @@ export async function bootApp(): Promise<void> {
     .then((p) => useApp.setState({ permission: p }))
     .catch(() => {});
   void races.replan();
+  // Widgets: the block is written once at start (the schedule follows when the Courses page
+  // or the home carousel reads it); the Live Activity is checked against the picks.
+  void widgets.update(true);
+  void widgets.activity({ kind: "foreground" });
+  useSettings.subscribe((s, prev) => {
+    if (s.lang !== prev.lang) void widgets?.update();
+  });
   log("application started");
 }

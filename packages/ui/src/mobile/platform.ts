@@ -4,7 +4,7 @@ import { Keyboard, KeyboardResize, KeyboardStyle } from "@capacitor/keyboard";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { Preferences } from "@capacitor/preferences";
 import { ScreenOrientation } from "@capacitor/screen-orientation";
-import type { CookiesPort, HttpPort, NotificationsPort, PrefsPort } from "./ports";
+import type { CookiesPort, HttpPort, NativePort, NotificationsPort, PrefsPort } from "./ports";
 
 /**
  * The real Capacitor plugins behind the ports of `mobile/ports.ts`. Only `mobile/boot.ts`
@@ -14,6 +14,12 @@ export const prefs: PrefsPort = Preferences;
 export const http: HttpPort = CapacitorHttp;
 export const cookies: CookiesPort = CapacitorCookies;
 export const notifications: NotificationsPort = LocalNotifications;
+/**
+ * The application's own module (`CordeNativePlugin.swift`, registered by
+ * `CordeBridgeViewController`): widgets and Live Activity. No JavaScript package: the bridge
+ * calls the Swift methods by name.
+ */
+export const native: NativePort = registerPlugin<NativePort>("CordeNative");
 export { App, Keyboard, KeyboardResize, KeyboardStyle, LocalNotifications, ScreenOrientation };
 
 /**

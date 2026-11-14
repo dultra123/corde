@@ -100,7 +100,7 @@ jobs:
           # Même appel et même forme que native-run (l'outil d'Ionic derrière `cap run ios`) :
           # `devices` indexé par l'identifiant du runtime, `isAvailable`, `udid`, `name`.
           xcrun simctl list --json > "$RUNNER_TEMP/devices.json"
-          # Le runtime iOS le plus récent (16 au moins : cible de déploiement du projet), un
+          # Le runtime iOS le plus récent (17 au moins : cible de déploiement du projet), un
           # iPhone de taille courante de préférence.
           python3 - "$RUNNER_TEMP/devices.json" > "$RUNNER_TEMP/sim.txt" <<'PY'
           import json, re, sys
@@ -111,7 +111,7 @@ jobs:
               if not m:
                   continue
               version = (int(m.group(1)), int(m.group(2)))
-              if version < (16, 0):
+              if version < (17, 0):
                   continue
               for d in devices:
                   name = d.get("name", "")
@@ -122,7 +122,7 @@ jobs:
                   if best is None or key > best[0]:
                       best = (key, d["udid"], name, runtime)
           if best is None:
-              sys.exit("aucun simulateur iPhone (iOS 16 ou plus) disponible")
+              sys.exit("aucun simulateur iPhone (iOS 17 ou plus) disponible")
           print(best[1])
           print(f"{best[2]} — {best[3]}")
           PY
@@ -132,7 +132,12 @@ jobs:
           echo "udid=${udid}" >> "$GITHUB_OUTPUT"
           echo "label=${label}" >> "$GITHUB_OUTPUT"
 
-      - name: Compiler pour le simulateur (Debug, sans signature)
+      # Signature locale « ad hoc » (identité « - », aucun certificat ni équipe) : sur le
+      # simulateur, elle suffit pour que les droits (trousseau partagé entre l'application et
+      # l'extension de widgets) soient appliqués, et que l'essai de fumée exerce le vrai chemin
+      # écriture → lecture. Si Xcode la refuse, la compilation est refaite sans signature (le
+      # trousseau retombe alors sur celui de l'application seule, SharedStore.swift).
+      - name: Compiler pour le simulateur (Debug, signature locale)
         working-directory: apps/mobile/ios/App
         env:
           UDID: ${{ steps.sim.outputs.udid }}
@@ -141,21 +146,47 @@ jobs:
           set -euo pipefail
           version=$(node -p "require('../../package.json').version")
           echo "Corde ${version} (${BUILD_NUMBER})"
-          xcodebuild \
-            -project App.xcodeproj \
-            -scheme App \
-            -configuration Debug \
-            -destination "id=${UDID}" \
-            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
-            -quiet \
-            CODE_SIGNING_ALLOWED=NO \
-            MARKETING_VERSION="${version}" \
-            CURRENT_PROJECT_VERSION="${BUILD_NUMBER}" \
-            build
+          build() {
+            xcodebuild \
+              -project App.xcodeproj \
+              -scheme App \
+              -configuration Debug \
+              -destination "id=${UDID}" \
+              -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+              -quiet \
+              MARKETING_VERSION="${version}" \
+              CURRENT_PROJECT_VERSION="${BUILD_NUMBER}" \
+              "$@" \
+              build
+          }
+          if build CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER=; then
+            echo "SIM_SIGNING=adhoc" >> "$GITHUB_ENV"
+          else
+            echo "::warning::signature locale refusée : compilation sans signature (le trousseau partagé n'est pas essayé)"
+            build CODE_SIGNING_ALLOWED=NO
+            echo "SIM_SIGNING=none" >> "$GITHUB_ENV"
+          fi
           app="$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/App.app"
+          appex="$app/PlugIns/CordeWidgets.appex"
           test -d "$app"
-          plutil -p "$app/Info.plist" | grep -E 'CFBundleIdentifier|CFBundleShortVersionString|CFBundleVersion|CFBundleDisplayName|MinimumOSVersion'
-          du -sh "$app"
+          test -d "$appex" || { echo "::error::extension de widgets absente de l'application (PlugIns/CordeWidgets.appex)"; exit 1; }
+          keys='CFBundleIdentifier|CFBundleShortVersionString|CFBundleVersion|CFBundleDisplayName|MinimumOSVersion|NSSupportsLiveActivities|NSExtensionPointIdentifier'
+          echo "Application :"
+          plutil -p "$app/Info.plist" | grep -E "$keys"
+          echo "Extension de widgets :"
+          plutil -p "$appex/Info.plist" | grep -E "$keys"
+          for plist in "$app/Info.plist" "$appex/Info.plist"; do
+            [ "$(plutil -extract CFBundleShortVersionString raw "$plist")" = "$version" ] ||
+              { echo "::error::version différente de ${version} dans ${plist##*/Products/}"; exit 1; }
+            [ "$(plutil -extract CFBundleVersion raw "$plist")" = "$BUILD_NUMBER" ] ||
+              { echo "::error::numéro de build différent de ${BUILD_NUMBER} dans ${plist##*/Products/}"; exit 1; }
+          done
+          echo "Droits (simulateur, sans équipe) :"
+          for bundle in "$app" "$appex"; do
+            codesign -d --entitlements - --xml "$bundle" 2> /dev/null | plutil -p - 2> /dev/null ||
+              echo "  ${bundle##*/} : aucun droit lisible"
+          done
+          du -sh "$app" "$appex"
           echo "APP_PATH=${app}" >> "$GITHUB_ENV"
 
       - name: Essai de fumée (lancement, captures d'écran, journal)
@@ -177,27 +208,79 @@ jobs:
             echo "-----END CORDE SCREENSHOT-----"
           }
 
+          # Une planche de vues dessinée par l'application (Documents/corde-shots) → JPEG de
+          # 1100 px de large → base64 entre les deux marqueurs.
+          sheet() {
+            local name="$1" file="$2"
+            sips --resampleWidth 1100 -s format jpeg -s formatOptions 72 \
+              "$file" --out "$out/${name}.jpg" > /dev/null
+            echo "-----BEGIN CORDE SCREENSHOT ${name}-----"
+            python3 -c 'import base64, sys, textwrap; print("\n".join(textwrap.wrap(base64.b64encode(open(sys.argv[1], "rb").read()).decode(), 76)))' "$out/${name}.jpg"
+            echo "-----END CORDE SCREENSHOT-----"
+          }
+
+          # launch <n° du lancement> [arguments de l'application] : sorties dans run<n>-*.log.
+          # (La sortie standard de l'application — la console JavaScript passe par CAPLog.print —
+          # est écrite ligne par ligne en build Debug ; NSLog va dans la sortie d'erreur.)
+          launch() {
+            local n="$1"
+            shift
+            xcrun simctl launch --stdout="$out/run${n}-stdout.log" --stderr="$out/run${n}-stderr.log" \
+              "$UDID" "$BUNDLE_ID" "$@"
+          }
+
           xcrun simctl boot "$UDID" || true
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" "$APP_PATH"
-          # La sortie standard de l'application (les messages de la console JavaScript passent
-          # par CAPLog.print, donc par stdout) est gardée dans un fichier.
-          xcrun simctl launch --stdout="$out/app-stdout.log" --stderr="$out/app-stderr.log" \
-            "$UDID" "$BUNDLE_ID"
+
+          # 1. Lancement normal : Accueil. La partie JavaScript écrit le bloc des widgets.
+          launch 1
           sleep 20
           shot home
 
-          # Page Courses : le lien corde://races (liste fermée de pages, src/mobile/links.ts).
-          xcrun simctl openurl "$UDID" "corde://races" || echo "::warning::openurl corde://races a échoué"
-          sleep 8
+          # 2. Page Courses par le lien corde://races, comme un toucher de widget : l'application
+          #    (déjà ouverte) ouvre elle-même le lien après 12 s (WidgetShots.swift, build Debug).
+          #    `simctl openurl` ne sert pas : iOS y répond par la fenêtre « Ouvrir dans
+          #    “Corde” ? » (c'est ce que montraient les captures identiques des exécutions
+          #    précédentes), qu'aucun outil de ligne de commande ne sait toucher.
+          xcrun simctl terminate "$UDID" "$BUNDLE_ID" || true
+          sleep 2
+          launch 2 -CordeOpenURL corde://races -CordeOpenDelay 12
+          sleep 24
           shot races
 
-          echo "::group::Journal de l'application (stdout, 200 dernières lignes)"
-          tail -n 200 "$out/app-stdout.log" || true
+          # 3. Vues des widgets et de l'activité en direct, dessinées par l'application avec
+          #    des données inventées ; relecture du bloc écrit au lancement 1.
+          xcrun simctl terminate "$UDID" "$BUNDLE_ID" || true
+          sleep 2
+          launch 3 -CordeRenderShots
+          data="$(xcrun simctl get_app_container "$UDID" "$BUNDLE_ID" data)"
+          for _ in $(seq 1 60); do
+            [ -f "$data/Documents/corde-shots/done.txt" ] && break
+            sleep 1
+          done
+          if [ -f "$data/Documents/corde-shots/done.txt" ]; then
+            for file in "$data"/Documents/corde-shots/*.png; do
+              [ -e "$file" ] || continue
+              cp "$file" "$out/"
+              name="$(basename "$file" .png)"
+              sheet "$name" "$file"
+            done
+          else
+            echo "::warning::les vues des widgets n'ont pas été dessinées (voir le journal du lancement 3)"
+          fi
+
+          echo "::group::Lignes de Corde (tous les lancements)"
+          grep -h -E '\[corde(-native)?\]' "$out"/run*-std*.log || echo "(aucune)"
           echo "::endgroup::"
-          echo "::group::Journal de l'application (stderr, 100 dernières lignes)"
-          tail -n 100 "$out/app-stderr.log" || true
-          echo "::endgroup::"
+          for n in 1 2 3; do
+            echo "::group::Journal du lancement ${n} (stdout, 120 dernières lignes)"
+            tail -n 120 "$out/run${n}-stdout.log" || true
+            echo "::endgroup::"
+            echo "::group::Journal du lancement ${n} (stderr, 60 dernières lignes)"
+            tail -n 60 "$out/run${n}-stderr.log" || true
+            echo "::endgroup::"
+          done
           echo "::group::Journal du système pour le processus App (200 dernières lignes)"
           xcrun simctl spawn "$UDID" log show --last 5m --style compact \
             --predicate 'process == "App"' > "$out/system.log" 2>&1 || true
@@ -210,11 +293,23 @@ jobs:
           else
             echo "::warning::l'application ne semble plus tourner (voir les journaux ci-dessus)"
           fi
-          if grep -q "application started" "$out/app-stdout.log"; then
-            echo "Démarrage de l'interface confirmé dans le journal."
-          else
-            echo "::warning::« application started » absent du journal de l'application"
-          fi
+          # Ce que les journaux doivent montrer (avertissements seulement : les captures ci-dessus
+          # restent la preuve à regarder).
+          check() {
+            local what="$1" pattern="$2" files="$3"
+            # shellcheck disable=SC2086
+            if grep -q -E "$pattern" $files 2> /dev/null; then
+              echo "✓ ${what}"
+            else
+              echo "::warning::${what} : absent du journal"
+            fi
+          }
+          check "démarrage de l'interface" "application started" "$out/run1-stdout.log"
+          check "bloc des widgets écrit par l'application (trousseau, OSStatus 0)" "widgets: [0-9]+ bytes, OSStatus 0" "$out/run1-stderr.log"
+          check "lien corde://races reçu par l'interface" "link: #/races" "$out/run2-stdout.log"
+          check "bloc relu comme le lit l'extension" "store read: OSStatus 0, [0-9]+ bytes, version 1" "$out/run3-stderr.log"
+          check "vues des widgets dessinées" "shots: [1-9]" "$out/run3-stderr.log"
+          echo "Signature du simulateur : ${SIM_SIGNING:-?}"
 
       - name: Joindre les captures et les journaux
         if: always()
@@ -245,6 +340,9 @@ jobs:
 
       - name: Essais des scripts de signature (faux serveur d'Apple)
         run: node --test apps/mobile/scripts/signing.test.mjs
+
+      - name: Cohérence du projet Xcode (deux cibles, extension embarquée, réglages)
+        run: node --test apps/mobile/scripts/xcodeproj.test.mjs
 
       - name: Les quatre secrets sont-ils utilisables ?
         if: env.ASC_READY == 'true'

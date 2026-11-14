@@ -31,6 +31,8 @@ export interface PhoneRacesOptions {
   log?: LogPort;
   /** The permission state changed (the Courses page shows it). */
   onPermission?: (p: PermissionView) => void;
+  /** Something the widgets show changed (`widget-sync.ts`). */
+  onChange?: (what: "sources" | "picks" | "settings") => void;
 }
 
 /**
@@ -49,6 +51,8 @@ export class PhoneRaces implements RaceBackend {
   private planning: Promise<SyncResult | null> | null = null;
   private again = false;
   private readonly now: () => number;
+  /** The last answer of {@link fetchSources} (the widgets build on it). */
+  lastSources: RaceSources | null = null;
 
   constructor(private readonly opts: PhoneRacesOptions) {
     this.now = opts.now ?? Date.now;
@@ -67,6 +71,7 @@ export class PhoneRaces implements RaceBackend {
   async setEnabled(on: boolean): Promise<void> {
     this.enabled = on;
     await writeJson(this.opts.prefs, KEYS.racesEnabled, on);
+    this.opts.onChange?.("sources");
   }
 
   canSwitch(): boolean {
@@ -74,7 +79,10 @@ export class PhoneRaces implements RaceBackend {
   }
 
   async fetchSources(force: boolean): Promise<RaceSources> {
-    return this.opts.schedule.snapshot(await this.isEnabled(), force);
+    const sources = await this.opts.schedule.snapshot(await this.isEnabled(), force);
+    this.lastSources = sources;
+    this.opts.onChange?.("sources");
+    return sources;
   }
 
   /** Nothing to keep: the phone has no diagnostic folder (the page says where to look). */
@@ -99,12 +107,14 @@ export class PhoneRaces implements RaceBackend {
       }
     }
     void this.replan();
+    this.opts.onChange?.("picks");
     return saved;
   }
 
   async deletePick(id: string): Promise<void> {
     await this.opts.book.remove(id);
     void this.replan();
+    this.opts.onChange?.("picks");
   }
 
   fetchSettings(): Promise<RaceSettings> {
@@ -114,6 +124,7 @@ export class PhoneRaces implements RaceBackend {
   async saveSettings(patch: RaceSettingsPatch): Promise<RaceSettings> {
     const s = await this.opts.book.patchSettings(patch);
     if (patch.leads !== undefined || patch.hour_fix !== undefined) void this.replan();
+    this.opts.onChange?.(patch.hour_fix !== undefined ? "picks" : "settings");
     return s;
   }
 

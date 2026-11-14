@@ -1337,6 +1337,24 @@ export const fr = {
   "mobile.notif.prompt":
     "L'iPhone te demandera d'autoriser les notifications à ton premier choix de course.",
   "mobile.notif.ask": "Autoriser maintenant",
+  "mobile.live.label": "Compte à rebours sur l'écran verrouillé et dans la Dynamic Island",
+  "mobile.live.hint":
+    "Il démarre tout seul quand ton prochain départ choisi est dans moins de 2 h et que Corde est ouverte (ou avec « Compte à rebours » sur un départ, jusqu'à 8 h avant). Après le départ, il reste affiché jusqu'à la prochaine ouverture de Corde ou jusqu'à ce que tu le balaies.",
+  "mobile.live.denied":
+    "iOS n'autorise pas le compte à rebours pour Corde : Réglages de l'iPhone → Corde → Activités en direct.",
+  "mobile.live.start": "Compte à rebours",
+  "mobile.live.on": "Sur l'écran verrouillé",
+  "mobile.widgets.hint":
+    "Widgets : appui long sur l'écran d'accueil (ou l'écran verrouillé) → Modifier → Ajouter un widget → Corde. Ils se mettent à jour quand Corde est ouverte.",
+  "mobile.widgets.diag.title": "Diagnostic des widgets",
+  "mobile.widgets.diag.ok": "Données des widgets : écrites à {time} ({kb} Ko, format {v}).",
+  "mobile.widgets.diag.empty": "Données des widgets : rien d'écrit pour l'instant.",
+  "mobile.widgets.diag.error": "Données des widgets : refusées par iOS (code {code}).",
+  "mobile.widgets.diag.groupOk": "Trousseau partagé : groupe trouvé.",
+  "mobile.widgets.diag.groupMissing": "Trousseau partagé : groupe introuvable dans l'application.",
+  "mobile.widgets.diag.liveAllowed": "Activités en direct : autorisées ({n} en cours).",
+  "mobile.widgets.diag.liveDenied": "Activités en direct : refusées par iOS ({n} en cours).",
+  "mobile.widgets.diag.ios": "iOS {v}.",
   "mobile.gate.none.title": "Aucun serveur Corde",
   "mobile.gate.none.body":
     "Cette page montre les données de ton PC de jeu (ou de ton serveur Corde). Ajoute-le dans « Mes serveurs » : sur le PC, Accueil → « Activer l'accès depuis mon téléphone », puis saisis l'adresse affichée ou scanne le QR code.",

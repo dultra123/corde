@@ -7,7 +7,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        #if DEBUG
+        // Essai de fumée de la CI : la sortie standard va dans un fichier, écrit ligne par
+        // ligne (sinon rien n'y paraît tant que l'application tourne), et les modes de
+        // WidgetShots.swift (images des widgets, lien ouvert par l'application elle-même).
+        setvbuf(stdout, nil, _IOLBF, 0)
+        CordeDebug.didFinishLaunching()
+        #endif
         return true
     }
 

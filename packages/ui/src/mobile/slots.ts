@@ -1,5 +1,6 @@
 import type { ComponentType, ReactNode } from "react";
 import type { Route } from "../nav/routes";
+import type { RacePick } from "../net/races-api";
 
 /**
  * What the iPhone application adds to the shared pages, filled in by `mobile/boot.ts` before
@@ -25,6 +26,10 @@ export interface AppSlots {
   useServerOnline?: () => boolean;
   /** On the Courses page, under the reminder delays: the notifications of the phone. */
   ReminderStatus?: ComponentType;
+  /** On the Courses page, after the reminders: the Live Activity setting, the widgets' state. */
+  RemindersExtra?: ComponentType;
+  /** On a row of « Mes courses »: the button that starts the countdown on the lock screen. */
+  PickAction?: ComponentType<{ pick: RacePick; now: number }>;
 }
 
 export const appSlots: AppSlots = {};
