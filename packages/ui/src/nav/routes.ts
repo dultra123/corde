@@ -6,7 +6,9 @@ import { useSyncExternalStore } from "react";
  *   (no hash)                            home — the default page when the app opens
  *   #/home                               home (status, last session, last races, phone access)
  *   #/                                   live dashboard (widgets, or the phone dashboard: `dash/view.ts`)
- *   #/dash                               live dashboard, always the phone dashboard (tablet, kiosk)
+ *   #/dash                               live dashboard, always the race dashboard, full screen
+ *   #/dash-studio                        the Studio: the library of race dashboards (PC)
+ *   #/dash-studio/<id>                   the Studio: editing one dashboard
  *   #/sessions                           recorded sessions
  *   #/sessions/<id>                      one session (laps)
  *   #/sessions/<id>/laps/<n>             one lap (charts)
@@ -28,6 +30,7 @@ import { useSyncExternalStore } from "react";
 export type Route =
   | { page: "home" }
   | { page: "dashboard"; dash?: true }
+  | { page: "studio"; id?: string }
   | { page: "sessions" }
   | { page: "session"; id: string }
   | { page: "lap"; id: string; lap: number }
@@ -81,6 +84,12 @@ export function parseRoute(hash: string): Route {
   if (parts.length === 0) return { page: "dashboard" };
   if (parts[0] === "home") return { page: "home" };
   if (parts[0] === "dash") return { page: "dashboard", dash: true };
+  if (parts[0] === "dash-studio") {
+    const id = parts[1];
+    return id && /^[a-z0-9-]{1,40}$/.test(id) && parts.length === 2
+      ? { page: "studio", id }
+      : { page: "studio" };
+  }
   if (parts[0] === "races") return { page: "races" };
   if (parts[0] === "obs") return { page: "obs" };
   if (parts[0] === "devices") return { page: "devices" };
@@ -122,6 +131,8 @@ export function routeHash(route: Route): string {
       return "#/home";
     case "dashboard":
       return route.dash ? "#/dash" : "#/";
+    case "studio":
+      return route.id ? `#/dash-studio/${route.id}` : "#/dash-studio";
     case "sessions":
       return "#/sessions";
     case "session":
@@ -174,7 +185,8 @@ export function useRoute(): Route {
 /** Which top-level tab a route belongs to. */
 export function sectionOf(route: Route): Section {
   if (route.page === "home" || route.page === "devices" || route.page === "servers") return "home";
-  if (route.page === "dashboard" || route.page === "obs") return "dashboard";
+  if (route.page === "dashboard" || route.page === "obs" || route.page === "studio")
+    return "dashboard";
   if (route.page === "races") return "races";
   if (route.page === "profile" || route.page === "result") return "profile";
   return "sessions";

@@ -1,27 +1,18 @@
-import { type ComponentType, useCallback, useEffect, useRef, useState } from "react";
+import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import { SettingsDialog } from "../dashboard/SettingsDialog";
+import { isBuiltin } from "../dashdef/builtin";
+import { DashPage, themeStyle } from "../dashdef/Renderer";
+import { useActiveDash } from "../dashdef/store";
 import { type TranslationKey, useT } from "../i18n";
 import { useRoute } from "../nav/routes";
 import { useSettings } from "../store/settings";
 import { connectionPhase, type TelemetryState } from "../store/telemetry";
-import { CoursePage } from "./CoursePage";
-import { DashMenu, PAGE_TITLE } from "./DashMenu";
-import { EnergyPage } from "./EnergyPage";
+import { DashMenu, pageTitle } from "./DashMenu";
 import { useThrottled } from "./live";
-import { DASH_PAGES, type DashFlags, type DashPage, flagsOf, flagTone } from "./model";
-import type { PageProps } from "./parts";
+import { type DashFlags, flagsOf, flagTone } from "./model";
 import { useDashFull, useDashPage } from "./store";
-import { TimingPage } from "./TimingPage";
-import { TyresPage } from "./TyresPage";
 import { useFullToggle } from "./view";
 import { useKeepAwake } from "./wake";
-
-const PAGES: Record<DashPage, ComponentType<PageProps>> = {
-  course: CoursePage,
-  tyres: TyresPage,
-  energy: EnergyPage,
-  timing: TimingPage,
-};
 
 const IDLE: Record<string, TranslationKey | null> = {
   connecting: "status.connecting",
@@ -120,7 +111,12 @@ function usePager(count: number) {
  * page (`embedded`, under the top bar), full screen on request (the button, Esc to leave).
  */
 export function DashView({ embedded = false }: { embedded?: boolean }) {
-  const { t } = useT();
+  const { t, lang } = useT();
+  const def = useActiveDash();
+  const pageIds = def.pages.map((p) => p.id).join("\n");
+  useEffect(() => {
+    useDashPage.getState().setPages(pageIds.split("\n"));
+  }, [pageIds]);
   const route = useRoute();
   const canToggle = useFullToggle(route);
   const full = useDashFull((s) => s.full);
@@ -140,7 +136,7 @@ export function DashView({ embedded = false }: { embedded?: boolean }) {
   const keepAwake = useSettings((s) => s.keepAwake);
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const { ref, index, show } = usePager(DASH_PAGES.length);
+  const { ref, index, show } = usePager(def.pages.length);
   useKeepAwake(keepAwake);
 
   const onKey = useCallback(
@@ -172,29 +168,35 @@ export function DashView({ embedded = false }: { embedded?: boolean }) {
   const tone = flagTone(snap.flags);
   const idle = snap.idle ? t(snap.idle) : null;
   return (
-    <div className={`dash${embedded ? " is-embedded" : ""}`} data-flag={tone ?? "none"}>
+    <div
+      className={`dash${embedded ? " is-embedded" : ""}`}
+      data-flag={tone ?? "none"}
+      style={isBuiltin(def) ? undefined : (themeStyle(def) as CSSProperties)}
+    >
       <div className="dash-pages" ref={ref}>
-        {DASH_PAGES.map((page, i) => {
-          const Page = PAGES[page];
-          return (
-            <section
-              key={page}
-              className={`dash-page is-${page}`}
-              aria-label={t(PAGE_TITLE[page])}
-              aria-hidden={i !== index}
-              inert={i !== index ? true : undefined}
-            >
-              <Page
-                frame={snap.frame}
-                laps={snap.laps}
-                standings={standings}
-                flags={snap.flags}
-                active={i === index}
-                idle={idle}
-              />
-            </section>
-          );
-        })}
+        {def.pages.map((page, i) => (
+          <section
+            key={`${def.id}/${page.id}`}
+            className={`dash-page is-${page.id}`}
+            aria-label={pageTitle(def, page, t)}
+            aria-hidden={i !== index}
+            inert={i !== index ? true : undefined}
+          >
+            <DashPage
+              def={def}
+              page={page}
+              lang={lang}
+              data={{
+                frame: snap.frame,
+                laps: snap.laps,
+                standings,
+                flags: snap.flags,
+                active: i === index,
+                idle,
+              }}
+            />
+          </section>
+        ))}
       </div>
       <button
         type="button"
@@ -238,13 +240,13 @@ export function DashView({ embedded = false }: { embedded?: boolean }) {
       <div className="dash-foot">
         {snap.demo !== "off" && <span className="dash-demo">{t("dash.demo")}</span>}
         <div className="dash-dots" role="tablist" aria-label={t("dash.pages")}>
-          {DASH_PAGES.map((page, i) => (
+          {def.pages.map((page, i) => (
             <button
-              key={page}
+              key={page.id}
               type="button"
               role="tab"
               aria-selected={i === index}
-              aria-label={t(PAGE_TITLE[page])}
+              aria-label={pageTitle(def, page, t)}
               className={i === index ? "is-on" : undefined}
               onClick={() => show(i)}
             >
@@ -254,6 +256,7 @@ export function DashView({ embedded = false }: { embedded?: boolean }) {
         </div>
       </div>
       <DashMenu
+        def={def}
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
         onSettings={() => setSettingsOpen(true)}

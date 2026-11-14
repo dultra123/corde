@@ -1,0 +1,377 @@
+import type { Lang } from "../store/settings";
+import { cordeDefinition, type TemplateId, template } from "./builtin";
+import { getElementSpec, propsWithDefaults } from "./catalog";
+import {
+  BUILTIN_ID,
+  type DashDefinition,
+  type DashElement,
+  type DashPageDef,
+  DEFAULT_COLS,
+  DEFAULT_ROWS,
+  MAX_COLS,
+  MAX_ELEMENTS,
+  MAX_ID_LEN,
+  MAX_NAME_LEN,
+  MAX_PAGE_NAME_LEN,
+  MAX_PAGES,
+  MAX_ROWS,
+  MIN_COLS,
+  MIN_ROWS,
+  PRESETS,
+  type PresetId,
+} from "./model";
+
+/**
+ * The operations of the Studio on a definition, without React: each returns a new definition
+ * (or the same one when nothing changes), always within the rules of `model.ts`.
+ */
+
+/** A slug of a name, for an id: `GT3 nuit` → `gt3-nuit`. */
+export function slug(name: string): string {
+  const s = name
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 24)
+    .replace(/-+$/g, "");
+  return s || "tableau";
+}
+
+/** A new id `[a-z0-9-]{1,40}` not in `taken` (never `corde`). */
+export function freshId(base: string, taken: Iterable<string>): string {
+  const used = new Set(taken);
+  used.add(BUILTIN_ID);
+  const root = slug(base).slice(0, MAX_ID_LEN - 4) || "x";
+  if (!used.has(root)) return root;
+  for (let i = 2; i < 10_000; i += 1) {
+    const id = `${root}-${i}`;
+    if (!used.has(id)) return id;
+  }
+  return `${root}-${Date.now().toString(36)}`.slice(0, MAX_ID_LEN);
+}
+
+/** A short id for an element or a page, unique within `taken`. */
+export function freshLocalId(prefix: string, taken: Iterable<string>): string {
+  const used = new Set(taken);
+  for (let i = 1; i < 100_000; i += 1) {
+    const id = `${prefix}${i}`;
+    if (!used.has(id)) return id;
+  }
+  return `${prefix}${Date.now().toString(36)}`;
+}
+
+function clip(s: string, max: number): string {
+  return [...s].slice(0, max).join("");
+}
+
+function touch(def: DashDefinition): DashDefinition {
+  return { ...def, updated_ms: Date.now() };
+}
+
+export function newDefinition(
+  from: TemplateId,
+  taken: Iterable<string>,
+  lang: Lang,
+): DashDefinition {
+  const t = template(from, lang);
+  return touch({ ...t, id: freshId(t.name, taken) });
+}
+
+/** A copy under a new id and name (« Corde » included: its copy can be modified). */
+export function duplicateDefinition(
+  def: DashDefinition,
+  taken: Iterable<string>,
+  lang: Lang,
+): DashDefinition {
+  const src = def.id === BUILTIN_ID ? cordeDefinition(lang) : def;
+  const name = clip(`${src.name} (${lang === "en" ? "copy" : "copie"})`, MAX_NAME_LEN);
+  const copy: DashDefinition = structuredClone(src);
+  // The copy of « Corde » adapts to the screen like the original; its whole pages can be moved.
+  return touch({ ...copy, id: freshId(name, taken), name });
+}
+
+export function renameDefinition(def: DashDefinition, name: string): DashDefinition {
+  const n = clip(name.trim(), MAX_NAME_LEN);
+  return n && n !== def.name ? touch({ ...def, name: n }) : def;
+}
+
+// ---------------------------------------------------------------- pages
+
+function withPage(
+  def: DashDefinition,
+  pageId: string,
+  fn: (p: DashPageDef) => DashPageDef,
+): DashDefinition {
+  let changed = false;
+  const pages = def.pages.map((p) => {
+    if (p.id !== pageId) return p;
+    const next = fn(p);
+    if (next !== p) changed = true;
+    return next;
+  });
+  return changed ? touch({ ...def, pages }) : def;
+}
+
+export function addPage(def: DashDefinition, name: string): DashDefinition {
+  if (def.pages.length >= MAX_PAGES) return def;
+  const last = def.pages[def.pages.length - 1];
+  const page: DashPageDef = {
+    id: freshLocalId(
+      "p",
+      def.pages.map((p) => p.id),
+    ),
+    name: clip(name.trim() || "Page", MAX_PAGE_NAME_LEN),
+    cols: last?.cols ?? DEFAULT_COLS,
+    rows: last?.rows ?? DEFAULT_ROWS,
+    elements: [],
+  };
+  return touch({ ...def, pages: [...def.pages, page] });
+}
+
+export function renamePage(def: DashDefinition, pageId: string, name: string): DashDefinition {
+  const n = clip(name.trim(), MAX_PAGE_NAME_LEN);
+  if (!n) return def;
+  return withPage(def, pageId, (p) => (p.name === n ? p : { ...p, name: n }));
+}
+
+/** Moves a page `delta` places (held within the pages). */
+export function movePage(def: DashDefinition, pageId: string, delta: number): DashDefinition {
+  const i = def.pages.findIndex((p) => p.id === pageId);
+  const j = Math.max(0, Math.min(def.pages.length - 1, i + delta));
+  if (i < 0 || i === j) return def;
+  const pages = [...def.pages];
+  const [p] = pages.splice(i, 1);
+  pages.splice(j, 0, p as DashPageDef);
+  return touch({ ...def, pages });
+}
+
+export function removePage(def: DashDefinition, pageId: string): DashDefinition {
+  if (def.pages.length <= 1) return def;
+  const pages = def.pages.filter((p) => p.id !== pageId);
+  return pages.length === def.pages.length ? def : touch({ ...def, pages });
+}
+
+/** Changes the grid of a page; the elements are held within it (moved, then shrunk). */
+export function setGrid(
+  def: DashDefinition,
+  pageId: string,
+  cols: number,
+  rows: number,
+): DashDefinition {
+  const c = Math.max(MIN_COLS, Math.min(MAX_COLS, Math.round(cols)));
+  const r = Math.max(MIN_ROWS, Math.min(MAX_ROWS, Math.round(rows)));
+  return withPage(def, pageId, (p) =>
+    p.cols === c && p.rows === r
+      ? p
+      : { ...p, cols: c, rows: r, elements: p.elements.map((e) => clampRect(e, c, r)) },
+  );
+}
+
+// ---------------------------------------------------------------- elements
+
+export interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** Held within the grid: the size first (at least one cell), then the place. */
+export function clampRect<T extends Rect>(
+  r: T,
+  cols: number,
+  rows: number,
+  min = { w: 1, h: 1 },
+): T {
+  const w = Math.max(Math.min(min.w, cols), Math.min(cols, Math.round(r.w)));
+  const h = Math.max(Math.min(min.h, rows), Math.min(rows, Math.round(r.h)));
+  const x = Math.max(0, Math.min(cols - w, Math.round(r.x)));
+  const y = Math.max(0, Math.min(rows - h, Math.round(r.y)));
+  return { ...r, x, y, w, h };
+}
+
+function overlaps(a: Rect, b: Rect): boolean {
+  return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+}
+
+/** The first free place for a `w × h` box, row by row; the top left corner when none is free. */
+export function findFreeSpot(page: DashPageDef, w: number, h: number): { x: number; y: number } {
+  const ww = Math.min(w, page.cols);
+  const hh = Math.min(h, page.rows);
+  for (let y = 0; y + hh <= page.rows; y += 1) {
+    for (let x = 0; x + ww <= page.cols; x += 1) {
+      const r = { x, y, w: ww, h: hh };
+      if (!page.elements.some((e) => overlaps(r, e))) return { x, y };
+    }
+  }
+  return { x: 0, y: 0 };
+}
+
+/** Adds an element of `type` (at `at`, else at the first free place); its id is returned too. */
+export function addElement(
+  def: DashDefinition,
+  pageId: string,
+  type: string,
+  at?: { x: number; y: number },
+  props: Record<string, unknown> = {},
+): { def: DashDefinition; id: string | null } {
+  const page = def.pages.find((p) => p.id === pageId);
+  if (!page || page.elements.length >= MAX_ELEMENTS) return { def, id: null };
+  const spec = getElementSpec(type);
+  const size = spec?.size ?? { w: 4, h: 3 };
+  const spot = at ?? findFreeSpot(page, size.w, size.h);
+  const id = freshLocalId(
+    "e",
+    page.elements.map((e) => e.id),
+  );
+  const defaults = propsWithDefaults(type, {});
+  delete defaults.scale;
+  const el = clampRect(
+    { id, type, x: spot.x, y: spot.y, w: size.w, h: size.h, props: { ...defaults, ...props } },
+    page.cols,
+    page.rows,
+    spec?.min,
+  );
+  return { def: withPage(def, pageId, (p) => ({ ...p, elements: [...p.elements, el] })), id };
+}
+
+export function updateElement(
+  def: DashDefinition,
+  pageId: string,
+  id: string,
+  patch: Partial<Rect>,
+): DashDefinition {
+  return withPage(def, pageId, (p) => {
+    let changed = false;
+    const elements = p.elements.map((e) => {
+      if (e.id !== id) return e;
+      const min = getElementSpec(e.type)?.min;
+      const next = clampRect({ ...e, ...patch }, p.cols, p.rows, min);
+      if (next.x === e.x && next.y === e.y && next.w === e.w && next.h === e.h) return e;
+      changed = true;
+      return next;
+    });
+    return changed ? { ...p, elements } : p;
+  });
+}
+
+/** Moves by whole cells, held within the grid. */
+export function moveElement(
+  def: DashDefinition,
+  pageId: string,
+  id: string,
+  dx: number,
+  dy: number,
+): DashDefinition {
+  const e = def.pages.find((p) => p.id === pageId)?.elements.find((x) => x.id === id);
+  return e ? updateElement(def, pageId, id, { x: e.x + dx, y: e.y + dy }) : def;
+}
+
+/** Resizes by whole cells, never under the element's minimum. */
+export function resizeElement(
+  def: DashDefinition,
+  pageId: string,
+  id: string,
+  dw: number,
+  dh: number,
+): DashDefinition {
+  const page = def.pages.find((p) => p.id === pageId);
+  const e = page?.elements.find((x) => x.id === id);
+  if (!page || !e) return def;
+  const min = getElementSpec(e.type)?.min ?? { w: 1, h: 1 };
+  const w = Math.max(min.w, Math.min(page.cols - e.x, e.w + dw));
+  const h = Math.max(min.h, Math.min(page.rows - e.y, e.h + dh));
+  return updateElement(def, pageId, id, { w, h });
+}
+
+export function setProps(
+  def: DashDefinition,
+  pageId: string,
+  id: string,
+  patch: Record<string, unknown>,
+): DashDefinition {
+  return withPage(def, pageId, (p) => ({
+    ...p,
+    elements: p.elements.map((e) => (e.id === id ? { ...e, props: { ...e.props, ...patch } } : e)),
+  }));
+}
+
+export function removeElement(def: DashDefinition, pageId: string, id: string): DashDefinition {
+  return withPage(def, pageId, (p) => {
+    const elements = p.elements.filter((e) => e.id !== id);
+    return elements.length === p.elements.length ? p : { ...p, elements };
+  });
+}
+
+/** A copy next to the original (to its right, else below, else on it); its id is returned. */
+export function duplicateElement(
+  def: DashDefinition,
+  pageId: string,
+  id: string,
+): { def: DashDefinition; id: string | null } {
+  const page = def.pages.find((p) => p.id === pageId);
+  const e = page?.elements.find((x) => x.id === id);
+  if (!page || !e || page.elements.length >= MAX_ELEMENTS) return { def, id: null };
+  const nid = freshLocalId(
+    "e",
+    page.elements.map((x) => x.id),
+  );
+  const right = e.x + 2 * e.w <= page.cols;
+  const below = e.y + 2 * e.h <= page.rows;
+  const copy: DashElement = {
+    ...structuredClone(e),
+    id: nid,
+    x: right ? e.x + e.w : e.x,
+    y: right ? e.y : below ? e.y + e.h : e.y,
+  };
+  return {
+    def: withPage(def, pageId, (p) => ({ ...p, elements: [...p.elements, copy] })),
+    id: nid,
+  };
+}
+
+/** Brings an element to the front (drawn last) or sends it to the back. */
+export function reorderElement(
+  def: DashDefinition,
+  pageId: string,
+  id: string,
+  where: "front" | "back",
+): DashDefinition {
+  return withPage(def, pageId, (p) => {
+    const e = p.elements.find((x) => x.id === id);
+    if (!e) return p;
+    const rest = p.elements.filter((x) => x.id !== id);
+    return { ...p, elements: where === "front" ? [...rest, e] : [e, ...rest] };
+  });
+}
+
+// ---------------------------------------------------------------- format, theme
+
+export function setPreset(def: DashDefinition, preset: PresetId | "custom"): DashDefinition {
+  if (preset === "custom")
+    return def.format.preset === "custom"
+      ? def
+      : touch({ ...def, format: { ...def.format, preset } });
+  const size = PRESETS[preset];
+  if (def.format.preset === preset) return def;
+  return touch({ ...def, format: { preset, ...size } });
+}
+
+export function setThemeColor(
+  def: DashDefinition,
+  key: keyof DashDefinition["theme"],
+  color: string,
+): DashDefinition {
+  if (!/^#[0-9a-fA-F]{6}$/.test(color) || def.theme[key] === color) return def;
+  return touch({ ...def, theme: { ...def.theme, [key]: color.toLowerCase() } });
+}
+
+export function setAuthor(def: DashDefinition, author: string): DashDefinition {
+  const a = clip(author.trim(), MAX_NAME_LEN);
+  const next = { ...def };
+  if (a) next.author = a;
+  else delete next.author;
+  return touch(next);
+}

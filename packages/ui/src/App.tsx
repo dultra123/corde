@@ -1,4 +1,4 @@
-import { Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { DashView } from "./dash/lazy";
 import { useLiveMode } from "./dash/view";
 import { Dashboard } from "./dashboard/Dashboard";
@@ -11,6 +11,11 @@ import { useDashboard } from "./store/dashboard";
 import { useHub } from "./store/hub";
 import { useSettings } from "./store/settings";
 import { useUpdates } from "./store/updates";
+
+/** The Studio (editor of race dashboards, PC): its own chunk. */
+const StudioPage = lazy(() =>
+  import("./studio/StudioPage").then((m) => ({ default: m.StudioPage })),
+);
 
 /**
  * Five sections behind hash routes: the home page (`#/home`, shown when the app opens), the live
@@ -65,10 +70,15 @@ export function App() {
   if (!Tabs && hubChecked && onHub && !paired) return <PairingScreen />;
   const dashboard = route.page === "dashboard" && !onHub && !gate;
   const dash = dashboard && mode === "dash-full";
+  const studio = route.page === "studio" && !onHub;
   return (
     <>
       <ReminderBanner />
-      {dash ? (
+      {studio ? (
+        <Suspense fallback={null}>
+          <StudioPage id={route.page === "studio" ? route.id : undefined} />
+        </Suspense>
+      ) : dash ? (
         <Suspense fallback={null}>
           <DashView />
         </Suspense>
