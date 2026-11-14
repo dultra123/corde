@@ -108,9 +108,21 @@ server_pid=$!
 trap 'kill "$server_pid" 2> /dev/null || true' EXIT
 
 adb wait-for-device
-# Un émulateur qui vient de démarrer affiche parfois « L'interface système ne répond pas » : laisser
-# finir le démarrage, puis fermer les fenêtres du système.
+# Un émulateur qui vient de démarrer (et qui redémarre son système pour passer en français) affiche
+# parfois « L'interface système ne répond pas » : attendre qu'il réponde, puis fermer les fenêtres du
+# système et couper les animations.
+for _ in $(seq 1 60); do
+  if [ "$(adb shell getprop sys.boot_completed 2> /dev/null | tr -d '\r')" = "1" ] &&
+    adb shell settings get global window_animation_scale > /dev/null 2>&1 &&
+    adb shell pm path android > /dev/null 2>&1; then
+    break
+  fi
+  sleep 3
+done
 sleep 15
+for anim in window_animation_scale transition_animation_scale animator_duration_scale; do
+  adb shell settings put global "$anim" 0 > /dev/null 2>&1 || true
+done
 adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS > /dev/null 2>&1 || true
 adb shell input keyevent KEYCODE_WAKEUP || true
 adb shell wm dismiss-keyguard || true
