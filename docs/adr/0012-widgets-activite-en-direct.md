@@ -2,7 +2,8 @@
 
 - **Statut** : **décidée** — 2026-11-14 (le pilote utilise Corde 0.8.0 sur son iPhone par TestFlight
   depuis le matin ; il veut retrouver les widgets de son script « LMU Courses » et un compte à rebours dans
-  la Dynamic Island). Livrée en 0.9.0 (application iPhone seulement).
+  la Dynamic Island). Livrée en 0.9.0 (application iPhone seulement). Complétée le même jour (K à O) par
+  le widget « Courses en images », livré en 0.10.0.
 - **Source** : `docs/IOS.md` (« Widgets et Dynamic Island »), `docs/SECURITY-MODEL.md` §8.2 bis et §8.4,
   `PRIVACY.md`, ADR 0011 (application iPhone).
 
@@ -96,6 +97,59 @@ Les vues SwiftUI sont donc dans des fichiers compilés par les deux cibles (`Sha
 par identifiant** ; l'identifiant de l'extension est créé par l'API s'il manque (jamais celui de
 l'application) ; les deux cibles passent en signature manuelle sur le runner seulement ; le contrôle avant
 envoi vérifie aussi l'extension et le droit de trousseau dans les deux binaires.
+
+## Ajout — widget « Courses en images » (0.10, 2026-11-14)
+
+Le pilote a les widgets de la 0.9 sur son iPhone (le trousseau partagé est bien lu par l'extension signée)
+et demande la version de son ancien widget qui faisait défiler les photos : une course par page, sa photo,
+le SR / DR qu'il faut, « page 2/6 », la page qui change à chaque rafraîchissement.
+
+**K. Un widget de plus, `CordeSlides`** (petit, moyen, grand), sans rien retirer. Ses pages sont la liste
+du widget « Courses » à l'instant de l'entrée (`races(at:)`, 8 au plus) ; en petit, le prochain départ
+choisi d'abord. Pas de seconde liste dans le bloc : deux champs **facultatifs** sur les courses et les
+choix, `img` (clé de la photo : FNV-1a 64 bits de son adresse, `i` + 16 hexadécimaux, calculée en
+TypeScript) et `req` (SR / DR requis et `miss`, ceux que le profil n'atteint pas — même règle que
+`missing`, jamais les notes du profil). Le format reste en version 1 : un bloc sans ces champs se lit, et
+l'extension 0.9 ignore ces champs.
+
+**L. Défilement par la chronologie.** WidgetKit n'anime pas un widget en continu. Une entrée par minute
+pendant une heure, puis toutes les 5 minutes pendant 3 heures (si iOS tarde à recharger), plus une à chaque
+départ ; `.after(maintenant + 1 h)`. Page = (position de l'entrée + décalage) modulo le nombre de pages ; la
+position continue d'une chronologie à l'autre grâce à une ancre gardée dans les `UserDefaults.standard` de
+l'extension (privés : aucun groupe nécessaire). Boutons ‹ › : `Button(intent:)` avec un `AppIntent`
+défini dans l'extension seulement (iOS 17), qui change le décalage ; WidgetKit recharge alors la
+chronologie. Tous les widgets en images partagent ce décalage (ils avancent ensemble). Transition : page
+identifiée par `.id`, `.push(from: .trailing)`, fond en fondu.
+
+**M. Les photos sont téléchargées par l'application, jamais par l'extension** (la règle « l'extension ne
+fait aucune requête réseau » reste vraie, et un essai le contrôle). Méthode `setWidgetImages({ items })` du
+module `CordeNative` : pour chaque photo absente, `URLSession` éphémère (ni cookies, ni cache, ni
+`Referer`), `Accept: image/*`, 15 s, 4 Mo, `https` seulement, aucun hôte en adresse IP, `localhost` ni
+`.local` (redirections comprises) ; réduction ImageIO (vignette ≤ 720 px), JPEG de qualité 0,6 puis moins
+jusqu'à tenir sous **48 Kio** ; suppression de celles qui ne sont plus listées ; rechargement du seul widget
+en images. La partie JavaScript n'envoie la liste qu'après l'écriture du bloc, quand elle a changé (ou
+15 minutes après un échec), et vide quand le planning est coupé. Le widget lit la photo au moment du
+dessin (pas dans l'entrée : la mémoire d'une extension de widgets est limitée à ~30 Mo), réduite encore à
+480 px pour le petit.
+
+**N. Les photos sont rangées dans le trousseau partagé**, un élément par photo (service
+`io.github.dultra123.corde.widgets.img`, compte = la clé, même groupe, `AfterFirstUnlock`, jamais
+synchronisé), au plus 8 × 48 Kio. Choix assumé, pour la même raison que C : un App Group demanderait trois
+formulaires au propriétaire. Limites : le trousseau n'est pas fait pour des images — aucune taille maximale
+n'est documentée, les ennuis connus commencent vers le mégaoctet (on reste à 48 Kio par élément) — et ses
+éléments **survivent à la désinstallation** de l'application (rien de secret ; ils sont remplacés ou
+effacés par la version réinstallée, et couper le planning efface les photos). Repli prévu si iOS refusait
+ces éléments sur un iPhone (diagnostic : nombre de photos, poids, dernier `OSStatus`) : un App Group, qui ne
+toucherait que `SharedStore.swift` (et un formulaire du propriétaire).
+
+**O. Voir sans Mac** : trois planches de plus (`slides-fr-dark`, `slides-fr-light`, `slides-en-dark`) avec
+des photos d'exemple **dessinées par le code** (aucune photo dans le dépôt), passées par la vraie réduction ;
+l'essai de fumée fait aussi un aller-retour du magasin des photos (écrire ~40 Kio, relire, lister,
+supprimer) et la réduction d'une image fabriquée de 4000 × 3000. Aucun téléchargement dans la CI.
+
+Ce qui ne peut être vérifié que sur un iPhone : le téléchargement réel des photos des deux sites, les
+éléments de 48 Kio dans le trousseau partagé de l'extension signée, la lecture au dessin dans la mémoire de
+l'extension, le rythme réel du défilement (iOS peut retarder des entrées), les boutons ‹ ›.
 
 ## Conséquences
 

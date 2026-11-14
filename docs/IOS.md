@@ -1,7 +1,8 @@
 # Corde sur iPhone
 
-> Version 0.9.0 — widgets et compte à rebours dans la Dynamic Island ; iOS 17 au minimum (0.8.0 : première
-> version). Décisions : [ADR 0011](adr/0011-application-mobile-capacitor.md),
+> Version 0.10.0 — widget « Courses en images » (0.9.0 : widgets et compte à rebours dans la Dynamic
+> Island ; iOS 17 au minimum ; 0.8.0 : première version). Décisions :
+> [ADR 0011](adr/0011-application-mobile-capacitor.md),
 > [ADR 0012](adr/0012-widgets-activite-en-direct.md).
 > Sécurité : [SECURITY-MODEL.md §8](SECURITY-MODEL.md#8-lapplication-iphone). Vie privée :
 > [PRIVACY.md](../PRIVACY.md#application-iphone).
@@ -48,10 +49,12 @@ lancement, notifications, onglets en bas de l'écran).
 | Widget | Tailles | Ce qu'il montre |
 |---|---|---|
 | **Courses** | petit, moyen, grand | les prochaines courses du planning (la prochaine ; 3 ; jusqu'à 6), à travers tes filtres de la page Courses (catégories, niveaux) : catégorie en couleur (quotidiennes ambre, hebdomadaires bleu, événements spéciaux rouge, RC Pro violet ; pour les quotidiennes, la couleur du niveau), nom, circuit et classes, heure de départ et temps restant |
+| **Courses en images** | petit, moyen, grand | **une course par page**, qui change toute seule chaque minute : la photo de la course en fond (sans photo : un fond aux couleurs de la catégorie avec le nom de la piste), la catégorie / le niveau, le **SR et le DR requis** (cadenas rouge quand ton profil est en dessous, réglages de la page Courses), « Ma course » si le départ affiché est choisi, « 2/6 », le nom, piste · durée (et les classes en grand), l'heure du prochain départ et le temps restant ; en moyen et en grand, les départs suivants (ceux que tu as choisis en ambre) ; pour un événement spécial, ses dates. Les mêmes courses que le widget « Courses », dans le même ordre, 8 au plus ; en petit, la première page est ton prochain départ choisi. Boutons **›** (course suivante) et, en moyen et en grand, **‹** (précédente) |
 | **Mes courses** | petit, moyen | le compte à rebours jusqu'à ton prochain départ choisi (et, en moyen, les trois suivants) ; « Choisis un départ dans Corde » quand il n'y en a pas |
 | **Prochain départ** | écran verrouillé : rectangulaire, en ligne, rond | ton prochain départ choisi, à défaut la prochaine course du planning : nom, heure, compte à rebours |
 
-Un toucher sur un widget ouvre la page **Courses**. Une heure précédée de « ≈ » est **estimée** : le site ne
+Un toucher sur un widget ouvre la page **Courses** (sauf sur les boutons ‹ › du widget en images). Une heure
+précédée de « ≈ » est **estimée** : le site ne
 montre que les prochaines heures, Corde prolonge les quotidiennes au même rythme pour que le widget reste
 juste sans ouvrir l'application.
 
@@ -73,13 +76,21 @@ juste sans ouvrir l'application.
   langue), Corde écrit les données des widgets et demande à iOS de les redessiner.
 - Entre deux ouvertures, les comptes à rebours tournent seuls et la liste avance d'elle-même à chaque
   départ. Le planning, lui, n'est relu que quand Corde est ouverte (comme la page Courses).
+- **Courses en images** : iOS ne sait pas animer un widget en continu ; Corde lui donne d'avance une page par
+  minute pour l'heure qui vient, puis une toutes les 5 minutes pendant 3 heures (si iOS tarde à redemander
+  la suite), plus une à chaque départ. Le bouton › passe à la course suivante tout de suite ; tous les
+  widgets « Courses en images » avancent ensemble. Les **photos** sont téléchargées par Corde (jamais par le
+  widget), au plus 8, quand le planning est activé et que Corde est ouverte, puis gardées réduites sur le
+  téléphone (48 Kio chacune au plus). Une photo pas encore téléchargée (ou qui n'a pas pu l'être) laisse
+  le fond dessiné ; un nouvel essai a lieu 15 minutes plus tard, à la prochaine mise à jour.
 - **Limites** : sans ouvrir Corde pendant plus de 4 jours, ou une fois passés tous les horaires écrits (deux
   jours environ), les widgets disent « Ouvre Corde pour actualiser ». Un changement du site (nouvelle
   semaine de courses) n'apparaît qu'à la prochaine ouverture. iOS décide du moment exact où il redessine un
   widget : quelques secondes de retard sont possibles.
 - **Diagnostic** (si un widget reste vide) : page Courses → Rappels → **Diagnostic des widgets**. Il dit si
   les données sont écrites (et à quelle heure), le code d'iOS en cas d'échec, si les activités en direct sont
-  autorisées, et la version d'iOS. C'est ce qu'il faut nous recopier.
+  autorisées, combien de photos de courses sont gardées (et leur poids, et le dernier code d'erreur), et la
+  version d'iOS. C'est ce qu'il faut nous recopier.
 
 ### Ce qu'il faut essayer sur l'iPhone (0.9, première fois)
 
@@ -95,6 +106,19 @@ juste sans ouvrir l'application.
 6. Laisser passer un départ choisi (compte à rebours actif) : « Départ donné » à l'heure, puis disparition à
    la réouverture de Corde.
 7. Le lendemain, sans ouvrir Corde : les widgets montrent encore des courses (horaires « ≈ »).
+
+### Ce qu'il faut essayer sur l'iPhone (0.10, widget « Courses en images »)
+
+1. Planning activé, ouvrir Corde et attendre quelques secondes, puis page Courses → Rappels → **Diagnostic
+   des widgets** : « Photos des courses … : N sur le téléphone (… Ko) ». Avec 0 et un code : le recopier.
+2. Ajouter **Courses en images** en moyen : une course avec sa photo, le SR / DR requis (renseigner son
+   profil et les exigences dans les réglages de la page Courses pour voir le cadenas), « 1/8 ».
+3. Attendre une minute : la page change (avec un glissement). Toucher **›** : la course suivante tout de
+   suite ; **‹** : la précédente. Toucher ailleurs : Corde s'ouvre sur Courses.
+4. En petit : la première page est ton prochain départ choisi (« Ma course », compte à rebours).
+5. Une photo claire et une photo sombre : le texte reste lisible sur les deux (sinon, une capture).
+6. Couper le planning dans Corde : le widget dit « Active le planning dans Corde » et le diagnostic montre
+   0 photo.
 
 ## 3. Comment sortent les versions iPhone
 
@@ -123,7 +147,7 @@ poussée sur `main` qui touche `apps/mobile/`, `packages/ui/` ou le workflow lui
    l'identifiant est créé s'il manque ; ceux de l'exécution précédente sont retirés), compile et signe,
    contrôle la signature de l'application et de l'extension, puis l'envoie vers TestFlight. Le numéro de
    build est le numéro d'exécution du workflow (il augmente toujours, comme Apple l'exige), le même pour
-   l'application et l'extension ; la version affichée est celle de `apps/mobile/package.json` (0.9.0).
+   l'application et l'extension ; la version affichée est celle de `apps/mobile/package.json` (0.10.0).
 
 Lancé à la main sur une autre branche que `main`, le workflow s'arrête après les deux premiers jobs : c'est
 le moyen d'essayer du code Swift avant de le fusionner.
@@ -273,7 +297,10 @@ de la compilation, sur la machine de GitHub ; elle n'est enregistrée nulle part
 - **iPhone seulement, iOS 17 au minimum** depuis la 0.9 (un iPad l'ouvre en mode iPhone). Pas d'Android.
 - **Widgets et compte à rebours** : limites au §2 (mise à jour à l'ouverture de Corde, « Départ donné »
   jusqu'à la prochaine ouverture). Pas de widget configurable (catégorie au choix) pour l'instant : ils
-  suivent les filtres de la page Courses.
+  suivent les filtres de la page Courses. **Courses en images** : la page change à la minute (pas plus
+  vite : iOS ne redessine pas un widget plus souvent) ; les photos sont gardées dans le trousseau partagé, qui
+  **survit à la suppression de l'application** (8 photos de 48 Kio au plus ; réinstaller Corde puis couper
+  le planning les efface).
 - **Rappels** : iOS garde au plus **64 notifications en attente** par application. Les plus proches sont
   programmées ; les suivantes le sont quand l'application revient au premier plan ou à chaque changement de
   choix. Avec beaucoup de choix et l'application jamais ouverte pendant des jours, des rappels lointains
@@ -300,16 +327,18 @@ apps/mobile/
 ├─ www/                    # l'interface construite en mode mobile (ignoré par git)
 ├─ scripts/*.test.*       # essais des scripts de la CI et du projet Xcode (voir plus bas)
 └─ ios/App/                # projet Xcode généré par `cap add ios` (gabarit Swift Package Manager), complété
-   ├─ App.xcodeproj        #   deux cibles (App, CordeWidgets), iOS 17, iPhone, 0.9.0, schéma partagé « App »
+   ├─ App.xcodeproj        #   deux cibles (App, CordeWidgets), iOS 17, iPhone, 0.10.0, schéma partagé « App »
    ├─ App/                 #   cible de l'application
    │  ├─ Info.plist        #     réseau local, ATS, appareil photo, corde://, chiffrement, activités en direct
    │  ├─ App.entitlements  #     keychain-access-groups (trousseau partagé avec les widgets)
    │  ├─ SceneDelegate.swift, CordeBridgeViewController.swift   # contrôleur de Capacitor + module local
    │  ├─ CordeNativePlugin.swift                                  # pont « CordeNative »
+   │  ├─ WidgetImages.swift #    photos du widget en images : téléchargement, réduction (application seule)
    │  └─ WidgetShots.swift #     build Debug : images des vues pour la CI, lien ouvert par l'application
    ├─ Shared/              #   compilé dans les deux cibles : SharedStore, WidgetData, CordeRaceAttributes,
-   │                       #   CordeStyle, WidgetViews, ActivityViews, SampleData
-   ├─ CordeWidgets/        #   l'extension : widgets, activité en direct, Info.plist, .entitlements
+   │                       #   CordeStyle, WidgetViews, SlideViews, ActivityViews, SampleData
+   ├─ CordeWidgets/        #   l'extension : widgets (dont SlidesWidget : chronologie, AppIntent ‹ ›),
+   │                       #   activité en direct, Info.plist, .entitlements
    └─ CapApp-SPM/          #   paquet Swift écrit par `cap sync ios` (ne pas modifier à la main)
 ```
 
@@ -359,31 +388,59 @@ node packages/ui/scripts/screenshot-app.mjs # aperçu Chromium avec un faux pont
       { "id": "sprint-gt3-beginner", "cat": "daily", "lvl": "beginner", "name": "Sprint GT3",
         "track": "Monza", "cls": ["GT3"], "dur": "20 min",
         "s": [1794773520000, 1794775320000],   // départs connus (spécial : premier jour 00:00)
-        "x": [1794777120000] },                // départs estimés (quotidiennes, ≤ 48 h)
+        "x": [1794777120000],                  // départs estimés (quotidiennes, ≤ 48 h)
+        "img": "i3c1f0a9e7b2d4c51",            // facultatif (0.10) : clé de la photo (FNV-1a 64 de l'adresse)
+        "req": { "sr": "S2", "dr": "B2", "miss": ["sr"] } },  // facultatif (0.10) : SR / DR requis,
+                                               // et ceux au-dessus du profil (jamais les notes du profil)
       { "id": "special-6h", "cat": "special", "lvl": null, "name": "6 Heures", "track": "Bahreïn",
         "cls": [], "dur": "6 h", "s": [1794960000000], "to": 1795046340000 }
     ],
     "mine": [                    // départs choisis à venir, par départ
       { "id": "sprint-gt3-beginner@1794775320000", "race": "sprint-gt3-beginner", "cat": "daily",
         "lvl": "beginner", "name": "Sprint GT3", "track": "Monza", "cls": ["GT3"], "dur": "20 min",
-        "t": 1794775320000 }
+        "t": 1794775320000 }     // + "img", "req" facultatifs, comme une course
     ]
   }
   ```
 
-  Au plus 48 Kio (les horaires estimés sont raccourcis d'abord). Jamais d'adresse de serveur ni de jeton.
-  La liste du widget « Courses » à un instant donné est calculée deux fois, à l'identique :
-  `racesAt` (TypeScript, testé) et `races(at:)` (Swift).
+  Au plus 48 Kio (les horaires estimés sont raccourcis d'abord). Jamais d'adresse de serveur ni de jeton,
+  ni l'adresse d'une photo (seulement sa clé). `img` et `req` sont facultatifs : un bloc sans eux (écrit par
+  la 0.9) se lit encore. La liste du widget « Courses » à un instant donné est calculée deux fois, à
+  l'identique : `racesAt` (TypeScript, testé) et `races(at:)` (Swift) ; les pages du widget en images en
+  viennent (`slides(at:small:)`, 8 au plus).
+- **Photos du widget « Courses en images »** : après chaque écriture du bloc, `widget-sync.ts` envoie la
+  liste des photos des pages (`widgetImages` : le prochain départ choisi, puis les pages, puis les autres
+  choix ; 8 au plus ; rien quand le planning est coupé) à `setWidgetImages`, seulement si elle a changé (ou
+  15 minutes après un échec). L'application (`App/WidgetImages.swift`, jamais l'extension) télécharge celles
+  qui manquent — `URLSession` éphémère, sans cookies ni cache ni `Referer`, `Accept: image/*`, 15 s, 4 Mo au
+  plus, `https` seulement, pas d'adresse IP écrite telle quelle ni `localhost` / `.local`, redirections
+  comprises —, les réduit (ImageIO, ≤ 720 px, JPEG de qualité 0,6 puis moins, ≤ 48 Kio, sans métadonnées)
+  et les range dans le trousseau partagé, **un élément par photo** (service
+  `io.github.dultra123.corde.widgets.img`, compte = la clé, même groupe, `AfterFirstUnlock`, jamais
+  synchronisé) ; celles qui ne sont plus listées sont supprimées ; `reloadTimelines(ofKind: "CordeSlides")`
+  quand quelque chose a changé. L'extension lit la photo au moment du dessin et la réduit encore pour le
+  petit widget (480 px).
+- **Défilement** (`CordeWidgets/SlidesWidget.swift`) : chronologie d'une entrée par minute pendant 60 min,
+  puis toutes les 5 min pendant 3 h, plus chaque départ ; `.after(maintenant + 1 h)`. Chaque entrée porte
+  une position ; page = position modulo le nombre de pages. La position continue d'une chronologie à
+  l'autre (ancre gardée dans les `UserDefaults.standard` de l'extension) ; ‹ › sont des `Button(intent:)`
+  (`SlideStepIntent`, dans l'extension seulement) qui ajoutent ±1 à un décalage gardé au même endroit.
 - **Quand c'est écrit** (`mobile/widget-sync.ts`) : au lancement, après chaque lecture du planning, choix,
   retrait, changement de réglage ou de langue, au retour au premier plan ; seulement si le contenu a changé.
   Le dernier planning lu est gardé 3 jours (Preferences) pour les lancements sans réseau.
 - **Pont** : module Capacitor local `CordeNative` (`App/CordeNativePlugin.swift`, enregistré par
-  `CordeBridgeViewController`) — `setWidgetData({ json })`, `activities()`, `startActivity(…)`,
-  `endActivities({ ids? })`, `diagnostics()`. Côté TypeScript : `NativePort` (`mobile/ports.ts`), le double
+  `CordeBridgeViewController`) — `setWidgetData({ json })`, `setWidgetImages({ items })` (rend `written`,
+  `kept`, `failed`, `removed`, `bytes`, `status`), `activities()`, `startActivity(…)`,
+  `endActivities({ ids? })`, `diagnostics()` (avec `images`, `imageBytes`, `imageStatus`). Côté
+  TypeScript : `NativePort` (`mobile/ports.ts`), le double
   `FakeNative` (`mobile/doubles.ts`). Rien de cela n'est chargé hors du build `mobile`.
 - **Activité en direct** : `CordeRaceAttributes` (Shared), vues dans `Shared/ActivityViews.swift`,
   configuration dans `CordeWidgets/CordeLiveActivity.swift`. Règles : `planActivity` (`mobile/widgets.ts`).
   Réglage du pilote : clé `corde.races.liveActivity` (Preferences, vrai par défaut).
 - **Voir les vues sans Mac** : l'application en build Debug, lancée avec `-CordeRenderShots`, dessine toutes
   les vues (`App/WidgetShots.swift`, données de `Shared/SampleData.swift`) ; `-CordeDemoActivity` démarre une
-  activité d'exemple. Décoder une planche du journal : même méthode que les captures (§3).
+  activité d'exemple. Décoder une planche du journal : même méthode que les captures (§3). Planches
+  `widgets-<langue>-<mode>` (widgets 0.9, activité) et `slides-fr-dark`, `slides-fr-light`, `slides-en-dark`
+  (« Courses en images » : photos d'exemple dessinées par le code, passées par la vraie réduction). Le même
+  lancement fait un aller-retour du magasin des photos (`image store: …`, OSStatus de chaque opération) et
+  réduit une image fabriquée de 4000 × 3000 (`image reduce: … ok`). Aucun téléchargement dans la CI.

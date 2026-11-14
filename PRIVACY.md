@@ -111,6 +111,12 @@ n'a ni compte, ni statistiques d'usage, ni publicité, ni service à nous.
     requête `GET` et l'en-tête `User-Agent: Corde/<version> (+https://github.com/dultra123/corde)`, sans
     compte ni donnée de pilote. Les cookies qu'un site enverrait sont effacés après chaque lecture. Les
     images des courses viennent directement des adresses `https://` données par les sites, sans `Referer` ;
+  - **les photos des courses, pour le widget « Courses en images » (0.10)** : l'application télécharge
+    elle-même les photos des courses que ces deux pages citent, **au plus 8** (celles des courses que montre
+    le widget), **seulement quand le planning est activé et que Corde est ouverte**, depuis l'adresse
+    `https://` donnée par le site (jamais une adresse IP écrite telle quelle, ni le réseau local), sans
+    cookie, sans `Referer`, avec le même `User-Agent`. L'hébergeur de ces images voit **l'adresse IP du
+    téléphone**, comme quand l'interface les affiche ;
   - les serveurs Corde **que tu as ajoutés** dans « Mes serveurs » (ton PC, ton serveur Corde), à l'adresse
     que tu as saisie ou scannée : les mêmes pages que dans le navigateur ;
   - l'appareil photo, **seulement** quand tu touches « Scanner le QR code », pour lire le QR code affiché par
@@ -129,11 +135,18 @@ n'a ni compte, ni statistiques d'usage, ni publicité, ni service à nous.
   partagé avec ses propres widgets seulement, une copie du planning lu, de tes courses choisies et de la
   langue. Jamais l'adresse d'un serveur ni la clé d'appairage. Les widgets ne lisent rien sur Internet. Ils
   montrent le nom et l'heure de tes courses **sur l'écran verrouillé** : retire-les comme n'importe quel
-  widget, ou coupe le compte à rebours dans les réglages de la page Courses.
+  widget, ou coupe le compte à rebours dans les réglages de la page Courses. Depuis la 0.10, cette copie
+  dit aussi, pour chaque course, le SR / DR qu'elle demande et si ton profil est en dessous (pas tes notes
+  elles-mêmes) ; et l'application garde à côté, dans le même trousseau, une **copie réduite des photos**
+  téléchargées pour le widget (au plus 8, 48 Kio chacune). Couper le planning les efface. Particularité du
+  trousseau : ces éléments **restent sur le téléphone si tu supprimes l'application** (ils sont remplacés
+  ou effacés quand tu la réinstalles ; rien de secret dedans).
 - **Rien n'est envoyé ailleurs** : ni à nous, ni à Apple par l'application (Apple voit, comme pour toute
   application installée par TestFlight, les rapports de plantage si tu as accepté de les partager dans les
-  réglages de l'iPhone), ni aux sites du planning au-delà de la requête décrite plus haut.
-- **Effacer** : supprimer l'application efface tout ce qu'elle garde. Pour qu'un serveur Corde l'oublie
+  réglages de l'iPhone), ni aux sites du planning au-delà des requêtes décrites plus haut.
+- **Effacer** : supprimer l'application efface tout ce qu'elle garde, sauf la copie des widgets rangée dans
+  le trousseau (plus haut : coupe le planning avant de supprimer l'application pour effacer aussi les
+  photos ; le reste de cette copie est remplacé à la réinstallation). Pour qu'un serveur Corde l'oublie
   aussi : « Oublier l'appairage » dans « Mes serveurs » (ou la page Appareils du serveur).
 
 ## Planning des courses en ligne (optionnel, désactivé par défaut)
@@ -246,4 +259,9 @@ are local notifications (no push service); the camera is used only to scan the Q
 your PC. Nothing is sent anywhere else. Deleting the app erases all of it. Since 0.9 its home-screen and
 lock-screen widgets and its Live Activity show the schedule and your picked races from a copy kept on the
 phone (a keychain item shared with its own widgets only; never a server address or pairing key); the widgets
-read nothing from the Internet, and no push service is used.
+read nothing from the Internet, and no push service is used. Since 0.10, for the « Races in pictures »
+widget, the app itself downloads the pictures of the races those two pages cite (at most 8, only with the
+schedule on and the app open; the hosting server sees the phone's IP address, as when the interface shows
+them) and keeps reduced copies in the same keychain group; that copy also carries the SR / DR each race
+requires and whether your profile is below it (not your ratings). Keychain items outlive the app: turn the
+schedule off before deleting it to erase the pictures.

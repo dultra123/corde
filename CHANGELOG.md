@@ -8,6 +8,29 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [iPhone 0.10.0] — 2026-11-14
+
+Application iPhone seulement : Corde sur le PC et Corde serveur restent en 0.8.0.
+
+### Nouveautés
+
+- **Widget « Courses en images »** (petit, moyen, grand) : une course par page avec sa **photo** en fond,
+  sa catégorie ou son niveau, le **SR et le DR qu'il faut** (cadenas rouge quand ton profil est en
+  dessous), « Ma course » si tu as choisi ce départ, « 2/6 », le circuit et la durée, l'heure du prochain
+  départ avec le temps restant, et les départs suivants (les tiens en ambre). La page change toute seule
+  chaque minute ; le bouton **›** passe à la suivante (et **‹** revient, en moyen et en grand). En petit, la
+  première page est ton prochain départ choisi. Sans photo, un fond aux couleurs de la catégorie avec le
+  nom de la piste.
+
+### À savoir
+
+- Les photos sont téléchargées par Corde (8 au plus, seulement quand le planning est activé et que Corde
+  est ouverte) et gardées en petit sur le téléphone pour le widget. Le site qui héberge une photo voit
+  l'adresse IP du téléphone, comme quand l'application l'affiche.
+- Le diagnostic des widgets (page Courses → Rappels) dit combien de photos sont gardées.
+- Ces photos restent sur le téléphone si tu supprimes l'application : coupe le planning avant pour les
+  effacer.
+
 ## [iPhone 0.9.0] — 2026-11-14
 
 Application iPhone seulement : Corde sur le PC et Corde serveur restent en 0.8.0. (Le titre porte

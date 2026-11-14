@@ -247,7 +247,8 @@ Pas à pas pour un non-informaticien : [docs/SERVEUR.md](docs/SERVEUR.md) · acc
 | Corde serveur (Raspberry Pi) : appairage, synchronisation depuis le PC, paquet Linux arm64 / x64 | fait (0.7.0), vérifié entre deux serveurs et sous émulation arm64 ; à installer sur un vrai Pi |
 | Signature de l'installeur (plus d'avertissement Windows) | à décider |
 | Application iPhone (Capacitor) : courses sans PC avec rappels en notifications, connexion au PC et au serveur Corde | fait (0.8.0) ; compilée par la CI seulement, jamais vue sur un iPhone ; TestFlight dès que le compte Apple est activé et les secrets ajoutés |
-| Widgets iPhone (écran d'accueil, écran verrouillé) et compte à rebours dans la Dynamic Island | fait (0.9.0, iPhone seulement) ; vus sur le simulateur de la CI, pas encore sur un iPhone |
+| Widgets iPhone (écran d'accueil, écran verrouillé) et compte à rebours dans la Dynamic Island | fait (0.9.0, iPhone seulement) ; fonctionnent sur l'iPhone du pilote (TestFlight) |
+| Widget iPhone « Courses en images » (une course par page, photo, SR / DR requis) | fait (0.10.0, iPhone seulement) ; vu sur le simulateur de la CI, pas encore sur un iPhone |
 | Application Android | à venir |
 | Linux (le jeu tourne sous Proton) | serveur compilé, non testé avec le jeu |
 | Autres simulateurs (ACC, Assetto Corsa EVO, iRacing, rFactor 2…) | à venir |
