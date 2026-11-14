@@ -21,6 +21,22 @@ dans `docs/STATUS.md` et l'historique git.
   le même bouton le remet dans la page. L'adresse `…#/dash` reste le plein écran direct (second écran).
 - **Sur le téléphone, rien ne change** : plein écran, ☰ « Passer aux widgets », et le menu des dispositions y
   ramène aussi en un geste.
+- **Studio : crée tes propres tableaux de bord** (sur le PC, Direct → menu des dispositions → « Studio ») :
+  des pages d'éléments placés sur une grille — une valeur au choix parmi une soixantaine (vitesse, écart,
+  carburant, pressions…), des jauges, du texte, l'heure, tous les blocs du tableau de bord Corde et les
+  widgets. Au format d'un téléphone, d'une tablette, d'un écran ou d'un bandeau large ; glisser,
+  redimensionner, annuler / rétablir, aperçu avec une course de démonstration. Pars d'une page vide, de
+  « Corde en blocs » ou de l'exemple « Endurance ».
+- **Chaque appareil choisit son tableau de bord** (menu des dispositions sur PC, ☰ sur le téléphone,
+  Réglages). Le téléphone en garde une copie pour l'afficher même PC éteint.
+- **Partage** : exporte un tableau de bord en fichier `.cordedash.json` et importe celui d'un ami. Le fichier
+  ne contient que la mise en page (ton pseudo seulement si tu l'as saisi).
+
+### À savoir
+
+- Le tableau de bord **Corde** reste le même ; pour le changer, duplique-le.
+- Supprimer un tableau de bord se fait depuis le PC.
+- Pas encore : images et logos, formules, polices, galerie en ligne, affichage sur l'écran d'un volant.
 
 ## [1.1.0] — 2026-11-14
 

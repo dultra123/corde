@@ -161,6 +161,45 @@ tableau de bord est affiché (si le navigateur le permet ; sinon, règle la mise
 
 ---
 
+### Créer ton propre tableau de bord (Studio, 1.2)
+
+Le **Studio** est l'éditeur de tableaux de bord de Corde, sur le PC (à la souris et au clavier).
+
+1. **Ouvre-le** : Direct → menu des dispositions → **Studio : créer un tableau de bord…** (ou Réglages →
+   « Ouvrir le Studio », ou ☰ du tableau de bord).
+2. **Nouveau** : pars d'un tableau de bord **vide**, de **Corde en blocs** (les quatre pages de Corde
+   découpées, à réarranger) ou de l'exemple **Endurance**. Le tableau de bord **Corde** lui-même ne se modifie
+   pas : **Dupliquer pour le modifier**.
+3. **Format** (panneau de droite, rien de choisi) : téléphone en paysage ou en portrait, tablette, écran
+   16:9, bandeau large type écran de volant, ou tout l'écran. La page garde ces proportions sur n'importe
+   quel écran.
+4. **Ajoute des éléments** depuis la liste de gauche : un clic les pose à la première place libre, ou fais
+   les glisser sur la page. **Valeur** affiche une donnée au choix (vitesse, carburant, écart, pression d'un
+   pneu… une soixantaine), **Barre / jauge** une donnée de 0 à 100 % (accélérateur, frein, réservoir,
+   usure…) ; il y a aussi du texte, des panneaux, l'heure, tous les blocs des pages de Corde, et les widgets
+   du PC.
+5. **Place-les** : glisse un élément pour le déplacer, son coin orange pour le redimensionner ; tout
+   s'aimante sur la grille. Au clavier : flèches (déplacer), Maj + flèches (redimensionner), Suppr, Ctrl + D
+   (dupliquer), Ctrl + Z / Ctrl + Y (annuler / rétablir).
+6. **Règle-les** à droite : donnée, étiquette, décimales, couleur (automatique : verte quand tu es plus
+   rapide, rouge quand tu es plus lent…), taille du texte, cadre.
+7. **Pages** : onglets en haut (+ Page, renommer, déplacer, supprimer).
+8. **Essaie-le** : **Course de démonstration** anime la page sans le jeu ; **Aperçu plein écran** le montre
+   comme sur le téléphone (Échap pour revenir).
+9. **Enregistrer** (ou Ctrl + S) : il est enregistré sur ce PC. Tant que tu n'as pas enregistré, tes
+   changements restent en brouillon sur ce PC et sont repris quand tu reviens.
+10. **Utilise-le** : sur le PC, dans le menu des dispositions (groupe **Tableaux de bord**) ; sur le
+    téléphone, dans le menu ☰ → « Tableau de bord utilisé ». Chaque appareil a le sien.
+
+**Le partager** : dans la bibliothèque du Studio, **Exporter** enregistre un fichier `nom.cordedash.json`
+(la mise en page seulement : ni nom de PC, ni adresse, ni données de course ; ton pseudo seulement si tu l'as
+mis dans « Auteur »). Ton ami l'ouvre avec **Importer un fichier…** ; un fichier abîmé ou trop gros est
+refusé avec la raison.
+
+Pas encore possible (plus tard) : images et logos, placement au pixel près, formules et conditions
+d'affichage, polices, galerie en ligne. Corde n'affiche rien sur l'écran intégré d'un volant (il reste piloté
+par le logiciel de son fabricant).
+
 ## 6 bis. Les courses en ligne et leurs rappels (facultatif)
 
 L'onglet **Courses** (icône drapeau, entre Sessions et Profil) reprend le planning en ligne du jeu et te

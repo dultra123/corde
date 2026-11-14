@@ -49,6 +49,12 @@ pour un téléphone posé en paysage à côté du volant (en portrait, les cases
   « Garder l'écran allumé sur le tableau de bord », activé par défaut). Aucune autorisation.
 - **« Passer aux widgets »** remet l'ancienne grille ; le bouton **Tableau de bord** de la barre du haut y
   revient. Le réglage **Affichage du Direct** (Automatique / Tableau de bord / Widgets) fait la même chose.
+- **Choisir son tableau de bord (1.2)** : les tableaux de bord créés dans le **Studio** du PC (éditeur de
+  tableaux de bord) arrivent dans l'application à la connexion. Choisis le tien dans le menu **☰**
+  (« Tableau de bord utilisé ») ou dans **Réglages → Tableau de bord utilisé** ; le choix reste sur le
+  téléphone, et l'application garde une copie des tableaux de bord pour les afficher même PC éteint. Sans
+  choix (ou s'il a été supprimé), c'est le tableau de bord **Corde**. La démonstration marche avec
+  n'importe lequel.
 - **« Voir une démonstration »** (dans « Mes serveurs », ou sur le Direct quand il n'y a aucun serveur) :
   une course inventée, calculée sur le téléphone, sans PC ni réseau, avec l'étiquette « Démonstration ».
   On la quitte par ☰ ou « Mes serveurs » ; elle n'est pas gardée au prochain lancement.

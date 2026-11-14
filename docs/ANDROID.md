@@ -35,6 +35,9 @@ interface, avec les onglets en bas de l'écran.
 - **Le serveur Corde (Raspberry Pi)** : ajouter son adresse, puis « Appairer ce téléphone » avec un code
   obtenu sur le serveur (`sudo corde-server pair`). Le nom proposé pour le téléphone est « Android ».
 - **Pas d'autorisation « réseau local »** à donner : Android n'en a pas (contrairement à l'iPhone).
+- **Choisir son tableau de bord** (1.2) : comme sur iPhone, les tableaux de bord créés dans le **Studio** du
+  PC se choisissent dans le menu **☰** (« Tableau de bord utilisé ») ou dans **Réglages** ; le choix et une
+  copie des tableaux de bord restent sur le téléphone ; sans choix, c'est **Corde**.
 - **Le tableau de bord du Direct** (1.1) : le même que sur iPhone ([IOS.md, « Le tableau de bord »](IOS.md#le-tableau-de-bord-11)) —
   plein écran, quatre pages, **écran gardé allumé** (sans autorisation : Android l'accorde à la fenêtre
   affichée), et **« Voir une démonstration »** sans PC. Le bouton retour d'Android garde son rôle : il

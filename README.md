@@ -111,6 +111,12 @@ choisit dans le menu des dispositions du Direct (groupe **Tableaux de bord**) et
 sous la barre du haut ; un bouton **Plein écran** l'agrandit (Échap pour revenir), et une disposition de
 widgets du même menu ramène la grille. Un second écran l'ouvre en plein écran à l'adresse **`…#/dash`**.
 
+**Tes propres tableaux de bord (Studio)** : l'éditeur de tableaux de bord du PC place les données que tu
+veux sur une grille — valeurs, jauges, textes, blocs de Corde, widgets — sur plusieurs pages, au format d'un
+téléphone, d'une tablette, d'un écran ou d'un bandeau large. Glisser, redimensionner, annuler, aperçu avec une
+course de démonstration ; chaque appareil choisit le sien ; partage par fichier `.cordedash.json`. Pas à pas
+dans [docs/TESTING-ON-PC.md](docs/TESTING-ON-PC.md#créer-ton-propre-tableau-de-bord-studio-12).
+
 ![Tableau de bord du téléphone, page Course (course de démonstration)](docs/images/tableau-de-bord-telephone.png)
 
 ### L'application iPhone
