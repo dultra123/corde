@@ -104,8 +104,9 @@ La même interface dans une vraie application iPhone, distribuée par TestFlight
 notifications, et surtout la page **Courses sans PC** — le téléphone lit lui-même le planning de
 racecontrol.gg et lmu.tools, garde tes choix et **sonne les rappels même application fermée**. Le direct,
 les sessions, l'ingénieur et le profil s'ouvrent dès qu'un PC ou un serveur Corde est ajouté dans
-« Mes serveurs » (adresse ou QR code, appairage par code pour le serveur Corde). Compilée uniquement par
-GitHub (aucun Mac nécessaire) : [docs/IOS.md](docs/IOS.md).
+« Mes serveurs » (adresse ou QR code, appairage par code pour le serveur Corde). Depuis la 0.9 : des
+**widgets** (prochaines courses, compte à rebours de tes départs, écran verrouillé) et le **compte à rebours
+dans la Dynamic Island**. Compilée uniquement par GitHub (aucun Mac nécessaire) : [docs/IOS.md](docs/IOS.md).
 
 ![Aperçu du mode application : Accueil, Courses et « Mes serveurs »](docs/images/iphone.png)
 
@@ -246,6 +247,7 @@ Pas à pas pour un non-informaticien : [docs/SERVEUR.md](docs/SERVEUR.md) · acc
 | Corde serveur (Raspberry Pi) : appairage, synchronisation depuis le PC, paquet Linux arm64 / x64 | fait (0.7.0), vérifié entre deux serveurs et sous émulation arm64 ; à installer sur un vrai Pi |
 | Signature de l'installeur (plus d'avertissement Windows) | à décider |
 | Application iPhone (Capacitor) : courses sans PC avec rappels en notifications, connexion au PC et au serveur Corde | fait (0.8.0) ; compilée par la CI seulement, jamais vue sur un iPhone ; TestFlight dès que le compte Apple est activé et les secrets ajoutés |
+| Widgets iPhone (écran d'accueil, écran verrouillé) et compte à rebours dans la Dynamic Island | fait (0.9.0, iPhone seulement) ; vus sur le simulateur de la CI, pas encore sur un iPhone |
 | Application Android | à venir |
 | Linux (le jeu tourne sous Proton) | serveur compilé, non testé avec le jeu |
 | Autres simulateurs (ACC, Assetto Corsa EVO, iRacing, rFactor 2…) | à venir |
@@ -331,7 +333,8 @@ corde/
   [passage en open source](docs/adr/0008-open-source-publication.md),
   [mises à jour signées](docs/adr/0009-mises-a-jour-releases-github-signees.md),
   [serveur domestique](docs/adr/0010-serveur-domestique.md),
-  [application iPhone](docs/adr/0011-application-mobile-capacitor.md)
+  [application iPhone](docs/adr/0011-application-mobile-capacitor.md),
+  [widgets iOS et activité en direct](docs/adr/0012-widgets-activite-en-direct.md)
 - [docs/TESTING-ON-PC.md](docs/TESTING-ON-PC.md) — installer et utiliser Corde sur Windows, dépannage
 - [docs/SERVEUR.md](docs/SERVEUR.md) — installer Corde serveur sur un Raspberry Pi, appairer, sauvegarder
 - [docs/ACCES-EXTERIEUR.md](docs/ACCES-EXTERIEUR.md) — ouvrir le serveur depuis l'extérieur par un VPN, sans exposer Corde

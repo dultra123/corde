@@ -1,6 +1,8 @@
 # Corde sur iPhone
 
-> Version 0.8.0 — première version de l'application iPhone. Décision : [ADR 0011](adr/0011-application-mobile-capacitor.md).
+> Version 0.9.0 — widgets et compte à rebours dans la Dynamic Island ; iOS 17 au minimum (0.8.0 : première
+> version). Décisions : [ADR 0011](adr/0011-application-mobile-capacitor.md),
+> [ADR 0012](adr/0012-widgets-activite-en-direct.md).
 > Sécurité : [SECURITY-MODEL.md §8](SECURITY-MODEL.md#8-lapplication-iphone). Vie privée :
 > [PRIVACY.md](../PRIVACY.md#application-iphone).
 
@@ -30,26 +32,99 @@ lancement, notifications, onglets en bas de l'écran).
 - Au premier contact avec un serveur, l'iPhone demande l'autorisation **« Réseau local »** : il faut
   l'accepter (sinon : Réglages de l'iPhone → Confidentialité et sécurité → Réseau local → Corde).
 
-## 2. Comment sortent les versions iPhone
+## 2. Widgets et Dynamic Island
+
+### Ajouter un widget
+
+- **Écran d'accueil** : appui long sur un espace vide → **Modifier** (en haut à gauche) → **Ajouter un
+  widget** → chercher **Corde** → choisir le widget et sa taille → **Ajouter le widget**.
+- **Écran verrouillé** : appui long sur l'écran verrouillé → **Personnaliser** → **Écran verrouillé** →
+  toucher la zone des widgets sous l'heure → **Corde** → **Prochain départ**.
+- Il faut avoir ouvert Corde au moins une fois depuis l'installation de la 0.9 : avant, les widgets disent
+  « Ouvre Corde pour actualiser ».
+
+### Ce que montre chacun
+
+| Widget | Tailles | Ce qu'il montre |
+|---|---|---|
+| **Courses** | petit, moyen, grand | les prochaines courses du planning (la prochaine ; 3 ; jusqu'à 6), à travers tes filtres de la page Courses (catégories, niveaux) : catégorie en couleur (quotidiennes ambre, hebdomadaires bleu, événements spéciaux rouge, RC Pro violet ; pour les quotidiennes, la couleur du niveau), nom, circuit et classes, heure de départ et temps restant |
+| **Mes courses** | petit, moyen | le compte à rebours jusqu'à ton prochain départ choisi (et, en moyen, les trois suivants) ; « Choisis un départ dans Corde » quand il n'y en a pas |
+| **Prochain départ** | écran verrouillé : rectangulaire, en ligne, rond | ton prochain départ choisi, à défaut la prochaine course du planning : nom, heure, compte à rebours |
+
+Un toucher sur un widget ouvre la page **Courses**. Une heure précédée de « ≈ » est **estimée** : le site ne
+montre que les prochaines heures, Corde prolonge les quotidiennes au même rythme pour que le widget reste
+juste sans ouvrir l'application.
+
+### Le compte à rebours (Dynamic Island, écran verrouillé)
+
+- Il démarre **tout seul** quand ton prochain départ choisi est dans **moins de 2 heures** et que Corde est
+  ouverte (à l'ouverture, au retour dans l'application, ou quand tu choisis un départ proche). Pour un départ
+  plus lointain (jusqu'à 8 heures avant) : bouton **Compte à rebours** sur ce départ, dans « Mes courses ».
+- Un seul à la fois, toujours pour le départ choisi le plus proche.
+- Il s'arrête quand tu retires le départ ou coupes le réglage. **Après le départ**, il affiche « Départ
+  donné » et reste jusqu'à la prochaine ouverture de Corde (ou jusqu'à ce que tu le balaies) : l'application
+  ne tourne pas en arrière-plan pour l'enlever.
+- Réglage : page Courses → **Rappels** → « Compte à rebours sur l'écran verrouillé et dans la Dynamic
+  Island » (activé par défaut). iOS a aussi le sien : Réglages de l'iPhone → Corde → **Activités en direct**.
+
+### Quand ils se mettent à jour
+
+- À chaque changement fait dans Corde (planning lu, départ choisi ou retiré, filtres, correction d'heure,
+  langue), Corde écrit les données des widgets et demande à iOS de les redessiner.
+- Entre deux ouvertures, les comptes à rebours tournent seuls et la liste avance d'elle-même à chaque
+  départ. Le planning, lui, n'est relu que quand Corde est ouverte (comme la page Courses).
+- **Limites** : sans ouvrir Corde pendant plus de 4 jours, ou une fois passés tous les horaires écrits (deux
+  jours environ), les widgets disent « Ouvre Corde pour actualiser ». Un changement du site (nouvelle
+  semaine de courses) n'apparaît qu'à la prochaine ouverture. iOS décide du moment exact où il redessine un
+  widget : quelques secondes de retard sont possibles.
+- **Diagnostic** (si un widget reste vide) : page Courses → Rappels → **Diagnostic des widgets**. Il dit si
+  les données sont écrites (et à quelle heure), le code d'iOS en cas d'échec, si les activités en direct sont
+  autorisées, et la version d'iOS. C'est ce qu'il faut nous recopier.
+
+### Ce qu'il faut essayer sur l'iPhone (0.9, première fois)
+
+1. Ouvrir Corde, page Courses → Rappels → **Diagnostic des widgets** : « écrites à … », « groupe trouvé ».
+   Sinon, recopier les lignes.
+2. Ajouter le widget **Courses** (moyen) : il doit montrer les mêmes courses que la page (planning activé).
+   Toucher le widget : Corde s'ouvre sur Courses — application déjà ouverte, puis **fermée** (balayée vers
+   le haut dans le sélecteur d'applications).
+3. Choisir un départ dans moins de 2 heures, revenir à l'écran d'accueil : le compte à rebours doit être
+   dans la Dynamic Island ; toucher l'île l'agrandit (appui long), un toucher ouvre Courses.
+4. Verrouiller : le compte à rebours sur l'écran verrouillé ; ajouter **Prochain départ** sous l'heure.
+5. Retirer le départ dans Corde : le compte à rebours disparaît.
+6. Laisser passer un départ choisi (compte à rebours actif) : « Départ donné » à l'heure, puis disparition à
+   la réouverture de Corde.
+7. Le lendemain, sans ouvrir Corde : les widgets montrent encore des courses (horaires « ≈ »).
+
+## 3. Comment sortent les versions iPhone
 
 Personne dans le projet n'a de Mac : **l'application n'est compilée que par GitHub**, sur un Mac de GitHub
 (gratuit pour un dépôt public), par le workflow **iOS** (`.github/workflows/ios.yml`). Il tourne à chaque
 poussée sur `main` qui touche `apps/mobile/`, `packages/ui/` ou le workflow lui-même, et à la demande
 (GitHub → Actions → **iOS** → **Run workflow**).
 
-1. **Simulateur** (toujours, sans aucun secret) : compile l'application pour le simulateur d'iPhone, la lance,
-   prend deux captures d'écran (Accueil, puis Courses) et les écrit **dans le journal** entre les lignes
-   `-----BEGIN CORDE SCREENSHOT <nom>-----` et `-----END CORDE SCREENSHOT-----` (image JPEG en base64), avec
-   les dernières lignes du journal de l'application. Les mêmes fichiers sont joints à l'exécution
-   (artefact `ios-smoke`, téléchargeable par le propriétaire du dépôt).
-2. **Clé d'API** (une minute) : essaie les scripts de signature, puis contrôle que les quatre secrets sont
-   utilisables (sans jamais afficher une valeur).
-3. **TestFlight** (seulement sur `dultra123/corde`, jamais sur un fork, et seulement si les **quatre secrets**
-   du §3 existent) : avec la clé d'API, crée pour cette exécution un **certificat de distribution** et un
-   **profil App Store** (ceux de l'exécution précédente sont retirés), compile et signe l'application,
-   contrôle la signature, puis l'envoie vers TestFlight. Le numéro de build est le numéro d'exécution du
-   workflow (il augmente toujours, comme Apple l'exige) ; la version affichée est celle de
-   `apps/mobile/package.json` (0.8.0).
+1. **Simulateur** (toujours, sans aucun secret) : compile l'application et son extension de widgets pour le
+   simulateur d'iPhone (signature locale « ad hoc », sans certificat), puis la lance quatre fois : Accueil ;
+   Courses, par le lien `corde://races` que l'application ouvre elle-même (comme un toucher de widget) ;
+   planches des **vues des widgets et du compte à rebours**, dessinées par l'application avec des données
+   inventées (fr / en, clair / sombre) ; une activité d'exemple dans la **Dynamic Island** (dessinée par la
+   vraie extension, Réglages au premier plan). Les images sont écrites **dans le journal** entre les lignes
+   `-----BEGIN CORDE SCREENSHOT <nom>-----` et `-----END CORDE SCREENSHOT-----` (JPEG en base64), avec les
+   journaux de l'application et une liste de contrôles (« ✓ bloc des widgets écrit… »). Les mêmes fichiers
+   sont joints à l'exécution (artefact `ios-smoke`, téléchargeable par le propriétaire du dépôt).
+2. **Clé d'API** (une minute) : essaie les scripts (signature avec un faux serveur d'Apple et un faux
+   `codesign`, cohérence du projet Xcode), puis contrôle que les quatre secrets sont utilisables (sans
+   jamais afficher une valeur).
+3. **TestFlight** (seulement sur `dultra123/corde`, depuis `main`, jamais sur un fork, et seulement si les
+   **quatre secrets** du §4 existent) : avec la clé d'API, crée pour cette exécution un **certificat de
+   distribution** et un **profil App Store par identifiant** (l'application, et l'extension de widgets dont
+   l'identifiant est créé s'il manque ; ceux de l'exécution précédente sont retirés), compile et signe,
+   contrôle la signature de l'application et de l'extension, puis l'envoie vers TestFlight. Le numéro de
+   build est le numéro d'exécution du workflow (il augmente toujours, comme Apple l'exige), le même pour
+   l'application et l'extension ; la version affichée est celle de `apps/mobile/package.json` (0.9.0).
+
+Lancé à la main sur une autre branche que `main`, le workflow s'arrête après les deux premiers jobs : c'est
+le moyen d'essayer du code Swift avant de le fusionner.
 
 Sans les secrets, le job TestFlight affiche une note et ne fait rien : le simulateur suffit à vérifier que
 tout compile.
@@ -58,7 +133,7 @@ tout compile.
 puis `base64 -d capture.txt > capture.jpg` (Linux, macOS) ou, sous Windows (PowerShell) :
 `[IO.File]::WriteAllBytes("capture.jpg", [Convert]::FromBase64String((Get-Content capture.txt -Raw)))`.
 
-## 3. Ce que le propriétaire fait côté Apple (une fois, dans l'ordre)
+## 4. Ce que le propriétaire fait côté Apple (une fois, dans l'ordre)
 
 Tout se fait dans un navigateur, sans Mac.
 
@@ -85,9 +160,10 @@ Tout se fait dans un navigateur, sans Mac.
    Pourquoi aucune case : Corde ne demande à Apple aucun service particulier. Les rappels de course sont
    des notifications **locales** (programmées par le téléphone lui-même) : la case **Push Notifications**
    ne sert qu'aux notifications envoyées par un serveur. Rien n'est définitif : une capacité s'ajoute plus
-   tard en rouvrant l'identifiant (**Identifiers** → `io.github.dultra123.corde` → cocher → **Save**) ; ce
-   sera le cas d'**App Groups** le jour où Corde aura des widgets d'écran d'accueil. Le **Bundle ID**, lui,
-   ne se modifie plus après l'enregistrement.
+   tard en rouvrant l'identifiant (**Identifiers** → `io.github.dultra123.corde` → cocher → **Save**). Les
+   widgets (0.9) n'en demandent aucune : ils partagent leurs données par le trousseau, que tous les profils
+   autorisent déjà (ADR 0012), et leur propre identifiant est créé tout seul par la compilation. Le **Bundle
+   ID**, lui, ne se modifie plus après l'enregistrement.
 4. **La fiche de l'application** : [App Store Connect](https://appstoreconnect.apple.com) → **Apps** → **+**
    → **Nouvelle app**. La fenêtre se remplit ainsi :
 
@@ -163,19 +239,23 @@ l'étape 4 manque.
 
 ### Ce que tu verras dans ton compte Apple
 
-Sur developer.apple.com → **Certificates, IDs & Profiles**, la compilation laisse deux choses, à ne pas
+Sur developer.apple.com → **Certificates, IDs & Profiles**, la compilation laisse ceci, à ne pas
 toucher :
 
 - sous **Certificates**, un certificat **Distribution** (créé « via API ») ;
-- sous **Profiles**, un profil nommé **`Corde CI <numéro>`**.
+- sous **Profiles**, deux profils nommés **`Corde CI <numéro>`** (l'application) et **`Corde CI <numéro>
+  widgets`** (l'extension de widgets, depuis la 0.9) ;
+- sous **Identifiers**, à côté de `io.github.dultra123.corde`, l'identifiant **Corde Widgets**
+  (`io.github.dultra123.corde.widgets`), créé au premier envoi de la 0.9 et gardé ensuite. Aucune case à
+  cocher dessus.
 
-À chaque nouvel envoi, la compilation **révoque ce certificat et supprime ce profil**, puis en crée de
-nouveaux : il n'y en a jamais plus d'un à la fois. Elle ne touche qu'au certificat attaché à un profil
+À chaque nouvel envoi, la compilation **révoque ce certificat et supprime ces profils**, puis en crée de
+nouveaux : il n'y a jamais plus d'un certificat à la fois. Elle ne touche qu'au certificat attaché à un profil
 « Corde CI … » — jamais à un autre. Apple peut envoyer un e-mail « certificat révoqué » à ce moment-là :
 c'est normal, et sans effet sur les builds déjà envoyés. La clé privée du certificat n'existe que le temps
 de la compilation, sur la machine de GitHub ; elle n'est enregistrée nulle part.
 
-## 4. Durée de vie d'un build
+## 5. Durée de vie d'un build
 
 - Un build TestFlight **expire 90 jours** après son envoi : l'application ne s'ouvre plus. Un nouveau build
   part à chaque poussée sur `main` qui touche l'application, ou à la main (**Run workflow**) ; TestFlight
@@ -186,10 +266,12 @@ de la compilation, sur la machine de GitHub ; elle n'est enregistrée nulle part
   vérification d'Apple. Des testeurs externes demanderaient une vérification (« Beta App Review ») et une
   fiche plus complète.
 
-## 5. Limites connues de cette première version
+## 6. Limites connues
 
-- **iPhone seulement, iOS 16 au minimum** (un iPad l'ouvre en mode iPhone). Pas d'Android, pas de widget
-  d'écran d'accueil (lot suivant).
+- **iPhone seulement, iOS 17 au minimum** depuis la 0.9 (un iPad l'ouvre en mode iPhone). Pas d'Android.
+- **Widgets et compte à rebours** : limites au §2 (mise à jour à l'ouverture de Corde, « Départ donné »
+  jusqu'à la prochaine ouverture). Pas de widget configurable (catégorie au choix) pour l'instant : ils
+  suivent les filtres de la page Courses.
 - **Rappels** : iOS garde au plus **64 notifications en attente** par application. Les plus proches sont
   programmées ; les suivantes le sont quand l'application revient au premier plan ou à chaque changement de
   choix. Avec beaucoup de choix et l'application jamais ouverte pendant des jours, des rappels lointains
@@ -206,7 +288,7 @@ de la compilation, sur la machine de GitHub ; elle n'est enregistrée nulle part
 - Rien de tout cela n'a tourné sur un vrai iPhone avant la première exécution de la CI : la liste de ce qui
   n'a pas pu être vérifié est dans le compte rendu du lot (et `docs/STATUS.md`).
 
-## 6. Pour les développeurs
+## 7. Pour les développeurs
 
 ```
 apps/mobile/
@@ -214,10 +296,18 @@ apps/mobile/
 ├─ capacitor.config.json   # identifiant io.github.dultra123.corde, nom Corde, fond sombre, notifications
 ├─ assets/corde-reminder.wav, scripts/make-assets.mjs, scripts/finish-web.mjs
 ├─ www/                    # l'interface construite en mode mobile (ignoré par git)
-└─ ios/App/                # projet Xcode généré par `cap add ios` (gabarit Swift Package Manager)
-   ├─ App.xcodeproj        #   iOS 16, iPhone, version 0.8.0, schéma partagé « App »
-   ├─ App/Info.plist       #   réseau local, ATS, appareil photo, corde://, chiffrement
-   ├─ App/{fr,en}.lproj/InfoPlist.strings
+├─ scripts/*.test.*       # essais des scripts de la CI et du projet Xcode (voir plus bas)
+└─ ios/App/                # projet Xcode généré par `cap add ios` (gabarit Swift Package Manager), complété
+   ├─ App.xcodeproj        #   deux cibles (App, CordeWidgets), iOS 17, iPhone, 0.9.0, schéma partagé « App »
+   ├─ App/                 #   cible de l'application
+   │  ├─ Info.plist        #     réseau local, ATS, appareil photo, corde://, chiffrement, activités en direct
+   │  ├─ App.entitlements  #     keychain-access-groups (trousseau partagé avec les widgets)
+   │  ├─ SceneDelegate.swift, CordeBridgeViewController.swift   # contrôleur de Capacitor + module local
+   │  ├─ CordeNativePlugin.swift                                  # pont « CordeNative »
+   │  └─ WidgetShots.swift #     build Debug : images des vues pour la CI, lien ouvert par l'application
+   ├─ Shared/              #   compilé dans les deux cibles : SharedStore, WidgetData, CordeRaceAttributes,
+   │                       #   CordeStyle, WidgetViews, ActivityViews, SampleData
+   ├─ CordeWidgets/        #   l'extension : widgets, activité en direct, Info.plist, .entitlements
    └─ CapApp-SPM/          #   paquet Swift écrit par `cap sync ios` (ne pas modifier à la main)
 ```
 
@@ -236,4 +326,60 @@ node packages/ui/scripts/screenshot-app.mjs # aperçu Chromium avec un faux pont
 - `cap sync ios` fonctionne sous Linux. `Package.swift` contient des chemins vers le magasin de pnpm
   (`node_modules/.pnpm/…`) : la CI le réécrit à chaque exécution.
 - Liens `corde://home`, `corde://races`, `corde://servers`, `corde://live`, `corde://sessions`,
-  `corde://profile` : ouvrent une page, rien d'autre (la CI s'en sert pour la capture de Courses).
+  `corde://profile` : ouvrent une page, rien d'autre (les widgets et l'activité ouvrent `corde://races`).
+  Sur le simulateur, `xcrun simctl openurl` fait apparaître la fenêtre « Ouvrir dans “Corde” ? » : la CI
+  lance l'application avec `-CordeOpenURL corde://races`, et c'est elle qui ouvre le lien (build Debug).
+
+### Widgets : cible, données, pont
+
+- **Cible `CordeWidgets`** (`io.github.dultra123.corde.widgets`), embarquée dans `PlugIns/` par la phase
+  « Embed Foundation Extensions ». Mêmes version et numéro de build que l'application (le workflow passe
+  `MARKETING_VERSION` et `CURRENT_PROJECT_VERSION` à `xcodebuild`). Le projet est édité à la main ;
+  `node --test apps/mobile/scripts/xcodeproj.test.mjs` vérifie chaque référence, les deux cibles,
+  l'embarquement et les réglages. `cap sync ios` ne touche pas au projet (seulement à `Package.swift`).
+- **Données** : l'application écrit un bloc JSON dans un élément du trousseau partagé
+  (`Shared/SharedStore.swift` ; groupe `$(AppIdentifierPrefix)io.github.dultra123.corde.shared`, déclaré
+  dans les deux `.entitlements` et dans la clé `CordeKeychainGroup` des deux `Info.plist`). Sur le
+  simulateur compilé sans droits, `SharedStore` retombe sur le trousseau de l'application seule.
+- **Format v1** (produit par `packages/ui/src/mobile/widgets.ts`, `buildPayload` ; décodé par
+  `Shared/WidgetData.swift`) — heures en millisecondes UTC, affichage dans le fuseau du téléphone :
+
+  ```jsonc
+  {
+    "v": 1,                      // version ; une autre → « Ouvre Corde pour actualiser »
+    "at": 1794772800000,         // écrit à (plus de 4 jours → « Ouvre Corde »)
+    "lang": "fr",                // fr | en (langue de l'interface)
+    "sched": "on",               // on | off (planning désactivé) | none (rien pu lire)
+    "until": 1794945600000,      // dernier instant annoncé (0 : rien d'annoncé)
+    "races": [                   // le planning à travers les filtres, quotidiennes → hebdo → spéciaux → RC Pro
+      { "id": "sprint-gt3-beginner", "cat": "daily", "lvl": "beginner", "name": "Sprint GT3",
+        "track": "Monza", "cls": ["GT3"], "dur": "20 min",
+        "s": [1794773520000, 1794775320000],   // départs connus (spécial : premier jour 00:00)
+        "x": [1794777120000] },                // départs estimés (quotidiennes, ≤ 48 h)
+      { "id": "special-6h", "cat": "special", "lvl": null, "name": "6 Heures", "track": "Bahreïn",
+        "cls": [], "dur": "6 h", "s": [1794960000000], "to": 1795046340000 }
+    ],
+    "mine": [                    // départs choisis à venir, par départ
+      { "id": "sprint-gt3-beginner@1794775320000", "race": "sprint-gt3-beginner", "cat": "daily",
+        "lvl": "beginner", "name": "Sprint GT3", "track": "Monza", "cls": ["GT3"], "dur": "20 min",
+        "t": 1794775320000 }
+    ]
+  }
+  ```
+
+  Au plus 48 Kio (les horaires estimés sont raccourcis d'abord). Jamais d'adresse de serveur ni de jeton.
+  La liste du widget « Courses » à un instant donné est calculée deux fois, à l'identique :
+  `racesAt` (TypeScript, testé) et `races(at:)` (Swift).
+- **Quand c'est écrit** (`mobile/widget-sync.ts`) : au lancement, après chaque lecture du planning, choix,
+  retrait, changement de réglage ou de langue, au retour au premier plan ; seulement si le contenu a changé.
+  Le dernier planning lu est gardé 3 jours (Preferences) pour les lancements sans réseau.
+- **Pont** : module Capacitor local `CordeNative` (`App/CordeNativePlugin.swift`, enregistré par
+  `CordeBridgeViewController`) — `setWidgetData({ json })`, `activities()`, `startActivity(…)`,
+  `endActivities({ ids? })`, `diagnostics()`. Côté TypeScript : `NativePort` (`mobile/ports.ts`), le double
+  `FakeNative` (`mobile/doubles.ts`). Rien de cela n'est chargé hors du build `mobile`.
+- **Activité en direct** : `CordeRaceAttributes` (Shared), vues dans `Shared/ActivityViews.swift`,
+  configuration dans `CordeWidgets/CordeLiveActivity.swift`. Règles : `planActivity` (`mobile/widgets.ts`).
+  Réglage du pilote : clé `corde.races.liveActivity` (Preferences, vrai par défaut).
+- **Voir les vues sans Mac** : l'application en build Debug, lancée avec `-CordeRenderShots`, dessine toutes
+  les vues (`App/WidgetShots.swift`, données de `Shared/SampleData.swift`) ; `-CordeDemoActivity` démarre une
+  activité d'exemple. Décoder une planche du journal : même méthode que les captures (§3).

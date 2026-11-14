@@ -8,6 +8,31 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [0.9.0] — 2026-11-14
+
+Application iPhone seulement : Corde sur le PC et Corde serveur restent en 0.8.0.
+
+### Nouveautés
+
+- **Widgets** sur l'écran d'accueil : « Courses » (les prochaines courses du planning, en petit, moyen ou
+  grand) et « Mes courses » (le compte à rebours jusqu'à ton prochain départ choisi). Sur l'écran verrouillé :
+  « Prochain départ ». Un toucher ouvre la page Courses.
+- **Compte à rebours dans la Dynamic Island et sur l'écran verrouillé** : il démarre tout seul quand ton
+  prochain départ choisi est dans moins de 2 heures et que Corde est ouverte, ou avec le bouton
+  **Compte à rebours** sur un de tes départs (jusqu'à 8 heures avant). Réglage dans la page Courses, à côté
+  des rappels.
+
+### À savoir
+
+- **iOS 17 au minimum** (au lieu d'iOS 16).
+- Les widgets se mettent à jour quand Corde est ouverte ; ils restent justes plusieurs jours sans l'ouvrir
+  (les horaires des quotidiennes au-delà de ce que montre le site sont estimés, marqués « ≈ »).
+- Après le départ, le compte à rebours affiche « Départ donné » et reste jusqu'à la prochaine ouverture de
+  Corde (ou jusqu'à ce que tu le balaies).
+- Rien de plus n'est lu sur Internet, rien n'est envoyé : les widgets montrent une copie de ce que la page
+  Courses a déjà lu.
+- Côté Apple, rien à faire : l'identifiant des widgets est créé tout seul au premier envoi vers TestFlight.
+
 ## [0.8.0] — 2026-11-12
 
 ### Nouveautés

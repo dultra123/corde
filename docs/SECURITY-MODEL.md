@@ -469,6 +469,27 @@ L'accès réseau reste désactivé par défaut, et le serveur Corde exige toujou
   exceptions sont là pour le cas où ATS s'appliquerait aux adresses IP. Une adresse publique en HTTP reste
   bloquée par ATS (et refusée par l'application avant).
 - **Liens `corde://`** : ouvrent une page d'une liste fermée, sans paramètre ; ne déclenchent aucune action.
+  Les widgets et l'activité en direct ouvrent `corde://races`.
+
+### 8.2 bis Widgets et activité en direct (0.9)
+
+Décision : [ADR 0012](adr/0012-widgets-activite-en-direct.md). Code : `packages/ui/src/mobile/widgets.ts`,
+`widget-sync.ts` (ce qui est écrit), `apps/mobile/ios/App/Shared/SharedStore.swift` (où),
+`CordeWidgets/` (l'extension), `App/CordeNativePlugin.swift` (le pont).
+
+| Question | Réponse |
+|---|---|
+| **Ce qui est partagé avec l'extension** | un bloc JSON (format v1, ≤ 48 Kio) : le planning public déjà lu par le téléphone (noms des courses, circuits, classes, durées, heures de départ, à travers les filtres du pilote), ses départs choisis, la langue de l'interface. Les mêmes informations que la page Courses et que les notifications de rappel |
+| **Ce qui ne l'est jamais** | adresse d'un PC ou d'un serveur Corde, jeton d'appairage, liste des serveurs, données de télémétrie, sessions, notes SR / DR du profil, images. Le bloc est construit champ par champ (`buildPayload`), pas copié du stockage (essai : aucune adresse dans le bloc) |
+| **Où** | un élément du trousseau iOS (`kSecClassGenericPassword`, service `io.github.dultra123.corde.widgets`) dans le groupe partagé `<équipe>.io.github.dultra123.corde.shared`, déclaré par le droit `keychain-access-groups` des deux cibles et par la clé `CordeKeychainGroup` de leur `Info.plist`. Accessible après le premier déverrouillage (`kSecAttrAccessibleAfterFirstUnlock`, pour qu'un widget se redessine téléphone verrouillé), jamais synchronisé avec iCloud (`kSecAttrSynchronizable` faux), pas dans les sauvegardes d'un autre appareil (règle du trousseau pour cette classe d'accès : migré seulement par une sauvegarde chiffrée) |
+| **Qui le lit** | l'application et son extension seulement : le groupe commence par l'identifiant d'équipe, iOS refuse tout autre application. Le diagnostic de la page Courses dit seulement si le groupe est trouvé, jamais son nom (il contient l'identifiant d'équipe) |
+| **Réseau** | aucun : l'extension ne fait aucune requête ; l'application n'ajoute aucune lecture (le planning est celui de la page Courses, mêmes deux pages, mêmes règles §8.2) |
+| **Activité en direct** | démarrée et terminée par l'application, au premier plan seulement (règle d'iOS) ; contenu : nom, circuit, classes, catégorie, heure de départ. **Aucune notification push** (pas d'APNs, `pushType: nil`) : aucun jeton d'activité n'est créé ni envoyé où que ce soit ; le décompte tourne seul et iOS la marque périmée à l'heure du départ |
+| **Pourquoi pas un App Group** | il faudrait le créer à la main sur le portail d'Apple (l'API ne le fait pas) ; le trousseau partagé ne demande rien. Effet pour la sécurité : équivalent (stockage dans le bac à sable de l'équipe, illisible par une autre application) |
+
+Ce qui reste visible : un widget ou l'activité affichent le nom des courses choisies et leur heure **sur
+l'écran verrouillé** (comme les notifications de rappel). Le pilote les retire comme tout widget, coupe
+l'activité dans les réglages de la page Courses, ou dans Réglages de l'iPhone → Corde → Activités en direct.
 
 ### 8.3 Ce qui ne protège pas
 
@@ -495,6 +516,13 @@ Workflow `.github/workflows/ios.yml`, scripts `apps/mobile/scripts/` (`asc-key.s
 - **Ce que le script peut révoquer** : uniquement un certificat de type « Distribution » attaché à un profil
   dont le nom commence par « Corde CI » — c'est-à-dire ceux qu'il a créés. Jamais un certificat géré par
   Apple, de développement, ou attaché à un autre profil.
+- **Ce que le script peut créer** (0.9) : un certificat par exécution, un profil App Store par identifiant
+  (« Corde CI <n> » pour l'application, « Corde CI <n> widgets » pour l'extension), et l'identifiant de
+  l'extension `io.github.dultra123.corde.widgets` s'il manque (nom « Corde Widgets », aucune capacité).
+  Jamais l'identifiant de l'application : s'il manque, arrêt avant tout ménage.
+- **Contrôle avant l'envoi** : l'application, ses frameworks et l'extension doivent porter une signature
+  « Apple Distribution », un profil embarqué, et le droit `keychain-access-groups` avec le groupe partagé ;
+  seul « oui / non » est affiché (la valeur commence par l'identifiant d'équipe).
 - **Le jeton de l'API** (ES256, 10 minutes) n'est envoyé qu'à `api.appstoreconnect.apple.com` ; une adresse
   de « page suivante » qui pointerait ailleurs est refusée.
 - **Limite assumée** : une clé Admin peut tout faire dans App Store Connect, sauf ce qui est réservé au

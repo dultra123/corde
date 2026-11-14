@@ -124,6 +124,12 @@ n'a ni compte, ni statistiques d'usage, ni publicité, ni service à nous.
   application.
 - **Les rappels** sont des **notifications locales** programmées par l'application sur le téléphone : rien
   ne passe par un service de notifications (pas de notification push).
+- **Widgets et compte à rebours (0.9)** : pour ses widgets (écran d'accueil, écran verrouillé) et le compte à
+  rebours de la Dynamic Island, l'application range sur le téléphone, dans un élément du trousseau iOS
+  partagé avec ses propres widgets seulement, une copie du planning lu, de tes courses choisies et de la
+  langue. Jamais l'adresse d'un serveur ni la clé d'appairage. Les widgets ne lisent rien sur Internet. Ils
+  montrent le nom et l'heure de tes courses **sur l'écran verrouillé** : retire-les comme n'importe quel
+  widget, ou coupe le compte à rebours dans les réglages de la page Courses.
 - **Rien n'est envoyé ailleurs** : ni à nous, ni à Apple par l'application (Apple voit, comme pour toute
   application installée par TestFlight, les rapports de plantage si tu as accepté de les partager dans les
   réglages de l'iPhone), ni aux sites du planning au-delà de la requête décrite plus haut.
@@ -237,4 +243,7 @@ address, the pairing key of your home server, never shown), your picked races an
 **on the phone**; if you turn the schedule on, the phone itself reads the same two public pages (same rules,
 only while the app is open, site cookies cleared); it only talks to the Corde servers you added; reminders
 are local notifications (no push service); the camera is used only to scan the QR code shown by Corde on
-your PC. Nothing is sent anywhere else. Deleting the app erases all of it.
+your PC. Nothing is sent anywhere else. Deleting the app erases all of it. Since 0.9 its home-screen and
+lock-screen widgets and its Live Activity show the schedule and your picked races from a copy kept on the
+phone (a keychain item shared with its own widgets only; never a server address or pairing key); the widgets
+read nothing from the Internet, and no push service is used.

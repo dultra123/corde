@@ -128,7 +128,7 @@ function fakeBridge({ seed, pages }) {
       raceSound: true,
     }),
   );
-  const log = { http: [], scheduled: [], requests: 0, cancelled: 0 };
+  const log = { http: [], scheduled: [], requests: 0, cancelled: 0, widgets: [], activities: [] };
   const pending = [];
   let permission = "prompt";
   let nextCallback = 1;
@@ -178,6 +178,33 @@ function fakeBridge({ seed, pages }) {
         }
       },
       registerActionTypes: () => undefined,
+    },
+    // The application's own module (widgets, Live Activity: CordeNativePlugin.swift).
+    CordeNative: {
+      setWidgetData: ({ json }) => {
+        log.widgets.push(json);
+        return { ok: true, status: 0, bytes: json.length };
+      },
+      activities: () => ({ allowed: true, running: log.activities.slice() }),
+      startActivity: (o) => {
+        const id = `A${log.activities.length + 1}`;
+        log.activities.push({ id, pickId: o.pickId, startMs: o.startMs });
+        return { id };
+      },
+      endActivities: ({ ids }) => {
+        log.activities = ids ? log.activities.filter((a) => !ids.includes(a.id)) : [];
+      },
+      diagnostics: () => ({
+        store: log.widgets.length ? "ok" : "empty",
+        status: 0,
+        group: true,
+        bytes: log.widgets.at(-1)?.length ?? 0,
+        writtenAt: Date.now(),
+        version: 1,
+        activitiesAllowed: true,
+        activities: log.activities.length,
+        ios: "18.1",
+      }),
     },
     App: { getLaunchUrl: () => ({}) },
     Keyboard: { setStyle: () => undefined, setResizeMode: () => undefined },
@@ -356,6 +383,23 @@ try {
     () => JSON.parse(window.__fake.prefs.get("corde.races.picks.v1") ?? "[]").length,
   );
   check(stored === 1, "the pick is kept in the native storage");
+  // Widgets: the block follows the pick, holds no address of a server.
+  await page.waitForFunction(
+    () => window.__fake.log.widgets.some((j) => JSON.parse(j).mine.length === 1),
+    null,
+    { timeout: 10_000 },
+  );
+  const widgets = await page.evaluate(() => window.__fake.log.widgets.at(-1));
+  const block = JSON.parse(widgets);
+  check(
+    block.v === 1 && block.sched === "on" && block.races.length > 0,
+    "widgets: block written (v1, schedule)",
+  );
+  check(!/https?:\/\/|token|8471/.test(widgets), "widgets: no address nor token in the block");
+  check(
+    (await page.locator(".app-live input[type=checkbox]").count()) === 1,
+    "courses: Live Activity setting shown",
+  );
   check((await overflow()) <= 0, "courses: no horizontal overflow");
   await page.evaluate(() => window.scrollTo(0, 0));
   await sleep(400);
