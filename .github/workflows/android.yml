@@ -159,11 +159,19 @@ jobs:
             echo "::error::une bibliothèque Google est dans les dépendances de l'application"
             exit 1
           fi
-          found=$(unzip -p "$apk" 'classes*.dex' | grep -a -c -E "Lcom/google/(android/gms|firebase|mlkit|android/datatransport)/" || true)
-          if [ "$found" != "0" ]; then
-            echo "::error::du code Google Play services / Firebase / ML Kit est dans l'APK (${found} références)"
+          # Le code de l'APK (classes définies, pas seulement citées : le lecteur de QR code cite
+          # ML Kit, qu'il n'appelle que si on le lui demande — Corde lui demande ZXing).
+          analyzer="$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer"
+          google='^com\.google\.(android\.gms|firebase|mlkit|android\.datatransport)(\.|$)'
+          # Colonnes : type (P paquet, C classe…), état (d défini, r cité), méthodes, méthodes, taille, nom.
+          "$analyzer" dex packages --defined-only "$apk" | awk '$1 == "P" || $1 == "C" {print $6}' > "$RUNNER_TEMP/defined.txt"
+          [ -s "$RUNNER_TEMP/defined.txt" ] || { echo "::error::apkanalyzer n'a rien listé"; exit 1; }
+          if grep -E "$google" "$RUNNER_TEMP/defined.txt"; then
+            echo "::error::du code Google Play services / Firebase / ML Kit est dans l'APK"
             exit 1
           fi
+          echo "Code cité mais absent de l'APK (jamais appelé) :"
+          "$analyzer" dex packages "$apk" | awk '$1 == "P" && $2 == "r" {print $6}' | grep -E "$google" | sed 's/^/  /' || echo "  (rien)"
           echo "Aucune bibliothèque Google Play services, Firebase ni ML Kit."
           ls -l app/build/outputs/apk/debug/*.apk app/build/outputs/apk/release/*.apk
           {

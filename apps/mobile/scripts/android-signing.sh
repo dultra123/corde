@@ -88,17 +88,20 @@ setup() {
 }
 
 throwaway() {
-  local dir="$1" pass store
+  local dir="$1" pass store b64
   mkdir -p "$dir"
   chmod 700 "$dir"
   pass="$(od -An -N24 -tx1 /dev/urandom | tr -d ' \n')"
   store="$dir/throwaway.p12"
-  [ -n "${GITHUB_ENV:-}" ] && echo "::add-mask::${pass}"
+  if [ -n "${GITHUB_ENV:-}" ]; then echo "::add-mask::${pass}"; fi
   ANDROID_KEYSTORE_PASSWORD="$pass" keytool -genkeypair -storetype PKCS12 -keystore "$store" \
     -storepass:env ANDROID_KEYSTORE_PASSWORD -keypass:env ANDROID_KEYSTORE_PASSWORD \
     -alias corde -keyalg RSA -keysize 3072 -validity 2 \
     -dname "CN=Corde CI throwaway" > /dev/null 2>&1 || die "keytool n'a pas créé la clé jetable"
-  env_out "ANDROID_KEYSTORE_BASE64=$(base64 < "$store" | tr -d '\n')"
+  b64="$(base64 < "$store" | tr -d '\n')"
+  # Masqué lui aussi, comme le serait le vrai secret (le journal affiche l'environnement des étapes).
+  if [ -n "${GITHUB_ENV:-}" ]; then echo "::add-mask::${b64}"; fi
+  env_out "ANDROID_KEYSTORE_BASE64=${b64}"
   env_out "ANDROID_KEYSTORE_PASSWORD=${pass}"
   rm -f "$store"
   echo "Clé jetable créée (RSA 3072, 2 jours) : elle ne signe que l'essai de cette exécution."
@@ -125,8 +128,14 @@ check() {
   esac
   signers="$(printf '%s\n' "$out" | sed -n 's/^Number of signers: //p')"
   [ "$signers" = "1" ] || die "nombre de signataires inattendu : ${signers:-?}"
-  fp="$(printf '%s\n' "$out" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1 | norm)"
-  [ -n "$fp" ] || die "empreinte du certificat de l'APK introuvable"
+  # « Signer #1 certificate SHA-256 digest: … » (la forme varie selon la version d'apksigner).
+  fp="$(printf '%s\n' "$out" | grep -E -i 'certificate SHA-256 digest:' | head -n 1 |
+    sed 's/.*[Dd]igest:[[:space:]]*//' | norm)"
+  if [ -z "$fp" ]; then
+    # Pour comprendre, les lignes des signataires sans le nom du certificat (« DN »).
+    printf '%s\n' "$out" | grep -i -E 'signer|digest' | grep -v -i 'DN:' | head -n 20 || true
+    die "empreinte du certificat de l'APK introuvable"
+  fi
   if [ -n "${CORDE_CERT_SHA256:-}" ] && [ "$fp" != "$CORDE_CERT_SHA256" ]; then
     die "l'APK n'est pas signé par la clé du magasin (empreinte ${fp})"
   fi
