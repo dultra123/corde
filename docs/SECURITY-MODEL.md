@@ -521,13 +521,32 @@ Workflow `.github/workflows/ios.yml`, scripts `apps/mobile/scripts/` (`asc-key.s
   ni sur un fork. La clé n'est écrite que dans un dossier temporaire du runner (0600), effacée à la fin.
 - **Rien n'est affiché** : un secret mal collé n'est décrit que par sa longueur et sa forme ; le nom du
   certificat, qui contient le nom du titulaire du compte, est masqué dans le journal.
-- **Certificat de distribution** : sa clé privée est créée sur le runner, rangée dans un trousseau
-  temporaire ouvert au seul outil de signature, et disparaît avec la machine. Elle n'est ni dans le dépôt,
-  ni dans les secrets, ni dans un cache. Un certificat ne sert donc qu'à une exécution.
+- **Certificat de distribution**, deux modes :
+  - **sans** le secret facultatif `APPLE_DIST_KEY_BASE64` : sa clé privée est créée sur le runner, rangée
+    dans un trousseau temporaire ouvert au seul outil de signature, et disparaît avec la machine. Elle n'est
+    ni dans le dépôt, ni dans les secrets, ni dans un cache. Un certificat ne sert donc qu'à une exécution
+    (et Apple envoie un e-mail de révocation à chaque build) ;
+  - **avec** ce secret (clé privée RSA 2048, PEM en base64) : la clé est donnée à la seule étape
+    « Certificat et profils… » du job `testflight`, vérifiée (base64, clé privée lisible sans mot de
+    passe, RSA, 2048 bits, cohérente) sans jamais être affichée — un secret mal collé n'est décrit que par
+    sa longueur et sa forme —, écrite en 0600 dans le dossier temporaire, puis dans le trousseau
+    temporaire, effacés à la fin. Le certificat du compte qui porte la même clé publique (comparée en
+    SPKI) et expire dans plus de 30 jours est réutilisé ; sinon un certificat est créé avec cette clé.
+    **Conséquence assumée** : la clé privée vit maintenant aussi dans les secrets du dépôt (et chez le
+    propriétaire) ; qui a la main sur ces secrets peut signer une application au nom du compte pendant la
+    validité du certificat — c'était déjà vrai avec la clé d'API Admin, qui peut créer des certificats. En
+    cas de doute : changer de clé (un nouveau secret ; le certificat de l'ancienne est révoqué au build
+    suivant) ou supprimer le secret.
+  - Le journal ne montre ni le contenu ni le sujet d'un certificat (son nom contient le nom du titulaire du
+    compte, masqué s'il revient dans une réponse) : seulement l'empreinte SHA-256 (16 premiers caractères)
+    de la clé publique stable et des dates d'expiration.
 - **Ce que le script peut révoquer** : uniquement un certificat de type « Distribution » attaché à un profil
   dont le nom commence par « Corde CI » — c'est-à-dire ceux qu'il a créés. Jamais un certificat géré par
-  Apple, de développement, ou attaché à un autre profil.
-- **Ce que le script peut créer** (0.9) : un certificat par exécution, un profil App Store par identifiant
+  Apple, de développement, ou attaché à un autre profil. Avec la clé stable, il ne révoque pas non plus le
+  certificat de cette clé tant qu'il reste plus de 30 jours avant son expiration ; il peut le réutiliser
+  même s'il n'est attaché à aucun profil « Corde CI », sans jamais le révoquer dans ce cas.
+- **Ce que le script peut créer** (0.9) : un certificat par exécution (sans la clé stable ; avec, un par
+  an), un profil App Store par identifiant
   (« Corde CI <n> » pour l'application, « Corde CI <n> widgets » pour l'extension), et l'identifiant de
   l'extension `io.github.dultra123.corde.widgets` s'il manque (nom « Corde Widgets », aucune capacité).
   Jamais l'identifiant de l'application : s'il manque, arrêt avant tout ménage.

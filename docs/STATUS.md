@@ -3,7 +3,7 @@
 > Corde s'appelait anciennement Muret (nom de travail) ; renommée le 11 novembre 2026 (version 0.3.0).
 
 > Fichier de reprise : n'importe qui (humain ou agent) doit pouvoir repartir d'ici.
-> Mis à jour à chaque jalon. Dernière mise à jour : 2026-11-14 (**application Android 1.0.0**, lot 1 sans widgets, fusionnée dans `main` ; avant, le même jour : **version 1.0.0, première version officielle** : PC, Corde serveur et application iPhone au même numéro, demandée par le propriétaire ; avant, le même jour : widget « Courses en images », application iPhone 0.10.0, fusionné dans `main` ; avant, le même jour : « Widgets iOS et activité en direct », application iPhone 0.9.0, branche `ios-widgets` ; premier build iPhone dans TestFlight ; « Application iPhone », version 0.8.0, le 12 ; avant : « Défilé des courses en ligne sur l'Accueil », 0.7.1 ; lot « Corde serveur » — serveur domestique Raspberry Pi, appairage, synchronisation depuis le PC —, version 0.7.0 ; avant : « Mises à jour depuis l'application », 0.6.0 ; « Widgets dans OBS », 0.5.0, et son correctif 0.5.1 ; « Courses en ligne », 0.4.0 ; publication dans `dultra123/corde`, sécurité réseau, adresse masquée sur l'accueil ; lot « Corde : renommage, migration des données, licence GPL, logo » ; avant : « S2 — calibration de l'ingénieur sur des données réelles », « réglages réels : fichiers .svm lus et écrits », « ressenti → symptômes → itération du plan », « Précision des tours », « Accueil » et « Application de bureau »).
+> Mis à jour à chaque jalon. Dernière mise à jour : 2026-11-14 (lot **« certificat de distribution stable »** (iOS, CI seulement), fusionné dans `main` ; avant, le même jour : **application Android 1.0.0**, lot 1 sans widgets, fusionnée dans `main` ; avant, le même jour : **version 1.0.0, première version officielle** : PC, Corde serveur et application iPhone au même numéro, demandée par le propriétaire ; avant, le même jour : widget « Courses en images », application iPhone 0.10.0, fusionné dans `main` ; avant, le même jour : « Widgets iOS et activité en direct », application iPhone 0.9.0, branche `ios-widgets` ; premier build iPhone dans TestFlight ; « Application iPhone », version 0.8.0, le 12 ; avant : « Défilé des courses en ligne sur l'Accueil », 0.7.1 ; lot « Corde serveur » — serveur domestique Raspberry Pi, appairage, synchronisation depuis le PC —, version 0.7.0 ; avant : « Mises à jour depuis l'application », 0.6.0 ; « Widgets dans OBS », 0.5.0, et son correctif 0.5.1 ; « Courses en ligne », 0.4.0 ; publication dans `dultra123/corde`, sécurité réseau, adresse masquée sur l'accueil ; lot « Corde : renommage, migration des données, licence GPL, logo » ; avant : « S2 — calibration de l'ingénieur sur des données réelles », « réglages réels : fichiers .svm lus et écrits », « ressenti → symptômes → itération du plan », « Précision des tours », « Accueil » et « Application de bureau »).
 
 ## Où on en est
 
@@ -36,6 +36,40 @@
 | 4 — Autres jeux | À faire | ACC, AC EVO, iRacing… |
 
 ## Points bloqués / dépendants du pilote
+
+- **Certificat de distribution stable** (iOS, 14 nov., branche `ios-cert-stable` relue et **fusionnée dans
+  `main`** sans relancer de build ; la clé a été créée hors du dépôt et remise au propriétaire seul) : le
+  propriétaire recevait un e-mail d'Apple « certificate revoked » à chaque build (quatre). Nouveau secret
+  **facultatif** `APPLE_DIST_KEY_BASE64` (clé privée RSA 2048, PEM en base64) : avec lui, le certificat
+  `DISTRIBUTION` qui porte cette clé est réutilisé tant qu'il expire dans plus de 30 jours, puis recréé
+  avec la même clé ; le ménage ne révoque plus que les certificats d'une autre clé (ancien mode) ou
+  bientôt expirés ; les profils « Corde CI… » restent refaits à chaque build. **Sans le secret, rien ne
+  change** (mêmes requêtes, vérifié par un essai). ADR 0012 P, `docs/IOS.md` (« Le cinquième secret »),
+  `docs/SECURITY-MODEL.md` §8.4. Pas de changement de version ni d'entrée au journal des versions.
+  **Vérifié ici** : `node --test apps/mobile/scripts/*.test.mjs` (32 essais, dont 10 nouveaux avec un faux
+  App Store Connect et des certificats auto-signés jetables : deux exécutions sans création ni
+  révocation, passage de l'ancien mode, renouvellement à moins de 30 jours, certificat hors profils
+  « Corde CI » réutilisé mais jamais révoqué, autre type jamais touché, listes sans contenu, filtre
+  refusé, requêtes identiques sans le secret, clés invalides, ligne de commande) et
+  `bash apps/mobile/scripts/ios-signing.test.sh` (clé du secret : 5 formes acceptées, 8 refusées, aucune
+  fuite), sous Linux avec OpenSSL 3.
+  **Corrigé à la relecture** : le nom d'un certificat *réutilisé* n'était pas masqué dans le journal (les
+  listes étaient demandées sans `name`, et le faux serveur le rendait quand même, ce qui cachait le
+  défaut : codesign ou xcodebuild auraient pu afficher le nom du titulaire dans un journal public). Le nom
+  est maintenant demandé, et masqué aussi d'après le sujet du certificat lui-même ; sans aucun nom connu,
+  le script s'arrête. Le faux serveur ne rend plus que les champs demandés ; deux essais de plus (34).
+  **Ne peut l'être que sur `main`, avec le secret** : la forme réelle de `certificateContent` dans les
+  listes d'Apple (`GET /v1/certificates`, `GET /v1/profiles/{id}/certificates` ; s'il manque, le script
+  relit chaque certificat), l'effet de `filter[certificateType]=DISTRIBUTION` (refusé : liste entière ;
+  le type est toujours revérifié), l'acceptation d'une CSR d'une clé déjà certifiée (au renouvellement
+  annuel, ou après une révocation à la main) et la limite du nombre de certificats de distribution.
+  **Reste au propriétaire, après la fusion** : coller le secret (clé fabriquée hors du dépôt, `docs/IOS.md`) ;
+  le premier build révoque une dernière fois le certificat de l'ancien mode (dernier e-mail) et crée celui
+  de la clé stable ; le suivant doit dire « Certificat de distribution réutilisé … aucun certificat créé ni
+  révoqué ».
+  **CI sur la branche** (commit `1eee6ba`) : `ci.yml` n° 42 vert ; `ios.yml` n° 20 (lancé à la main) vert —
+  `cle-api` (mêmes essais sur le Mac de GitHub, avec le LibreSSL de macOS : 21 essais de signature,
+  17 essais de la clé) et `simulator` ; `testflight` sauté hors de `main`, comme prévu.
 
 - **Application Android (1.0.0, 14 nov.)** : branche `android-app` relue (manifeste, configuration
   réseau, workflows, script de signature, captures de l'émulateur) et fusionnée dans `main`. La clé de
@@ -93,8 +127,8 @@
   manuel, signature contrôlée avant l'envoi. Le certificat d'une exécution est révoqué par la suivante
   (retrouvé par le profil « Corde CI … »). **Reste à faire par le propriétaire** : groupe de testeurs
   internes dans TestFlight, installation sur l'iPhone. **Reste connu** : un e-mail d'Apple
-  « certificat révoqué » est possible à chaque envoi (pour l'éviter : garder un certificat fixe dans les
-  secrets, non fait). **À vérifier sur l'iPhone** : autorisation « Réseau local » et accès HTTP au PC par son
+  « certificat révoqué » est possible à chaque envoi (pour l'éviter : le secret facultatif
+  `APPLE_DIST_KEY_BASE64`, lot « certificat de distribution stable », plus haut). **À vérifier sur l'iPhone** : autorisation « Réseau local » et accès HTTP au PC par son
   adresse IP (ATS) et par le VPN (`10.8.0.1`) ; WebSocket du direct depuis WKWebView ; notifications
   application fermée, son `corde-reminder.wav`, catégorie « Voir » ; lecture des deux sites par le HTTP
   natif (forme réelle de lmu.tools jamais vue) ; QR code ; paysage sur le Direct ; clavier.
