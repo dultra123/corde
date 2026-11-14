@@ -15,7 +15,7 @@ lancement, notifications, onglets en bas de l'écran).
 | Écran | Avec un PC ou un serveur Corde | Sans rien |
 |---|---|---|
 | **Accueil** | état du jeu et de la session, dernière session, dernières courses, carte « Ton serveur Corde » | défilé des courses en ligne (lu par le téléphone), carte « Ajouter un serveur » |
-| **Direct** | le tableau de bord en direct (le téléphone peut se tourner en paysage sur cette page) | explique comment ajouter le PC |
+| **Direct** | le **tableau de bord du téléphone** : plein écran, quatre pages qu'on fait glisser, écran gardé allumé (le téléphone peut se tourner en paysage sur cette page) | explique comment ajouter le PC, et propose **« Voir une démonstration »** |
 | **Sessions**, **Ingénieur**, **Profil** | comme dans le navigateur | expliquent comment ajouter le PC |
 | **Courses** | **toujours celles du téléphone** | planning lu par le téléphone, tes choix, tes rappels en **notifications** (application fermée, téléphone verrouillé) |
 | **Mes serveurs** (Accueil → « Mes serveurs ») | ajouter un PC ou un serveur Corde (adresse ou QR code), tester, choisir le serveur actif, appairer un serveur Corde avec son code | |
@@ -32,6 +32,30 @@ lancement, notifications, onglets en bas de l'écran).
   « Appairer ce téléphone » avec un code obtenu sur le serveur (`sudo corde-server pair`).
 - Au premier contact avec un serveur, l'iPhone demande l'autorisation **« Réseau local »** : il faut
   l'accepter (sinon : Réglages de l'iPhone → Confidentialité et sécurité → Réseau local → Corde).
+
+### Le tableau de bord (1.1)
+
+Le Direct de l'application est un **tableau de bord de course**, comme celui d'un volant ou de SimHub, pensé
+pour un téléphone posé en paysage à côté du volant (en portrait, les cases s'empilent) :
+
+- **Plein écran** : ni barre en haut ni onglets en bas. Le bouton **☰** (coin en haut à droite) ouvre les
+  quatre pages, « Passer aux widgets », les réglages, et les autres sections (Accueil, Courses, Sessions,
+  Profil, Mes serveurs).
+- **Quatre pages**, à faire glisser du doigt (ou toucher les points en bas) : **Course** (rampe de régime,
+  position, tours, grand rapport, vitesse, écart au meilleur tour, secteurs, écarts devant / derrière,
+  carburant, électronique, pneus), **Pneus & freins**, **Carburant & énergie**, **Chronos & écarts**. La
+  dernière page vue est retenue.
+- **L'écran reste allumé** tant que le tableau de bord est affiché et Corde au premier plan (réglage
+  « Garder l'écran allumé sur le tableau de bord », activé par défaut). Aucune autorisation.
+- **« Passer aux widgets »** remet l'ancienne grille ; le bouton **Tableau de bord** de la barre du haut y
+  revient. Le réglage **Affichage du Direct** (Automatique / Tableau de bord / Widgets) fait la même chose.
+- **« Voir une démonstration »** (dans « Mes serveurs », ou sur le Direct quand il n'y a aucun serveur) :
+  une course inventée, calculée sur le téléphone, sans PC ni réseau, avec l'étiquette « Démonstration ».
+  On la quitte par ☰ ou « Mes serveurs » ; elle n'est pas gardée au prochain lancement.
+
+À essayer la première fois : poser le téléphone en paysage pendant une vraie session, vérifier que l'écran
+ne s'éteint pas en quelques minutes, que les chiffres se lisent à bout de bras, et que la rampe clignote en
+bleu au moment de passer le rapport.
 
 ## 2. Widgets et Dynamic Island
 

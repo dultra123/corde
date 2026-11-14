@@ -137,6 +137,22 @@ Par défaut c'est désactivé, pour que Windows ne te demande rien. Pour l'activ
    l'adresse affichée dans le navigateur, par exemple `http://192.168.1.20:8471` ; c'est bien `http`,
    pas `https`).
 
+### Le téléphone (ou une tablette) comme tableau de bord
+
+Sur un téléphone, la page **Direct** n'est plus la grille de widgets mais un **tableau de bord de course**,
+comme sur un volant ou dans SimHub : grand rapport, rampe de régime, vitesse, écart au meilleur tour,
+carburant, et trois autres pages (pneus et freins, carburant et énergie, chronos et écarts) qu'on fait
+glisser du doigt. Pose le téléphone **en paysage** à côté du volant : l'écran reste allumé tant que le
+tableau de bord est affiché (si le navigateur le permet ; sinon, règle la mise en veille du téléphone).
+
+- **Une tablette ou un second écran du PC** : ouvre l'adresse du téléphone suivie de **`#/dash`** (par
+  exemple `http://192.168.1.20:8471/#/dash`, ou `http://127.0.0.1:8471/#/dash` sur le PC lui-même) : c'est
+  toujours le tableau de bord, quel que soit l'appareil. Sur le PC, les flèches ← → changent de page.
+- **Préférer les widgets sur le téléphone** (ou le tableau de bord sur la tablette) : Réglages →
+  **Affichage du Direct** → Widgets (ou Tableau de bord). « Automatique » choisit le tableau de bord sur un
+  téléphone et les widgets ailleurs. Le menu **☰** du tableau de bord propose aussi « Passer aux widgets ».
+- **L'essayer sans le jeu** : `http://127.0.0.1:8471/?demo=1#/dash` montre une course de démonstration.
+
 ---
 
 ## 6 bis. Les courses en ligne et leurs rappels (facultatif)

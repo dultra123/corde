@@ -17,7 +17,7 @@ interface, avec les onglets en bas de l'écran.
 | Écran | Avec un PC ou un serveur Corde | Sans rien |
 |---|---|---|
 | **Accueil** | état du jeu et de la session, dernière session, dernières courses, carte « Ton serveur Corde » | défilé des courses en ligne (lu par le téléphone), carte « Ajouter un serveur » |
-| **Direct** | le tableau de bord en direct (le téléphone peut se tourner en paysage sur cette page) | explique comment ajouter le PC |
+| **Direct** | le **tableau de bord du téléphone** : plein écran, quatre pages qu'on fait glisser, écran gardé allumé (le téléphone peut se tourner en paysage sur cette page) | explique comment ajouter le PC, et propose **« Voir une démonstration »** |
 | **Sessions**, **Ingénieur**, **Profil** | comme dans le navigateur | expliquent comment ajouter le PC |
 | **Courses** | **toujours celles du téléphone** | planning lu par le téléphone, tes choix, tes rappels en **notifications** (application fermée, téléphone verrouillé ou en veille) |
 | **Mes serveurs** (Accueil → « Mes serveurs ») | ajouter un PC ou un serveur Corde (adresse ou QR code), tester, choisir le serveur actif, appairer un serveur Corde avec son code | |
@@ -35,6 +35,10 @@ interface, avec les onglets en bas de l'écran.
 - **Le serveur Corde (Raspberry Pi)** : ajouter son adresse, puis « Appairer ce téléphone » avec un code
   obtenu sur le serveur (`sudo corde-server pair`). Le nom proposé pour le téléphone est « Android ».
 - **Pas d'autorisation « réseau local »** à donner : Android n'en a pas (contrairement à l'iPhone).
+- **Le tableau de bord du Direct** (1.1) : le même que sur iPhone ([IOS.md, « Le tableau de bord »](IOS.md#le-tableau-de-bord-11)) —
+  plein écran, quatre pages, **écran gardé allumé** (sans autorisation : Android l'accorde à la fenêtre
+  affichée), et **« Voir une démonstration »** sans PC. Le bouton retour d'Android garde son rôle : il
+  revient à la page précédente.
 
 ## 2. Installer l'application (pour le pilote)
 
