@@ -14,7 +14,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { ApiError, client, extensionName, makeToken, parseArgs, prepare } from "./asc-api.mjs";
+import { ApiError, cleanPrevious, client, extensionName, makeToken, parseArgs, prepare } from "./asc-api.mjs";
 import { manualSigning, manualSigningAll, parseSigningArgs } from "./xcode-signing.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -73,6 +73,9 @@ function fakeApple() {
       { id: "B-LONGER", identifier: `${BUNDLE}.widgetsdemo` },
       { id: "B-APP", identifier: BUNDLE },
     ],
+    // Comme chez Apple : un certificat révoqué reste listé sur les profils qui le portaient, et
+    // le révoquer une seconde fois est refusé (409).
+    revoked: new Set(),
     created: { profiles: [], bundles: [] },
     failCertificate: false,
   };
@@ -111,7 +114,18 @@ function fakeApple() {
       }
       if (req.method === "DELETE" && (match = path.match(/^\/v1\/certificates\/([\w-]+)$/))) {
         if (!state.certificates[match[1]]) return send(404, { errors: [{ code: "NOT_FOUND" }] });
-        delete state.certificates[match[1]];
+        if (state.revoked.has(match[1])) {
+          return send(409, {
+            errors: [
+              {
+                code: "ENTITY_ERROR",
+                title: "There is a problem with the request entity",
+                detail: 'This certificate cannot be revoked because it is not in an "issued" state.',
+              },
+            ],
+          });
+        }
+        state.revoked.add(match[1]);
         return send(204);
       }
       if (req.method === "DELETE" && (match = path.match(/^\/v1\/profiles\/([\w-]+)$/))) {
@@ -238,7 +252,8 @@ test("prepare : identifiant des widgets créé, ménage, un certificat, un profi
 
     // Ménage : seuls les profils « Corde CI … » partent, avec leur seul certificat DISTRIBUTION
     // (révoqué une fois, même attaché à deux profils).
-    assert.deepEqual(Object.keys(apple.state.certificates).sort(), ["C-MANAGED", "C-NEW", "C-OTHER"]);
+    assert.deepEqual([...apple.state.revoked], ["C-OLD"]);
+    assert.equal(apple.state.calls.filter((c) => c === "DELETE /v1/certificates/C-OLD").length, 1);
     assert.deepEqual(apple.state.profiles.map((p) => p.id).sort(), ["P-NEW-1", "P-NEW-2", "P-OTHER"]);
     const firstCreate = apple.state.calls.indexOf("POST /v1/certificates");
     assert.ok(apple.state.calls.indexOf("DELETE /v1/certificates/C-OLD") < firstCreate);
@@ -275,6 +290,20 @@ test("prepare : identifiant des widgets créé, ménage, un certificat, un profi
     for (const line of lines) {
       if (!line.startsWith("::add-mask::")) assert.doesNotMatch(line, /Camille/);
     }
+  });
+});
+
+test("ménage : un certificat déjà révoqué (409 d'Apple) n'arrête rien, son profil part quand même", async () => {
+  await withApple(async ({ apple, api }) => {
+    // L'état laissé par un ménage interrompu : le profil de l'application est parti, celui des
+    // widgets reste, attaché à un certificat qu'Apple liste encore mais qui est déjà révoqué.
+    apple.state.profiles = apple.state.profiles.filter((p) => p.id !== "P-OLD");
+    apple.state.revoked.add("C-OLD");
+    const cleaned = await cleanPrevious(api, "Corde CI ");
+    assert.deepEqual(cleaned, { profiles: 1, certificates: 0 });
+    assert.ok(apple.state.calls.includes("DELETE /v1/certificates/C-OLD"));
+    assert.deepEqual(apple.state.profiles.map((p) => p.id), ["P-OTHER"]);
+    assert.ok(!apple.state.revoked.has("C-OTHER"));
   });
 });
 

@@ -135,6 +135,7 @@ export async function cleanPrevious(api, prefix) {
   const profiles = await api.list("/v1/profiles?limit=200&fields[profiles]=name");
   let removed = 0;
   let revoked = 0;
+  const handled = new Set();
   for (const profile of profiles) {
     if (!String(profile.attributes?.name ?? "").startsWith(prefix)) continue;
     const certificates = await api.list(
@@ -143,11 +144,18 @@ export async function cleanPrevious(api, prefix) {
     for (const certificate of certificates) {
       // Jamais un certificat géré par Apple, ni de développement : seulement « DISTRIBUTION ».
       if (certificate.attributes?.certificateType !== "DISTRIBUTION") continue;
+      // Les profils d'une même exécution (application, widgets) portent le même certificat :
+      // il n'est révoqué qu'une fois.
+      if (handled.has(certificate.id)) continue;
+      handled.add(certificate.id);
       try {
         await api.request("DELETE", `/v1/certificates/${certificate.id}`);
         revoked++;
       } catch (error) {
-        if (!(error instanceof ApiError) || error.status !== 404) throw error;
+        // 404 : il n'existe plus. 409 : Apple le liste encore sur le profil alors qu'il est déjà
+        // révoqué (« not in an "issued" state ») — un ménage interrompu, ou un certificat révoqué
+        // à la main. Dans les deux cas il n'y a plus rien à révoquer.
+        if (!(error instanceof ApiError) || (error.status !== 404 && error.status !== 409)) throw error;
       }
     }
     try {
