@@ -46,9 +46,7 @@ name: Android
 on:
   workflow_dispatch:
   push:
-    # PROVISOIRE (lot Android) : android-app tant que le workflow n'existe pas sur main (un
-    # workflow absent de la branche par défaut ne peut pas être lancé à la main). À retirer.
-    branches: [main, android-app]
+    branches: [main]
     paths:
       - "apps/mobile/**"
       - "packages/ui/**"
