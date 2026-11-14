@@ -6,6 +6,7 @@
 > Signaler une faille : [SECURITY.md](../SECURITY.md). Vie privée : [PRIVACY.md](../PRIVACY.md).
 > Le **serveur Corde de la maison** (`--role hub`, 0.7, appairage obligatoire) a ses propres règles :
 > [§7](#7-le-serveur-corde-mode-hub). L'**application iPhone** (0.8) : [§8](#8-lapplication-iphone).
+> L'**application Android** (1.0) : [§9](#9-lapplication-android).
 
 ## 1. Ce qui tourne
 
@@ -28,6 +29,7 @@ autrement :
 | OBS (source navigateur, mode overlay de 0.5) | `http://127.0.0.1:8471/#/overlay/…` ; second PC de stream : `http://<ip-du-pc>:8471/#/overlay/…` (accès réseau activé) | même origine |
 | Développement, scripts de capture | `http://127.0.0.1:<autre port>/?server=127.0.0.1:8471`, `vite dev` sur `localhost:5173` | origine locale (autre port de la boucle locale) |
 | Application iPhone (0.8, `apps/mobile`, Capacitor) | `capacitor://localhost/index.html` (l'interface est **dans** l'application) ; elle appelle `http://<ip-du-pc>:8471` ou le serveur Corde | `capacitor://localhost` (§8) |
+| Application Android (1.0, `apps/mobile/android`, Capacitor) | `http://localhost/index.html` (servie par l'application elle-même, pas par le réseau) ; elle appelle `http://<ip-du-pc>:8471` ou le serveur Corde | `http://localhost` : une origine locale, sans droit « ce PC » depuis un téléphone (§9) |
 
 Les pages propres à la coquille (écran de démarrage, `apps/desktop/dist` : `tauri://localhost` sous
 macOS/Linux, `http://tauri.localhost` sous Windows) n'appellent pas l'API HTTP — elles passent par l'IPC de
@@ -87,7 +89,8 @@ Ordre d'application (`guard::guard`, après le routage) :
    - la **même que l'hôte demandé** : schéma `http`, même hôte et même port que `Host` (cas du téléphone et
      de la fenêtre de bureau) ;
    - une **origine locale** : `http://127.0.0.1:*`, `http://localhost:*`, `http://[::1]:*` (autres ports :
-     serveur de développement, scripts de capture) ;
+     serveur de développement, scripts de capture ; sans port, c'est aussi l'origine de l'application
+     Android, §9) ;
    - une **origine de la coquille Tauri** : `tauri://localhost`, `http://tauri.localhost`,
      `https://tauri.localhost` ;
    - l'**origine de l'application iPhone** : `capacitor://localhost` exactement (0.8, §8) — acceptée
@@ -316,6 +319,12 @@ aucune route de mise à jour. Vie privée : [PRIVACY.md](../PRIVACY.md#mises-à-
 - Les scripts de capture (`packages/ui/scripts/screenshot-home.mjs`, `screenshot-sessions.mjs --spawn`)
   échouent sur toute erreur de console : ils vérifient que l'interface fonctionne depuis une autre origine
   locale.
+- Application Android (1.0) : `guard.rs` (`http://localhost` accepté sur toute adresse, jamais « ce PC »
+  depuis une adresse du réseau), `tests/mobile_app.rs` (appairage et jeton sur un vrai serveur Corde avec
+  cette origine), `packages/ui/src/mobile/android.test.tsx` (rien de `CordeNative` sur Android, rappels sur
+  le canal, alarmes exactes seulement autorisées), et la CI (`android.yml` : autorisations exactes,
+  composants exportés, sauvegardes coupées, aucune bibliothèque Google, essai sur un émulateur sans
+  services Google).
 - Application iPhone (0.8) : `guard.rs` (unitaires : `capacitor://localhost` accepté sur toute adresse,
   imitations refusées, jamais « ce PC », pré-requête avec `Authorization`), `hub/auth.rs` (jeton dans le
   sous-protocole, seulement sur une demande de WebSocket), `tests/mobile_app.rs` (serveurs réels : PC avec
@@ -530,3 +539,93 @@ Workflow `.github/workflows/ios.yml`, scripts `apps/mobile/scripts/` (`asc-key.s
 - **Limite assumée** : une clé Admin peut tout faire dans App Store Connect, sauf ce qui est réservé au
   titulaire du compte. C'est l'accès avec lequel l'envoi a été vérifié ; qui a la main sur les secrets du
   dépôt a donc la main sur le compte App Store Connect.
+
+## 9. L'application Android
+
+Décision : [ADR 0013](adr/0013-application-android.md). Guide : [ANDROID.md](ANDROID.md). Code : le même
+que l'iPhone (`packages/ui/src/mobile/`, choix par plateforme dans `device.ts`, `android.ts`), projet
+`apps/mobile/android/` (manifeste, `res/xml/network_security_config.xml`,
+`res/xml/data_extraction_rules.xml`, `app/build.gradle`), CI `.github/workflows/android.yml`.
+
+### 9.1 Origine et serveur
+
+| Élément | Règle |
+|---|---|
+| Origine des pages | `http://localhost` (sans port) : `server.androidScheme` = `http` dans `apps/mobile/capacitor.config.json` ; la webview sert l'interface embarquée à cette adresse, sans passer par le réseau. Choisie parce que la valeur par défaut de Capacitor (`https://localhost`) ferait de chaque appel au PC (`http://192.168.…`) du « contenu mixte », bloqué par la webview sauf à l'autoriser pour tout (`allowMixedContent`, laissé à `false`) |
+| Côté serveur | **rien à changer** : `http://localhost` est une origine locale (`net::origin_is_local`, §3 règle 2), déjà acceptée pour l'`Origin`, CORS (avec `Authorization`) et le WebSocket, sur le PC comme sur le serveur Corde. Fonctionne avec un Corde 0.8 ou plus |
+| « Ce PC » | jamais depuis un téléphone : les routes réservées (§4) exigent **aussi** que la connexion TCP vienne de la boucle locale (`may_change_settings` : `peer_is_local` **et** origine locale). Un téléphone se connecte depuis son adresse du Wi-Fi ou du VPN, jamais `127.0.0.1` (essai `guard.rs`, `the_android_application_is_allowed_but_never_counts_as_this_pc`) |
+| Serveur Corde | comme l'iPhone (§8.1) : appairage `kind: "app"`, `Authorization: Bearer`, jeton en sous-protocole WebSocket ; sans jeton, 401 (essai `tests/mobile_app.rs`, `the_android_application_pairs_with_the_home_server_from_its_origin`) |
+
+**Pourquoi c'est sans risque nouveau** : une page web ouverte dans un navigateur n'a l'origine
+`http://localhost` que si elle est servie **par la machine même du navigateur**, sur le port 80. Sur le PC,
+c'était déjà le cas avant l'application Android (§3), et une telle page n'a de toute façon pas plus de droits
+qu'un programme du PC ; sur le téléphone, seule l'application Corde sert des pages à cette adresse dans sa
+webview. Différence avec l'iPhone, à connaître : `capacitor://localhost` n'est **jamais** une page du PC,
+`http://localhost` **l'est** pour le contrôle d'origine ; c'est la règle de la boucle locale qui garde les
+routes du PC.
+
+### 9.2 Ce que fait l'application
+
+- **Serveurs, jeton, requêtes, planning, liens** : les mêmes règles que sur iPhone (§8.2) — `http://`
+  seulement vers le réseau privé ou local (`mobile/addresses.ts`), jeton à part dans les préférences de
+  l'application (Capacitor Preferences = `SharedPreferences`, dans son bac à sable), planning par le HTTP
+  natif (`CapacitorHttp` = `HttpURLConnection`) avec les mêmes limites, cookies effacés après chaque page,
+  liens `corde://` limités à une liste de pages.
+- **Trafic en clair** (`network_security_config.xml`) : **autorisé pour toutes les adresses**. Android ne
+  sait pas le limiter à des plages d'adresses privées (un `domain-config` prend des **noms** d'hôtes, pas
+  des plages comme `192.168.0.0/16`). La limite est donc dans le code de l'application, pas dans le système :
+  `addresses.ts` refuse un serveur `http://` dont l'adresse est publique. Le fichier refuse en plus le clair
+  vers `racecontrol.gg` et `lmu.tools` (que le code lit déjà en `https` seulement). Seules les autorités de
+  certification du système sont acceptées (aucune ajoutée par l'utilisateur). À retenir : une faille qui
+  ferait appeler une adresse publique en `http://` par l'application ne serait pas arrêtée par Android.
+- **Sauvegardes** : `android:allowBackup="false"` et `data_extraction_rules.xml` excluent **tout** (tous
+  les domaines, sauvegarde dans le nuage et transfert d'appareil à appareil). Le jeton d'appairage, les
+  adresses des serveurs et les choix de courses ne partent ni chez Google ni sur un autre téléphone.
+  Différence avec l'iPhone, où ces données suivent les sauvegardes de l'appareil (§8.2).
+- **Autorisations** (liste exacte vérifiée par la CI sur le manifeste fusionné) : `INTERNET` ;
+  `POST_NOTIFICATIONS`, `SCHEDULE_EXACT_ALARM`, `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK` (rappels) ; `CAMERA`
+  (demandée au toucher de « Scanner le QR code ») ; la permission « signature »
+  `io.github.dultra123.corde.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` d'androidx.core (protège ses propres
+  récepteurs, accordée à Corde seule). Aucune localisation, aucun accès aux fichiers.
+- **Aucune bibliothèque Google** : ML Kit (que le module du lecteur de QR code tire, et qui envoie des
+  rapports d'usage à Google), Play services, Firebase et `datatransport` sont exclus de l'APK ; la CI vérifie
+  les dépendances et les classes définies dans l'APK. L'application fonctionne sur un téléphone sans
+  services Google (essayée sur une image AOSP).
+- **Composants exportés** : l'activité principale seulement (lanceur et liens `corde://`), plus ceux des
+  bibliothèques qu'une autorisation du système réserve au système ou à l'outil de débogage (liste affichée et
+  vérifiée par la CI sur le manifeste fusionné). Les récepteurs du module de notifications ne sont pas
+  exportés.
+- **Débogage** : la webview n'est inspectable que dans le build Debug ; les **entrées de l'essai de fumée**
+  (`DebugHooks.java` : programmer un rappel de test, appeler une adresse `http://`, ouvrir le lecteur) n'existent
+  que dans le build Debug (`src/debug`) ; le build Release en a une version vide. Aucune ne lit ni ne change
+  les données du pilote.
+
+### 9.3 Ce qui ne protège pas
+
+- Comme sur iPhone (§8.3) : le trafic vers le PC ou le serveur Corde reste en **HTTP non chiffré** sur le
+  réseau de la maison ; un **téléphone volé et déverrouillé** ouvre le serveur Corde jusqu'à la révocation.
+- L'APK s'installe hors du Play Store : le pilote doit autoriser « Installer des applis inconnues » pour son
+  navigateur le temps de l'installation (il peut la retirer ensuite, [ANDROID.md §2](ANDROID.md#2-installer-lapplication-pour-le-pilote)).
+  Une mise à jour n'est acceptée par Android que signée par **la même clé** que l'application installée.
+
+### 9.4 Signature et publication (CI)
+
+Workflow `.github/workflows/android.yml`, script `apps/mobile/scripts/android-signing.sh` (essais :
+`android-signing.test.sh`).
+
+- **Secrets** : `ANDROID_KEYSTORE_BASE64` (magasin PKCS12 encodé en base64, clé `corde`) et
+  `ANDROID_KEYSTORE_PASSWORD` (le même pour le magasin et la clé). Lus seulement par le job `release`, qui
+  ne tourne que sur `dultra123/corde`, sur `main`, jamais sur une demande de fusion ni un fork. Sans eux, le
+  job le dit et réussit.
+- **Le magasin** n'est écrit que dans un dossier temporaire du runner (0700, fichier 0600) et effacé à la
+  fin du job, même en cas d'échec. Le mot de passe n'est passé qu'à Gradle, par l'environnement de l'étape ;
+  il n'est écrit dans aucun fichier.
+- **Rien n'est affiché** que des longueurs, des formes et l'**empreinte SHA-256** du certificat : ni le mot
+  de passe, ni le magasin, ni le nom du certificat (`Owner: CN=…`, que le propriétaire est invité à ne pas
+  remplir avec son vrai nom : le certificat est lisible par tous dans l'APK).
+- **Contrôle** : `apksigner verify` (schéma v2 ou v3, un seul signataire, empreinte égale à celle du
+  magasin) et `jarsigner` / `keytool` pour le bundle (même certificat).
+- **Branches** : le même chemin est essayé avec une **clé jetable** créée par le job (`throwaway`), masquée
+  dans le journal comme un secret ; rien n'est publié.
+- **Publication** : `contents: write` seulement pour ce job ; il remplace l'APK de la pré-release
+  `continuous` et n'ajoute un APK à une release numérotée que si elle n'en a pas (jamais remplacé).

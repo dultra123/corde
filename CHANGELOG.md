@@ -40,6 +40,35 @@ versions de test ; les nouveautés suivantes arriveront par les mises à jour.
 - Ce qui a été vérifié avec le jeu et ce qui ne l'a pas encore été est dit, ligne par ligne, dans le
   tableau « Où en est le projet » du README.
 
+## [Android 1.0.0] — 2026-11-14
+
+Première application Android. Corde sur le PC, Corde serveur et l'application iPhone ne changent pas. (Le
+titre porte « Android » pour que cette section ne soit jamais reprise dans les notes d'une version du PC.)
+
+### Nouveautés
+
+- **Corde sur Android** (Android 8 ou plus récent) : la même application que sur iPhone — la page
+  **Courses sans PC** (planning lu par le téléphone, tes choix, tes **rappels en notifications** même
+  application fermée et téléphone en veille, avec le son de Corde), « Mes serveurs » (ton PC par son adresse
+  ou son QR code, ton serveur Corde par un code d'appairage), et le direct, les sessions, l'ingénieur et le
+  profil dès qu'un serveur est ajouté. Le Direct se tourne en paysage ; le bouton retour d'Android revient à
+  la page précédente.
+- **Sans Google** : aucune bibliothèque Google (ni Play services, ni Firebase, ni statistiques) ; Corde
+  marche aussi sur un téléphone sans services Google.
+
+### À savoir
+
+- Elle s'installe à partir du fichier **`Corde_1.0.0_android.apk`** des releases (pas encore sur le Play
+  Store) : il faut autoriser ton navigateur à « installer des applis inconnues ». Le guide pas à pas :
+  [docs/ANDROID.md](docs/ANDROID.md).
+- Android te demande les **notifications** à ton premier choix de course, puis Corde te propose
+  « **Alarmes et rappels** » pour que les rappels sonnent à la minute près ; sans elle, ils peuvent arriver
+  avec quelques minutes de retard quand le téléphone dort.
+- Pas encore de **widgets** ni de **compte à rebours** sur Android.
+- Tes données Corde ne partent ni dans la sauvegarde Google ni vers un nouveau téléphone : sur un nouveau
+  téléphone, rajoute tes serveurs et appaire-le à nouveau.
+- Compilée et essayée sur un émulateur par GitHub ; **pas encore essayée sur un vrai téléphone**.
+
 ## [iPhone 0.10.0] — 2026-11-14
 
 Application iPhone seulement : Corde sur le PC et Corde serveur restent en 0.8.0.
