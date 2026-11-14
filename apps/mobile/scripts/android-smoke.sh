@@ -155,10 +155,10 @@ sleep 6
 shot home
 keep 1-start
 # Le canal des rappels est créé au démarrage, nommé dans la langue de l'interface.
-if adb shell dumpsys notification | tr -d '\r' | grep -q "mId='corde-races', mName=Rappels des courses"; then
+if adb shell dumpsys notification --noredact | tr -d '\r' | grep -q "mId='corde-races', mName=Rappels des courses"; then
   ok "canal « Rappels des courses » créé (interface en français)"
 else
-  warn "canal des rappels absent ou pas en français : $(adb shell dumpsys notification | tr -d '\r' | grep -o "mId='corde-races', mName=[^,]*" | head -n 1)"
+  warn "canal des rappels absent ou pas en français : $(adb shell dumpsys notification --noredact | tr -d '\r' | grep -o "mId='corde-races', mName=[^,]*" | head -n 1)"
 fi
 
 # 2. Lien corde://races.
@@ -173,7 +173,11 @@ shot races
 
 # 2 bis. Le Direct se tourne en paysage (les autres pages restent en portrait) : téléphone tourné
 #        d'un quart de tour (rotation imposée, sans capteur), capture « live », puis retour en portrait.
-rotation() { adb shell dumpsys input | tr -d '\r' | sed -n 's/.*SurfaceOrientation: //p' | head -n 1; }
+# Sens de l'écran d'après une capture : « paysage » si elle est plus large que haute.
+rotation() {
+  adb exec-out screencap -p > "$out/orientation.png" 2> /dev/null || return
+  identify -format '%w %h' "$out/orientation.png" 2> /dev/null | awk '{print ($1 > $2) ? "paysage" : "portrait"}'
+}
 adb shell settings put system accelerometer_rotation 0 || true
 adb shell am start -W -a android.intent.action.VIEW -d "corde://live" "$pkg" > /dev/null
 wait_log "\[corde\] link: #/" 20 || true
@@ -185,9 +189,9 @@ shot live
 adb shell am start -W -a android.intent.action.VIEW -d "corde://races" "$pkg" > /dev/null
 sleep 5
 races_rotation="$(rotation)"
-echo "Rotation de l'écran : Direct ${live_rotation:-?}, Courses ${races_rotation:-?} (0 portrait, 1 ou 3 paysage)"
-if [ "$live_rotation" = "1" ] || [ "$live_rotation" = "3" ]; then ok "Direct en paysage"; else warn "le Direct ne s'est pas mis en paysage"; fi
-if [ "$races_rotation" = "0" ]; then ok "Courses reste en portrait"; else warn "Courses n'est pas revenue en portrait"; fi
+echo "Écran tourné : Direct ${live_rotation:-?}, Courses ${races_rotation:-?}"
+if [ "$live_rotation" = "paysage" ]; then ok "Direct en paysage"; else warn "le Direct ne s'est pas mis en paysage"; fi
+if [ "$races_rotation" = "portrait" ]; then ok "Courses reste en portrait"; else warn "Courses n'est pas revenue en portrait"; fi
 adb shell settings put system user_rotation 0 || true
 sleep 3
 
@@ -203,7 +207,7 @@ adb shell input tap "$((width / 10))" "$((height * 92 / 100))"
 sleep 4
 went_back=false
 exited=false
-for _ in 1 2 3 4; do
+for _ in 1 2 3 4 5 6 7 8; do
   adb shell input keyevent KEYCODE_BACK
   sleep 3
   if logs | grep -q "\[corde\] back: exit"; then
@@ -216,7 +220,7 @@ if $went_back; then ok "retour : page précédente"; else warn "retour : « back
 if $exited; then ok "retour depuis la première page : l'application se ferme"; else warn "retour : « back: exit » absent"; fi
 sleep 2
 if adb shell dumpsys activity activities | grep -E "mResumedActivity|topResumedActivity" | grep -q "$pkg"; then
-  warn "l'application est encore au premier plan après le second retour"
+  warn "l'application est encore au premier plan après les retours"
 else
   ok "l'application n'est plus au premier plan"
 fi
