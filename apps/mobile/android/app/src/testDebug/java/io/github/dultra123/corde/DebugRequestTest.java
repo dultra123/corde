@@ -33,6 +33,22 @@ public class DebugRequestTest {
     }
 
     @Test
+    public void demoTakesOnlyKnownPagesAndOrientations() {
+        assertEquals(
+            "{\"action\":\"demo\",\"page\":\"tyres\",\"orientation\":\"landscape\"}",
+            DebugRequest.eventData("demo", 0, null, "tyres", "landscape")
+        );
+        assertEquals(
+            "{\"action\":\"demo\",\"page\":\"course\",\"orientation\":null}",
+            DebugRequest.eventData("demo", 0, null, "\"};alert(1);//", "sideways")
+        );
+        assertEquals(
+            "{\"action\":\"demo\",\"page\":\"course\",\"orientation\":null}",
+            DebugRequest.eventData("demo", 60, null)
+        );
+    }
+
+    @Test
     public void quotedStringsCannotLeaveTheLiteral() {
         assertEquals("\"a\\\"b\\\\c\"", DebugRequest.quote("a\"b\\c"));
         assertEquals("\"\\u003c/script\\u003e\\u2028\"", DebugRequest.quote("</script>\u2028"));

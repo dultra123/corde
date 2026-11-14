@@ -1,4 +1,6 @@
 import "../styles/app.css";
+import { pageIndex } from "../dash/model";
+import { useDashPage } from "../dash/store";
 import { type TranslationKey, t } from "../i18n";
 import { parseRoute } from "../nav/routes";
 import { setTokenProvider } from "../net/auth";
@@ -6,6 +8,7 @@ import { connection } from "../net/connection";
 import { setRaceBackend } from "../races/backend";
 import { useRaces } from "../store/races";
 import { useSettings } from "../store/settings";
+import { useTelemetry } from "../store/telemetry";
 import {
   AndroidReminders,
   backAction,
@@ -47,6 +50,7 @@ import {
   PickAction,
   ReminderStatus,
   RemindersExtra,
+  startDemo,
   useServerGate,
   useServerOnline,
 } from "./ui";
@@ -77,9 +81,25 @@ function followOrientation(): void {
  * The test entries of the Android Debug build (`android.ts`, `DebugHooks.java`): each one only
  * writes what happened to the log, read by the CI's smoke test.
  */
-async function runDebug(r: DebugRequest, android: AndroidReminders): Promise<void> {
+async function runDebug(r: DebugRequest, android: AndroidReminders | null): Promise<void> {
   switch (r.action) {
+    case "demo": {
+      if (useTelemetry.getState().demo !== "manual") startDemo();
+      else window.location.hash = "#/";
+      useDashPage.getState().show(pageIndex(r.page));
+      if (r.orientation) {
+        // After the hash change (`followOrientation` unlocks the dashboard first).
+        await new Promise((ok) => setTimeout(ok, 300));
+        await ScreenOrientation.lock({ orientation: r.orientation });
+      }
+      log(`debug: demo ${r.page}${r.orientation ? ` ${r.orientation}` : ""}`);
+      return;
+    }
     case "reminder": {
+      if (!android) {
+        log("debug: reminder (Android only)");
+        return;
+      }
       const style = await android.style();
       const n = debugReminder(Date.now(), r.delaySec, useSettings.getState().lang, style);
       await notifications.schedule({ notifications: [n] });
@@ -102,8 +122,22 @@ async function runDebug(r: DebugRequest, android: AndroidReminders): Promise<voi
   }
 }
 
-/** Android: the back button, the test entries of the Debug build. */
-function installAndroid(android: AndroidReminders): void {
+/**
+ * The test entries of the Debug builds (`cordeDebug` events, sent by `DebugHooks.java` on
+ * Android and by `WidgetShots.swift` on the iPhone; nothing sends them in a Release build).
+ */
+function installDebug(android: AndroidReminders | null): void {
+  window.addEventListener("cordeDebug", (ev) => {
+    const r = parseDebugRequest(ev);
+    if (!r) return;
+    runDebug(r, android).catch((e: unknown) =>
+      log(`debug: ${r.action} failed (${e instanceof Error ? e.message : String(e)})`),
+    );
+  });
+}
+
+/** Android: the back button. */
+function installAndroid(): void {
   quiet(
     App.addListener("backButton", ({ canGoBack }) => {
       const action = backAction(canGoBack);
@@ -113,13 +147,6 @@ function installAndroid(android: AndroidReminders): void {
     }),
     "back button",
   );
-  window.addEventListener("cordeDebug", (ev) => {
-    const r = parseDebugRequest(ev);
-    if (!r) return;
-    runDebug(r, android).catch((e: unknown) =>
-      log(`debug: ${r.action} failed (${e instanceof Error ? e.message : String(e)})`),
-    );
-  });
 }
 
 /**
@@ -285,8 +312,9 @@ export async function bootApp(): Promise<void> {
     "keyboard",
   );
   followOrientation();
+  installDebug(android);
   if (android) {
-    installAndroid(android);
+    installAndroid();
     // The channel of the reminders exists before anything is planned on it.
     await android.createChannel().catch((e: unknown) => log(`notification channel: ${String(e)}`));
   }

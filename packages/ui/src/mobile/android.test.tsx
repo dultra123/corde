@@ -326,6 +326,14 @@ describe("the back button and the smoke test's entry", () => {
     expect(parseDebugRequest({ action: "fetch", url: "https://example.com/" })).toBeNull();
     expect(parseDebugRequest({ action: "fetch", url: "javascript:alert(1)" })).toBeNull();
     expect(parseDebugRequest({ action: "scan" })).toEqual({ action: "scan" });
+    expect(
+      parseDebugRequest({ detail: { action: "demo", page: "tyres", orientation: "landscape" } }),
+    ).toEqual({ action: "demo", page: "tyres", orientation: "landscape" });
+    expect(parseDebugRequest({ action: "demo", page: "<b>", orientation: "upside" })).toEqual({
+      action: "demo",
+      page: "course",
+      orientation: null,
+    });
     expect(parseDebugRequest({ action: "pick" })).toBeNull();
     expect(parseDebugRequest(null)).toBeNull();
   });

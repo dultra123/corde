@@ -19,17 +19,30 @@
 //   -CordeOpenDelay <s>        secondes (15 par défaut) : même chemin qu'un toucher de widget
 //                              (scene(_:openURLContexts:)), sans la fenêtre « Ouvrir dans
 //                              Corde ? » que `simctl openurl` fait apparaître.
+//   -CordeDemoDash <page>      après -CordeDemoDelay secondes (15 par défaut), la démonstration
+//                              sur le tableau de bord, à la page <page> (course, tyres, energy,
+//                              timing) : l'événement `cordeDebug` de la page, comme l'intention
+//                              de débogage d'Android (packages/ui/src/mobile/android.ts). Aucun
+//                              lien public.
+//   -CordeDemoOrientation <o>  landscape ou portrait : l'écran est tourné pour la capture.
 //
 // Rien de ceci n'existe dans le build Release (TestFlight).
 
 #if DEBUG
 import ActivityKit
+import Capacitor
 import SwiftUI
 import UIKit
 import WidgetKit
 
 enum CordeDebug {
     private static var args: [String] { ProcessInfo.processInfo.arguments }
+
+    /// Le pont de Capacitor (donné par CordeBridgeViewController), pour envoyer un événement à
+    /// la page.
+    static weak var bridge: CAPBridgeProtocol?
+
+    private static let dashPages = ["course", "tyres", "energy", "timing"]
 
     private static func value(_ name: String) -> String? {
         guard let i = args.firstIndex(of: name), i + 1 < args.count else { return nil }
@@ -71,7 +84,23 @@ enum CordeDebug {
         }
     }
 
+    /// `-CordeDemoDash` : la démonstration sur le tableau de bord, pour les captures de la CI.
+    private static func scheduleDemoDash() {
+        guard let page = value("-CordeDemoDash") else { return }
+        // Seulement des valeurs connues : rien d'autre n'entre dans le JavaScript.
+        let safePage = dashPages.contains(page) ? page : "course"
+        let orientation = value("-CordeDemoOrientation")
+        let o = orientation == "landscape" || orientation == "portrait" ? "\"\(orientation!)\"" : "null"
+        let data = "{\"action\":\"demo\",\"page\":\"\(safePage)\",\"orientation\":\(o)}"
+        let delay = Double(value("-CordeDemoDelay") ?? "") ?? 15
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            NSLog("[corde-native] debug: demo %@", data)
+            bridge?.triggerWindowJSEvent(eventName: "cordeDebug", data: data)
+        }
+    }
+
     static func sceneDidConnect() {
+        scheduleDemoDash()
         guard let link = value("-CordeOpenURL"), let url = URL(string: link) else { return }
         let delay = Double(value("-CordeOpenDelay") ?? "") ?? 15
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {

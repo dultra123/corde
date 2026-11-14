@@ -302,10 +302,26 @@ jobs:
           shot island
           xcrun simctl launch "$UDID" "$BUNDLE_ID" > /dev/null || true
 
+          # 5. Le tableau de bord du téléphone, en démonstration (calculée sur le téléphone) :
+          #    page Course et page Pneus en paysage, page Course en portrait. L'application
+          #    elle-même envoie la demande à sa page après 15 s (-CordeDemoDash, WidgetShots.swift,
+          #    build Debug) : aucun lien public, rien d'autre ne change.
+          n=5
+          for spec in "course landscape" "tyres landscape" "course portrait"; do
+            page="${spec% *}"
+            orientation="${spec#* }"
+            xcrun simctl terminate "$UDID" "$BUNDLE_ID" || true
+            sleep 2
+            launch "$n" -CordeDemoDash "$page" -CordeDemoOrientation "$orientation" -CordeDemoDelay 15
+            sleep 30
+            shot "dash-${page}-${orientation}"
+            n=$((n + 1))
+          done
+
           echo "::group::Lignes de Corde (tous les lancements)"
           grep -h -E '\[corde(-native)?\]' "$out"/run*-std*.log || echo "(aucune)"
           echo "::endgroup::"
-          for n in 1 2 3 4; do
+          for n in 1 2 3 4 5 6 7; do
             echo "::group::Journal du lancement ${n} (stdout, 120 dernières lignes)"
             tail -n 120 "$out/run${n}-stdout.log" || true
             echo "::endgroup::"
@@ -346,6 +362,10 @@ jobs:
           check "réduction d'une grande image (JPEG ≤ 48 Kio)" "image reduce: .* ok \(limit" "$out/run3-stderr.log"
           check "planches du widget en images (4 + 3 planches)" "shots: ([7-9]|[1-9][0-9]) images" "$out/run3-stderr.log"
           check "activité en direct d'exemple démarrée" "demo activity: started" "$out/run4-stderr.log"
+          check "tableau de bord en démonstration (Course, paysage)" "debug: demo course landscape" "$out/run5-stdout.log"
+          check "tableau de bord en démonstration (Pneus, paysage)" "debug: demo tyres landscape" "$out/run6-stdout.log"
+          check "tableau de bord en démonstration (Course, portrait)" "debug: demo course portrait" "$out/run7-stdout.log"
+          check "écran gardé allumé par le tableau de bord" "screen kept on: true" "$out/run5-stdout.log"
           echo "Signature du simulateur : ${SIM_SIGNING:-?}"
 
       # Le code Release (sans les outils de WidgetShots.swift, optimisé) n'est compilé pour de vrai
