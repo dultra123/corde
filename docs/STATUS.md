@@ -49,16 +49,19 @@
 - **SignPath Foundation** (signature gratuite) : le propriétaire a préparé le formulaire mais attend d'avoir une réputation à montrer. Conditions relues le 11 nov. : projet public et déjà publié, politique de confidentialité, désinstallation documentée, options pour couper les connexions, double authentification, approbation manuelle de chaque version. Ne pas ajouter la mention « Code signing policy » avant la demande.
 - **Releases numérotées** : créées par la CI elle-même (job `version`, 0.6.0) quand le numéro de `tauri.conf.json` change sur `main` — plus besoin de pousser une étiquette `v*` (impossible depuis la session d'agent). Publier une version : `apps/desktop/README.md` → « Publier une version ». La pré-release `continuous` reste, pour essayer le dernier état.
 - **Corde serveur** (0.7.0, demande du propriétaire) : **à faire chez le pilote** : installer Raspberry Pi OS Lite 64 bits sur le Pi 5, copier l'archive `corde-server-0.7.0-linux-arm64.tar.gz` (dépôt privé : la télécharger sur le PC puis `scp`), `sudo ./install.sh`, appairer le PC puis le téléphone (`docs/SERVEUR.md`) ; puis, s'il veut l'accès dehors, WireGuard (`docs/ACCES-EXTERIEUR.md`). **À vérifier à ce moment-là** : démarrage réel sous systemd avec le durcissement (`SystemCallFilter`, `MemoryDenyWriteExecute`, `RestrictAddressFamilies` : rien de cela n'a tourné sous un vrai systemd ici, seulement `systemd-analyze verify`) ; la bannière et l'adresse affichées par `install.sh` ; la première synchronisation de ses vraies sessions (volume, durée sur son réseau) ; le montage WireGuard du guide (paquet `wireguard` de Raspberry Pi OS, téléphone limité à l'adresse du Pi dans le tunnel `10.8.0.1`, pas de routage ; PiVPN écarté : développement arrêté en 2024) et les menus des applications mobiles, jamais essayés sur un vrai Pi ; la règle `ufw route deny in on wg0`.
-- **Application iPhone** (0.8.0) : **à faire par le propriétaire**, dans l'ordre (`docs/IOS.md` §3) : attendre
-  l'activation du compte développeur ; noter le Team ID ; enregistrer l'identifiant `io.github.dultra123.corde`
-  (Identifiers) ; créer la fiche de l'application dans App Store Connect ; créer une clé d'API (Utilisateurs et
-  accès → Intégrations → Clés API, « Gestionnaire d'apps ») ; ajouter les quatre secrets `APPSTORE_API_KEY`,
-  `APPSTORE_API_KEY_ID`, `APPSTORE_API_ISSUER_ID`, `APPLE_TEAM_ID` ; lancer le workflow iOS ; s'ajouter comme
-  testeur interne dans TestFlight. **À vérifier à la première exécution de `ios.yml`** (rien n'a pu être
-  compilé ici) : compilation Xcode du projet SPM et des six modules ; démarrage dans le simulateur (captures
-  `home` et `races` dans le journal, ligne « application started ») ; ouverture par `simctl openurl
-  corde://races` sans boîte de confirmation ; signature dans le cloud avec une clé « Gestionnaire d'apps »
-  (sinon clé Admin). **À vérifier sur l'iPhone** : autorisation « Réseau local » et accès HTTP au PC par son
+- **Application iPhone** (0.8.0) : côté Apple (`docs/IOS.md` §3), le propriétaire a fait le 14 nov. :
+  compte développeur actif, identifiant `io.github.dultra123.corde`, fiche de l'application dans App Store
+  Connect (nom **« Corde Racing »**, « Corde » étant pris ; le nom sous l'icône reste « Corde »), clé d'API
+  et les quatre secrets. **Constaté sur les exécutions n° 3 et 4 de `ios.yml`** : compilation Xcode du projet
+  SPM et des six modules, démarrage dans le simulateur, **archive Release pour iPhone** (provisionnement
+  automatique avec la clé d'API) : passent. L'étape de la clé (« printf | grep -q » sous pipefail, formes
+  de collage non prévues) a été remplacée par `apps/mobile/scripts/asc-key.sh` (essais :
+  `asc-key.test.sh`) et un job `cle-api` qui contrôle les secrets en une minute. **Bloqué** : l'export
+  s'arrête sur `Cloud signing permission error` — la clé « Gestionnaire d'apps » n'a pas droit à la
+  signature dans le cloud ; **il faut une clé Admin** (le propriétaire doit en générer une et remplacer
+  `APPSTORE_API_KEY` et `APPSTORE_API_KEY_ID`). Ensuite : envoi vers TestFlight, testeur interne. **Reste
+  connu** : `simctl openurl corde://races` ne change pas de page dans l'essai de fumée (les deux captures
+  sont identiques). **À vérifier sur l'iPhone** : autorisation « Réseau local » et accès HTTP au PC par son
   adresse IP (ATS) et par le VPN (`10.8.0.1`) ; WebSocket du direct depuis WKWebView ; notifications
   application fermée, son `corde-reminder.wav`, catégorie « Voir » ; lecture des deux sites par le HTTP
   natif (forme réelle de lmu.tools jamais vue) ; QR code ; paysage sur le Direct ; clavier.

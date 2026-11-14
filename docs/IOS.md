@@ -102,7 +102,14 @@ Tout se fait dans un navigateur, sans Mac.
    qu'à une sortie publique sur l'App Store.
 5. **La clé d'API** : App Store Connect → **Utilisateurs et accès** → onglet **Intégrations** → **App Store
    Connect API** → **Clés d'équipe** → **Générer une clé API** (la première fois : **Demander l'accès** et
-   accepter les conditions) → nom `GitHub Actions`, accès **Gestionnaire d'apps** → **Générer**.
+   accepter les conditions) → nom `GitHub Actions`, accès **Admin** → **Générer**.
+
+   Pourquoi **Admin** : c'est Apple qui signe l'application au moment de l'envoi (« signature dans le
+   cloud »), et Apple ne l'accorde qu'à une clé Admin. Avec « Gestionnaire d'apps », la compilation passe
+   mais l'envoi s'arrête sur `Cloud signing permission error` (constaté à la première tentative). Une clé
+   ne se modifie pas après coup : pour changer son accès, il faut en générer une nouvelle. Cette clé peut
+   tout faire dans App Store Connect sauf ce qui est réservé au titulaire du compte (contrats, paiements) :
+   elle ne va **que** dans les secrets GitHub.
 
    Où est « Utilisateurs et accès » : dans la barre du haut (Apps, Xcode Cloud, Tendances, Rapports,
    Business…). Quand la fenêtre est étroite, il est rangé derrière les **trois points « … »** à droite de
@@ -138,11 +145,11 @@ nouvelle valeur → **Update secret**), puis relancer (**Actions** → **iOS** �
 `APPSTORE_API_KEY` accepte le contenu du fichier `.p8` même avec des fins de ligne Windows ou sur une seule
 ligne ; l'important est de coller **tout** le fichier.
 
-Si l'archive ou l'export échoue avec une erreur de **permission de signature dans le cloud**
-(« Cloud signing permission error », « cloud-managed distribution certificate »), recréer la clé d'API avec
-l'accès **Admin** au lieu de « Gestionnaire d'apps » et remplacer les deux secrets `APPSTORE_API_KEY` et
-`APPSTORE_API_KEY_ID` : selon les comptes, Apple réserve la création du certificat de distribution géré
-dans le cloud à ce rôle (non vérifié ici). Si l'envoi échoue parce que l'application « n'existe pas »,
+Si l'export échoue avec `Cloud signing permission error` (suivi de `No signing certificate "iOS
+Distribution" found`), la clé d'API n'a pas l'accès **Admin**. Générer une nouvelle clé avec l'accès
+**Admin** (étape 5), remplacer les deux secrets `APPSTORE_API_KEY` (contenu du nouveau fichier `.p8`) et
+`APPSTORE_API_KEY_ID` (nouvel ID de clé) — l'ID d'émetteur et le Team ID ne changent pas —, relancer, puis
+révoquer l'ancienne clé (page des clés → **Modifier** → cocher la clé → **Révoquer la clé**). Si l'envoi échoue parce que l'application « n'existe pas »,
 l'étape 4 manque.
 
 ## 4. Durée de vie d'un build
