@@ -2,6 +2,14 @@ import { create } from "zustand";
 
 export type Lang = "fr" | "en";
 
+/**
+ * « Affichage du Direct »: the phone dashboard (`dash/`) or the grid of widgets. `auto` picks
+ * the phone dashboard in the phone application and on a phone's browser (`dash/model.ts`).
+ */
+export type LiveView = "auto" | "dash" | "widgets";
+
+const LIVE_VIEWS: readonly LiveView[] = ["auto", "dash", "widgets"];
+
 export interface Settings {
   /** `host:port` typed by the user, or empty to use the page's own host. */
   server: string;
@@ -14,6 +22,10 @@ export interface Settings {
   autoSummary: boolean;
   /** Play a short sound with the race reminders (page « Courses »). Per device. */
   raceSound: boolean;
+  /** « Affichage du Direct ». Per device. */
+  liveView: LiveView;
+  /** Keep the screen on while the phone dashboard is shown. Per device. */
+  keepAwake: boolean;
 }
 
 const KEY = "corde.settings.v1";
@@ -27,6 +39,8 @@ const DEFAULTS: Settings = {
   autoDashboard: true,
   autoSummary: true,
   raceSound: true,
+  liveView: "auto",
+  keepAwake: true,
 };
 
 function detectLang(): Lang {
@@ -47,6 +61,10 @@ function load(): Settings {
       autoDashboard: parsed.autoDashboard !== false,
       autoSummary: parsed.autoSummary !== false,
       raceSound: parsed.raceSound !== false,
+      liveView: LIVE_VIEWS.includes(parsed.liveView as LiveView)
+        ? (parsed.liveView as LiveView)
+        : DEFAULTS.liveView,
+      keepAwake: parsed.keepAwake !== false,
     };
   } catch {
     return { ...DEFAULTS, lang: detectLang() };
@@ -61,11 +79,21 @@ export const useSettings = create<SettingsState>((set, get) => ({
   ...load(),
   update(patch) {
     set(patch);
-    const { server, lang, rateHz, autoDashboard, autoSummary, raceSound } = get();
+    const { server, lang, rateHz, autoDashboard, autoSummary, raceSound, liveView, keepAwake } =
+      get();
     try {
       localStorage.setItem(
         KEY,
-        JSON.stringify({ server, lang, rateHz, autoDashboard, autoSummary, raceSound }),
+        JSON.stringify({
+          server,
+          lang,
+          rateHz,
+          autoDashboard,
+          autoSummary,
+          raceSound,
+          liveView,
+          keepAwake,
+        }),
       );
     } catch {
       // storage can be unavailable (private mode) — settings then live for the session only

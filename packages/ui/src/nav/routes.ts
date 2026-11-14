@@ -5,7 +5,8 @@ import { useSyncExternalStore } from "react";
  *
  *   (no hash)                            home — the default page when the app opens
  *   #/home                               home (status, last session, last races, phone access)
- *   #/                                   live dashboard
+ *   #/                                   live dashboard (widgets, or the phone dashboard: `dash/view.ts`)
+ *   #/dash                               live dashboard, always the phone dashboard (tablet, kiosk)
  *   #/sessions                           recorded sessions
  *   #/sessions/<id>                      one session (laps)
  *   #/sessions/<id>/laps/<n>             one lap (charts)
@@ -26,7 +27,7 @@ import { useSyncExternalStore } from "react";
  */
 export type Route =
   | { page: "home" }
-  | { page: "dashboard" }
+  | { page: "dashboard"; dash?: true }
   | { page: "sessions" }
   | { page: "session"; id: string }
   | { page: "lap"; id: string; lap: number }
@@ -79,6 +80,7 @@ export function parseRoute(hash: string): Route {
 
   if (parts.length === 0) return { page: "dashboard" };
   if (parts[0] === "home") return { page: "home" };
+  if (parts[0] === "dash") return { page: "dashboard", dash: true };
   if (parts[0] === "races") return { page: "races" };
   if (parts[0] === "obs") return { page: "obs" };
   if (parts[0] === "devices") return { page: "devices" };
@@ -119,7 +121,7 @@ export function routeHash(route: Route): string {
     case "home":
       return "#/home";
     case "dashboard":
-      return "#/";
+      return route.dash ? "#/dash" : "#/";
     case "sessions":
       return "#/sessions";
     case "session":

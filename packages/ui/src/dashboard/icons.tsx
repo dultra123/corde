@@ -170,3 +170,11 @@ export const IconEngineer = () => (
     <path d="M19 19v1a2 2 0 0 1-2 2h-4" />
   </svg>
 );
+
+/** The phone dashboard (a rev gauge). */
+export const IconGauge = () => (
+  <svg {...base} aria-hidden="true">
+    <path d="M4.5 17a8 8 0 1 1 15 0" />
+    <path d="M12 13l4-4" />
+  </svg>
+);
