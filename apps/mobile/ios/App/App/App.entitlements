@@ -4,6 +4,7 @@
 <dict>
 	<key>keychain-access-groups</key>
 	<array>
+		<string>$(AppIdentifierPrefix)io.github.dultra123.corde</string>
 		<string>$(AppIdentifierPrefix)io.github.dultra123.corde.shared</string>
 	</array>
 </dict>

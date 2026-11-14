@@ -8,9 +8,10 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
-## [0.9.0] — 2026-11-14
+## [iPhone 0.9.0] — 2026-11-14
 
-Application iPhone seulement : Corde sur le PC et Corde serveur restent en 0.8.0.
+Application iPhone seulement : Corde sur le PC et Corde serveur restent en 0.8.0. (Le titre porte
+« iPhone » pour que cette section ne soit jamais reprise dans les notes d'une version du PC.)
 
 ### Nouveautés
 

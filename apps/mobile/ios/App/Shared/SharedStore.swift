@@ -13,6 +13,12 @@
 // demande rien, les profils de provisionnement l'autorisent déjà (`<équipe>.*`). ADR 0012.
 // Passer à un App Group plus tard ne toucherait que ce fichier.
 //
+// Dans les droits de l'application, le groupe partagé vient en second, après le groupe propre à
+// l'application (`<équipe>.io.github.dultra123.corde`) : iOS range dans le PREMIER groupe de la
+// liste tout élément écrit sans groupe. Le groupe partagé ne reçoit donc que ce bloc, écrit ici
+// avec son groupe nommé — jamais, par défaut, autre chose que l'application rangerait un jour dans
+// le trousseau.
+//
 // Le bloc ne contient aucun secret (planning public, choix du pilote, langue) : jamais d'adresse
 // de serveur ni de jeton d'appairage. Accessible après le premier déverrouillage (les widgets se
 // redessinent téléphone verrouillé), jamais synchronisé avec iCloud.

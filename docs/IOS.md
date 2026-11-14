@@ -341,7 +341,9 @@ node packages/ui/scripts/screenshot-app.mjs # aperçu Chromium avec un faux pont
   l'embarquement et les réglages. `cap sync ios` ne touche pas au projet (seulement à `Package.swift`).
 - **Données** : l'application écrit un bloc JSON dans un élément du trousseau partagé
   (`Shared/SharedStore.swift` ; groupe `$(AppIdentifierPrefix)io.github.dultra123.corde.shared`, déclaré
-  dans les deux `.entitlements` et dans la clé `CordeKeychainGroup` des deux `Info.plist`). Sur le
+  dans les deux `.entitlements` et dans la clé `CordeKeychainGroup` des deux `Info.plist` ; dans les
+  droits de l'application, il vient après le groupe propre à l'application, pour que rien d'autre n'y
+  soit rangé par défaut). Sur le
   simulateur compilé sans droits, `SharedStore` retombe sur le trousseau de l'application seule.
 - **Format v1** (produit par `packages/ui/src/mobile/widgets.ts`, `buildPayload` ; décodé par
   `Shared/WidgetData.swift`) — heures en millisecondes UTC, affichage dans le fuseau du téléphone :

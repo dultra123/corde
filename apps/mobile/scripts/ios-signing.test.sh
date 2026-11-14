@@ -43,7 +43,7 @@ ents() {
 	<string>${TEAM}.$2</string>
 	<key>keychain-access-groups</key>
 	<array>
-		<string>$1</string>
+$(for group in $1; do printf '\t\t<string>%s</string>\n' "$group"; done)
 	</array>
 </dict>
 </plist>
@@ -55,7 +55,8 @@ make() {
   local app="$work/$1/App.app"
   mkdir -p "$app/Frameworks/Capacitor.framework" "$app/PlugIns/CordeWidgets.appex"
   touch "$app/embedded.mobileprovision" "$app/PlugIns/CordeWidgets.appex/embedded.mobileprovision"
-  ents "${TEAM}.io.github.dultra123.corde.shared" io.github.dultra123.corde > "$app/.ents"
+  # L'application : son propre groupe d'abord, le groupe partagé ensuite (App.entitlements).
+  ents "${TEAM}.io.github.dultra123.corde ${TEAM}.io.github.dultra123.corde.shared" io.github.dultra123.corde > "$app/.ents"
   ents "${TEAM}.io.github.dultra123.corde.shared" io.github.dultra123.corde.widgets > "$app/PlugIns/CordeWidgets.appex/.ents"
   echo "$app"
 }

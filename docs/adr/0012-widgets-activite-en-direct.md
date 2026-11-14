@@ -39,6 +39,11 @@ trois formulaires au propriétaire. Le partage de trousseau ne demande rien côt
 de provisionnement contiennent déjà `keychain-access-groups = <équipe>.*`. Les deux cibles déclarent
 `$(AppIdentifierPrefix)io.github.dultra123.corde.shared` ; le préfixe d'équipe n'étant pas connu du code,
 Xcode écrit le nom complet dans la clé `CordeKeychainGroup` de leur `Info.plist`, lue à l'exécution.
+Dans les droits de l'application, ce groupe partagé vient **en second**, après le groupe propre à
+l'application (`$(AppIdentifierPrefix)io.github.dultra123.corde`) : iOS range dans le premier groupe de la
+liste tout élément écrit sans groupe nommé, donc rien d'autre que le bloc des widgets ne peut arriver par
+défaut dans le groupe que lit l'extension (aujourd'hui l'application ne range rien d'autre dans le
+trousseau ; la règle protège la suite). L'extension, elle, ne déclare que le groupe partagé.
 `SharedStore.swift` (compilé dans les deux cibles) lit et écrit un bloc de données ; passer plus tard à un
 App Group ne toucherait que ce fichier. Il rend l'`OSStatus` de chaque opération, affiché dans le
 diagnostic de la page Courses : c'est par là que le pilote peut rapporter un échec.

@@ -250,8 +250,12 @@ test("réglages : version, identifiants, iOS 17, droits, Info.plist", () => {
     assert.match(plist, /<key>CFBundleVersion<\/key>\s*<string>\$\(CURRENT_PROJECT_VERSION\)<\/string>/);
     assert.ok(plist.includes(`<key>CordeKeychainGroup</key>\n\t<string>${GROUP}</string>`), `${want.plist} : groupe`);
     const ent = readFileSync(join(iosApp, want.ent), "utf8");
-    assert.match(ent, /<key>keychain-access-groups<\/key>\s*<array>\s*<string>([^<]+)<\/string>\s*<\/array>/);
-    assert.ok(ent.includes(`<string>${GROUP}</string>`), want.ent);
+    const groups = /<key>keychain-access-groups<\/key>\s*<array>([\s\S]*?)<\/array>/.exec(ent);
+    assert.ok(groups, `${want.ent} : keychain-access-groups`);
+    const list = [...groups[1].matchAll(/<string>([^<]+)<\/string>/g)].map((m) => m[1]);
+    // L'application : son propre groupe d'abord (iOS y range tout élément écrit sans groupe), le
+    // groupe partagé ensuite. L'extension : le groupe partagé seulement.
+    assert.deepEqual(list, name === "App" ? [`$(AppIdentifierPrefix)${APP_ID}`, GROUP] : [GROUP], want.ent);
     // Rien d'autre : pas d'App Group, pas de notification push (ADR 0012).
     assert.equal((ent.match(/<key>/g) ?? []).length, 1, `${want.ent} : un seul droit`);
   }
