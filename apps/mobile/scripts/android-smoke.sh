@@ -7,9 +7,11 @@
 #   android-smoke.sh <apk Debug> <dossier de sortie>
 #
 #  1. lancement : « application started » dans le journal, capture « home » ;
-#  2. lien corde://races (comme un toucher de widget ou un lien) : capture « races » ;
-#  3. bouton retour : revient à l'accueil (« back: back »), puis quitte depuis l'accueil
-#     (« back: exit ») ;
+#  2. lien corde://races (comme un toucher de widget ou un lien) : capture « races » ; le Direct
+#     (corde://live) passe en paysage quand le téléphone tourne, Courses reste en portrait :
+#     capture « live » ;
+#  3. bouton retour, après un toucher sur l'onglet Accueil : page précédente (« back: back »), puis
+#     sortie de l'application depuis la première page (« back: exit ») ;
 #  4. trafic en clair et origine : la page appelle http://10.0.2.2:8471/api/health (la machine de la
 #     CI vue de l'émulateur), un faux serveur Corde note l'en-tête Origin (attendu : http://localhost) ;
 #  5. lecteur de QR code (ZXing, sans ML Kit ni services Google) : il s'ouvre sans planter,
@@ -151,6 +153,26 @@ else
 fi
 sleep 6
 shot races
+
+# 2 bis. Le Direct se tourne en paysage (les autres pages restent en portrait) : téléphone tourné
+#        d'un quart de tour (rotation imposée, sans capteur), capture « live », puis retour en portrait.
+rotation() { adb shell dumpsys input | tr -d '\r' | sed -n 's/.*SurfaceOrientation: //p' | head -n 1; }
+adb shell settings put system accelerometer_rotation 0 || true
+adb shell am start -W -a android.intent.action.VIEW -d "corde://live" "$pkg" > /dev/null
+wait_log "\[corde\] link: #/" 20 || true
+sleep 2
+adb shell settings put system user_rotation 1 || true
+sleep 5
+live_rotation="$(rotation)"
+shot live
+adb shell am start -W -a android.intent.action.VIEW -d "corde://races" "$pkg" > /dev/null
+sleep 5
+races_rotation="$(rotation)"
+echo "Rotation de l'écran : Direct ${live_rotation:-?}, Courses ${races_rotation:-?} (0 portrait, 1 ou 3 paysage)"
+if [ "$live_rotation" = "1" ] || [ "$live_rotation" = "3" ]; then ok "Direct en paysage"; else warn "le Direct ne s'est pas mis en paysage"; fi
+if [ "$races_rotation" = "0" ]; then ok "Courses reste en portrait"; else warn "Courses n'est pas revenue en portrait"; fi
+adb shell settings put system user_rotation 0 || true
+sleep 3
 
 # 3. Retour. Un toucher sur l'onglet « Accueil » (le premier des cinq, en bas de l'écran), comme le
 #    pilote : une page ouverte par un lien, sans toucher, ne compte pas dans l'historique de la

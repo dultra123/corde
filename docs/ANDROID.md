@@ -171,7 +171,7 @@ Run workflow** sur `main` le fait tout de suite.)
 `-----BEGIN CORDE SCREENSHOT <nom>-----` et `-----END CORDE SCREENSHOT-----` dans `capture.txt`, puis
 `base64 -d capture.txt > capture.jpg` (Linux, macOS) ou, sous Windows (PowerShell) :
 `[IO.File]::WriteAllBytes("capture.jpg", [Convert]::FromBase64String((Get-Content capture.txt -Raw)))`.
-Captures : `home` (Accueil), `races` (Courses, par le lien), `scan` (lecteur de QR code), `notification`
+Captures : `home` (Accueil), `races` (Courses, par le lien), `live` (Direct en paysage), `scan` (lecteur de QR code), `notification`
 (volet des notifications avec le rappel de test). Les mêmes fichiers sont dans l'artefact `android-smoke`.
 
 ### Les deux secrets (une fois)

@@ -9,13 +9,13 @@
 #              ML Kit (dépendances et code). APK Debug joint à l'exécution (artefact).
 # emulateur  : toujours, après build. Émulateur Android 15 sans services Google (image AOSP
 #              « default », KVM), APK Debug installé et essayé par apps/mobile/scripts/android-smoke.sh :
-#              démarrage, lien corde://races, bouton retour, appel http:// d'une adresse privée
+#              démarrage, lien corde://races, Direct en paysage, bouton retour, appel http:// d'une adresse privée
 #              (faux serveur Corde sur la machine), lecteur de QR code, rappel de test reçu
 #              application tuée et téléphone en veille. Captures réduites en JPEG et écrites EN
 #              BASE64 DANS LE JOURNAL entre deux marqueurs
 #                -----BEGIN CORDE SCREENSHOT <nom>-----
 #                -----END CORDE SCREENSHOT-----
-#              (home, races, scan, notification ; décoder comme pour l'iPhone, docs/IOS.md §3).
+#              (home, races, live, scan, notification ; décoder comme pour l'iPhone, docs/IOS.md §3).
 # signature-essai : sur une autre branche que `main` seulement. Le chemin de signature de
 #              `release`, avec une clé JETABLE créée ici (aucun secret lu) : APK et bundle Release
 #              signés puis contrôlés, rien publié.
