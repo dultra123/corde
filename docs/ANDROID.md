@@ -26,7 +26,9 @@ interface, avec les onglets en bas de l'écran.
   Dynamic Island). Ils viendront dans un prochain lot. Le réglage « Compte à rebours… », le bouton
   « Compte à rebours » et le diagnostic des widgets n'apparaissent donc pas sur Android.
 - **Le bouton (ou geste) retour** d'Android revient à la page précédente de Corde ; depuis la première page
-  ouverte, il ferme l'application.
+  ouverte, il ferme l'application. Une page ouverte par un lien `corde://` ou par une notification (sans
+  toucher dans Corde) ne compte pas comme une page précédente : la webview d'Android l'ignore, comme
+  Chrome ignore les pages qu'un site empile sans que tu aies touché l'écran.
 - **Le PC** : sur le PC, Accueil → « Activer l'accès depuis mon téléphone », puis, dans l'application,
   Mes serveurs → saisir l'adresse affichée (`192.168.1.20:8471`) ou « Scanner le QR code ». Le téléphone doit
   être sur le même Wi-Fi (ou dans ton VPN, [ACCES-EXTERIEUR.md](ACCES-EXTERIEUR.md)).

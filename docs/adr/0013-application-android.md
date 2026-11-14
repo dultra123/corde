@@ -94,7 +94,8 @@ seulement « (ios) » à « application started ». Essais Vitest : `mobile/andr
   toute application pour ses propres récepteurs (aucun écran, aucune portée hors de Corde). Aucune
   localisation (Android 13+ ne la demande pas pour joindre le réseau local). La CI vérifie la liste exacte.
 
-**F. Vie privée du stockage.** `android:allowBackup="false"` (aucune sauvegarde avant Android 12) et
+**F. Vie privée du stockage.** `android:allowBackup="false"` et `android:fullBackupContent="false"`
+(aucune sauvegarde avant Android 12) et
 `data_extraction_rules.xml` qui exclut **tous** les domaines de la sauvegarde dans le nuage et du transfert
 d'appareil à appareil (Android 12+, qui ignore `allowBackup` pour ce transfert). Le jeton d'appairage (dans
 les préférences de l'application, `SharedPreferences`) ne part ni chez Google ni sur un autre téléphone.
@@ -115,7 +116,10 @@ ouvert que dans le build Debug (réglage par défaut de Capacitor).
   de sécurité que sur iPhone, sans changer le CSS.
 - **Retour** : sans écouteur, le module `App` revient en arrière dans la webview mais ne quitte jamais
   l'application. Corde écoute `backButton` : page précédente de l'interface s'il y en a une, sinon
-  `App.exitApp()`.
+  `App.exitApp()`. « Il y en a une » est la réponse de la webview (`canGoBack`) : Chromium y ignore les
+  entrées d'historique créées sans geste du pilote (un lien `corde://`, une notification) ; une page
+  ouverte ainsi se quitte donc par « retour », ce qui est le comportement attendu sur Android (vu sur
+  l'émulateur : après un toucher d'onglet, « retour » revient à la page précédente, puis ferme Corde).
 - Paysage seulement sur le Direct (même code que l'iPhone, `ScreenOrientation`).
 
 **H. CI : `.github/workflows/android.yml`** (sur le modèle d'`ios.yml`). Jobs `build` (Debug, Release sans

@@ -44,6 +44,9 @@ err() {
 }
 warn() { echo "::warning::$*"; }
 ok() { echo "✓ $*"; }
+# grep sans « -q » : avec pipefail, un lecteur qui s'arrête au premier résultat peut faire échouer
+# l'écrivain (adb, SIGPIPE) et changer une réussite en échec.
+has() { grep "$@" > /dev/null; }
 
 shot() {
   local name="$1"
@@ -77,7 +80,7 @@ keep() {
 wait_log() {
   local pattern="$1" seconds="$2" i
   for ((i = 0; i < seconds; i++)); do
-    if logs | grep -E -q -- "$pattern"; then return 0; fi
+    if logs | has -E -- "$pattern"; then return 0; fi
     sleep 1
   done
   return 1
@@ -137,7 +140,7 @@ echo "Langue de l'application : $(adb shell cmd locale get-app-locales "$pkg" 2>
 echo "::group::Autorisations demandées par l'application (manifeste fusionné)"
 adb shell dumpsys package "$pkg" | sed -n '/requested permissions:/,/install permissions:/p' | tr -d '\r'
 echo "::endgroup::"
-if adb shell dumpsys package "$pkg" | grep -q "android.permission.CAMERA: granted=true"; then
+if adb shell dumpsys package "$pkg" | has "android.permission.CAMERA: granted=true"; then
   warn "l'appareil photo est déjà autorisé à l'installation"
 else
   ok "appareil photo non autorisé avant « Scanner le QR code »"
@@ -155,7 +158,7 @@ sleep 6
 shot home
 keep 1-start
 # Le canal des rappels est créé au démarrage, nommé dans la langue de l'interface.
-if adb shell dumpsys notification --noredact | tr -d '\r' | grep -q "mId='corde-races', mName=Rappels des courses"; then
+if adb shell dumpsys notification --noredact | tr -d '\r' | has "mId='corde-races', mName=Rappels des courses"; then
   ok "canal « Rappels des courses » créé (interface en français)"
 else
   warn "canal des rappels absent ou pas en français : $(adb shell dumpsys notification --noredact | tr -d '\r' | grep -o "mId='corde-races', mName=[^,]*" | head -n 1)"
@@ -210,16 +213,16 @@ exited=false
 for _ in 1 2 3 4 5 6 7 8; do
   adb shell input keyevent KEYCODE_BACK
   sleep 3
-  if logs | grep -q "\[corde\] back: exit"; then
+  if logs | has "\[corde\] back: exit"; then
     exited=true
     break
   fi
-  logs | grep -q "\[corde\] back: back" && went_back=true
+  logs | has "\[corde\] back: back" && went_back=true
 done
 if $went_back; then ok "retour : page précédente"; else warn "retour : « back: back » absent"; fi
 if $exited; then ok "retour depuis la première page : l'application se ferme"; else warn "retour : « back: exit » absent"; fi
 sleep 2
-if adb shell dumpsys activity activities | grep -E "mResumedActivity|topResumedActivity" | grep -q "$pkg"; then
+if adb shell dumpsys activity activities | grep -E "mResumedActivity|topResumedActivity" | has "$pkg"; then
   warn "l'application est encore au premier plan après les retours"
 else
   ok "l'application n'est plus au premier plan"
@@ -230,12 +233,12 @@ keep 3-back
 start_app --es cordeDebug fetch --es cordeUrl "http://10.0.2.2:8471/api/health"
 if wait_log "\[corde\] debug: fetch" 30; then
   logs | grep -E -o "\[corde\] debug: fetch.*" | tail -n 1
-  if logs | grep -E -q "\[corde\] debug: fetch 200 "; then ok "http:// vers 10.0.2.2:8471 (clair, réseau privé) : 200"; else warn "http:// vers 10.0.2.2:8471 : pas de réponse 200"; fi
+  if logs | has -E "\[corde\] debug: fetch 200 "; then ok "http:// vers 10.0.2.2:8471 (clair, réseau privé) : 200"; else warn "http:// vers 10.0.2.2:8471 : pas de réponse 200"; fi
 else
   warn "appel http:// de la page : rien dans le journal (« debug: fetch »)"
   logs | grep -E "\[corde\] debug" | tail -n 3 || true
 fi
-if grep -q "Origin: http://localhost$" "$out/fake-server.log" 2> /dev/null; then
+if has "Origin: http://localhost$" "$out/fake-server.log" 2> /dev/null; then
   ok "origine de la page : http://localhost (acceptée par Corde 0.8 et plus, sans droit « ce PC »)"
 else
   warn "origine reçue par le faux serveur : $(tail -n 1 "$out/fake-server.log" 2> /dev/null || echo aucune)"
@@ -247,7 +250,7 @@ adb logcat -c
 start_app --es cordeDebug scan
 sleep 14
 shot scan
-if logs | grep -E -q "FATAL EXCEPTION|NoClassDefFoundError|ClassNotFoundException"; then
+if logs | has -E "FATAL EXCEPTION|NoClassDefFoundError|ClassNotFoundException"; then
   warn "le lecteur de QR code a planté :"
   logs | grep -E -A 12 "FATAL EXCEPTION|NoClassDefFoundError|ClassNotFoundException" | head -n 40
 else
@@ -286,7 +289,7 @@ sleep 2
 adb shell dumpsys deviceidle enable > /dev/null 2>&1 || true
 idle="$(adb shell dumpsys deviceidle force-idle deep 2>&1 | tr -d '\r')"
 echo "deviceidle force-idle : ${idle}"
-if adb shell dumpsys deviceidle get deep 2>&1 | tr -d '\r' | grep -q -x "IDLE"; then
+if adb shell dumpsys deviceidle get deep 2>&1 | tr -d '\r' | has -x "IDLE"; then
   ok "téléphone en veille (Doze profond forcé, écran éteint)"
 else
   warn "Doze n'a pas pu être forcé : le rappel est essayé écran éteint seulement"
@@ -298,7 +301,7 @@ for _ in $(seq 1 30); do
   # A posted notification (« NotificationRecord ») of Corde on the reminders' channel — not the
   # channel's own description, which exists since the start.
   if adb shell dumpsys notification --noredact | tr -d '\r' |
-    grep -A 12 -E "NotificationRecord\(.*pkg=${pkg}" | grep -q "corde-races"; then
+    grep -A 12 -E "NotificationRecord\(.*pkg=${pkg}" | has "corde-races"; then
     delivered=true
     break
   fi
