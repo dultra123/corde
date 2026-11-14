@@ -7,7 +7,7 @@ import { parseRoute, routeHash } from "../nav/routes";
 import { useSettings } from "../store/settings";
 import { useTelemetry } from "../store/telemetry";
 import { CoursePage } from "./CoursePage";
-import { DashView } from "./DashView";
+import { DashView, dragTarget } from "./DashView";
 import { EnergyPage } from "./EnergyPage";
 import { EMPTY_PAGE, type PageProps } from "./parts";
 import { useDashPage } from "./store";
@@ -183,6 +183,40 @@ describe("DashView", () => {
     expect(localStorage.getItem("corde.dash.page")).toBe("energy");
     unmount();
     act(() => useTelemetry.setState({ demo: "off" }));
+  });
+
+  it("has two arrows for the mouse: next and previous page, none past the ends", () => {
+    act(() => {
+      useTelemetry.getState().pushFrame(DEMO.frame);
+      useDashPage.getState().show(0);
+    });
+    const { div, unmount } = render(<DashView />);
+    const prev = div.querySelector<HTMLButtonElement>(".dash-nav.is-prev");
+    const next = div.querySelector<HTMLButtonElement>(".dash-nav.is-next");
+    expect(prev?.getAttribute("aria-label")).toBe("Page précédente");
+    expect(next?.getAttribute("aria-label")).toBe("Page suivante");
+    expect(prev?.disabled).toBe(true);
+    act(() => next?.click());
+    expect(useDashPage.getState().index).toBe(1);
+    expect(prev?.disabled).toBe(false);
+    act(() => prev?.click());
+    expect(useDashPage.getState().index).toBe(0);
+    act(() => useDashPage.getState().show(3));
+    expect(next?.disabled).toBe(true);
+    unmount();
+  });
+
+  it("a drag of the mouse changes page past a sixth of the width, comes back otherwise", () => {
+    // 1200 px wide: the threshold is 120 px (the maximum).
+    expect(dragTarget(1, -119, 1200, 4)).toBe(1);
+    expect(dragTarget(1, -120, 1200, 4)).toBe(2);
+    expect(dragTarget(1, 300, 1200, 4)).toBe(0);
+    // 360 px wide: a sixth, 60 px.
+    expect(dragTarget(0, -60, 360, 4)).toBe(1);
+    expect(dragTarget(0, -59, 360, 4)).toBe(0);
+    // Never past the ends.
+    expect(dragTarget(0, 500, 1200, 4)).toBe(0);
+    expect(dragTarget(3, -500, 1200, 4)).toBe(3);
   });
 
   it("no demo label on real data", () => {

@@ -44,6 +44,9 @@
   Valeur et Barre n'écrivaient leur couleur qu'à l'arrivée d'une trame de télémétrie (jeu fermé, démo
   arrêtée : jamais). Ils se redessinent maintenant après chaque changement de réglage ; essai de
   non-régression (échoue sans la correction). Confirme au passage que la 1.2.0 s'installe par le bouton.
+  Second retour : changer de page par le menu ☰ n'est pas pratique sur PC → deux flèches sur les côtés
+  (visibles au survol de la souris, jamais sur un écran tactile) et glisser à la souris ; vérifié dans
+  Chromium avec la démonstration (flèches, glisser long et court, bouts de la bande).
 - **Site officiel** (15 nov.) : <http://corderacing.com/>, fait par le propriétaire en dehors de ce dépôt ;
   lien ajouté en tête du README et dans `docs/PRESENTATION.md`. Le 15 nov., `https://corderacing.com/`
   renvoie vers `http://` (HTTPS pas encore actif) : passer les liens en `https://` dès qu'il le sera. Le

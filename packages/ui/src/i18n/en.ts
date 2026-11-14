@@ -1419,6 +1419,8 @@ export const en: Record<TranslationKey, string> = {
   "dash.menu": "Dashboard menu",
   "dash.close": "Close",
   "dash.pages": "Dashboard pages",
+  "dash.prevPage": "Previous page",
+  "dash.nextPage": "Next page",
   "dash.page.course": "Race",
   "dash.page.tyres": "Tyres & brakes",
   "dash.page.energy": "Fuel & energy",

@@ -296,6 +296,65 @@
   --d-menu-room: 84px;
 }
 
+/* ---------------------------------------------------------------- page arrows (mouse) */
+/* Two arrows on the sides, for a mouse: shown while the pointer is over the dashboard, so that
+   nothing covers the data while driving. A finger swipes; a touch screen never shows them. */
+.dash-nav {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  width: 44px;
+  height: 88px;
+  margin-top: -44px;
+  display: none;
+  place-items: center;
+  color: var(--d-text);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.dash-nav.is-prev {
+  left: max(var(--safe-left), 0px);
+}
+.dash-nav.is-next {
+  right: max(var(--safe-right), 0px);
+}
+.dash-nav svg {
+  width: 34px;
+  height: 56px;
+  padding: 14px 6px;
+  border: 1px solid var(--d-line);
+  border-radius: 10px;
+  background: rgba(13, 17, 22, 0.9);
+}
+.dash-nav:disabled {
+  visibility: hidden;
+}
+@media (hover: hover) and (pointer: fine) {
+  .dash-nav {
+    display: grid;
+  }
+  .dash:hover .dash-nav {
+    opacity: 0.6;
+  }
+  .dash .dash-nav:hover,
+  .dash .dash-nav:focus-visible {
+    opacity: 1;
+  }
+  .dash-nav:hover svg {
+    border-color: var(--line-strong);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dash-nav {
+    transition: none;
+  }
+}
+/* The mouse drags the pages: no snapping while it holds them. */
+.dash-pages.is-dragging {
+  scroll-snap-type: none;
+  cursor: grabbing;
+}
+
 /* ---------------------------------------------------------------- menu button, foot */
 .dash-menu {
   position: absolute;

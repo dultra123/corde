@@ -102,7 +102,73 @@ function usePager(count: number) {
     };
   }, [count, show]);
 
+  // The mouse drags the strip like the finger does (a finger already scrolls it natively): past a
+  // sixth of the width the next or the previous page comes, otherwise the page comes back.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let id = -1;
+    let startX = 0;
+    let startLeft = 0;
+    let dragging = false;
+    const down = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse" || e.button !== 0) return;
+      if (e.target instanceof Element && e.target.closest("button, a, input, select, textarea")) {
+        return;
+      }
+      id = e.pointerId;
+      startX = e.clientX;
+      startLeft = el.scrollLeft;
+      dragging = false;
+    };
+    const move = (e: PointerEvent) => {
+      if (e.pointerId !== id) return;
+      const dx = e.clientX - startX;
+      if (!dragging) {
+        if (Math.abs(dx) < 8) return;
+        dragging = true;
+        el.classList.add("is-dragging");
+        el.setPointerCapture?.(id);
+      }
+      el.scrollLeft = startLeft - dx;
+    };
+    const up = (e: PointerEvent) => {
+      if (e.pointerId !== id) return;
+      id = -1;
+      if (!dragging) return;
+      dragging = false;
+      el.classList.remove("is-dragging");
+      const w = Math.max(1, el.clientWidth);
+      const from = Math.round(startLeft / w);
+      const to = dragTarget(from, e.clientX - startX, w, count);
+      if (to !== from) show(to);
+      el.scrollTo({ left: to * w, behavior: prefersReducedMotion() ? "auto" : "smooth" });
+    };
+    el.addEventListener("pointerdown", down);
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerup", up);
+    el.addEventListener("pointercancel", up);
+    return () => {
+      el.removeEventListener("pointerdown", down);
+      el.removeEventListener("pointermove", move);
+      el.removeEventListener("pointerup", up);
+      el.removeEventListener("pointercancel", up);
+      el.classList.remove("is-dragging");
+    };
+  }, [count, show]);
+
   return { ref, index, show };
+}
+
+/**
+ * The page a drag of `dx` pixels ends on, from page `from` of `count`, in a strip `width` wide:
+ * the next one when dragged to the left past a sixth of the width (120 px at most), the previous
+ * one to the right, the same page otherwise.
+ */
+export function dragTarget(from: number, dx: number, width: number, count: number): number {
+  const threshold = Math.min(120, width / 6);
+  const step = dx <= -threshold ? 1 : dx >= threshold ? -1 : 0;
+  return Math.max(0, Math.min(count - 1, from + step));
 }
 
 /**
@@ -198,6 +264,34 @@ export function DashView({ embedded = false }: { embedded?: boolean }) {
           </section>
         ))}
       </div>
+      {def.pages.length > 1 && (
+        <>
+          <button
+            type="button"
+            className="dash-nav is-prev"
+            aria-label={t("dash.prevPage")}
+            title={t("dash.prevPage")}
+            disabled={index <= 0}
+            onClick={() => useDashPage.getState().step(-1)}
+          >
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M12.5 4 6.5 10l6 6" stroke="currentColor" strokeWidth="2.2" fill="none" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="dash-nav is-next"
+            aria-label={t("dash.nextPage")}
+            title={t("dash.nextPage")}
+            disabled={index >= def.pages.length - 1}
+            onClick={() => useDashPage.getState().step(1)}
+          >
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M7.5 4l6 6-6 6" stroke="currentColor" strokeWidth="2.2" fill="none" />
+            </svg>
+          </button>
+        </>
+      )}
       <button
         type="button"
         className="dash-menu"

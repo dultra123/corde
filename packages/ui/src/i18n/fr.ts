@@ -1468,6 +1468,8 @@ export const fr = {
   "dash.menu": "Menu du tableau de bord",
   "dash.close": "Fermer",
   "dash.pages": "Pages du tableau de bord",
+  "dash.prevPage": "Page précédente",
+  "dash.nextPage": "Page suivante",
   "dash.page.course": "Course",
   "dash.page.tyres": "Pneus & freins",
   "dash.page.energy": "Carburant & énergie",

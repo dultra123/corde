@@ -10,6 +10,12 @@ dans `docs/STATUS.md` et l'historique git.
 
 ## [1.2.1] — 2026-11-15
 
+### Nouveautés
+
+- **Changer de page à la souris** : sur le PC, deux flèches apparaissent sur les côtés du tableau de bord
+  quand la souris est dessus, et les pages se font glisser à la souris comme au doigt. Plus besoin de passer
+  par le menu ☰. Les flèches ← → du clavier et les points du bas marchent toujours.
+
 ### Corrections
 
 - **Studio** : la couleur choisie pour une **Valeur** ou une **Barre** s'applique tout de suite. Avant, quand
