@@ -54,8 +54,12 @@ const DEFAULT_BASE = "https://api.appstoreconnect.apple.com";
 /** Un certificat stable qui expire dans moins de 30 jours est remplacé (même clé). */
 export const RENEW_MARGIN_MS = 30 * 24 * 60 * 60 * 1000;
 
-/** Champs demandés pour comparer un certificat à la clé stable (jamais son nom). */
-const CERT_FIELDS = "fields[certificates]=certificateType,certificateContent,expirationDate";
+/**
+ * Champs demandés pour comparer un certificat à la clé stable. Son nom aussi : il n'est jamais
+ * affiché, mais il doit être connu pour être masqué dans le journal quand le certificat est
+ * réutilisé (maskCertificate), comme l'est celui d'un certificat qui vient d'être créé.
+ */
+const CERT_FIELDS = "fields[certificates]=certificateType,certificateContent,expirationDate,name,displayName";
 
 const b64url = (value) => Buffer.from(value).toString("base64url");
 
@@ -295,13 +299,52 @@ export async function findReusable(api, stable, { now = Date.now(), exclude = ne
 }
 
 /** « Apple Distribution: Prénom Nom (ÉQUIPE) » : masqué dans la suite du journal, nom seul compris. */
-function maskNames(attributes) {
-  for (const key of ["name", "displayName"]) {
-    const value = String(attributes?.[key] ?? "");
-    mask(value);
-    const bare = value.replace(/^[^:]*:\s*/, "").replace(/\s*\([A-Z0-9]{10}\)\s*$/, "");
-    if (bare !== value) mask(bare);
+function maskName(value) {
+  mask(value);
+  const bare = value.replace(/^[^:]*:\s*/, "").replace(/\s*\([A-Z0-9]{10}\)\s*$/, "");
+  if (bare !== value) mask(bare);
+}
+
+/**
+ * Ce qui nomme le titulaire d'un certificat, d'après le certificat lui-même : les valeurs CN, O,
+ * OU et UID de son sujet (ce que codesign et xcodebuild affichent). Vide s'il est illisible.
+ */
+export function subjectNames(attributes) {
+  try {
+    const content = String(attributes?.certificateContent ?? "").replace(/\s+/g, "");
+    if (!content) return [];
+    const x509 = new X509Certificate(Buffer.from(content, "base64"));
+    const names = new Set();
+    // Le sujet sous ses deux formes (texte « CLÉ=valeur » par ligne, objet décodé) : la valeur
+    // affichée par les outils d'Apple doit être masquée quelle que soit la façon dont Node l'écrit.
+    for (const line of String(x509.subject ?? "").split("\n")) {
+      const at = line.indexOf("=");
+      if (at > 0 && ["CN", "O", "OU", "UID"].includes(line.slice(0, at))) names.add(line.slice(at + 1).trim());
+    }
+    const legacy = x509.toLegacyObject?.().subject ?? {};
+    for (const key of ["CN", "O", "OU", "UID"]) {
+      for (const value of [legacy[key]].flat()) if (typeof value === "string") names.add(value.trim());
+    }
+    names.delete("");
+    return [...names];
+  } catch {
+    return [];
   }
+}
+
+/**
+ * Masque dans la suite du journal tout ce qui nomme le titulaire du certificat : les noms donnés
+ * par l'API et ceux du sujet du certificat. Rend le nombre de valeurs connues (0 : rien n'a pu
+ * être masqué).
+ */
+function maskCertificate(attributes) {
+  const names = new Set(subjectNames(attributes));
+  for (const key of ["name", "displayName"]) {
+    const value = String(attributes?.[key] ?? "").trim();
+    if (value) names.add(value);
+  }
+  for (const value of names) maskName(value);
+  return names.size;
 }
 
 const day = (ms) => new Date(ms).toISOString().slice(0, 10);
@@ -389,7 +432,11 @@ export async function prepare(
     if (found) {
       certificate = found.certificate;
       reused = true;
-      maskNames(certificate.attributes);
+      // Le nom du titulaire doit être masqué avant toute suite (codesign, xcodebuild) : sans
+      // aucun nom connu, on s'arrête plutôt que de risquer de l'afficher dans un journal public.
+      if (maskCertificate(certificate.attributes) === 0) {
+        throw new Error("certificat réutilisé : son nom est introuvable, il ne pourrait pas être masqué dans le journal");
+      }
       log(
         `Certificat de distribution réutilisé (clé stable, valable jusqu'au ${day(found.info.expires)}) : aucun certificat créé ni révoqué.`,
       );
@@ -451,7 +498,7 @@ async function createCertificate(api, csrPem) {
     }
     throw error;
   }
-  maskNames(certificate.attributes);
+  maskCertificate(certificate.attributes);
   log(
     `Certificat de distribution créé (valable jusqu'au ${String(certificate.attributes?.expirationDate ?? "?").slice(0, 10)}).`,
   );

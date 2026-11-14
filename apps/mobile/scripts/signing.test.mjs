@@ -28,6 +28,7 @@ import {
   parseArgs,
   prepare,
   stableKeyFrom,
+  subjectNames,
 } from "./asc-api.mjs";
 import { manualSigning, manualSigningAll, parseSigningArgs } from "./xcode-signing.mjs";
 
@@ -142,20 +143,22 @@ function fakeApple() {
     omitContentInLists: false, // les listes ne donnent pas `certificateContent`
     ignoreTypeFilter: false, // `filter[certificateType]` sans effet
     rejectTypeFilter: false, // `filter[certificateType]` refusé (400)
+    omitNames: false, // `name` et `displayName` jamais rendus, même demandés
   };
-  const certificateJson = (id, withContent = true) => {
+  // Comme chez Apple : avec `fields[certificates]=…`, seuls les champs demandés reviennent.
+  const certificateJson = (id, withContent = true, fields = null) => {
     const c = state.certificates[id];
-    return {
-      type: "certificates",
-      id,
-      attributes: {
-        certificateType: c.type,
-        name: "Apple Distribution: Camille Exemple (ZYXWV98765)",
-        displayName: "Camille Exemple",
-        expirationDate: c.expires,
-        ...(withContent && c.content ? { certificateContent: c.content } : {}),
-      },
+    const all = {
+      certificateType: c.type,
+      ...(state.omitNames
+        ? {}
+        : { name: "Apple Distribution: Camille Exemple (ZYXWV98765)", displayName: "Camille Exemple" }),
+      expirationDate: c.expires,
+      ...(withContent && c.content ? { certificateContent: c.content } : {}),
     };
+    const wanted = fields ? fields.split(",") : null;
+    const attributes = wanted ? Object.fromEntries(Object.entries(all).filter(([k]) => wanted.includes(k))) : all;
+    return { type: "certificates", id, attributes };
   };
   const server = createServer((req, res) => {
     let body = "";
@@ -188,7 +191,7 @@ function fakeApple() {
         return send(200, {
           data: (profile?.certificates ?? [])
             .filter((id) => state.certificates[id])
-            .map((id) => certificateJson(id, !state.omitContentInLists)),
+            .map((id) => certificateJson(id, !state.omitContentInLists, url.searchParams.get("fields[certificates]"))),
         });
       }
       if (req.method === "GET" && path === "/v1/certificates") {
@@ -201,12 +204,12 @@ function fakeApple() {
           data: Object.keys(state.certificates)
             .filter((id) => !state.revoked.has(id))
             .filter((id) => !type || state.ignoreTypeFilter || state.certificates[id].type === type)
-            .map((id) => certificateJson(id, !state.omitContentInLists)),
+            .map((id) => certificateJson(id, !state.omitContentInLists, url.searchParams.get("fields[certificates]"))),
         });
       }
       if (req.method === "GET" && (match = path.match(/^\/v1\/certificates\/([\w-]+)$/))) {
         if (!state.certificates[match[1]]) return send(404, { errors: [{ code: "NOT_FOUND" }] });
-        return send(200, { data: certificateJson(match[1]) });
+        return send(200, { data: certificateJson(match[1], true, url.searchParams.get("fields[certificates]")) });
       }
       if (req.method === "DELETE" && (match = path.match(/^\/v1\/certificates\/([\w-]+)$/))) {
         if (!state.certificates[match[1]]) return send(404, { errors: [{ code: "NOT_FOUND" }] });
@@ -487,8 +490,34 @@ test("clé stable : deux exécutions de suite, la seconde ne crée ni ne révoqu
     assert.deepEqual(readFileSync(join(out, "r2", "dist.cer")), Buffer.from(certs.stable.content, "base64"));
     assert.ok(second.lines.some((l) => /1 certificat\(s\) gardé\(s\) \(clé stable\)/.test(l)));
     assert.ok(second.lines.some((l) => /Certificat de distribution réutilisé/.test(l)));
+    // Réutilisé : son nom est masqué comme celui d'un certificat neuf (sinon codesign ou
+    // xcodebuild pourraient l'afficher dans le journal public).
+    assert.ok(second.lines.includes("::add-mask::Apple Distribution: Camille Exemple (ZYXWV98765)"));
+    assert.ok(second.lines.includes("::add-mask::Camille Exemple"));
     assertNoLeak([...first.lines, ...second.lines]);
   });
+});
+
+test("clé stable : certificat réutilisé dont l'API ne donne pas le nom → masqué d'après le certificat lui-même", async () => {
+  await withApple(async ({ apple, api, out }) => {
+    apple.state.certificates["C-FREE"] = { type: "DISTRIBUTION", ...certs.stable };
+    apple.state.omitNames = true;
+    const run = await callsDuring(apple, () =>
+      runPrepare(api, join(out, "r1"), { profileName: "Corde CI 5.1", stableKeyPem: STABLE }),
+    );
+    assert.ok(run.lines.some((l) => /Certificat de distribution réutilisé/.test(l)));
+    assert.ok(run.lines.includes("::add-mask::Apple Distribution: Camille Exemple (ZYXWV98765)"));
+    assert.ok(run.lines.includes("::add-mask::Camille Exemple"));
+    assertNoLeak(run.lines);
+  });
+});
+
+test("subjectNames : les noms du sujet d'un certificat ; rien si le contenu est absent ou illisible", () => {
+  assert.deepEqual(subjectNames({ certificateContent: certs.stable.content }), [
+    "Apple Distribution: Camille Exemple (ZYXWV98765)",
+  ]);
+  assert.deepEqual(subjectNames({}), []);
+  assert.deepEqual(subjectNames({ certificateContent: "pas un certificat" }), []);
 });
 
 test("clé stable : passage de l'ancien mode, l'ancien certificat révoqué une fois, un créé avec la clé stable", async () => {

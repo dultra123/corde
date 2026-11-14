@@ -52,6 +52,11 @@
   refusé, requêtes identiques sans le secret, clés invalides, ligne de commande) et
   `bash apps/mobile/scripts/ios-signing.test.sh` (clé du secret : 5 formes acceptées, 8 refusées, aucune
   fuite), sous Linux avec OpenSSL 3.
+  **Corrigé à la relecture** : le nom d'un certificat *réutilisé* n'était pas masqué dans le journal (les
+  listes étaient demandées sans `name`, et le faux serveur le rendait quand même, ce qui cachait le
+  défaut : codesign ou xcodebuild auraient pu afficher le nom du titulaire dans un journal public). Le nom
+  est maintenant demandé, et masqué aussi d'après le sujet du certificat lui-même ; sans aucun nom connu,
+  le script s'arrête. Le faux serveur ne rend plus que les champs demandés ; deux essais de plus (34).
   **Ne peut l'être que sur `main`, avec le secret** : la forme réelle de `certificateContent` dans les
   listes d'Apple (`GET /v1/certificates`, `GET /v1/profiles/{id}/certificates` ; s'il manque, le script
   relit chaque certificat), l'effet de `filter[certificateType]=DISTRIBUTION` (refusé : liste entière ;
