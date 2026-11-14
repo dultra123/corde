@@ -61,11 +61,29 @@ Tout se fait dans un navigateur, sans Mac.
 1. **Attendre l'activation du compte développeur** (e-mail d'Apple « Welcome to the Apple Developer
    Program »).
 2. **Le Team ID** : [developer.apple.com/account](https://developer.apple.com/account) → **Membership
-   details** → **Team ID** (10 caractères, lettres et chiffres). → secret `APPLE_TEAM_ID`.
+   details** → **Team ID** (10 caractères, lettres et chiffres). → secret `APPLE_TEAM_ID`. C'est aussi la
+   valeur affichée à l'étape 3 sous **App ID Prefix** (« … (Team ID) »).
 3. **L'identifiant de l'application** : developer.apple.com → **Certificates, IDs & Profiles** →
-   **Identifiers** → **+** → **App IDs** → **App** → Description `Corde`, **Bundle ID explicite**
-   `io.github.dultra123.corde` → aucune capacité à cocher (les rappels sont des notifications **locales**,
-   pas des notifications push) → **Register**.
+   **Identifiers** → **+** → **App IDs** → **Continue** → **App** → **Continue**. La page **Register an
+   App ID** se remplit ainsi, champ par champ :
+
+   | Champ | Quoi mettre |
+   |---|---|
+   | **Platform** | ne rien changer |
+   | **Description** | `Corde` — un simple nom pour s'y retrouver dans la liste, jamais montré au public ; lettres et chiffres seulement (Apple refuse `@ & * ' "`) |
+   | **App ID Prefix** | déjà rempli : c'est le Team ID (étape 2), rien à choisir |
+   | **Bundle ID** | **Explicit**, puis `io.github.dultra123.corde` — exactement, en minuscules, sans espace |
+   | **Capabilities** (longue liste de cases) | **ne rien cocher** ; si une case est déjà cochée et grisée, la laisser |
+   | onglets **App Services** et **Capability Requests** | ne rien cocher, ne rien demander |
+
+   Puis **Continue** → **Register**.
+
+   Pourquoi aucune case : Corde ne demande à Apple aucun service particulier. Les rappels de course sont
+   des notifications **locales** (programmées par le téléphone lui-même) : la case **Push Notifications**
+   ne sert qu'aux notifications envoyées par un serveur. Rien n'est définitif : une capacité s'ajoute plus
+   tard en rouvrant l'identifiant (**Identifiers** → `io.github.dultra123.corde` → cocher → **Save**) ; ce
+   sera le cas d'**App Groups** le jour où Corde aura des widgets d'écran d'accueil. Le **Bundle ID**, lui,
+   ne se modifie plus après l'enregistrement.
 4. **La fiche de l'application** : [App Store Connect](https://appstoreconnect.apple.com) → **Apps** → **+**
    → **Nouvelle app** : plateforme **iOS**, nom **Corde** (s'il est déjà pris sur l'App Store, un nom proche,
    par exemple « Corde – télémétrie LMU » : le nom sous l'icône reste « Corde »), langue principale
