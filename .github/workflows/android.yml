@@ -117,8 +117,13 @@ jobs:
           BUILD_NUMBER: ${{ github.run_number }}
         run: |
           set -euo pipefail
+          status=0
           ./gradlew --no-daemon --stacktrace -PcordeVersionCode="${BUILD_NUMBER}" \
-            :app:assembleDebug :app:assembleRelease :app:testDebugUnitTest :app:lintDebug
+            :app:assembleDebug :app:assembleRelease :app:testDebugUnitTest :app:lintDebug || status=$?
+          echo "::group::Constats du lint Android"
+          cat app/build/reports/lint-results.txt 2> /dev/null || echo "(pas de rapport)"
+          echo "::endgroup::"
+          exit "$status"
 
       - name: Contrôler l'APK (version, autorisations, aucune bibliothèque Google)
         working-directory: apps/mobile/android
@@ -259,7 +264,9 @@ jobs:
           convert -version | head -n 1
 
       # Image AOSP « default » : Android sans aucun service Google (comme un téléphone sans
-      # Google), Android 15 (bord à bord imposé). Téléphone de la taille d'un Pixel 6, en français.
+      # Google), Android 15 (bord à bord imposé). Téléphone de la taille d'un Pixel 6 ; Corde en
+      # français (langue de l'application, réglée par le script : changer celle du téléphone
+      # redémarre son système juste après le démarrage, et les commandes du runner échouent).
       # (Le script s'exécute ligne par ligne : tout est dans android-smoke.sh.)
       - name: Essai de fumée sur l'émulateur
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
@@ -270,9 +277,8 @@ jobs:
           profile: pixel_6
           ram-size: 3072M
           disk-size: 4096M
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back emulated -change-locale fr-FR
-          # Les animations sont coupées par android-smoke.sh : la commande du runner échoue quand
-          # le système redémarre pour changer de langue juste après le démarrage.
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back emulated
+          # Les animations sont coupées par android-smoke.sh, une fois l'émulateur prêt.
           disable-animations: false
           script: bash apps/mobile/scripts/android-smoke.sh "$RUNNER_TEMP/apk/app-debug.apk" "$RUNNER_TEMP/smoke"
 

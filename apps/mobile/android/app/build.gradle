@@ -59,9 +59,9 @@ android {
     }
     lint {
         abortOnError = true
-        // The findings in the CI's log too (the HTML report is in the `android-reports` artifact).
+        // A text report too, printed in the CI's log (the HTML one is in the `android-reports` artifact).
         textReport = true
-        textOutput = file("stdout")
+        textOutput = file("build/reports/lint-results.txt")
         // Versions of the build tools and of the SDK are chosen with Capacitor, not by lint.
         disable 'GradleDependency', 'NewerVersionAvailable', 'AndroidGradlePluginVersion', 'OldTargetApi'
     }

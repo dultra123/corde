@@ -108,9 +108,8 @@ server_pid=$!
 trap 'kill "$server_pid" 2> /dev/null || true' EXIT
 
 adb wait-for-device
-# Un émulateur qui vient de démarrer (et qui redémarre son système pour passer en français) affiche
-# parfois « L'interface système ne répond pas » : attendre qu'il réponde, puis fermer les fenêtres du
-# système et couper les animations.
+# Un émulateur qui vient de démarrer affiche parfois « L'interface système ne répond pas » : attendre
+# qu'il réponde, puis fermer les fenêtres du système et couper les animations.
 for _ in $(seq 1 60); do
   if [ "$(adb shell getprop sys.boot_completed 2> /dev/null | tr -d '\r')" = "1" ] &&
     adb shell settings get global window_animation_scale > /dev/null 2>&1 &&
@@ -155,6 +154,12 @@ fi
 sleep 6
 shot home
 keep 1-start
+# Le canal des rappels est créé au démarrage, nommé dans la langue de l'interface.
+if adb shell dumpsys notification | tr -d '\r' | grep -q "mId='corde-races', mName=Rappels des courses"; then
+  ok "canal « Rappels des courses » créé (interface en français)"
+else
+  warn "canal des rappels absent ou pas en français : $(adb shell dumpsys notification | tr -d '\r' | grep -o "mId='corde-races', mName=[^,]*" | head -n 1)"
+fi
 
 # 2. Lien corde://races.
 adb shell am start -W -a android.intent.action.VIEW -d "corde://races" "$pkg" > /dev/null
