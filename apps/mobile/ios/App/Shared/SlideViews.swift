@@ -177,23 +177,26 @@ private struct RatingChip: View {
     let value: String
     let locked: Bool
     let l10n: L10n
+    var compact = false
 
     var body: some View {
-        HStack(spacing: 3) {
+        HStack(spacing: compact ? 2 : 3) {
             if locked {
                 Image(systemName: "lock.fill")
-                    .font(.system(size: 8, weight: .bold))
+                    .font(.system(size: compact ? 7 : 8, weight: .bold))
                     .foregroundStyle(CordeColor.urgent)
             }
             Text(kind)
-                .font(.system(size: 9, weight: .semibold))
+                .font(.system(size: compact ? 8 : 9, weight: .semibold))
                 .foregroundStyle(Color.white.opacity(0.65))
             Text(value)
-                .font(.system(size: 11, weight: .heavy))
+                .font(.system(size: compact ? 10 : 11, weight: .heavy))
                 .monospacedDigit()
                 .foregroundStyle(CordeColor.rating(value))
         }
-        .padding(.horizontal, 6)
+        .lineLimit(1)
+        .fixedSize()
+        .padding(.horizontal, compact ? 4 : 6)
         .padding(.vertical, 2.5)
         .background(Color.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 5, style: .continuous))
         .overlay(
@@ -204,19 +207,24 @@ private struct RatingChip: View {
     }
 }
 
-/// « MA COURSE ».
+/// « MA COURSE » (petit widget : l'icône seule, faute de place).
 private struct MinePill: View {
     let l10n: L10n
+    var compact = false
 
     var body: some View {
         HStack(spacing: 3) {
             Image(systemName: "timer")
-                .font(.system(size: 8, weight: .heavy))
-            Text(l10n.myRace)
-                .font(.system(size: 9.5, weight: .heavy))
-                .lineLimit(1)
+                .font(.system(size: compact ? 9 : 8, weight: .heavy))
+            if !compact {
+                Text(l10n.myRace)
+                    .font(.system(size: 9.5, weight: .heavy))
+                    .lineLimit(1)
+            }
         }
-        .padding(.horizontal, 6)
+        .fixedSize()
+        .accessibilityLabel(l10n.myRace)
+        .padding(.horizontal, compact ? 5 : 6)
         .padding(.vertical, 3)
         .background(CordeColor.accent, in: Capsule())
         .foregroundStyle(Color(hex: 0x14110A))
@@ -339,7 +347,7 @@ private struct SlideContent<Nav: View>: View {
                 pager
             }
             badges
-                .padding(.top, 5)
+                .padding(.top, small ? 4 : 5)
             Spacer(minLength: 4)
             bottom
                 .shadow(color: Color.black.opacity(0.55), radius: 3, x: 0, y: 1)
@@ -365,14 +373,14 @@ private struct SlideContent<Nav: View>: View {
     @ViewBuilder
     private var badges: some View {
         let req = race.req
-        HStack(spacing: 4) {
+        HStack(spacing: small ? 3 : 4) {
             if let req, !req.sr.isEmpty {
-                RatingChip(kind: "SR", value: req.sr, locked: req.srLocked, l10n: l10n)
+                RatingChip(kind: "SR", value: req.sr, locked: req.srLocked, l10n: l10n, compact: small)
             }
             if let req, !req.dr.isEmpty {
-                RatingChip(kind: "DR", value: req.dr, locked: req.drLocked, l10n: l10n)
+                RatingChip(kind: "DR", value: req.dr, locked: req.drLocked, l10n: l10n, compact: small)
             }
-            if slide.picked { MinePill(l10n: l10n) }
+            if slide.picked { MinePill(l10n: l10n, compact: small) }
         }
     }
 
@@ -384,7 +392,7 @@ private struct SlideContent<Nav: View>: View {
     private var bottom: some View {
         VStack(alignment: .leading, spacing: small ? 1 : 2) {
             Text(race.name)
-                .font(.system(size: small ? 15 : large ? 22 : 18, weight: .heavy))
+                .font(.system(size: small ? 14 : large ? 22 : 18, weight: .heavy))
                 .lineLimit(small || large ? 2 : 1)
                 .minimumScaleFactor(0.75)
             if !meta.isEmpty {
