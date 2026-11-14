@@ -209,6 +209,15 @@ export async function bootApp(): Promise<void> {
     RemindersExtra,
     PickAction,
     phoneText: (key: TranslationKey) => phoneTextKey(key, traits.os),
+    // The phone dashboard keeps the screen on (both systems, no permission).
+    keepAwake: async (on: boolean) => {
+      try {
+        await native.setKeepAwake({ on });
+        log(`screen kept on: ${on}`);
+      } catch (e) {
+        log(`screen kept on: ${on} refused (${e instanceof Error ? e.message : String(e)})`);
+      }
+    },
   });
 
   // A reminder rung while the application is open: the banner of the interface too (the phone

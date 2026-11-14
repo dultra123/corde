@@ -3,7 +3,8 @@
 // Le module natif propre à Corde (« CordeNative » côté JavaScript, packages/ui/src/mobile/
 // platform.ts) : écrit le bloc des widgets dans le trousseau partagé, y garde les photos réduites
 // du widget « Courses en images », démarre, termine et liste l'activité en direct, et donne un
-// diagnostic. Enregistré par CordeBridgeViewController.
+// diagnostic ; garde l'écran allumé tant que le tableau de bord du téléphone est affiché.
+// Enregistré par CordeBridgeViewController.
 // Les règles (quand démarrer, quand terminer, quelles photos) sont dans le TypeScript : ici, on
 // exécute. Seule lecture du réseau : le téléchargement des photos que la partie JavaScript
 // demande (WidgetImages.swift) ; rien n'est envoyé nulle part.
@@ -12,6 +13,7 @@ import ActivityKit
 import Capacitor
 import Foundation
 import Security
+import UIKit
 import WidgetKit
 
 @objc(CordeNativePlugin)
@@ -25,6 +27,7 @@ public class CordeNativePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "startActivity", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "endActivities", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "diagnostics", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setKeepAwake", returnType: CAPPluginReturnPromise),
     ]
 
     /// Une ligne du journal de l'appareil (sortie d'erreur et journal système).
@@ -47,6 +50,16 @@ public class CordeNativePlugin: CAPPlugin, CAPBridgedPlugin {
             "status": Int(status),
             "bytes": data.count,
         ])
+    }
+
+    /// L'écran reste allumé (`on` vrai) ou peut de nouveau s'éteindre. iOS n'en tient compte que
+    /// tant que l'application est au premier plan ; aucune autorisation n'est nécessaire.
+    @objc func setKeepAwake(_ call: CAPPluginCall) {
+        let on = call.getBool("on") ?? false
+        DispatchQueue.main.async {
+            UIApplication.shared.isIdleTimerDisabled = on
+            call.resolve()
+        }
     }
 
     /// Dernier `OSStatus` du magasin des photos autre qu'un succès (diagnostic).

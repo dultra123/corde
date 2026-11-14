@@ -136,7 +136,13 @@ export class FakeNative implements NativePort {
   failing = new Set<string>();
   /** Size of a reduced picture. */
   imageSize = 30_000;
+  /** Each call of `setKeepAwake`. */
+  keepAwake: boolean[] = [];
   private next = 1;
+
+  async setKeepAwake({ on }: { on: boolean }) {
+    this.keepAwake.push(on);
+  }
 
   async setWidgetData({ json }: { json: string }) {
     if (this.status !== 0) return { ok: false, status: this.status, bytes: 0 };

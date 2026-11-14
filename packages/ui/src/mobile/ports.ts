@@ -100,8 +100,16 @@ export interface NativeImagesResult {
 /**
  * The application's own native module (`apps/mobile/ios/App/App/CordeNativePlugin.swift`):
  * the block of the widgets in the shared keychain item, their pictures, and the Live Activity.
+ * Android has a module of the same name with `setKeepAwake` only
+ * (`apps/mobile/android/…/CordeNativePlugin.java`).
  */
 export interface NativePort {
+  /**
+   * Keeps the screen on (`true`) or lets it sleep again, while the application is in front:
+   * `UIApplication.isIdleTimerDisabled` on the iPhone, `FLAG_KEEP_SCREEN_ON` on Android. No
+   * permission. Called by the phone dashboard (`dash/wake.ts`).
+   */
+  setKeepAwake(options: { on: boolean }): Promise<void>;
   /** Writes the block and asks WidgetKit to reload the widgets. */
   setWidgetData(options: { json: string }): Promise<{ ok: boolean; status: number; bytes: number }>;
   /**
