@@ -8,6 +8,7 @@
 // Chronologie : une entrée maintenant, puis une à chaque départ à venir (la liste se décale
 // d'elle-même) et une heure avant chaque départ choisi ; à la fin, iOS redemande une
 // chronologie (relue dans le trousseau). Les comptes à rebours tournent sans rechargement.
+// Le widget « Courses en images » a sa propre chronologie (une page par minute) : SlidesWidget.swift.
 
 import SwiftUI
 import WidgetKit
@@ -16,6 +17,7 @@ import WidgetKit
 struct CordeWidgetsBundle: WidgetBundle {
     var body: some Widget {
         RacesWidget()
+        SlidesWidget()
         MyRacesWidget()
         NextStartWidget()
         CordeRaceLiveActivity()
@@ -59,7 +61,7 @@ struct CordeProvider: TimelineProvider {
     }
 }
 
-private let racesURL = URL(string: "corde://races")
+let racesURL = URL(string: "corde://races")
 
 struct RacesWidget: Widget {
     var body: some WidgetConfiguration {

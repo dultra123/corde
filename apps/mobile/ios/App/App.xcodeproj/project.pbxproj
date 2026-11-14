@@ -37,6 +37,10 @@
 		C0DE0012000000000000004B /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE0012000000000000000B /* SampleData.swift */; };
 		C0DE0012000000000000004C /* CordeWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE0012000000000000000C /* CordeWidgets.swift */; };
 		C0DE0012000000000000004D /* CordeLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE0012000000000000000D /* CordeLiveActivity.swift */; };
+		C0DE00130000000000000011 /* SlideViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00130000000000000001 /* SlideViews.swift */; };
+		C0DE00130000000000000012 /* SlideViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00130000000000000001 /* SlideViews.swift */; };
+		C0DE00130000000000000013 /* SlidesWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00130000000000000002 /* SlidesWidget.swift */; };
+		C0DE00130000000000000014 /* WidgetImages.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00130000000000000003 /* WidgetImages.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -90,6 +94,9 @@
 		C0DE0012000000000000000B /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
 		C0DE0012000000000000000C /* CordeWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CordeWidgets.swift; sourceTree = "<group>"; };
 		C0DE0012000000000000000D /* CordeLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CordeLiveActivity.swift; sourceTree = "<group>"; };
+		C0DE00130000000000000001 /* SlideViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlideViews.swift; sourceTree = "<group>"; };
+		C0DE00130000000000000002 /* SlidesWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlidesWidget.swift; sourceTree = "<group>"; };
+		C0DE00130000000000000003 /* WidgetImages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetImages.swift; sourceTree = "<group>"; };
 		C0DE0012000000000000000E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		C0DE0012000000000000000F /* CordeWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CordeWidgets.entitlements; sourceTree = "<group>"; };
 		C0DE00120000000000000010 /* CordeWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CordeWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -141,6 +148,7 @@
 				C0DE00120000000000000001 /* CordeBridgeViewController.swift */,
 				C0DE00120000000000000002 /* CordeNativePlugin.swift */,
 				C0DE00120000000000000003 /* WidgetShots.swift */,
+				C0DE00130000000000000003 /* WidgetImages.swift */,
 				C0DE00120000000000000004 /* App.entitlements */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
@@ -165,6 +173,7 @@
 				C0DE00120000000000000009 /* WidgetViews.swift */,
 				C0DE0012000000000000000A /* ActivityViews.swift */,
 				C0DE0012000000000000000B /* SampleData.swift */,
+				C0DE00130000000000000001 /* SlideViews.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -174,6 +183,7 @@
 			children = (
 				C0DE0012000000000000000C /* CordeWidgets.swift */,
 				C0DE0012000000000000000D /* CordeLiveActivity.swift */,
+				C0DE00130000000000000002 /* SlidesWidget.swift */,
 				C0DE0012000000000000000E /* Info.plist */,
 				C0DE0012000000000000000F /* CordeWidgets.entitlements */,
 			);
@@ -306,6 +316,8 @@
 				C0DE00120000000000000039 /* WidgetViews.swift in Sources */,
 				C0DE0012000000000000003A /* ActivityViews.swift in Sources */,
 				C0DE0012000000000000003B /* SampleData.swift in Sources */,
+				C0DE00130000000000000011 /* SlideViews.swift in Sources */,
+				C0DE00130000000000000014 /* WidgetImages.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -322,6 +334,8 @@
 				C0DE00120000000000000049 /* WidgetViews.swift in Sources */,
 				C0DE0012000000000000004A /* ActivityViews.swift in Sources */,
 				C0DE0012000000000000004B /* SampleData.swift in Sources */,
+				C0DE00130000000000000012 /* SlideViews.swift in Sources */,
+				C0DE00130000000000000013 /* SlidesWidget.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -487,7 +501,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.9.0;
+				MARKETING_VERSION = 0.10.0;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.dultra123.corde;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -510,7 +524,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.9.0;
+				MARKETING_VERSION = 0.10.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.dultra123.corde;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
@@ -533,7 +547,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.9.0;
+				MARKETING_VERSION = 0.10.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.dultra123.corde.widgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -557,7 +571,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.9.0;
+				MARKETING_VERSION = 0.10.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.dultra123.corde.widgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;

@@ -128,7 +128,15 @@ function fakeBridge({ seed, pages }) {
       raceSound: true,
     }),
   );
-  const log = { http: [], scheduled: [], requests: 0, cancelled: 0, widgets: [], activities: [] };
+  const log = {
+    http: [],
+    scheduled: [],
+    requests: 0,
+    cancelled: 0,
+    widgets: [],
+    activities: [],
+    images: [],
+  };
   const pending = [];
   let permission = "prompt";
   let nextCallback = 1;
@@ -185,6 +193,18 @@ function fakeBridge({ seed, pages }) {
         log.widgets.push(json);
         return { ok: true, status: 0, bytes: json.length };
       },
+      // Nothing downloaded here: the pictures are « kept » at once.
+      setWidgetImages: ({ items }) => {
+        log.images = items.slice(0, 8).map((i) => i.key);
+        return {
+          written: log.images.length,
+          kept: 0,
+          failed: 0,
+          removed: 0,
+          bytes: log.images.length * 30000,
+          status: 0,
+        };
+      },
       activities: () => ({ allowed: true, running: log.activities.slice() }),
       startActivity: (o) => {
         const id = `A${log.activities.length + 1}`;
@@ -204,6 +224,9 @@ function fakeBridge({ seed, pages }) {
         activitiesAllowed: true,
         activities: log.activities.length,
         ios: "18.1",
+        images: log.images?.length ?? 0,
+        imageBytes: (log.images?.length ?? 0) * 30000,
+        imageStatus: 0,
       }),
     },
     App: { getLaunchUrl: () => ({}) },

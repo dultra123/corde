@@ -3,14 +3,23 @@ import { buildSchedule } from "../races/model";
 import type { Race } from "../races/parse";
 import type { Lang } from "../store/settings";
 import { readJson, writeJson } from "./kv";
-import type { LogPort, NativeDiagnostics, NativePort, PrefsPort } from "./ports";
+import type {
+  LogPort,
+  NativeDiagnostics,
+  NativeImagesResult,
+  NativePort,
+  PrefsPort,
+} from "./ports";
 import {
   type ActivityEvent,
   type ActivityPlan,
   buildPayload,
+  imageUrls,
   payloadKey,
   planActivity,
+  type WidgetImage,
   type WidgetPayload,
+  widgetImages,
 } from "./widgets";
 
 /** Keys of this module in the phone's storage (`kv.ts` has the others). */
@@ -23,6 +32,8 @@ export const WIDGET_KEYS = {
 
 /** A schedule kept for the widgets is used for 3 days at most. */
 export const KEEP_SCHEDULE_MS = 3 * 864e5;
+/** A picture that could not be downloaded is tried again after this (at the next update). */
+export const IMAGE_RETRY_MS = 15 * 60e3;
 
 export interface WidgetSyncOptions {
   prefs: PrefsPort;
@@ -72,7 +83,9 @@ function isKept(v: unknown): v is KeptSchedule {
  * block of the widgets ({@link buildPayload}) and writes it through the native module only when
  * it changed; `activity(event)` applies the Live Activity rules ({@link planActivity}). Both run
  * one at a time (a call during a run runs once more after it). Nothing here reads the network:
- * the schedule is the one the Courses page already read.
+ * the schedule is the one the Courses page already read; the pictures of the « Courses en
+ * images » widget are downloaded by the native side of the application (`setWidgetImages`),
+ * which is handed their list after each write of the block, only when it changed.
  */
 export class WidgetSync {
   private lastKey: string | null = null;
@@ -80,6 +93,10 @@ export class WidgetSync {
   private updateAgain = false;
   private acting: Promise<ActivityPlan | null> = Promise.resolve(null);
   lastWrite: WriteView | null = null;
+  private lastImagesKey: string | null = null;
+  private imagesRetryAt: number | null = null;
+  /** The last answer of `setWidgetImages`, for the diagnosis. */
+  lastImages: (NativeImagesResult & { at: number }) | null = null;
   private readonly now: () => number;
 
   constructor(private readonly opts: WidgetSyncOptions) {
@@ -107,22 +124,58 @@ export class WidgetSync {
     return null;
   }
 
-  /** The block as it would be written now. */
-  async payload(): Promise<WidgetPayload> {
+  /** The block as it would be written now, and the pictures of its pages. */
+  private async build(): Promise<{ payload: WidgetPayload; images: WidgetImage[] }> {
     const enabled = await this.opts.enabled();
     const [picks, settings, races] = await Promise.all([
       this.opts.picks(),
       this.opts.settings(),
       this.schedule(enabled),
     ]);
-    return buildPayload({
+    const now = this.now();
+    const payload = buildPayload({
       races,
       enabled,
       picks,
       settings,
       lang: this.opts.lang(),
-      now: this.now(),
+      now,
     });
+    return { payload, images: widgetImages(payload, imageUrls(races ?? [], picks), now) };
+  }
+
+  /** The block as it would be written now. */
+  async payload(): Promise<WidgetPayload> {
+    return (await this.build()).payload;
+  }
+
+  /**
+   * Hands the list of pictures to the native side when it changed (the same pictures in another
+   * order is no change), or again 15 minutes after a failed download. The native side downloads
+   * what it does not keep yet, deletes what is no longer listed.
+   */
+  private async syncImages(images: WidgetImage[]): Promise<void> {
+    const key = images
+      .map((i) => `${i.key}=${i.url}`)
+      .sort()
+      .join("\n");
+    const now = this.now();
+    if (key === this.lastImagesKey && (this.imagesRetryAt === null || now < this.imagesRetryAt)) {
+      return;
+    }
+    try {
+      const r = await this.opts.native.setWidgetImages({ items: images });
+      this.lastImages = { ...r, at: now };
+      this.lastImagesKey = key;
+      this.imagesRetryAt = r.failed > 0 ? now + IMAGE_RETRY_MS : null;
+      this.opts.log?.(
+        `widgets: pictures ${r.written} written, ${r.kept} kept, ${r.failed} failed, ${r.removed} removed (${r.bytes} bytes, OSStatus ${r.status})`,
+      );
+    } catch (e) {
+      // Not available (an older application) or refused: tried again at the next change.
+      this.lastImagesKey = null;
+      this.opts.log?.(`widgets: pictures: ${e instanceof Error ? e.message : String(e)}`);
+    }
   }
 
   /** Writes the block when it changed (`force`: even when not). */
@@ -137,20 +190,24 @@ export class WidgetSync {
       do {
         this.updateAgain = false;
         try {
-          const p = await this.payload();
+          const { payload: p, images } = await this.build();
           const key = payloadKey(p);
-          if (key === this.lastKey) continue;
-          const json = JSON.stringify(p);
-          const r = await this.opts.native.setWidgetData({ json });
-          this.lastWrite = { ok: r.ok, status: r.status, bytes: r.bytes, at: p.at };
-          if (r.ok) {
-            this.lastKey = key;
-            this.opts.log?.(
-              `widgets: ${r.bytes} bytes written (${p.races.length} races, ${p.mine.length} picks, schedule ${p.sched})`,
-            );
-          } else {
-            this.opts.log?.(`widgets: shared store refused the block (OSStatus ${r.status})`);
+          if (key !== this.lastKey) {
+            const json = JSON.stringify(p);
+            const r = await this.opts.native.setWidgetData({ json });
+            this.lastWrite = { ok: r.ok, status: r.status, bytes: r.bytes, at: p.at };
+            if (r.ok) {
+              this.lastKey = key;
+              this.opts.log?.(
+                `widgets: ${r.bytes} bytes written (${p.races.length} races, ${p.mine.length} picks, schedule ${p.sched})`,
+              );
+            } else {
+              this.opts.log?.(`widgets: shared store refused the block (OSStatus ${r.status})`);
+              continue;
+            }
           }
+          // After the block (it names the pictures): the pictures of its pages.
+          await this.syncImages(images);
         } catch (e) {
           this.opts.log?.(`widgets: ${e instanceof Error ? e.message : String(e)}`);
         }

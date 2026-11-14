@@ -205,17 +205,32 @@ test("sources : le code partagé dans les deux cibles, chaque fichier existe", (
     "WidgetViews.swift",
     "ActivityViews.swift",
     "SampleData.swift",
+    "SlideViews.swift",
   ];
   for (const f of shared) {
     assert.ok(app.includes(f), `${f} dans l'application`);
     assert.ok(ext.includes(f), `${f} dans l'extension`);
   }
-  for (const f of ["AppDelegate.swift", "SceneDelegate.swift", "CordeNativePlugin.swift", "CordeBridgeViewController.swift", "WidgetShots.swift"]) {
+  // Le téléchargement des photos (WidgetImages.swift) est dans l'application seulement :
+  // l'extension ne fait aucune requête réseau.
+  for (const f of [
+    "AppDelegate.swift",
+    "SceneDelegate.swift",
+    "CordeNativePlugin.swift",
+    "CordeBridgeViewController.swift",
+    "WidgetShots.swift",
+    "WidgetImages.swift",
+  ]) {
     assert.ok(app.includes(f), f);
     assert.ok(!ext.includes(f), `${f} hors de l'extension`);
   }
-  assert.ok(ext.includes("CordeWidgets.swift") && ext.includes("CordeLiveActivity.swift"));
-  assert.ok(!app.includes("CordeWidgets.swift"), "le @main de l'extension hors de l'application");
+  for (const f of ["CordeWidgets.swift", "CordeLiveActivity.swift", "SlidesWidget.swift"]) {
+    assert.ok(ext.includes(f), `${f} dans l'extension`);
+    // (L'AppIntent du widget en images est défini dans l'extension seulement.)
+    assert.ok(!app.includes(f), `${f} hors de l'application`);
+  }
+  // Chaque fichier une seule fois par cible.
+  for (const list of [app, ext]) assert.equal(new Set(list).size, list.length, "fichier en double");
   // (Les produits et les fichiers écrits par `cap sync` — public, config.xml — ne sont pas
   // dans le dépôt : seuls le code et les fichiers de réglage sont contrôlés.)
   for (const [id, ref] of ofIsa("PBXFileReference")) {
@@ -271,6 +286,24 @@ test("réglages : version, identifiants, iOS 17, droits, Info.plist", () => {
   assert.match(widgetsPlist, /<key>NSExtensionPointIdentifier<\/key>\s*<string>com\.apple\.widgetkit-extension<\/string>/);
   const appPlist = readFileSync(join(iosApp, "App/Info.plist"), "utf8");
   assert.match(appPlist, /<key>NSSupportsLiveActivities<\/key>\s*<true\/>/);
+});
+
+test("l'extension ne fait aucune requête réseau", () => {
+  const ext = targetNamed("CordeWidgets");
+  const refs = phase(ext, "PBXSourcesBuildPhase")
+    .flatMap((p) => p.files)
+    .map((bf) => objects[bf].fileRef);
+  assert.ok(refs.length > 0);
+  for (const ref of refs) {
+    const code = readFileSync(filePath(ref), "utf8")
+      .replace(/\/\/.*$/gm, "")
+      .replace(/"(?:[^"\\]|\\.)*"/g, '""');
+    assert.doesNotMatch(
+      code,
+      /\b(URLSession|URLRequest|NWConnection|NWPathMonitor|CFNetwork|Data\(contentsOf|AsyncImage)\b/,
+      `${objects[ref].path} : appel réseau dans le code compilé par l'extension`,
+    );
+  }
 });
 
 test("le storyboard et la scène utilisent le contrôleur de Corde", () => {

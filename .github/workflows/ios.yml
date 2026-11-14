@@ -7,7 +7,9 @@
 #              dans `xcrun simctl list`, installation, trois lancements — Accueil ; Courses par le
 #              lien corde://races, ouvert par l'application elle-même comme un toucher de widget ;
 #              planches des vues des widgets et de l'activité en direct dessinées par
-#              l'application (build Debug, données inventées) —, images réduites en JPEG et
+#              l'application (build Debug, données inventées ; « Courses en images » avec des
+#              photos fabriquées par le code, plus un aller-retour du magasin des photos et la
+#              réduction d'une grande image, sans aucun téléchargement) —, images réduites en JPEG et
 #              écrites EN BASE64 DANS LE JOURNAL entre deux marqueurs
 #                -----BEGIN CORDE SCREENSHOT <nom>-----
 #                -----END CORDE SCREENSHOT-----
@@ -330,6 +332,9 @@ jobs:
           check "lien corde://races reçu par l'interface" "link: #/races" "$out/run2-stdout.log"
           check "bloc relu comme le lit l'extension" "store read: OSStatus 0, [0-9]+ bytes, version 1" "$out/run3-stderr.log"
           check "vues des widgets dessinées" "shots: [1-9]" "$out/run3-stderr.log"
+          check "magasin des photos : écrire, relire, lister, supprimer (OSStatus 0)" "image store: write OSStatus 0, read OSStatus 0 \(40960 bytes, same\), list OSStatus 0 \([0-9]+ keys, found\), delete OSStatus 0, read after delete OSStatus -25300" "$out/run3-stderr.log"
+          check "réduction d'une grande image (JPEG ≤ 48 Kio)" "image reduce: .* ok \(limit" "$out/run3-stderr.log"
+          check "planches du widget en images (4 + 3 planches)" "shots: ([7-9]|[1-9][0-9]) images" "$out/run3-stderr.log"
           check "activité en direct d'exemple démarrée" "demo activity: started" "$out/run4-stderr.log"
           echo "Signature du simulateur : ${SIM_SIGNING:-?}"
 

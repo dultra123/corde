@@ -1354,6 +1354,11 @@ export const fr = {
   "mobile.widgets.diag.groupMissing": "Trousseau partagé : groupe introuvable dans l'application.",
   "mobile.widgets.diag.liveAllowed": "Activités en direct : autorisées ({n} en cours).",
   "mobile.widgets.diag.liveDenied": "Activités en direct : refusées par iOS ({n} en cours).",
+  "mobile.widgets.diag.images":
+    "Photos des courses (widget « Courses en images ») : {n} sur le téléphone ({kb} Ko).",
+  "mobile.widgets.diag.imagesNone":
+    "Photos des courses (widget « Courses en images ») : aucune sur le téléphone.",
+  "mobile.widgets.diag.imagesError": "Dernière erreur : code {code}.",
   "mobile.widgets.diag.ios": "iOS {v}.",
   "mobile.gate.none.title": "Aucun serveur Corde",
   "mobile.gate.none.body":

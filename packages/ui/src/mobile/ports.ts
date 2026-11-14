@@ -66,15 +66,50 @@ export interface NativeDiagnostics {
   activitiesAllowed: boolean;
   activities: number;
   ios: string;
+  /** Pictures kept for the « Courses en images » widget, their total size (bytes). */
+  images: number;
+  imageBytes: number;
+  /** Last `OSStatus` of the store of the pictures (0 = success). */
+  imageStatus: number;
+}
+
+/** A picture the native side downloads, reduces and keeps for the widget (`widgets.ts`). */
+export interface NativeImageItem {
+  /** `imageKey(url)`: the name it is kept under. */
+  key: string;
+  /** A safe `https://` address (`safeImage`). */
+  url: string;
+}
+
+/** What `setWidgetImages` did. */
+export interface NativeImagesResult {
+  /** Downloaded, reduced and written. */
+  written: number;
+  /** Already there. */
+  kept: number;
+  /** Refused address, download or decoding failed, store refused. */
+  failed: number;
+  /** Kept pictures no longer in the list, deleted. */
+  removed: number;
+  /** Total size of the pictures kept afterwards. */
+  bytes: number;
+  /** Last `OSStatus` of the store (0 = success). */
+  status: number;
 }
 
 /**
  * The application's own native module (`apps/mobile/ios/App/App/CordeNativePlugin.swift`):
- * the block of the widgets in the shared keychain item, and the Live Activity.
+ * the block of the widgets in the shared keychain item, their pictures, and the Live Activity.
  */
 export interface NativePort {
   /** Writes the block and asks WidgetKit to reload the widgets. */
   setWidgetData(options: { json: string }): Promise<{ ok: boolean; status: number; bytes: number }>;
+  /**
+   * The pictures of the « Courses en images » widget (at most 8): each one not kept yet is
+   * downloaded **by the application** (never by the widget extension), reduced to a JPEG of
+   * 48 KiB at most and kept; those no longer listed are deleted.
+   */
+  setWidgetImages(options: { items: NativeImageItem[] }): Promise<NativeImagesResult>;
   /** Whether iOS allows Live Activities for Corde, and those running. */
   activities(): Promise<{ allowed: boolean; running: NativeActivity[] }>;
   startActivity(options: NativeActivityStart): Promise<{ id: string }>;

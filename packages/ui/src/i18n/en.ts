@@ -1304,6 +1304,11 @@ export const en: Record<TranslationKey, string> = {
   "mobile.widgets.diag.groupMissing": "Shared keychain: group missing from the app.",
   "mobile.widgets.diag.liveAllowed": "Live Activities: allowed ({n} running).",
   "mobile.widgets.diag.liveDenied": "Live Activities: refused by iOS ({n} running).",
+  "mobile.widgets.diag.images":
+    "Race pictures (« Races in pictures » widget): {n} on the phone ({kb} KB).",
+  "mobile.widgets.diag.imagesNone":
+    "Race pictures (« Races in pictures » widget): none on the phone.",
+  "mobile.widgets.diag.imagesError": "Last error: code {code}.",
   "mobile.widgets.diag.ios": "iOS {v}.",
   "mobile.gate.none.title": "No Corde server",
   "mobile.gate.none.body":

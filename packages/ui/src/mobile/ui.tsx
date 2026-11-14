@@ -267,6 +267,20 @@ function storeLine(d: NativeDiagnostics, t: Tr): string {
   });
 }
 
+/** The pictures of « Courses en images »: how many, their weight, the last code of the store. */
+export function imagesLine(d: NativeDiagnostics, t: Tr): string {
+  const n = d.images ?? 0;
+  const status = d.imageStatus ?? 0;
+  const line =
+    n === 0
+      ? t("mobile.widgets.diag.imagesNone")
+      : t("mobile.widgets.diag.images", {
+          n,
+          kb: Math.max(1, Math.round((d.imageBytes ?? 0) / 1024)),
+        });
+  return status === 0 ? line : `${line} ${t("mobile.widgets.diag.imagesError", { code: status })}`;
+}
+
 /** After the reminders: the Live Activity setting, how to add a widget, the diagnosis. */
 export function RemindersExtra() {
   const { t } = useT();
@@ -321,6 +335,7 @@ export function RemindersExtra() {
                 { n: diag.activities },
               )}
             </li>
+            <li>{imagesLine(diag, t)}</li>
             <li>{t("mobile.widgets.diag.ios", { v: diag.ios })}</li>
           </ul>
         )}

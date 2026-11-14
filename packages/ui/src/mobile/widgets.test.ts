@@ -5,14 +5,19 @@ import {
   AFTER_START_MS,
   buildPayload,
   extendDaily,
+  imageKey,
+  imageUrls,
   MAX_PAYLOAD_BYTES,
+  MAX_WIDGET_IMAGES,
   payloadKey,
   picksAt,
   planActivity,
   racesAt,
   WIDGET_VERSION,
+  widgetImages,
   widgetPicks,
   widgetRaces,
+  widgetReq,
 } from "./widgets";
 
 const NOW = Date.UTC(2026, 10, 14, 18, 0);
@@ -262,6 +267,113 @@ describe("racesAt (mirrored by WidgetData.swift)", () => {
     };
     expect(picksAt(q, NOW)).toHaveLength(1);
     expect(picksAt(q, NOW + 10 * MIN)).toHaveLength(0);
+  });
+});
+
+describe("pictures and requirements (« Courses en images »)", () => {
+  const IMG_A = "https://example.org/a.jpg";
+  const IMG_B = "https://example.org/b.webp";
+
+  it("imageKey: FNV-1a 64 bits, stable, i + 16 hex characters", () => {
+    // Reference values of FNV-1a 64 (empty string, « a »).
+    expect(imageKey("")).toBe("icbf29ce484222325");
+    expect(imageKey("a")).toBe("iaf63dc4c8601ec8c");
+    expect(imageKey(IMG_A)).toBe(imageKey(IMG_A));
+    expect(imageKey(IMG_A)).not.toBe(imageKey(IMG_B));
+    expect(imageKey("https://example.org/é")).toMatch(/^i[0-9a-f]{16}$/);
+  });
+
+  it("widgetReq: the requirement, and what the driver lacks (not the profile)", () => {
+    expect(widgetReq(undefined, { sr: "S1", dr: "B1" })).toBeUndefined();
+    expect(widgetReq({ sr: "", dr: "" }, { sr: "S1", dr: "B1" })).toBeUndefined();
+    expect(widgetReq({ sr: "S2", dr: "B2" }, { sr: "S1", dr: "S0" })).toEqual({
+      sr: "S2",
+      dr: "B2",
+      miss: ["sr"],
+    });
+    expect(widgetReq({ sr: "S2", dr: "" }, { sr: "S3", dr: "" })).toEqual({ sr: "S2" });
+    // Unknown profile: nothing is marked as missing (same rule as the Courses page).
+    expect(widgetReq({ sr: "S2", dr: "B2" }, { sr: "", dr: "" })).toEqual({ sr: "S2", dr: "B2" });
+  });
+
+  const req = {
+    beginner: { sr: "B2", dr: "" },
+    intermediate: { sr: "S1", dr: "B3" },
+    advanced: { sr: "S2", dr: "S0" },
+    weekly: { sr: "", dr: "" },
+    special: { sr: "", dr: "" },
+    champ: { sr: "G1", dr: "" },
+  };
+  const races = [
+    race({ id: "a", image: IMG_A, starts: [NOW + 10 * MIN, NOW + 40 * MIN] }),
+    race({ id: "b", level: "advanced", image: IMG_B, starts: [NOW + 20 * MIN] }),
+    race({
+      id: "c",
+      level: "intermediate",
+      image: "http://example.org/c.jpg",
+      starts: [NOW + 5 * MIN],
+    }),
+    race({ id: "d", cat: "weekly", level: null, image: null, starts: [NOW + 2 * HOUR] }),
+  ];
+  const input = {
+    races,
+    enabled: true,
+    picks: [pick({ race_id: "b", level: "advanced", start_ms: NOW + 20 * MIN })],
+    settings: settings({ req, profile: { sr: "S1", dr: "B1" } }),
+    lang: "fr" as const,
+    now: NOW,
+  };
+
+  it("the block carries img and req, never an address nor the profile", () => {
+    const p = buildPayload(input);
+    const byId = new Map(p.races.map((r) => [r.id, r]));
+    expect(byId.get("a")).toMatchObject({ img: imageKey(IMG_A), req: { sr: "B2" } });
+    expect(byId.get("a")?.req?.miss).toBeUndefined();
+    expect(byId.get("b")).toMatchObject({
+      img: imageKey(IMG_B),
+      req: { sr: "S2", dr: "S0", miss: ["sr", "dr"] },
+    });
+    // `http://` is not a safe picture; no requirement for the weekly races here.
+    expect(byId.get("c")?.img).toBeUndefined();
+    expect(byId.get("c")?.req).toEqual({ sr: "S1", dr: "B3", miss: ["dr"] });
+    expect(byId.get("d")).not.toHaveProperty("img");
+    expect(byId.get("d")).not.toHaveProperty("req");
+    expect(p.mine[0]).toMatchObject({
+      img: imageKey(IMG_B),
+      req: { sr: "S2", miss: ["sr", "dr"] },
+    });
+    const json = JSON.stringify(p);
+    expect(json).not.toMatch(/https?:\/\/|"profile"/);
+  });
+
+  it("widgetImages: the next pick, then the pages, one per picture, at most 8", () => {
+    const p = buildPayload(input);
+    const urls = imageUrls(races, input.picks);
+    expect(widgetImages(p, urls, NOW)).toEqual([
+      { key: imageKey(IMG_B), url: IMG_B },
+      { key: imageKey(IMG_A), url: IMG_A },
+    ]);
+    // The pick's start is gone: the race b comes back with its estimated start of tomorrow,
+    // after a (its next start is in 15 minutes).
+    expect(widgetImages(p, urls, NOW + 25 * MIN).map((i) => i.url)).toEqual([IMG_A, IMG_B]);
+
+    const many = Array.from({ length: 12 }, (_, i) =>
+      race({ id: `r${i}`, image: `https://example.org/${i}.jpg`, starts: [NOW + (i + 1) * MIN] }),
+    );
+    const q = buildPayload({ ...input, races: many, picks: [] });
+    const list = widgetImages(q, imageUrls(many, []), NOW);
+    expect(list).toHaveLength(MAX_WIDGET_IMAGES);
+    expect(list[0]?.url).toBe("https://example.org/0.jpg");
+  });
+
+  it("widgetImages: nothing while the schedule is off", () => {
+    const p = buildPayload({ ...input, enabled: false });
+    expect(widgetImages(p, imageUrls(races, input.picks), NOW)).toEqual([]);
+  });
+
+  it("an old block without img / req is still a valid block (optional fields)", () => {
+    const p = buildPayload({ ...input, settings: settings() });
+    expect(p.races.find((r) => r.id === "a")).not.toHaveProperty("req");
   });
 });
 

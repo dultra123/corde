@@ -1,5 +1,5 @@
-import type { RacePick, RaceSettings } from "../net/races-api";
-import { CAT_ORDER, shownRaces } from "../races/model";
+import type { RacePick, RaceSettings, Ratings } from "../net/races-api";
+import { CAT_ORDER, missing, reqKey, safeImage, shownRaces } from "../races/model";
 import { type Cat, type Level, type Race, viewRaces } from "../races/parse";
 import type { Lang } from "../store/settings";
 
@@ -14,6 +14,10 @@ import type { Lang } from "../store/settings";
  * show them in the phone's time zone. A field the widgets do not know is ignored; another
  * version is shown as « Ouvre Corde pour actualiser ». **Never a secret in here**: no server
  * address, no pairing token — only the public schedule, the driver's picks and the language.
+ * Each race also carries the SR / DR its category requires and **what the driver lacks** for it
+ * (`req.miss`, never the driver's own ratings), and the key of its picture (`img`): the pictures
+ * themselves are downloaded by the application and kept apart, reduced (`widget-sync.ts`,
+ * `setWidgetImages`), for the « Courses en images » widget. Both fields are optional.
  *
  * The daily races repeat: the pages list the next hours only, so the application extends them
  * ({@link extendDaily}) for the widgets to stay right for a couple of days without opening
@@ -42,6 +46,14 @@ export type ScheduleState =
   /** Turned on, but nothing could be read yet. */
   | "none";
 
+/** The access requirement of a race: SR / DR, and what the driver lacks (`missing`). */
+export interface WidgetReq {
+  sr?: string;
+  dr?: string;
+  /** The requirements above the driver's profile: `sr`, `dr` (never the profile itself). */
+  miss?: ("sr" | "dr")[];
+}
+
 export interface WidgetRace {
   /** Race id of the schedule (`races/parse.ts`). */
   id: string;
@@ -59,6 +71,10 @@ export interface WidgetRace {
   x?: number[];
   /** Special event: its last day, 23:59. */
   to?: number;
+  /** Key of its picture ({@link imageKey}), when the schedule gives a safe one. */
+  img?: string;
+  /** Its access requirement, when one is set. */
+  req?: WidgetReq;
 }
 
 export interface WidgetPick {
@@ -73,6 +89,8 @@ export interface WidgetPick {
   dur: string;
   /** The start (special event: its reminder of the day, 10:00). */
   t: number;
+  img?: string;
+  req?: WidgetReq;
 }
 
 export interface WidgetPayload {
@@ -139,6 +157,51 @@ const catRank = (c: Cat) => {
 };
 
 /**
+ * Stable key of a picture's address: FNV-1a over its UTF-8 bytes, 64 bits, written `i` + 16
+ * hexadecimal characters. The block carries it (`img`), the native side names the reduced
+ * picture with it (the account of its keychain item): **mirrored by nothing**, the Swift side
+ * only compares keys.
+ */
+export function imageKey(url: string): string {
+  let h = 0xcbf29ce484222325n;
+  for (const b of new TextEncoder().encode(url)) {
+    h = ((h ^ BigInt(b)) * 0x100000001b3n) & 0xffffffffffffffffn;
+  }
+  return `i${h.toString(16).padStart(16, "0")}`;
+}
+
+/**
+ * The requirement of a race for the widgets (`undefined` when none is set): the SR / DR of
+ * `settings.req[reqKey(race)]`, and which of them is above the driver's profile — the same rule
+ * as the badges of the Courses page (`missing`). The profile itself is not written.
+ */
+export function widgetReq(req: Ratings | undefined, profile: Ratings): WidgetReq | undefined {
+  if (!req || (!req.sr && !req.dr)) return undefined;
+  const out: WidgetReq = {};
+  if (req.sr) out.sr = req.sr;
+  if (req.dr) out.dr = req.dr;
+  const miss: ("sr" | "dr")[] = [];
+  if (req.sr && missing({ sr: req.sr, dr: "" }, profile).length > 0) miss.push("sr");
+  if (req.dr && missing({ sr: "", dr: req.dr }, profile).length > 0) miss.push("dr");
+  if (miss.length) out.miss = miss;
+  return out;
+}
+
+/** `img` and `req` of a race or a pick (left out when there are none). */
+function extras(
+  image: string | null | undefined,
+  r: { cat: Cat; level: Level | null },
+  settings: RaceSettings | null,
+): { img?: string; req?: WidgetReq } {
+  const out: { img?: string; req?: WidgetReq } = {};
+  const url = safeImage(image);
+  if (url) out.img = imageKey(url);
+  const req = settings ? widgetReq(settings.req?.[reqKey(r)], settings.profile) : undefined;
+  if (req) out.req = req;
+  return out;
+}
+
+/**
  * The schedule as the widgets get it: the hour correction applied, the driver's filters
  * applied, past starts gone, daily races extended, the others limited to the next 7 days.
  */
@@ -158,6 +221,7 @@ export function widgetRaces(
       track: r.track,
       cls: r.classes.slice(0, 6),
       dur: r.duration,
+      ...extras(r.image, r, settings),
     };
     if (r.cat === "special") {
       const from = r.from as number;
@@ -179,7 +243,12 @@ export function widgetRaces(
 }
 
 /** The picks still to come (a special event: until its last day), by start. */
-export function widgetPicks(picks: RacePick[], races: Race[], now: number): WidgetPick[] {
+export function widgetPicks(
+  picks: RacePick[],
+  races: Race[],
+  now: number,
+  settings: RaceSettings | null = null,
+): WidgetPick[] {
   const byId = new Map(races.map((r) => [r.id, r]));
   return picks
     .filter((p) => {
@@ -200,6 +269,7 @@ export function widgetPicks(picks: RacePick[], races: Race[], now: number): Widg
         cls: (r?.classes ?? []).slice(0, 6),
         dur: p.duration,
         t: p.start_ms,
+        ...extras(safeImage(r?.image) ?? p.image, p, settings),
       };
     });
 }
@@ -236,7 +306,7 @@ export function buildPayload(input: PayloadInput): WidgetPayload {
   const { now } = input;
   const sched: ScheduleState = !input.enabled ? "off" : input.races ? "on" : "none";
   const all = input.enabled && input.races ? input.races : [];
-  const mine = widgetPicks(input.picks, all, now).slice(0, 50);
+  const mine = widgetPicks(input.picks, all, now, input.settings).slice(0, 50);
   const make = (races: WidgetRace[]): WidgetPayload => ({
     v: WIDGET_VERSION,
     at: now,
@@ -309,6 +379,62 @@ export function racesAt(p: WidgetPayload, t: number, max: number): ListedRace[] 
 /** The picks still to come at `t` (`WidgetData.swift`, `picks(at:)`). */
 export function picksAt(p: WidgetPayload, t: number): WidgetPick[] {
   return p.mine.filter((x) => x.t > t);
+}
+
+// ------------------------------------------------------------------ pictures of the widget
+
+/** Pictures kept for the « Courses en images » widget, at most (≤ 48 KiB each once reduced). */
+export const MAX_WIDGET_IMAGES = 8;
+/** Pages of the « Courses en images » widget, at most (`WidgetData.swift`, `slides(at:)`). */
+export const MAX_SLIDES = 8;
+
+/** A picture the application downloads and reduces for the widget. */
+export interface WidgetImage {
+  key: string;
+  url: string;
+}
+
+/** Key → address of every safe picture of the schedule and of the picks. */
+export function imageUrls(races: Race[], picks: RacePick[]): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const x of [...races.map((r) => r.image), ...picks.map((p) => p.image)]) {
+    const url = safeImage(x);
+    if (url) out.set(imageKey(url), url);
+  }
+  return out;
+}
+
+/**
+ * The pictures of the pages the « Courses en images » widget shows now: the next picked start
+ * (first page of the small widget), then the races as the « Courses » widget lists them
+ * ({@link racesAt}, at most {@link MAX_SLIDES}), then the other picks — one per key, at most
+ * {@link MAX_WIDGET_IMAGES}. Nothing while the schedule is off: no picture is downloaded then
+ * (and those kept are deleted).
+ */
+export function widgetImages(
+  p: WidgetPayload,
+  urls: Map<string, string>,
+  now: number,
+): WidgetImage[] {
+  if (p.sched === "off") return [];
+  const picks = picksAt(p, now);
+  const first = picks.find((x) => x.cat !== "special");
+  const keys = [
+    first?.img,
+    ...racesAt(p, now, MAX_SLIDES).map((x) => x.race.img),
+    ...picks.map((x) => x.img),
+  ];
+  const out: WidgetImage[] = [];
+  const seen = new Set<string>();
+  for (const key of keys) {
+    if (out.length >= MAX_WIDGET_IMAGES) break;
+    if (!key || seen.has(key)) continue;
+    const url = urls.get(key);
+    if (!url) continue;
+    seen.add(key);
+    out.push({ key, url });
+  }
+  return out;
 }
 
 // ------------------------------------------------------------------ Live Activity rules

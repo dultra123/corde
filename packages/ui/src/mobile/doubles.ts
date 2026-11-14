@@ -8,6 +8,8 @@ import type {
   NativeActivity,
   NativeActivityStart,
   NativeDiagnostics,
+  NativeImageItem,
+  NativeImagesResult,
   NativePort,
   NotificationsPort,
   PrefsPort,
@@ -98,12 +100,45 @@ export class FakeNative implements NativePort {
   running: NativeActivity[] = [];
   started: NativeActivityStart[] = [];
   ended: string[][] = [];
+  /** Each list of pictures received. */
+  imageCalls: NativeImageItem[][] = [];
+  /** The pictures kept: key → size. */
+  images = new Map<string, number>();
+  /** Addresses whose download fails. */
+  failing = new Set<string>();
+  /** Size of a reduced picture. */
+  imageSize = 30_000;
   private next = 1;
 
   async setWidgetData({ json }: { json: string }) {
     if (this.status !== 0) return { ok: false, status: this.status, bytes: 0 };
     this.written.push(json);
     return { ok: true, status: 0, bytes: new TextEncoder().encode(json).length };
+  }
+  async setWidgetImages({ items }: { items: NativeImageItem[] }): Promise<NativeImagesResult> {
+    this.imageCalls.push(items.map((i) => ({ ...i })));
+    const list = items.slice(0, 8);
+    const wanted = new Set(list.map((i) => i.key));
+    let removed = 0;
+    for (const key of [...this.images.keys()]) {
+      if (!wanted.has(key)) {
+        this.images.delete(key);
+        removed += 1;
+      }
+    }
+    let written = 0;
+    let kept = 0;
+    let failed = 0;
+    for (const i of list) {
+      if (this.images.has(i.key)) kept += 1;
+      else if (this.failing.has(i.url) || !i.url.startsWith("https://")) failed += 1;
+      else {
+        this.images.set(i.key, this.imageSize);
+        written += 1;
+      }
+    }
+    const bytes = [...this.images.values()].reduce((a, b) => a + b, 0);
+    return { written, kept, failed, removed, bytes, status: 0 };
   }
   async activities() {
     return { allowed: this.allowed, running: this.running.map((a) => ({ ...a })) };
@@ -131,6 +166,9 @@ export class FakeNative implements NativePort {
       activitiesAllowed: this.allowed,
       activities: this.running.length,
       ios: "18.1",
+      images: this.images.size,
+      imageBytes: [...this.images.values()].reduce((a, b) => a + b, 0),
+      imageStatus: 0,
     };
   }
 }

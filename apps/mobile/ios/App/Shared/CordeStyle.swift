@@ -54,6 +54,16 @@ enum CordeColor {
         cat == "daily" ? CordeColor.level(level, scheme) : CordeColor.cat(cat, scheme)
     }
 
+    /// Couleur d'un rang SR / DR (la lettre : bronze, argent, or, platine), comme la page Courses.
+    static func rating(_ value: String) -> Color {
+        switch value.first {
+        case "S": return Color(hex: 0xCDD5E1)
+        case "G": return Color(hex: 0xFFC62B)
+        case "P": return Color(hex: 0x8FE3FF)
+        default: return Color(hex: 0xE0A06B)
+        }
+    }
+
     /// Fond des widgets : sombre comme l'application, clair en mode clair.
     static func background(_ scheme: ColorScheme) -> LinearGradient {
         let colors = scheme == .dark
@@ -127,6 +137,15 @@ struct L10n {
     var nextDescription: String {
         t("Ton prochain départ choisi, à défaut la prochaine course.", "Your next picked start, or else the next race.")
     }
+    var slidesTitle: String { t("Courses en images", "Races in pictures") }
+    var slidesDescription: String {
+        t("Une course par page, avec sa photo et le SR / DR qu'il faut. Change de page chaque minute ; touche › pour la suivante.",
+          "One race per page, with its picture and the SR / DR it requires. Turns every minute; tap › for the next one.")
+    }
+    var nextStarts: String { t("Départs suivants", "Next starts") }
+    var nextRace: String { t("Course suivante", "Next race") }
+    var previousRace: String { t("Course précédente", "Previous race") }
+    var locked: String { t("au-dessus de ton profil", "above your profile") }
     var myRace: String { t("MA COURSE", "MY RACE") }
     var pickInCorde: String { t("Choisis un départ dans Corde", "Pick a start in Corde") }
     var openCorde: String { t("Ouvre Corde pour actualiser", "Open Corde to refresh") }
@@ -161,6 +180,20 @@ struct L10n {
         f.timeZone = .current
         f.dateFormat = "EEE"
         return "\(f.string(from: date)) \(hm(date))"
+    }
+
+    /// `sam. 16 nov.`
+    func day(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.locale = locale
+        f.timeZone = .current
+        f.setLocalizedDateFormatFromTemplate("EEEdMMM")
+        return f.string(from: date)
+    }
+
+    /// Dates d'un événement spécial : `sam. 16 nov. → dim. 17 nov.` (un seul jour : la date).
+    func dateRange(_ from: Date, _ to: Date) -> String {
+        Calendar.current.isDate(from, inSameDayAs: to) ? day(from) : "\(day(from)) → \(day(to))"
     }
 }
 
