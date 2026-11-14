@@ -22,6 +22,10 @@
 #              révoqué), l'archive Release est signée avec, contrôlée, puis exportée avec envoi
 #              direct vers TestFlight. Numéro de build = numéro d'exécution de ce workflow.
 #
+# Branches : lancé à la main sur une autre branche que `main` (Run workflow → choisir la branche),
+# le workflow compile pour le simulateur et essaie les scripts, sans lire aucun secret et sans rien
+# envoyer à Apple. C'est le moyen d'essayer du code Swift avant de le fusionner.
+#
 # Sécurité : jeton en lecture seule ; aucune valeur venant d'un tiers (nom de branche…) n'est
 # collée dans un script ; la clé .p8 n'est écrite que dans un dossier temporaire du runner, en
 # 0600, et effacée à la fin même en cas d'échec ; elle n'est jamais affichée. La clé privée du
@@ -230,7 +234,7 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 10
     env:
-      ASC_READY: ${{ secrets.APPSTORE_API_KEY != '' && secrets.APPSTORE_API_KEY_ID != '' && secrets.APPSTORE_API_ISSUER_ID != '' && secrets.APPLE_TEAM_ID != '' }}
+      ASC_READY: ${{ github.ref == 'refs/heads/main' && secrets.APPSTORE_API_KEY != '' && secrets.APPSTORE_API_KEY_ID != '' && secrets.APPSTORE_API_ISSUER_ID != '' && secrets.APPLE_TEAM_ID != '' }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -259,13 +263,14 @@ jobs:
     name: TestFlight (archive signée et envoi)
     needs: [simulator, cle-api]
     # Jamais sur un fork ni une PR (ce workflow n'a pas de déclencheur pull_request : la
-    # condition le garantit aussi s'il en recevait un).
-    if: github.repository == 'dultra123/corde' && github.event_name != 'pull_request'
+    # condition le garantit aussi s'il en recevait un), et seulement depuis `main` : lancé à la
+    # main sur une autre branche, le workflow compile pour le simulateur et s'arrête là.
+    if: github.repository == 'dultra123/corde' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: macos-latest
     timeout-minutes: 60
     env:
       # « true » seulement si les quatre secrets existent (sinon le job ne fait rien).
-      ASC_READY: ${{ secrets.APPSTORE_API_KEY != '' && secrets.APPSTORE_API_KEY_ID != '' && secrets.APPSTORE_API_ISSUER_ID != '' && secrets.APPLE_TEAM_ID != '' }}
+      ASC_READY: ${{ github.ref == 'refs/heads/main' && secrets.APPSTORE_API_KEY != '' && secrets.APPSTORE_API_KEY_ID != '' && secrets.APPSTORE_API_ISSUER_ID != '' && secrets.APPLE_TEAM_ID != '' }}
     steps:
       - name: Secrets App Store Connect présents ?
         run: |
