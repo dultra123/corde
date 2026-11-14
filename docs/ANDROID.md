@@ -1,6 +1,7 @@
 # Corde sur Android
 
-> Version 1.1.0 — tableau de bord de course et démonstration (1.0.0 : première version Android, la même
+> Version 1.2.0 — tableaux de bord personnalisés du Studio (1.1.0 : tableau de bord de course et
+> démonstration ; 1.0.0 : première version Android, la même
 > que l'iPhone, sans les widgets ni le compte à rebours). Décision : [ADR 0013](adr/0013-application-android.md). Sécurité :
 > [SECURITY-MODEL.md §9](SECURITY-MODEL.md#9-lapplication-android). Vie privée :
 > [PRIVACY.md](../PRIVACY.md#application-android).
@@ -35,6 +36,9 @@ interface, avec les onglets en bas de l'écran.
 - **Le serveur Corde (Raspberry Pi)** : ajouter son adresse, puis « Appairer ce téléphone » avec un code
   obtenu sur le serveur (`sudo corde-server pair`). Le nom proposé pour le téléphone est « Android ».
 - **Pas d'autorisation « réseau local »** à donner : Android n'en a pas (contrairement à l'iPhone).
+- **Choisir son tableau de bord** (1.2) : comme sur iPhone, les tableaux de bord créés dans le **Studio** du
+  PC se choisissent dans le menu **☰** (« Tableau de bord utilisé ») ou dans **Réglages** ; le choix et une
+  copie des tableaux de bord restent sur le téléphone ; sans choix, c'est **Corde**.
 - **Le tableau de bord du Direct** (1.1) : le même que sur iPhone ([IOS.md, « Le tableau de bord »](IOS.md#le-tableau-de-bord-11)) —
   plein écran, quatre pages, **écran gardé allumé** (sans autorisation : Android l'accorde à la fenêtre
   affichée), et **« Voir une démonstration »** sans PC. Le bouton retour d'Android garde son rôle : il
@@ -45,8 +49,8 @@ interface, avec les onglets en bas de l'écran.
 L'application n'est pas sur le Play Store : on l'installe à partir d'un fichier **APK** publié sur GitHub.
 
 1. Sur le téléphone, ouvre la page des versions de Corde :
-   <https://github.com/dultra123/corde/releases>. Prends le fichier **`Corde_1.1.0_android.apk`** :
-   - dans la version numérotée (**Corde 1.1.0**), s'il y est : c'est la version stable ;
+   <https://github.com/dultra123/corde/releases>. Prends le fichier **`Corde_1.2.0_android.apk`** :
+   - dans la version numérotée (**Corde 1.2.0**), s'il y est : c'est la version stable ;
    - sinon dans **Corde — dernière version** (la pré-release `continuous`), refaite à chaque modification.
 2. Le navigateur prévient que ce type de fichier peut être dangereux : **Télécharger quand même**.
 3. Ouvre le fichier téléchargé (la notification « Téléchargement terminé », ou l'application **Fichiers** →

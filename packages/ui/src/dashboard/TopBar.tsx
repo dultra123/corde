@@ -75,9 +75,11 @@ interface Props {
   onSettings: () => void;
   /** Which section is shown: the dashboard gets its layout / edit / demo controls. */
   section?: Section;
+  /** The race dashboard is shown in the page: no widget editing. */
+  dash?: boolean;
 }
 
-export function TopBar({ onSettings, section = "dashboard" }: Props) {
+export function TopBar({ onSettings, section = "dashboard", dash = false }: Props) {
   const { t } = useT();
   const editing = useDashboard((s) => s.editing);
   const paletteOpen = useDashboard((s) => s.paletteOpen);
@@ -93,7 +95,8 @@ export function TopBar({ onSettings, section = "dashboard" }: Props) {
   // A phone (or the phone application) that chose the widgets: the way back to its dashboard.
   // `auto` never picks the phone dashboard on a PC, so a PC never shows this button.
   const autoDash = useAutoPicksDash();
-  const backToDash = onDashboard && autoDash && !editing;
+  const backToDash = onDashboard && autoDash && !editing && !dash;
+  const widgetControls = onDashboard && !dash;
 
   return (
     <header className={`topbar is-${section}`}>
@@ -129,7 +132,7 @@ export function TopBar({ onSettings, section = "dashboard" }: Props) {
             <span className="btn-label">{t("topbar.toDash")}</span>
           </button>
         )}
-        {onDashboard && editing && (
+        {widgetControls && editing && (
           <button
             type="button"
             className={`btn is-icon${paletteOpen ? " is-active" : ""}`}
@@ -140,7 +143,7 @@ export function TopBar({ onSettings, section = "dashboard" }: Props) {
             <IconPlus />
           </button>
         )}
-        {onDashboard && (
+        {widgetControls && (
           <button
             type="button"
             className={`btn${editing ? " is-active" : ""}`}

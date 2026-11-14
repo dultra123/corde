@@ -1,3 +1,4 @@
+import { syncDashesWithServer } from "../dashdef/store";
 import { DemoRunner } from "../demo/runner";
 import { useRaces } from "../store/races";
 import { useSettings } from "../store/settings";
@@ -152,7 +153,10 @@ class ConnectionManager {
           status: m.status,
         });
         // An overlay only reads the layout it shows (`overlay/OverlayApp.tsx`).
-        if (!this.overlay) void syncLayoutsWithServer(this.endpoint.http);
+        if (!this.overlay) {
+          void syncLayoutsWithServer(this.endpoint.http);
+          void syncDashesWithServer(this.endpoint.http);
+        }
         break;
       case "status":
         if (s.demo === "off") s.setStatus(m.status);

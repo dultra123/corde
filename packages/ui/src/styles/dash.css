@@ -253,6 +253,49 @@
   min-width: 0;
 }
 
+/* Inside the Direct page (PC, tablet): under the top bar, in the room of the widgets. */
+.dash.is-embedded {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: var(--radius);
+}
+.app.is-dash {
+  height: 100dvh;
+  min-height: 0;
+}
+.board.is-dash {
+  min-height: 0;
+}
+
+/* Full screen on request (PC, tablet): left of the ☰ button, discreet. */
+.dash-full {
+  position: absolute;
+  z-index: 4;
+  top: max(calc(var(--safe-top) - 4px), 0px);
+  right: calc(max(calc(var(--safe-right) - 4px), 2px) + 44px);
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  color: var(--text-faint);
+}
+.dash-full svg {
+  width: 30px;
+  height: 30px;
+  padding: 7px;
+  border-radius: 8px;
+}
+.dash-full:hover svg,
+.dash-full:focus-visible svg {
+  color: var(--d-text);
+  background: rgba(13, 17, 22, 0.85);
+  border: 1px solid var(--d-line);
+}
+.dash:has(.dash-full) {
+  --d-menu-room: 84px;
+}
+
 /* ---------------------------------------------------------------- menu button, foot */
 .dash-menu {
   position: absolute;

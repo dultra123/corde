@@ -1,6 +1,6 @@
 # Corde sur iPhone
 
-> Version 1.1.0 — tableau de bord de course et démonstration (1.0.0 : première version officielle ; 0.10.0 : widget « Courses en images » ; 0.9.0 : widgets et
+> Version 1.2.0 — tableaux de bord personnalisés du Studio (1.1.0 : tableau de bord de course et démonstration ; 1.0.0 : première version officielle ; 0.10.0 : widget « Courses en images » ; 0.9.0 : widgets et
 > compte à rebours dans la Dynamic Island, iOS 17 au minimum ; 0.8.0 : première version). Décisions :
 > [ADR 0011](adr/0011-application-mobile-capacitor.md),
 > [ADR 0012](adr/0012-widgets-activite-en-direct.md).
@@ -49,6 +49,12 @@ pour un téléphone posé en paysage à côté du volant (en portrait, les cases
   « Garder l'écran allumé sur le tableau de bord », activé par défaut). Aucune autorisation.
 - **« Passer aux widgets »** remet l'ancienne grille ; le bouton **Tableau de bord** de la barre du haut y
   revient. Le réglage **Affichage du Direct** (Automatique / Tableau de bord / Widgets) fait la même chose.
+- **Choisir son tableau de bord (1.2)** : les tableaux de bord créés dans le **Studio** du PC (éditeur de
+  tableaux de bord) arrivent dans l'application à la connexion. Choisis le tien dans le menu **☰**
+  (« Tableau de bord utilisé ») ou dans **Réglages → Tableau de bord utilisé** ; le choix reste sur le
+  téléphone, et l'application garde une copie des tableaux de bord pour les afficher même PC éteint. Sans
+  choix (ou s'il a été supprimé), c'est le tableau de bord **Corde**. La démonstration marche avec
+  n'importe lequel.
 - **« Voir une démonstration »** (dans « Mes serveurs », ou sur le Direct quand il n'y a aucun serveur) :
   une course inventée, calculée sur le téléphone, sans PC ni réseau, avec l'étiquette « Démonstration ».
   On la quitte par ☰ ou « Mes serveurs » ; elle n'est pas gardée au prochain lancement.
@@ -173,7 +179,7 @@ poussée sur `main` qui touche `apps/mobile/`, `packages/ui/` ou le workflow lui
    précédente sont retirés), compile et signe,
    contrôle la signature de l'application et de l'extension, puis l'envoie vers TestFlight. Le numéro de
    build est le numéro d'exécution du workflow (il augmente toujours, comme Apple l'exige), le même pour
-   l'application et l'extension ; la version affichée est celle de `apps/mobile/package.json` (1.1.0).
+   l'application et l'extension ; la version affichée est celle de `apps/mobile/package.json` (1.2.0).
 
 Lancé à la main sur une autre branche que `main`, le workflow s'arrête après les deux premiers jobs : c'est
 le moyen d'essayer du code Swift avant de le fusionner.
@@ -408,7 +414,7 @@ apps/mobile/
 ├─ www/                    # l'interface construite en mode mobile (ignoré par git)
 ├─ scripts/*.test.*       # essais des scripts de la CI et du projet Xcode (voir plus bas)
 └─ ios/App/                # projet Xcode généré par `cap add ios` (gabarit Swift Package Manager), complété
-   ├─ App.xcodeproj        #   deux cibles (App, CordeWidgets), iOS 17, iPhone, 1.1.0, schéma partagé « App »
+   ├─ App.xcodeproj        #   deux cibles (App, CordeWidgets), iOS 17, iPhone, 1.2.0, schéma partagé « App »
    ├─ App/                 #   cible de l'application
    │  ├─ Info.plist        #     réseau local, ATS, appareil photo, corde://, chiffrement, activités en direct
    │  ├─ App.entitlements  #     keychain-access-groups (trousseau partagé avec les widgets)

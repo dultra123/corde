@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect } from "react";
-import { useLiveView } from "./dash/view";
+import { DashView } from "./dash/lazy";
+import { useLiveMode } from "./dash/view";
 import { Dashboard } from "./dashboard/Dashboard";
 import { PairingScreen } from "./hub/PairingScreen";
 import { appSlots, useAppServerGate } from "./mobile/slots";
@@ -11,8 +12,10 @@ import { useHub } from "./store/hub";
 import { useSettings } from "./store/settings";
 import { useUpdates } from "./store/updates";
 
-/** The phone dashboard: its own chunk, loaded the first time it is shown (never on most PCs). */
-const DashView = lazy(() => import("./dash/DashView").then((m) => ({ default: m.DashView })));
+/** The Studio (editor of race dashboards, PC): its own chunk. */
+const StudioPage = lazy(() =>
+  import("./studio/StudioPage").then((m) => ({ default: m.StudioPage })),
+);
 
 /**
  * Five sections behind hash routes: the home page (`#/home`, shown when the app opens), the live
@@ -31,8 +34,10 @@ const DashView = lazy(() => import("./dash/DashView").then((m) => ({ default: m.
  * happens in « Mes serveurs », the tabs are at the bottom, and the live dashboard needs an
  * active server (`useServerGate`): without one, the shell explains how to add it.
  *
- * On a phone (and in the phone application, and at `#/dash`), the live page is the phone
- * dashboard (`dash/`, choice in `dash/view.ts`): full screen, without the bars of the app.
+ * On a phone (and in the phone application, and at `#/dash`), the live page is the race
+ * dashboard (`dash/`, choice in `dash/view.ts`): full screen, without the bars of the app. On a
+ * PC or a tablet it is chosen in the menu of the Direct page and shown inside the page, under
+ * the top bar; full screen there only on request.
  */
 export function App() {
   const lang = useSettings((s) => s.lang);
@@ -59,21 +64,26 @@ export function App() {
   }, [onDashboard]);
   const Tabs = appSlots.BottomTabs;
   const gate = useAppServerGate(route);
-  const view = useLiveView(route);
+  const mode = useLiveMode(route);
   // Until the server has said what it is, the usual app (a PC answers at once; a phone offline
   // keeps its offline state): the home server switches to the pairing screen when it answers.
   if (!Tabs && hubChecked && onHub && !paired) return <PairingScreen />;
   const dashboard = route.page === "dashboard" && !onHub && !gate;
-  const dash = dashboard && view === "dash";
+  const dash = dashboard && mode === "dash-full";
+  const studio = route.page === "studio" && !onHub;
   return (
     <>
       <ReminderBanner />
-      {dash ? (
+      {studio ? (
+        <Suspense fallback={null}>
+          <StudioPage id={route.page === "studio" ? route.id : undefined} />
+        </Suspense>
+      ) : dash ? (
         <Suspense fallback={null}>
           <DashView />
         </Suspense>
       ) : dashboard ? (
-        <Dashboard />
+        <Dashboard dash={mode === "dash-page"} />
       ) : (
         <SessionsShell route={route} />
       )}

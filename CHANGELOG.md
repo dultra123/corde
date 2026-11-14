@@ -8,6 +8,36 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [1.2.0] — 2026-11-15
+
+**Le tableau de bord arrive sur le PC**, sans quitter la page Direct.
+
+### Nouveautés
+
+- **Tableau de bord sur le PC, dans la page** : dans le Direct, le menu des dispositions (le bouton en haut à
+  gauche) a maintenant un groupe **Tableaux de bord**. Un clic sur « Corde » affiche le tableau de bord à la
+  place des widgets, la barre du haut reste là ; un clic sur une disposition de widgets les ramène.
+- **Plein écran sur demande** : un bouton discret sur le tableau de bord l'agrandit à tout l'écran, Échap ou
+  le même bouton le remet dans la page. L'adresse `…#/dash` reste le plein écran direct (second écran).
+- **Sur le téléphone, rien ne change** : plein écran, ☰ « Passer aux widgets », et le menu des dispositions y
+  ramène aussi en un geste.
+- **Studio : crée tes propres tableaux de bord** (sur le PC, Direct → menu des dispositions → « Studio ») :
+  des pages d'éléments placés sur une grille — une valeur au choix parmi une soixantaine (vitesse, écart,
+  carburant, pressions…), des jauges, du texte, l'heure, tous les blocs du tableau de bord Corde et les
+  widgets. Au format d'un téléphone, d'une tablette, d'un écran ou d'un bandeau large ; glisser,
+  redimensionner, annuler / rétablir, aperçu avec une course de démonstration. Pars d'une page vide, de
+  « Corde en blocs » ou de l'exemple « Endurance ».
+- **Chaque appareil choisit son tableau de bord** (menu des dispositions sur PC, ☰ sur le téléphone,
+  Réglages). Le téléphone en garde une copie pour l'afficher même PC éteint.
+- **Partage** : exporte un tableau de bord en fichier `.cordedash.json` et importe celui d'un ami. Le fichier
+  ne contient que la mise en page (ton pseudo seulement si tu l'as saisi).
+
+### À savoir
+
+- Le tableau de bord **Corde** reste le même ; pour le changer, duplique-le.
+- Supprimer un tableau de bord se fait depuis le PC.
+- Pas encore : images et logos, formules, polices, galerie en ligne, affichage sur l'écran d'un volant.
+
 ## [1.1.0] — 2026-11-14
 
 **Le Direct devient un vrai tableau de bord sur le téléphone**, comme l'écran d'un volant de course.

@@ -158,6 +158,12 @@ n'a ni compte, ni statistiques d'usage, ni publicité, ni service à nous.
   démonstration » calcule une course inventée **sur le téléphone** : aucun appel réseau, rien n'est
   enregistré ni gardé au prochain lancement. La page du tableau de bord retenue (Course, Pneus…) et le
   choix « Affichage du Direct » restent sur le téléphone, avec les autres réglages.
+- **Tableaux de bord personnalisés (1.2)** : faits dans le Studio du PC, ils sont enregistrés **sur le PC**
+  (`<données>/dashes/`) ; chaque appareil en garde une copie (20 au plus) et retient lequel il affiche.
+  Un fichier **exporté** (`<nom>.cordedash.json`) ne contient que la définition du tableau de bord (nom,
+  format, couleurs, pages, éléments et leurs réglages) : **ni nom d'appareil, ni adresse de serveur, ni
+  chemin, ni donnée de course** ; l'auteur seulement si tu l'as saisi. Rien n'est envoyé ailleurs : le
+  partage se fait en donnant le fichier à quelqu'un.
 
 ## Application Android
 

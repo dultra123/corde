@@ -877,6 +877,94 @@ pub struct DashboardLayout {
 }
 
 // ---------------------------------------------------------------------------
+// Race dashboards (« Studio », persisted by the server, ADR 0015)
+// ---------------------------------------------------------------------------
+
+/// Version of the [`DashDefinition`] format. A definition of another version is refused.
+pub const DASH_DEFINITION_VERSION: u8 = 1;
+
+/// A race dashboard made in the Studio: pages of elements placed on a grid, drawn at the scale
+/// of the screen. Pure data: no HTML, no address, no image, no script (validated by the server,
+/// `corde-server::dashes`, and by the interface, `packages/ui/src/dashdef/validate.ts`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../../packages/protocol/src/generated/")]
+pub struct DashDefinition {
+    /// Format version, [`DASH_DEFINITION_VERSION`].
+    pub v: u8,
+    /// `[a-z0-9-]{1,40}`, chosen by Corde (also the file name on the PC).
+    pub id: String,
+    pub name: String,
+    /// Typed by the driver, left out when empty.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub author: Option<String>,
+    pub format: DashFormat,
+    pub theme: DashTheme,
+    pub pages: Vec<DashPageDef>,
+    /// Unix ms of the last change.
+    #[serde(default)]
+    #[ts(type = "number")]
+    pub updated_ms: u64,
+}
+
+/// The reference drawing size (the page keeps these proportions on any screen).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../../packages/protocol/src/generated/")]
+pub struct DashFormat {
+    /// `phone-landscape`, `phone-portrait`, `tablet`, `screen-16-9`, `wheel-strip`, `custom`,
+    /// or `fill` (the page takes the whole screen, whatever its shape).
+    pub preset: String,
+    pub width: u16,
+    pub height: u16,
+}
+
+/// A few colours, `#rrggbb` only.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../../packages/protocol/src/generated/")]
+pub struct DashTheme {
+    pub background: String,
+    pub panel: String,
+    pub line: String,
+    pub text: String,
+    pub dim: String,
+    pub accent: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../../packages/protocol/src/generated/")]
+pub struct DashPageDef {
+    pub id: String,
+    pub name: String,
+    /// Columns and rows of the page's grid.
+    pub cols: u8,
+    pub rows: u8,
+    pub elements: Vec<DashElement>,
+}
+
+/// One element on a page: a type of the catalogue, its cell rectangle, its settings.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../../packages/protocol/src/generated/")]
+pub struct DashElement {
+    pub id: String,
+    /// Type of the catalogue (`value`, `bar`, `corde.gear`…). An unknown type is kept and drawn
+    /// as « élément inconnu » (a definition made by a later version).
+    #[serde(rename = "type")]
+    pub kind: String,
+    pub x: u8,
+    pub y: u8,
+    pub w: u8,
+    pub h: u8,
+    /// Settings of the element: a flat object of short strings, numbers, booleans.
+    #[ts(type = "Record<string, unknown>")]
+    #[serde(default = "empty_object")]
+    pub props: serde_json::Value,
+}
+
+fn empty_object() -> serde_json::Value {
+    serde_json::Value::Object(serde_json::Map::new())
+}
+
+// ---------------------------------------------------------------------------
 // Post-session analysis (produced by `corde-engineer`, served by
 // `GET /api/sessions/{id}/analysis`)
 // ---------------------------------------------------------------------------

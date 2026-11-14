@@ -1,0 +1,283 @@
+/* biome-ignore-all lint/style/noDescendingSpecificity: the element contexts override the page rules of dash.css on purpose. */
+/*
+ * Race dashboards made in the Studio (src/dashdef): the drawing keeps the proportions of its
+ * format and sets the unit --u from its own size (Renderer.tsx); every element is a box placed
+ * in percent of the drawing, with half a gap of room on each side. The blocks reuse the rules
+ * of dash.css; the few rules that depend on a page there are repeated here for an element.
+ */
+
+.dstage-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+}
+/* `inline-size` only: the portrait rules of the pages (`@container dpage (orientation…)`)
+   never apply to the blocks of a drawing, whatever the shape of the screen. */
+.dstage {
+  position: relative;
+  container: dpage / inline-size;
+  background: var(--d-bg);
+  color: var(--d-text);
+  font-family: var(--font-ui);
+  font-weight: 500;
+  overflow: hidden;
+}
+.dstage.has-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: calc(100% / var(--cols)) calc(100% / var(--rows));
+}
+.del {
+  position: absolute;
+  padding: var(--gap);
+  min-width: 0;
+  min-height: 0;
+}
+.del-in {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  container: delem / size;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.del-in > * {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+/* A whole page of Corde in a box: its own container, its own unit. */
+.del-in.is-page {
+  container: dpage / size;
+}
+.del-in.is-page > * {
+  height: 100%;
+}
+
+/* Contexts of dash.css repeated for one element. */
+.del-in[data-ctx="energy"] .dval {
+  font-size: calc(var(--u) * 5.6);
+}
+.del-in[data-ctx="energy"] .de-fuel .dval {
+  font-size: calc(var(--u) * 7);
+}
+.del-in .dc-rev.is-solo {
+  padding-right: 0;
+  height: 100%;
+}
+.del-in .dc-rev.is-solo .drev i {
+  height: max(6px, min(calc(var(--u) * 4.4), 80cqh));
+}
+.del-in .dflags i {
+  width: min(calc(var(--u) * 3.6), 80cqh);
+  height: min(calc(var(--u) * 3.6), 80cqh);
+}
+.del-in .dgear-n {
+  font-size: min(calc(var(--u) * 46), 70cqw, 62cqh);
+}
+.del-in .dspeed b {
+  font-size: min(calc(var(--u) * 13.5), 22cqh);
+}
+.del-in .ddelta {
+  font-size: min(calc(var(--u) * 16.5), 46cqh, 22cqw);
+}
+.del-in .dpanel {
+  gap: calc(var(--u) * 0.6);
+}
+.del-in .dc-bot {
+  height: 100%;
+}
+.del-in .dk-sectors,
+.del-in .dk-laps,
+.del-in .dk-around,
+.del-in .dt-card,
+.del-in .dt-centre,
+.del-in .de-fuel {
+  height: 100%;
+}
+.del-frame,
+.del-bare {
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+.del-bare {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.del-frame.is-row,
+.del-bare.is-row {
+  justify-content: center;
+}
+.del-minityres .dminityres {
+  min-height: 0;
+}
+.dbrakes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(var(--u) * 1.2) calc(var(--u) * 3);
+  flex: 1;
+  align-content: center;
+}
+.dbrakes-c {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: calc(var(--u) * 1.5);
+}
+.dbrakes-c .dval {
+  font-size: calc(var(--u) * 6.4);
+}
+
+/* Value / clock: a label and a number that fills the box. */
+.del-value {
+  justify-content: space-between;
+}
+.del-v {
+  font-size: min(calc(var(--u) * 9), 38cqh, 24cqw);
+  line-height: 0.95;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.del-value.is-center {
+  align-items: center;
+  text-align: center;
+}
+.del-value.is-right {
+  align-items: flex-end;
+  text-align: right;
+}
+.del-bare.del-value {
+  padding: 0 calc(var(--u) * 1);
+}
+
+/* Bar / gauge. */
+.del-bar {
+  justify-content: center;
+  gap: calc(var(--u) * 1);
+}
+.del-bar-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: calc(var(--u) * 1.5);
+  min-width: 0;
+}
+.del-bar-v {
+  font-size: calc(var(--u) * 4.4);
+  white-space: nowrap;
+}
+.del-track {
+  position: relative;
+  display: block;
+  flex: 0 0 auto;
+  height: max(4px, min(calc(var(--u) * 2.4), 40cqh));
+  border-radius: 99px;
+  background: var(--d-track);
+  overflow: hidden;
+}
+.del-track i {
+  position: absolute;
+  inset: 0;
+  transform: scaleX(0);
+  transform-origin: left center;
+  background: var(--d-text);
+}
+.del-bar.is-vertical {
+  flex-direction: column-reverse;
+}
+.del-bar.is-vertical .del-track {
+  flex: 1 1 auto;
+  height: auto;
+  width: max(6px, min(calc(var(--u) * 4), 60cqw));
+  align-self: center;
+}
+.del-bar.is-vertical .del-track i {
+  transform: scaleY(0);
+  transform-origin: center bottom;
+}
+
+/* Text. */
+.del-text {
+  justify-content: center;
+}
+.del-text span {
+  display: block;
+  font-size: min(calc(var(--u) * 4.6), 70cqh);
+  line-height: 1.1;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.del-text.is-bold span {
+  font-weight: 700;
+  font-family: var(--font-num);
+}
+.del-text.is-upper span {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+.del-text.is-center {
+  text-align: center;
+}
+.del-text.is-right {
+  text-align: right;
+}
+
+/* Panel / divider. */
+.del-panel {
+  height: 100%;
+  justify-content: flex-start;
+}
+.del-line {
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+.del-line i {
+  display: block;
+  background: var(--d-line);
+}
+.del-line.is-h i {
+  width: 100%;
+  height: 2px;
+}
+.del-line.is-v i {
+  width: 2px;
+  height: 100%;
+}
+
+/* A widget of the PC. */
+.del-in .del-widget {
+  position: absolute;
+  inset: 0;
+}
+
+/* A type this version does not know. */
+.del-unknown {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 6px;
+  color: var(--text-dim);
+  font-size: 12px;
+  text-align: center;
+  overflow: hidden;
+}
+.del-unknown small {
+  color: var(--text-faint);
+  font-size: 11px;
+}

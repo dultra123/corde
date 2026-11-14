@@ -136,6 +136,11 @@ PC seulement.
 | GET | `/api/layouts/{id}` | L | aucune | ouverte | |
 | PUT | `/api/layouts/{id}` | D | aucune | ouverte | édition d'une disposition depuis le téléphone |
 | DELETE | `/api/layouts/{id}` | S | aucune | **PC** | suppression ; l'interface ne l'utilise pas |
+| GET | `/api/dashes` | L | — | ouverte | tableaux de bord du Studio (1.2.0) : chaque appareil lit la liste et en garde une copie bornée |
+| GET | `/api/dashes/{id}` | L | — | ouverte | |
+| PUT | `/api/dashes/{id}` | D | — | ouverte | enregistrement d'un tableau de bord, validé (§5 bis-2) ; même règle que `PUT /api/layouts/{id}` |
+| DELETE | `/api/dashes/{id}` | S | — | **PC** | suppression depuis le Studio du PC ; même règle que `DELETE /api/layouts/{id}` |
+| DELETE | `/api/dashes` | S | — | **PC** | supprime tous les tableaux de bord ; l'interface ne l'utilise pas |
 | GET | `/api/sessions` | L | aucune | ouverte | liste des sessions |
 | GET | `/api/sessions/{id}` | L | aucune | ouverte | détail d'une session |
 | GET | `/api/sessions/{id}/laps/{lap}/samples` | L | aucune | ouverte | courbes d'un tour (Parquet) |
@@ -201,7 +206,9 @@ action n'est possible que depuis le PC qui fait tourner Corde » ; elles restent
 - supprimer une session ;
 - « Recalculer » l'analyse de l'ingénieur (l'analyse elle-même s'affiche toujours) ;
 - « Réimporter » les résultats (l'import automatique toutes les 60 s continue) ;
-- supprimer une disposition par l'API (l'interface ne le fait pas).
+- supprimer une disposition par l'API (l'interface ne le fait pas) ;
+- supprimer un tableau de bord du Studio (le Studio du PC le fait ; ailleurs : « Supprimer un tableau de
+  bord se fait depuis le PC de Corde »).
 
 Créer les fichiers de réglage et changer l'accès réseau étaient déjà réservés au PC. Le tableau de bord, la
 saisie du ressenti, la commande d'enregistrement et toutes les lectures restent disponibles au téléphone.
@@ -227,6 +234,33 @@ que sur demande.
 | Taille des corps | 1 Mio par requête (avant : 2 Mio, défaut d'axum) ; 16 Kio par message WebSocket (avant : 64 Mio). Texte du ressenti ≤ 2000 caractères, ≤ 8 plans par demande de fichiers. |
 | Clé de l'extracteur LLM | lue dans la variable d'environnement `CORDE_ANTHROPIC_API_KEY`, envoyée seulement dans l'en-tête `x-api-key` vers `api.anthropic.com` ; jamais journalisée (le `Debug` de l'extracteur ne l'affiche pas, les erreurs ne citent que le statut HTTP) ; `/api/health` dit seulement `anthropic` ou `dictionary`. |
 | Chemins dans les erreurs | 5xx : détail masqué aux autres appareils (§3). 4xx : messages sans chemin absolu (noms relatifs `Dossier/Fichier.svm`, identifiants). **Reste visible au réseau quand l'accès est activé** : le chemin du dossier de données (`/api/storage`), du dossier de résultats (`/api/profile`) et du dossier `Settings` du jeu (`/api/setups`), affichés par l'interface ; ils peuvent contenir le nom du compte Windows. Accepté : réseau de confiance (§2). |
+
+## 5 bis-2. Tableaux de bord du Studio (1.2.0, ADR 0015)
+
+- **Stockage** : un fichier JSON par définition dans `<données>/dashes/<id>.json`, écrit dans un fichier
+  temporaire puis renommé (`corde-server/src/dashes.rs`, calqué sur `layouts.rs`). L'identifiant sert de
+  nom de fichier : `[a-z0-9-]{1,40}` seulement (`dashes::valid_id`), vérifié avant tout accès disque ; un
+  fichier dont l'identifiant ne correspond pas à son nom, invalide, illisible ou au-delà de 50 est ignoré à
+  l'ouverture (avec un avertissement dans le journal). `corde` est réservé au tableau de bord fourni.
+- **Routes** : celles du tableau du §4 ; pas de `PUT /api/dashes` en bloc (un remplacement complet
+  supprimerait depuis n'importe quel appareil). **Droits : exactement ceux des dispositions de widgets** —
+  lire et enregistrer : tout appareil autorisé (ce PC ; le réseau local quand il est ouvert ; un appareil
+  appairé du serveur Corde) ; supprimer : ce PC seulement (`guard::route_access`, administrateur sur le
+  serveur Corde, `guard::hub_route_access`). Rien ne change à l'appairage, aux origines ni aux rôles.
+- **Validation** (`dashes::validate`, avant d'écrire et à la relecture du disque ; la même dans
+  l'interface, `dashdef/model.ts`) : ≤ 256 Kio, ≤ 50 définitions (au-delà : 409), ≤ 12 pages, ≤ 80 éléments
+  par page, identifiants et types en jeux de caractères fermés, noms bornés, réglages plats et bornés,
+  nombres finis, couleurs `#rrggbb` ; aucune chaîne avec `<`, `>`, caractère de contrôle, `://`, `www.`,
+  `javascript:` / `data:` / `vbscript:` / `file:`. Le corps est refusé avec la raison (400). Un élément ou un
+  réglage inconnu est gardé tel quel (version future) mais jamais interprété.
+- **Interface** : rien d'une définition n'est exécuté ni injecté comme HTML (React insère les textes comme
+  textes ; une couleur passe par `validColor` avant d'aller dans un `style` ; les types inconnus s'affichent
+  « élément inconnu »). Pas d'image, pas d'adresse, pas de police externe.
+- **Import d'un fichier** (`.cordedash.json`) : lu dans le navigateur (≤ 1 Mio), même validation, message
+  clair en cas de refus, nouvel identifiant si le sien est pris ; puis enregistré par `PUT
+  /api/dashes/{id}` (validé une seconde fois par le serveur). Aucun format d'un autre logiciel n'est lu.
+- **Copie sur l'appareil** : 20 définitions et 2 Mio au plus dans le stockage du navigateur ou de
+  l'application, revalidées à la lecture ; le brouillon de l'éditeur (`corde.studio.draft.<id>`) aussi.
 
 ## 5 bis. Mises à jour de l'application de bureau (0.6)
 
@@ -405,7 +439,7 @@ noms donnés par `--allow-host` ; `Origin` ; tailles ; 5xx sans détail). Puis :
 | **Public** (sans jeton) | `GET /api/hub/pairing` (rôle, version, cet appareil est-il appairé), `POST /api/hub/pair` (`{code, name?, kind?}`) ; et les fichiers de l'interface (`GET /*`), qui affichent l'écran de code |
 | **Commandes locales** (boucle locale + pas d'`Origin` + clé de contrôle) | `POST /api/hub/local/pairing-code`, `GET /api/hub/local/devices`, `DELETE /api/hub/local/devices/{id}` |
 | **Appareil appairé** | toutes les autres routes `/api/*` du §4 (lectures, ressentis, dispositions, courses…) et `/ws` ; `GET /api/hub/status` ; `GET /api/hub/devices` ; `PATCH` / `DELETE /api/hub/devices/{id}` (soi-même ; un autre : administrateur ; changer `admin` : administrateur) ; `/api/sync/*` (§7.4) ; **toute route inconnue** (401 sans jeton, puis 404) |
-| **Administrateur** | `DELETE /api/sessions/{id}` (+ pierre tombale : le PC ne la renvoie plus), `POST /api/sessions/{id}/analysis/recompute`, `DELETE /api/layouts`, `DELETE /api/layouts/{id}`, `PUT /api/settings` (seulement `online_schedule` ; `lan_access` → 400) |
+| **Administrateur** | `DELETE /api/sessions/{id}` (+ pierre tombale : le PC ne la renvoie plus), `POST /api/sessions/{id}/analysis/recompute`, `DELETE /api/layouts`, `DELETE /api/layouts/{id}`, `DELETE /api/dashes`, `DELETE /api/dashes/{id}`, `PUT /api/settings` (seulement `online_schedule` ; `lan_access` → 400) |
 | **Refusées** (403 `not_on_server`) | `POST /api/sessions/{id}/setup-files` (écrirait hors du dossier de données ; le jeu est sur le PC), `POST /api/profile/import` (pas de fichiers du jeu), `POST /api/recording/start`, `/stop` (pas d'enregistreur) |
 
 Sur le PC, aucune de ces routes n'existe (404) : c'est ainsi que l'interface reconnaît un PC.

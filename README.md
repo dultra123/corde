@@ -13,9 +13,9 @@ que l'on vise à chaque tour. Corde s'appelait anciennement Muret (nom de travai
 
 ![Écran d'accueil de Corde](docs/images/accueil.png)
 
-> **Version 1.1 (novembre 2026).** Nouveau : le [tableau de bord de course](#sur-le-téléphone) sur
-> téléphone, tablette et second écran, et « Voir une démonstration » dans les applications. Corde fonctionne
-> avec le jeu réel, mais elle est jeune : certaines parties n'ont pas encore été essayées en conditions réelles (le tableau
+> **Version 1.2 (novembre 2026).** Nouveau : le [tableau de bord de course](#sur-le-téléphone) se choisit
+> aussi sur le PC, dans le menu des dispositions, et le **Studio** permet de composer ses propres tableaux de
+> bord. Corde fonctionne avec le jeu réel, mais elle est jeune : certaines parties n'ont pas encore été essayées en conditions réelles (le tableau
 > [Où en est le projet](#où-en-est-le-projet) le dit ligne par ligne), et l'installeur n'est pas encore
 > signé (voir [Installer](#installer-windows)). Les captures de cette page viennent du simulateur intégré.
 
@@ -108,9 +108,20 @@ meilleur tour, tours, carburant. Quatre pages se font glisser du doigt — **Cou
 **Carburant & énergie**, **Chronos & écarts** — et l'écran reste allumé tant qu'il est affiché. Pensé pour un
 téléphone posé en paysage à côté du volant ; en portrait, les cases s'empilent. Ce que la voiture n'a pas
 (pas d'ABS, pas d'énergie virtuelle…) ne s'affiche pas, et une donnée absente s'affiche « — ». Le bouton ☰
-mène aux autres pages, aux réglages et à « Passer aux widgets ». Une tablette ou un second écran l'ouvre à
-l'adresse **`…#/dash`**, ou avec le réglage **Affichage du Direct** (Automatique / Tableau de bord /
-Widgets).
+mène aux autres pages, aux réglages et à « Passer aux widgets ». **Sur le PC** (et une tablette), il se
+choisit dans le menu des dispositions du Direct (groupe **Tableaux de bord**) et s'affiche dans la page,
+sous la barre du haut ; un bouton **Plein écran** l'agrandit (Échap pour revenir), et une disposition de
+widgets du même menu ramène la grille. Un second écran l'ouvre en plein écran à l'adresse **`…#/dash`**.
+
+![Le tableau de bord dans la page Direct du PC, sous la barre du haut](docs/images/tableau-de-bord-pc.jpg)
+
+**Tes propres tableaux de bord (Studio)** : l'éditeur de tableaux de bord du PC place les données que tu
+veux sur une grille — valeurs, jauges, textes, blocs de Corde, widgets — sur plusieurs pages, au format d'un
+téléphone, d'une tablette, d'un écran ou d'un bandeau large. Glisser, redimensionner, annuler, aperçu avec une
+course de démonstration ; chaque appareil choisit le sien ; partage par fichier `.cordedash.json`. Pas à pas
+dans [docs/TESTING-ON-PC.md](docs/TESTING-ON-PC.md#créer-ton-propre-tableau-de-bord-studio-12).
+
+![Le Studio : la palette d'éléments, la page et les propriétés de l'élément choisi](docs/images/studio-edition.png)
 
 ![Tableau de bord du téléphone, page Course (course de démonstration)](docs/images/tableau-de-bord-telephone.png)
 

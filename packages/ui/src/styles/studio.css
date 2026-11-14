@@ -1,0 +1,403 @@
+/* The Studio (src/studio): the library of race dashboards and the editor, on a PC. Same
+   buttons, menus and fields as the rest of the app (base.css, dashboard.css). */
+
+html.is-studio,
+html.is-studio body {
+  overflow: hidden;
+}
+
+/* A dashboard drawn inside a page (the editor, the cards of the library): not over the window. */
+.dash.is-canvas {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  user-select: none;
+}
+.dash.is-canvas::after {
+  display: none;
+}
+
+.studio {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+}
+.studio-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.studio-title {
+  margin: 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.studio-bar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.studio .btn {
+  text-decoration: none;
+  white-space: nowrap;
+}
+.btn.is-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #1a1206;
+}
+.btn.is-danger {
+  color: var(--slower);
+}
+.menu.is-right {
+  left: auto;
+  right: 0;
+  z-index: 30;
+}
+.studio-name {
+  width: min(320px, 30vw);
+  font-weight: 600;
+}
+.studio-msg {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-dim);
+  min-height: 0;
+}
+.studio-msg:empty {
+  display: none;
+}
+.studio-msg.is-bad {
+  color: var(--slower);
+}
+.studio-notes {
+  flex: none;
+  display: flex;
+  gap: 16px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* ------------------------------------------------------------------ library */
+.studio-lib {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+.studio-intro {
+  max-width: 900px;
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.studio-lib > .studio-msg {
+  margin-bottom: 10px;
+}
+.studio-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 14px;
+}
+.studio-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.studio-card.is-used {
+  border-color: var(--accent);
+}
+.studio-thumb {
+  aspect-ratio: 852 / 393;
+  background: #000;
+  pointer-events: none;
+  border-bottom: 1px solid var(--line);
+  container: dpage / size;
+  padding: 6px 8px;
+}
+.studio-card-body {
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.studio-card-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.studio-card-meta {
+  margin: 0;
+  font-size: 12.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.studio-badge {
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 0 6px;
+  font-size: 11.5px;
+}
+.studio-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+/* ------------------------------------------------------------------ editor */
+.studio-tabs {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+}
+.studio-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 6px;
+  color: var(--text-dim);
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+.studio-tab:hover {
+  background: var(--panel-raised);
+}
+.studio-tab.is-on {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.studio-tab.is-add {
+  color: var(--text-faint);
+}
+.studio-tabs-tools {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.studio-edit {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr) 290px;
+}
+.studio-side {
+  overflow-y: auto;
+  padding: 10px 12px 24px;
+  background: var(--panel);
+}
+.studio-side.is-left {
+  border-right: 1px solid var(--line);
+}
+.studio-side.is-right {
+  border-left: 1px solid var(--line);
+}
+.studio-canvas {
+  min-width: 0;
+  min-height: 0;
+  padding: 18px;
+  background: repeating-conic-gradient(#0e1217 0 25%, #0b0e12 0 50%) 0 0 / 24px 24px;
+}
+.studio-canvas .dstage {
+  box-shadow:
+    0 0 0 1px var(--line-strong),
+    0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.sel-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+.sel-box {
+  position: absolute;
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
+  background: transparent;
+  cursor: move;
+  padding: 0;
+  touch-action: none;
+}
+.sel-box:hover {
+  border-color: rgba(255, 180, 84, 0.6);
+}
+.sel-box:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.sel-box.is-on {
+  border: 2px solid var(--accent);
+  background: rgba(255, 180, 84, 0.06);
+  z-index: 3;
+}
+.sel-name,
+.sel-size {
+  position: absolute;
+  top: -20px;
+  font-size: 11px;
+  line-height: 16px;
+  padding: 0 5px;
+  border-radius: 3px;
+  background: var(--accent);
+  color: #1a1206;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.sel-name {
+  left: -2px;
+  font-weight: 600;
+}
+.sel-size {
+  right: -2px;
+}
+.sel-handle {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--accent);
+  border: 2px solid #1a1206;
+  cursor: nwse-resize;
+}
+
+/* Palette and inspector. */
+.ins-title {
+  margin: 2px 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.ins-sub {
+  margin: 14px 0 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.ins-hint {
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 10px 0 0;
+}
+.pal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pal-chip {
+  width: 100%;
+  justify-content: space-between;
+  text-align: left;
+  cursor: grab;
+}
+.pal-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ins {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ins-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ins-field label {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.ins-field .input,
+.ins-field .select {
+  width: 100%;
+}
+.ins-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 8px;
+}
+.ins-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.ins-color {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.ins-color .select {
+  flex: 1;
+}
+.ins-swatch {
+  width: 36px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: none;
+}
+.ins-theme {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.ins-theme-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.ins-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+/* Full-screen preview: the dashboard over the editor. */
+.studio-preview {
+  z-index: 60;
+}
+.studio-preview-close {
+  font-size: 18px;
+}

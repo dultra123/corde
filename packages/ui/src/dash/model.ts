@@ -62,6 +62,15 @@ export function chooseView(setting: LiveView, ctx: ViewContext): "dash" | "widge
   return ctx.app || isPhone(ctx) ? "dash" : "widgets";
 }
 
+/**
+ * How the dashboard is shown once chosen: full screen on a phone (and in the phone
+ * application, and at `#/dash`), as in 1.1.0; elsewhere (a PC, a tablet's browser) inside the
+ * Direct page, under its top bar, unless the driver asked for full screen (`full`).
+ */
+export function dashPresentation(ctx: ViewContext, full: boolean): "full" | "page" {
+  return ctx.forced || ctx.app || isPhone(ctx) || full ? "full" : "page";
+}
+
 // ---------------------------------------------------------------- rev lights
 
 export const LED_COUNT = 15;

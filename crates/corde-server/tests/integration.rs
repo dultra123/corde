@@ -354,6 +354,93 @@ async fn websocket_hello_frames_rate_ping_and_http_api() {
     let (_, list) = http_call("GET", server.http("/api/layouts"), None).await;
     assert_eq!(list, json!([]));
 
+    // Race dashboards (Studio, ADR 0015).
+    let dash = |id: &str| {
+        json!({ "v": 1, "id": id, "name": "GT3 nuit", "author": "dultra__",
+            "format": { "preset": "phone-landscape", "width": 852, "height": 393 },
+            "theme": { "background": "#000000", "panel": "#0d1116", "line": "#1f2731",
+                "text": "#f2f5f8", "dim": "#93a0ae", "accent": "#ffb454" },
+            "pages": [{ "id": "p1", "name": "Course", "cols": 24, "rows": 12, "elements": [
+                { "id": "e1", "type": "value", "x": 0, "y": 0, "w": 6, "h": 3,
+                  "props": { "field": "speed_kmh", "color": "#28d17c" } },
+                { "id": "e2", "type": "from-the-future", "x": 6, "y": 0, "w": 6, "h": 3,
+                  "props": { "whatever": 1 } }
+            ] }],
+            "updated_ms": 5 })
+    };
+    let (code, list) = http_call("GET", server.http("/api/dashes"), None).await;
+    assert_eq!((code, list), (200, json!([])));
+    let (code, stored) = http_call("PUT", server.http("/api/dashes/gt3"), Some(dash("gt3"))).await;
+    assert_eq!(code, 200, "{stored}");
+    assert_eq!(
+        stored["pages"][0]["elements"][1]["type"], "from-the-future",
+        "unknown type kept"
+    );
+    assert!(server.data_dir.join("dashes").join("gt3.json").is_file());
+    let (code, one) = http_call("GET", server.http("/api/dashes/gt3"), None).await;
+    assert_eq!(code, 200);
+    let typed: corde_protocol::DashDefinition = serde_json::from_value(one).unwrap();
+    assert_eq!(typed.author.as_deref(), Some("dultra__"));
+    let (code, _) = http_call("GET", server.http("/api/dashes/nope"), None).await;
+    assert_eq!(code, 404);
+    // Refused: id of the body different from the address, reserved id, path tricks, content.
+    let (code, _) = http_call("PUT", server.http("/api/dashes/other"), Some(dash("gt3"))).await;
+    assert_eq!(code, 400);
+    let (code, _) = http_call("PUT", server.http("/api/dashes/corde"), Some(dash("corde"))).await;
+    assert_eq!(code, 400);
+    let (code, _) = http_call(
+        "PUT",
+        server.http("/api/dashes/..%2Fevil"),
+        Some(dash("../evil")),
+    )
+    .await;
+    assert!(code == 400 || code == 404, "bad id rejected, got {code}");
+    let mut bad = dash("bad");
+    bad["pages"][0]["elements"][0]["props"]["label"] = json!("<img src=x onerror=alert(1)>");
+    let (code, err) = http_call("PUT", server.http("/api/dashes/bad"), Some(bad)).await;
+    assert_eq!(code, 400);
+    assert!(
+        err["error"]
+            .as_str()
+            .unwrap()
+            .starts_with("invalid dashboard"),
+        "{err}"
+    );
+    let mut bad = dash("bad");
+    bad["theme"]["accent"] = json!("orange");
+    let (code, _) = http_call("PUT", server.http("/api/dashes/bad"), Some(bad)).await;
+    assert_eq!(code, 400);
+    let (code, _) = http_call(
+        "PUT",
+        server.http("/api/dashes/bad"),
+        Some(json!({ "v": 1 })),
+    )
+    .await;
+    assert_eq!(code, 400);
+    assert!(!server.data_dir.join("dashes").join("bad.json").exists());
+    // At most 50.
+    for i in 1..50 {
+        let id = format!("d{i}");
+        let (code, _) = http_call(
+            "PUT",
+            server.http(&format!("/api/dashes/{id}")),
+            Some(dash(&id)),
+        )
+        .await;
+        assert_eq!(code, 200);
+    }
+    let (code, err) = http_call("PUT", server.http("/api/dashes/d50"), Some(dash("d50"))).await;
+    assert_eq!(
+        (code, err["error"].as_str()),
+        (409, Some("too_many_dashes"))
+    );
+    let (code, _) = http_call("DELETE", server.http("/api/dashes/gt3"), None).await;
+    assert_eq!(code, 204);
+    let (code, _) = http_call("DELETE", server.http("/api/dashes/gt3"), None).await;
+    assert_eq!(code, 404);
+    let (code, deleted) = http_call("DELETE", server.http("/api/dashes"), None).await;
+    assert_eq!((code, deleted["deleted"].as_u64()), (200, Some(49)));
+
     // Landing page when no UI dir, and msgpack not implemented yet.
     let (code, body) = http_call("GET", server.http("/"), None).await;
     assert_eq!(code, 200);

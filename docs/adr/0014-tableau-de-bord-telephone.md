@@ -30,6 +30,15 @@ Le tableau de bord est un composant à lui, qui remplace la grille sur la page D
   variante de `dashboard` (`{ page: "dashboard", dash: true }`) : la navigation automatique, la porte « il
   faut un serveur » et l'onglet Direct la traitent comme le Direct.
 
+**Révision (1.2.0) — sur PC, dans la page.** Retour du propriétaire : sur PC, passer au tableau de bord
+par les Réglages basculait toute la page en plein écran (barre du haut disparue, pas de retour facile).
+Désormais le menu des dispositions du Direct a un groupe **Tableaux de bord** : un clic affiche le tableau
+de bord, un clic sur une disposition revient aux widgets. Sur un PC ou une tablette (tout ce qui n'est pas
+un téléphone, `dashPresentation` dans `dash/model.ts`), le tableau de bord s'affiche **dans la page**, sous
+la barre du haut ; le plein écran est sur demande (bouton sur le tableau de bord, Échap pour sortir). Sur
+téléphone, dans l'application et à `#/dash`, rien ne change. Le menu écrit le même réglage « Affichage du
+Direct » : un seul état.
+
 Le code des widgets n'est pas recopié : les règles partagées (secteurs, classement autour du pilote) sont
 sorties dans `widgets/shared/`, l'autonomie vient de `lib/fuel`, les couleurs de `lib/color`.
 

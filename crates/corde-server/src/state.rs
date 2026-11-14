@@ -133,6 +133,8 @@ pub struct AppState {
     pub laps: Mutex<Vec<LapRecord>>,
     pub clients: AtomicU32,
     pub layouts: LayoutStore,
+    /// Race dashboards made in the Studio (`<data-dir>/dashes`, ADR 0015).
+    pub dashes: crate::dashes::DashStore,
     /// Session store (`None` when the database could not be opened: the
     /// server still streams, `/api/sessions*` answer 503).
     pub store: Option<Arc<Store>>,
@@ -195,6 +197,7 @@ impl AppState {
         let (bus, _) = broadcast::channel(256);
         let (shutdown, _) = watch::channel(false);
         let races = crate::races::Races::open(&data_dir);
+        let dashes = crate::dashes::DashStore::open_or_empty(&data_dir);
         Arc::new(Self {
             frame_tx,
             frame_rx,
@@ -204,6 +207,7 @@ impl AppState {
             laps: Mutex::new(Vec::new()),
             clients: AtomicU32::new(0),
             layouts,
+            dashes,
             store,
             recorder,
             importer,

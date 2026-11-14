@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { DashView } from "../dash/lazy";
 import { useT } from "../i18n";
 import { routeHash } from "../nav/routes";
 import { OVERLAY_COLUMNS, OVERLAY_ROWS } from "../overlay/model";
@@ -45,11 +46,16 @@ function useCellHeight(device: "desktop" | "mobile", overlay: boolean, editing: 
   return h;
 }
 
-export function Dashboard() {
+/**
+ * The Direct page: the grid of widgets, or (`dash`, chosen in the menu of the top bar on a PC
+ * or a tablet) the race dashboard inside the page, under the same top bar.
+ */
+export function Dashboard({ dash = false }: { dash?: boolean }) {
   const { t } = useT();
   const device = useDashboard((s) => s.device);
   const setDevice = useDashboard((s) => s.setDevice);
-  const editing = useDashboard((s) => s.editing);
+  const editingWidgets = useDashboard((s) => s.editing);
+  const editing = editingWidgets && !dash;
   const paletteOpen = useDashboard((s) => s.paletteOpen);
   const layout = useCurrentLayout();
   const overlay = layout?.device === "overlay";
@@ -73,6 +79,20 @@ export function Dashboard() {
       maxRow={overlay ? OVERLAY_ROWS : undefined}
     />
   );
+
+  if (dash) {
+    return (
+      <div className={`app is-${device} is-dash`}>
+        <TopBar onSettings={() => setSettingsOpen(true)} dash />
+        <main className="board is-dash">
+          <Suspense fallback={null}>
+            <DashView embedded />
+          </Suspense>
+        </main>
+        <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      </div>
+    );
+  }
 
   return (
     <div className={`app is-${device}${editing ? " is-editing" : ""}`}>
