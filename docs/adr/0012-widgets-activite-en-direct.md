@@ -3,7 +3,8 @@
 - **Statut** : **décidée** — 2026-11-14 (le pilote utilise Corde 0.8.0 sur son iPhone par TestFlight
   depuis le matin ; il veut retrouver les widgets de son script « LMU Courses » et un compte à rebours dans
   la Dynamic Island). Livrée en 0.9.0 (application iPhone seulement). Complétée le même jour (K à O) par
-  le widget « Courses en images », livré en 0.10.0.
+  le widget « Courses en images », livré en 0.10.0 ; puis (P) par le certificat de distribution stable
+  (secret facultatif `APPLE_DIST_KEY_BASE64`), qui remplace en partie J.
 - **Source** : `docs/IOS.md` (« Widgets et Dynamic Island »), `docs/SECURITY-MODEL.md` §8.2 bis et §8.4,
   `PRIVACY.md`, ADR 0011 (application iPhone).
 
@@ -93,7 +94,8 @@ base64 dans le journal, et photographie une vraie activité d'exemple dans la Dy
 Les vues SwiftUI sont donc dans des fichiers compilés par les deux cibles (`Shared/`), séparées des
 `Widget` / `ActivityConfiguration` de l'extension.
 
-**J. Signature** : un certificat « Apple Distribution » par exécution (inchangé) et **un profil App Store
+**J. Signature** : un certificat « Apple Distribution » par exécution (inchangé ; réutilisé d'un build à
+l'autre depuis l'ajout P quand le secret facultatif existe) et **un profil App Store
 par identifiant** ; l'identifiant de l'extension est créé par l'API s'il manque (jamais celui de
 l'application) ; les deux cibles passent en signature manuelle sur le runner seulement ; le contrôle avant
 envoi vérifie aussi l'extension et le droit de trousseau dans les deux binaires.
@@ -150,6 +152,34 @@ supprimer) et la réduction d'une image fabriquée de 4000 × 3000. Aucun télé
 Ce qui ne peut être vérifié que sur un iPhone : le téléchargement réel des photos des deux sites, les
 éléments de 48 Kio dans le trousseau partagé de l'extension signée, la lecture au dessin dans la mémoire de
 l'extension, le rythme réel du défilement (iOS peut retarder des entrées), les boutons ‹ ›.
+
+## Ajout — certificat de distribution stable (2026-11-14)
+
+Après quatre envois, le propriétaire a reçu quatre e-mails d'Apple « your certificate has been revoked » :
+la décision J (un certificat par exécution, révoqué par la suivante) en envoie un **à chaque build**.
+
+**P. Certificat réutilisé quand un secret facultatif donne sa clé.** Nouveau secret
+`APPLE_DIST_KEY_BASE64` : une clé privée RSA 2048, PEM encodé en base64, donnée à la seule étape de
+signature du job `testflight`. Avec lui, `ios-signing.sh` signe avec cette clé (CSR faite sur le runner à
+partir d'elle) et `asc-api.mjs` réutilise le certificat `DISTRIBUTION` du compte dont la **clé publique
+est la même** (comparaison SPKI DER, `X509Certificate` de Node sur `certificateContent`) et qui expire
+dans **plus de 30 jours** ; sinon il en crée un avec la même clé. Le ménage supprime toujours les profils
+« Corde CI… » (inchangé) mais ne révoque un certificat qui leur est attaché que s'il porte une autre clé
+(ancien mode, nettoyé une dernière fois) ou s'il expire dans moins de 30 jours (remplacé). **Sans le
+secret, rien ne change** (mêmes requêtes, vérifié par les essais) : la fusion était sans risque avant que
+le propriétaire colle le secret ; un secret invalide arrête l'étape avec un message clair, sans la valeur.
+
+Options écartées : un `.p12` complet (clé + certificat) dans les secrets — il faudrait le refaire à la main
+chaque année et après toute révocation, alors que l'API recrée le certificat seule à partir de la clé ;
+ne plus révoquer du tout dans l'ancien mode — les certificats s'accumuleraient jusqu'à la limite d'Apple
+(`409`) ; garder le certificat dans un cache de GitHub Actions — un cache n'est pas fait pour une clé
+privée (lisible par toute exécution du dépôt, y compris d'autres branches).
+
+Ce qui ne se vérifie qu'avec le vrai compte : la forme de `certificateContent` dans une **liste**
+(`GET /v1/certificates`, `GET /v1/profiles/{id}/certificates` ; s'il manque, chaque certificat est relu
+seul), l'effet réel de `filter[certificateType]` (s'il est refusé, la liste entière est lue ; le type est
+toujours revérifié), l'acceptation par Apple d'une seconde CSR de la même clé au renouvellement, et la
+limite du nombre de certificats de distribution (le renouvellement révoque avant de créer).
 
 ## Conséquences
 

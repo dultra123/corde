@@ -142,9 +142,11 @@ poussée sur `main` qui touche `apps/mobile/`, `packages/ui/` ou le workflow lui
    `codesign`, cohérence du projet Xcode), puis contrôle que les quatre secrets sont utilisables (sans
    jamais afficher une valeur).
 3. **TestFlight** (seulement sur `dultra123/corde`, depuis `main`, jamais sur un fork, et seulement si les
-   **quatre secrets** du §4 existent) : avec la clé d'API, crée pour cette exécution un **certificat de
-   distribution** et un **profil App Store par identifiant** (l'application, et l'extension de widgets dont
-   l'identifiant est créé s'il manque ; ceux de l'exécution précédente sont retirés), compile et signe,
+   **quatre secrets** du §4 existent) : avec la clé d'API, obtient un **certificat de distribution** —
+   le même d'un build à l'autre si le cinquième secret, facultatif, existe (« Le cinquième secret », plus
+   bas), sinon un neuf pour chaque exécution — et crée un **profil App Store par identifiant**
+   (l'application, et l'extension de widgets dont l'identifiant est créé s'il manque ; ceux de l'exécution
+   précédente sont retirés), compile et signe,
    contrôle la signature de l'application et de l'extension, puis l'envoie vers TestFlight. Le numéro de
    build est le numéro d'exécution du workflow (il augmente toujours, comme Apple l'exige), le même pour
    l'application et l'extension ; la version affichée est celle de `apps/mobile/package.json` (1.0.0).
@@ -237,6 +239,9 @@ Tout se fait dans un navigateur, sans Mac.
    | `APPSTORE_API_ISSUER_ID` | l'ID d'émetteur (de la forme `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`) |
    | `APPLE_TEAM_ID` | le Team ID (étape 2) |
 
+   Un **cinquième secret**, facultatif, `APPLE_DIST_KEY_BASE64`, évite l'e-mail « certificat révoqué » à
+   chaque build : voir « Le cinquième secret », plus bas. Tout marche sans lui.
+
 7. **Lancer** : GitHub → **Actions** → **iOS** → **Run workflow** → `main`. Compter 15 à 30 minutes.
 8. **TestFlight** : App Store Connect → **Apps** → l'application → onglet **TestFlight**. Le build apparaît après le traitement par
    Apple (souvent 5 à 30 minutes après la fin du workflow). La question de chiffrement est déjà réglée
@@ -258,7 +263,10 @@ Si l'étape **« Certificat et profil de distribution »** échoue :
   `APPSTORE_API_KEY_ID` (nouvel ID de clé) — l'ID d'émetteur et le Team ID ne changent pas —, relancer, puis
   révoquer l'ancienne clé (page des clés → **Modifier** → cocher la clé → **Révoquer la clé**) ;
 - avec `409` et « nombre maximal de certificats » : le compte a déjà trop de certificats de distribution.
-  En révoquer un sur developer.apple.com → **Certificates, IDs & Profiles** → **Certificates**, puis relancer.
+  En révoquer un sur developer.apple.com → **Certificates, IDs & Profiles** → **Certificates**, puis relancer ;
+- avec `APPLE_DIST_KEY_BASE64 : …` : le cinquième secret est mal collé (« ce n'est pas du base64 », « on
+  dirait la clé en clair », « pas une clé RSA », « 2048 attendus »…). Le message ne montre jamais la
+  valeur. Corriger le secret (voir « Le cinquième secret »), ou le supprimer pour revenir à l'ancien mode.
 
 Si l'envoi échoue parce que l'application « n'existe pas »,
 l'étape 4 manque.
@@ -268,18 +276,67 @@ l'étape 4 manque.
 Sur developer.apple.com → **Certificates, IDs & Profiles**, la compilation laisse ceci, à ne pas
 toucher :
 
-- sous **Certificates**, un certificat **Distribution** (créé « via API ») ;
+- sous **Certificates**, un certificat **Distribution** (créé « via API » ; avec le cinquième secret, il
+  reste le même pendant presque un an) ;
 - sous **Profiles**, deux profils nommés **`Corde CI <numéro>`** (l'application) et **`Corde CI <numéro>
   widgets`** (l'extension de widgets, depuis la 0.9) ;
 - sous **Identifiers**, à côté de `io.github.dultra123.corde`, l'identifiant **Corde Widgets**
   (`io.github.dultra123.corde.widgets`), créé au premier envoi de la 0.9 et gardé ensuite. Aucune case à
   cocher dessus.
 
-À chaque nouvel envoi, la compilation **révoque ce certificat et supprime ces profils**, puis en crée de
-nouveaux : il n'y a jamais plus d'un certificat à la fois. Elle ne touche qu'au certificat attaché à un profil
-« Corde CI … » — jamais à un autre. Apple peut envoyer un e-mail « certificat révoqué » à ce moment-là :
-c'est normal, et sans effet sur les builds déjà envoyés. La clé privée du certificat n'existe que le temps
-de la compilation, sur la machine de GitHub ; elle n'est enregistrée nulle part.
+À chaque nouvel envoi, la compilation **supprime ces profils** et en crée de nouveaux. Pour le certificat :
+
+- **sans le cinquième secret** : elle le **révoque** et en crée un neuf ; il n'y a jamais plus d'un
+  certificat à la fois. Apple envoie alors un e-mail « certificat révoqué » **à chaque build** : c'est
+  normal, et sans effet sur les builds déjà envoyés. La clé privée du certificat n'existe que le temps de
+  la compilation, sur la machine de GitHub ; elle n'est enregistrée nulle part ;
+- **avec le cinquième secret** : elle **garde** le certificat et le réutilise ; plus d'e-mail. Elle n'en
+  crée un nouveau (avec la même clé) qu'à moins de 30 jours de son expiration, une fois par an.
+
+Elle ne révoque jamais qu'un certificat attaché à un profil « Corde CI … » — jamais un autre.
+
+### Le cinquième secret (facultatif) : `APPLE_DIST_KEY_BASE64`
+
+**À quoi il sert** : sans lui, chaque build crée un certificat neuf et révoque celui d'avant, et Apple
+envoie un e-mail « your certificate has been revoked » à chaque fois. Avec lui, la compilation signe
+toujours avec **la même clé privée**, et réutilise le certificat d'Apple qui porte cette clé : plus de
+révocation, plus d'e-mail. Rien d'autre ne change (les profils « Corde CI … » sont toujours refaits à
+chaque build).
+
+**Ce qu'il contient** : une clé privée **RSA 2048** au format PEM, encodée en **base64** sur une seule
+ligne. Elle se fabrique une fois, sur un ordinateur, avec `openssl` (fourni avec Git pour Windows, dans
+« Git Bash ») :
+
+```bash
+openssl genrsa -out corde-dist.key 2048
+base64 < corde-dist.key | tr -d '\n' > corde-dist.key.b64
+```
+
+Le contenu de `corde-dist.key.b64` (une longue ligne de lettres et de chiffres) va dans un nouveau secret
+GitHub nommé `APPLE_DIST_KEY_BASE64` (même chemin que pour les quatre autres, étape 6). Des espaces ou des
+retours à la ligne collés par erreur sont retirés tout seuls. Garder `corde-dist.key` en lieu sûr, hors de
+tout dépôt, comme la clé `.p8` : qui l'a peut signer une application au nom du compte tant que le certificat
+est valable.
+
+**Au premier build avec le secret** : le certificat de l'ancien mode est révoqué une dernière fois (un
+dernier e-mail), et un certificat est créé avec la clé du secret. Aux builds suivants, le journal de
+l'étape « Certificat et profils » dit « Certificat de distribution réutilisé (clé stable, valable
+jusqu'au … ) : aucun certificat créé ni révoqué ».
+
+**Renouvellement** : un certificat de distribution d'Apple vaut **un an**. À moins de 30 jours de la fin,
+le build suivant révoque l'ancien et en crée un nouveau **avec la même clé** : rien à faire, le secret ne
+change pas (un e-mail par an).
+
+**Si on retire le secret** : retour à l'ancien mode au build suivant (le certificat de la clé stable est
+révoqué, puis un certificat neuf à chaque build, avec l'e-mail à chaque fois).
+
+**Si la clé est perdue** (ou si on veut en changer) : en fabriquer une nouvelle avec les deux commandes
+ci-dessus et la coller à la place de l'ancienne (**Update secret**). Au build suivant, le certificat de
+l'ancienne clé est révoqué et un certificat est recréé avec la nouvelle. Les builds déjà dans TestFlight
+ne sont pas touchés.
+
+**Si le secret est mal collé**, l'étape s'arrête avec un message qui dit pourquoi (sans jamais montrer la
+valeur) : voir « Si l'étape … échoue », plus haut.
 
 ## 5. Durée de vie d'un build
 
