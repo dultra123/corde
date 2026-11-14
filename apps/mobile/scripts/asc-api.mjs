@@ -1,22 +1,30 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// Certificat et profil de distribution, créés par l'API App Store Connect (aucune dépendance).
+// Certificat et profils de distribution, créés par l'API App Store Connect (aucune dépendance).
 //
 //   ASC_KEY_PATH=…/AuthKey_XXXX.p8 ASC_KEY_ID=… ASC_ISSUER_ID=… \
-//     node asc-api.mjs prepare --bundle-id <identifiant> --csr <demande.csr> --out <dossier> \
+//     node asc-api.mjs prepare --bundle-id <application> [--bundle-id <extension> …] \
+//                              --csr <demande.csr> --out <dossier> \
 //                              --profile-name "Corde CI 12.1" --profile-prefix "Corde CI "
 //
 // `prepare` fait, dans l'ordre :
-//   1. le ménage de l'exécution précédente : chaque profil dont le nom commence par le préfixe est
+//   1. retrouve chaque identifiant dans le compte. Le premier est celui de l'application : s'il
+//      manque, arrêt avec un message clair (il se crée à la main, docs/IOS.md, étape 3). Les
+//      suivants (l'extension de widgets) sont créés par l'API s'ils manquent (plateforme iOS,
+//      nom « Corde Widgets ») ;
+//   2. le ménage de l'exécution précédente : chaque profil dont le nom commence par le préfixe est
 //      supprimé, et le certificat de distribution qui lui était attaché est révoqué. Le nom du
 //      profil sert d'étiquette : seuls les certificats créés par ce script sont touchés. Le
 //      certificat d'une exécution n'est donc révoqué qu'à l'exécution suivante, jamais pendant
 //      qu'Apple traite le build qui vient d'être envoyé ;
-//   2. un certificat « Apple Distribution » à partir de la demande (CSR) : la clé privée reste sur
-//      la machine qui a créé la demande, elle ne passe jamais par ce script ;
-//   3. un profil « App Store » pour l'identifiant de l'application, lié à ce certificat.
-// Il écrit dans <dossier> : dist.cer, profile.mobileprovision, profile-name.txt, profile-uuid.txt.
+//   3. un seul certificat « Apple Distribution » à partir de la demande (CSR) : la clé privée
+//      reste sur la machine qui a créé la demande, elle ne passe jamais par ce script ;
+//   4. un profil « App Store » par identifiant, lié à ce certificat : « Corde CI 12.1 » pour
+//      l'application, « Corde CI 12.1 widgets » pour l'extension (même préfixe, donc retrouvés
+//      par le ménage suivant).
+// Il écrit dans <dossier> : dist.cer, et pour chaque identifiant un dossier <identifiant>/ avec
+// profile.mobileprovision, profile-name.txt, profile-uuid.txt.
 //
 // Le nom du certificat contient le nom du titulaire du compte : il n'est jamais affiché, et sous
 // GitHub Actions il est masqué dans la suite du journal (`::add-mask::`).
@@ -152,22 +160,71 @@ export async function cleanPrevious(api, prefix) {
   return { profiles: removed, certificates: revoked };
 }
 
-export async function prepare(api, { bundleId, csrPem, profileName, profilePrefix, outDir }) {
+/** Noms donnés aux identifiants créés par ce script (seulement ceux des extensions). */
+export const EXTENSION_NAMES = { widgets: "Corde Widgets" };
+
+/** « Corde Widgets » pour `….widgets` ; le dernier mot de l'identifiant sinon. */
+export function extensionName(bundleId) {
+  const last = bundleId.split(".").at(-1) ?? "";
+  return EXTENSION_NAMES[last] ?? `Corde ${last.charAt(0).toUpperCase()}${last.slice(1)}`;
+}
+
+/** Nom du profil d'un identifiant : celui de l'application tel quel, « … widgets » pour l'extension. */
+export function profileNameFor(profileName, bundleIds, bundleId) {
+  if (bundleId === bundleIds[0]) return profileName;
+  return `${profileName} ${bundleId.split(".").at(-1)}`;
+}
+
+const BUNDLE_ID = /^[A-Za-z0-9][A-Za-z0-9.-]{0,154}$/;
+
+/**
+ * L'identifiant `bundleId` du compte. Absent : erreur pour l'application (`create` faux), création
+ * par l'API pour une extension.
+ */
+async function findBundle(api, bundleId, create) {
+  const bundles = await api.list(
+    `/v1/bundleIds?filter[identifier]=${encodeURIComponent(bundleId)}&limit=200&fields[bundleIds]=identifier,platform`,
+  );
+  const bundle = bundles.find((b) => b.attributes?.identifier === bundleId);
+  if (bundle) return bundle;
+  if (!create) {
+    throw new Error(
+      `l'identifiant ${bundleId} n'existe pas dans le compte développeur (docs/IOS.md, étape 3)`,
+    );
+  }
+  const name = extensionName(bundleId);
+  const created = (
+    await api.request("POST", "/v1/bundleIds", {
+      data: {
+        type: "bundleIds",
+        attributes: { identifier: bundleId, name, platform: "IOS" },
+      },
+    })
+  ).data;
+  log(`Identifiant ${bundleId} créé dans le compte (« ${name} »).`);
+  return created;
+}
+
+export async function prepare(api, { bundleIds, csrPem, profileName, profilePrefix, outDir }) {
+  const ids = Array.isArray(bundleIds) ? bundleIds : [bundleIds];
+  if (ids.length === 0) throw new Error("aucun identifiant");
+  for (const id of ids) {
+    if (!BUNDLE_ID.test(id) || id.includes("..")) throw new Error(`identifiant invalide : ${id}`);
+  }
+  if (new Set(ids).size !== ids.length) throw new Error("identifiant donné deux fois");
+
+  // 1. Les identifiants, avant de toucher à quoi que ce soit : l'application doit exister.
+  const bundles = [];
+  for (const [i, id] of ids.entries()) bundles.push(await findBundle(api, id, i > 0));
+
+  // 2. Le ménage de l'exécution précédente (règle inchangée : seuls les certificats
+  //    DISTRIBUTION attachés à un profil dont le nom commence par le préfixe).
   const cleaned = await cleanPrevious(api, profilePrefix);
   log(
     `Ménage de l'exécution précédente : ${cleaned.profiles} profil(s) supprimé(s), ${cleaned.certificates} certificat(s) révoqué(s).`,
   );
 
-  const bundles = await api.list(
-    `/v1/bundleIds?filter[identifier]=${encodeURIComponent(bundleId)}&limit=200&fields[bundleIds]=identifier,platform`,
-  );
-  const bundle = bundles.find((b) => b.attributes?.identifier === bundleId);
-  if (!bundle) {
-    throw new Error(
-      `l'identifiant ${bundleId} n'existe pas dans le compte développeur (docs/IOS.md, étape 3)`,
-    );
-  }
-
+  // 3. Un seul certificat pour tous les profils.
   let certificate;
   try {
     certificate = (
@@ -197,44 +254,61 @@ export async function prepare(api, { bundleId, csrPem, profileName, profilePrefi
     `Certificat de distribution créé (valable jusqu'au ${String(certificate.attributes?.expirationDate ?? "?").slice(0, 10)}).`,
   );
 
-  const profile = (
-    await api.request("POST", "/v1/profiles", {
-      data: {
-        type: "profiles",
-        attributes: { name: profileName, profileType: "IOS_APP_STORE" },
-        relationships: {
-          bundleId: { data: { type: "bundleIds", id: bundle.id } },
-          certificates: { data: [{ type: "certificates", id: certificate.id }] },
-        },
-      },
-    })
-  ).data;
-  log(`Profil App Store « ${profileName} » créé.`);
-
+  // 4. Un profil App Store par identifiant.
   mkdirSync(outDir, { recursive: true, mode: 0o700 });
-  const write = (name, data) => writeFileSync(join(outDir, name), data, { mode: 0o600 });
-  write("dist.cer", Buffer.from(certificate.attributes.certificateContent, "base64"));
-  write("profile.mobileprovision", Buffer.from(profile.attributes.profileContent, "base64"));
-  write("profile-name.txt", `${profile.attributes.name}\n`);
-  write("profile-uuid.txt", `${profile.attributes.uuid}\n`);
-  return { certificateId: certificate.id, profileId: profile.id };
+  writeFileSync(join(outDir, "dist.cer"), Buffer.from(certificate.attributes.certificateContent, "base64"), {
+    mode: 0o600,
+  });
+  const profiles = [];
+  for (const [i, id] of ids.entries()) {
+    const name = profileNameFor(profileName, ids, id);
+    const profile = (
+      await api.request("POST", "/v1/profiles", {
+        data: {
+          type: "profiles",
+          attributes: { name, profileType: "IOS_APP_STORE" },
+          relationships: {
+            bundleId: { data: { type: "bundleIds", id: bundles[i].id } },
+            certificates: { data: [{ type: "certificates", id: certificate.id }] },
+          },
+        },
+      })
+    ).data;
+    log(`Profil App Store « ${name} » créé (${id}).`);
+    const dir = join(outDir, id);
+    mkdirSync(dir, { recursive: true, mode: 0o700 });
+    const write = (file, data) => writeFileSync(join(dir, file), data, { mode: 0o600 });
+    write("profile.mobileprovision", Buffer.from(profile.attributes.profileContent, "base64"));
+    write("profile-name.txt", `${profile.attributes.name}\n`);
+    write("profile-uuid.txt", `${profile.attributes.uuid}\n`);
+    profiles.push(profile.id);
+  }
+  return { certificateId: certificate.id, profileIds: profiles };
 }
 
-function parseArgs(argv) {
-  const args = {};
+/** `--bundle-id` peut être répété ; les autres options une fois. */
+export function parseArgs(argv) {
+  const args = { "bundle-id": [] };
   for (let i = 0; i < argv.length; i++) {
     const key = argv[i];
     if (!key.startsWith("--") || i + 1 >= argv.length) throw new Error(`argument inattendu : ${key}`);
-    args[key.slice(2)] = argv[++i];
+    const name = key.slice(2);
+    const value = argv[++i];
+    if (name === "bundle-id") args[name].push(value);
+    else if (Object.hasOwn(args, name)) throw new Error(`--${name} donné deux fois`);
+    else args[name] = value;
   }
   return args;
 }
 
 async function main() {
   const [command, ...rest] = process.argv.slice(2);
-  if (command !== "prepare") throw new Error("usage : asc-api.mjs prepare --bundle-id … --csr … --out …");
+  if (command !== "prepare") {
+    throw new Error("usage : asc-api.mjs prepare --bundle-id … [--bundle-id …] --csr … --out …");
+  }
   const args = parseArgs(rest);
-  for (const name of ["bundle-id", "csr", "out", "profile-name"]) {
+  if (args["bundle-id"].length === 0) throw new Error("il manque --bundle-id");
+  for (const name of ["csr", "out", "profile-name"]) {
     if (!args[name]) throw new Error(`il manque --${name}`);
   }
   for (const name of ["ASC_KEY_PATH", "ASC_KEY_ID", "ASC_ISSUER_ID"]) {
@@ -247,7 +321,7 @@ async function main() {
     base: process.env.ASC_API_BASE || DEFAULT_BASE,
   });
   await prepare(api, {
-    bundleId: args["bundle-id"],
+    bundleIds: args["bundle-id"],
     csrPem: readFileSync(args.csr, "utf8"),
     profileName: args["profile-name"],
     profilePrefix: args["profile-prefix"] ?? "",

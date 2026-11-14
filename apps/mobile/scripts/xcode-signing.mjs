@@ -1,12 +1,16 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// Passe la cible de l'application (configuration Release) en signature manuelle, pour la
-// compilation TestFlight de la CI. Rien de ceci n'est enregistré dans le dépôt : le projet garde
-// la signature automatique, l'équipe et le profil ne sont écrits que sur la machine de la CI.
+// Passe les cibles de l'application et de son extension de widgets (configuration Release) en
+// signature manuelle, chacune avec son profil, pour la compilation TestFlight de la CI. Rien de
+// ceci n'est enregistré dans le dépôt : le projet garde la signature automatique, l'équipe et
+// les profils ne sont écrits que sur la machine de la CI.
 //
-//   node xcode-signing.mjs <project.pbxproj> --bundle-id <identifiant> --team <équipe> \
-//                          --profile "<nom du profil>"
+//   node xcode-signing.mjs <project.pbxproj> --team <équipe> \
+//        --bundle-id <application> --profile "<profil de l'application>" \
+//        [--bundle-id <extension> --profile "<profil de l'extension>" …]
+//
+// Chaque `--bundle-id` va avec le `--profile` qui le suit.
 //
 // Pourquoi modifier le fichier plutôt que passer les réglages à xcodebuild : sur la ligne de
 // commande ils s'appliqueraient aussi aux paquets Swift (Capacitor et ses modules), qui refusent
@@ -56,20 +60,43 @@ export function manualSigning(pbx, { bundleId, team, profile, identity = "Apple 
   return out;
 }
 
+/** `--team`, puis des paires `--bundle-id` / `--profile`, dans l'ordre. */
+export function parseSigningArgs(rest) {
+  let team = "";
+  const pairs = [];
+  for (let i = 0; i < rest.length; i += 2) {
+    const key = rest[i];
+    const value = rest[i + 1];
+    if (value === undefined) throw new Error(`valeur manquante après ${key}`);
+    if (key === "--team") team = value;
+    else if (key === "--bundle-id") pairs.push({ bundleId: value, profile: "" });
+    else if (key === "--profile") {
+      const last = pairs.at(-1);
+      if (!last || last.profile) throw new Error("--profile doit suivre son --bundle-id");
+      last.profile = value;
+    } else throw new Error(`argument inattendu : ${key}`);
+  }
+  if (!team || pairs.length === 0 || pairs.some((p) => !p.profile)) {
+    throw new Error(
+      "usage : xcode-signing.mjs <project.pbxproj> --team … --bundle-id … --profile … [--bundle-id … --profile …]",
+    );
+  }
+  return { team, pairs };
+}
+
+/** Toutes les cibles demandées, l'une après l'autre. */
+export function manualSigningAll(pbx, { team, pairs }) {
+  return pairs.reduce((text, p) => manualSigning(text, { bundleId: p.bundleId, team, profile: p.profile }), pbx);
+}
+
 function main() {
   const [file, ...rest] = process.argv.slice(2);
-  const args = {};
-  for (let i = 0; i + 1 < rest.length; i += 2) args[rest[i].replace(/^--/, "")] = rest[i + 1];
-  if (!file || !args["bundle-id"] || !args.team || !args.profile) {
-    throw new Error("usage : xcode-signing.mjs <project.pbxproj> --bundle-id … --team … --profile …");
-  }
-  const next = manualSigning(readFileSync(file, "utf8"), {
-    bundleId: args["bundle-id"],
-    team: args.team,
-    profile: args.profile,
-  });
-  writeFileSync(file, next);
-  console.log("Projet Xcode : configuration Release de l'application en signature manuelle.");
+  if (!file) throw new Error("usage : xcode-signing.mjs <project.pbxproj> --team … --bundle-id … --profile …");
+  const options = parseSigningArgs(rest);
+  writeFileSync(file, manualSigningAll(readFileSync(file, "utf8"), options));
+  console.log(
+    `Projet Xcode : configuration Release en signature manuelle pour ${options.pairs.map((p) => p.bundleId).join(", ")}.`,
+  );
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
