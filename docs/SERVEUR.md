@@ -65,10 +65,14 @@ ou « réservation DHCP »). Sinon son adresse peut changer et le PC ne le retro
 
 ## 3. Installer Corde serveur
 
-1. Télécharge l'archive **`corde-server-<version>-linux-arm64.tar.gz`** sur la page des versions de Corde
-   (Releases → « Corde — dernière version » ou la dernière version numérotée, section *Assets*).
-   - Tant que le dépôt est **privé**, le Pi ne peut pas la télécharger tout seul : télécharge-la sur le PC
-     (connecté à ton compte GitHub), puis copie-la sur le Pi depuis PowerShell :
+1. Récupère l'archive **`corde-server-<version>-linux-arm64.tar.gz`** de la
+   [dernière version](https://github.com/dultra123/corde/releases/latest) (section *Assets*).
+   - Le plus simple, directement sur le Pi (par SSH) :
+
+     ```bash
+     wget https://github.com/dultra123/corde/releases/download/v1.0.0/corde-server-1.0.0-linux-arm64.tar.gz
+     ```
+   - Ou télécharge-la sur le PC, puis copie-la sur le Pi depuis PowerShell :
 
      ```powershell
      scp $HOME\Downloads\corde-server-1.0.0-linux-arm64.tar.gz ton-utilisateur@corde.local:~

@@ -373,8 +373,7 @@ Bon à savoir :
   automatiquement** (le bouton reste utilisable).
 - **Pendant que le jeu est ouvert ou qu'une session s'enregistre**, l'installation est refusée avec un
   message : Corde ne s'arrête jamais pendant que tu roules.
-- « **Impossible de vérifier pour l'instant** » : pas d'Internet, ou GitHub injoignable. **Tant que le
-  dépôt du projet est privé, c'est normal** : GitHub ne distribue pas les fichiers d'un dépôt privé. Le lien
+- « **Impossible de vérifier pour l'instant** » : pas d'Internet, ou GitHub injoignable. Le lien
   **Ouvrir la page des versions** mène à la page où télécharger l'installeur à la main.
 - La recherche lit un fichier public sur GitHub, qui voit l'adresse IP de ta connexion ; rien d'autre n'est
   envoyé (voir `PRIVACY.md`).
