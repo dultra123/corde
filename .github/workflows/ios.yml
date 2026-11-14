@@ -12,7 +12,8 @@
 #                -----BEGIN CORDE SCREENSHOT <nom>-----
 #                -----END CORDE SCREENSHOT-----
 #              (le seul moyen pour l'équipe de voir l'écran), et les journaux de l'application.
-#              Les mêmes fichiers sont aussi joints à l'exécution (artefact).
+#              Les mêmes fichiers sont aussi joints à l'exécution (artefact). Enfin, compilation
+#              Release pour un iPhone, sans signature (contrôle du code de TestFlight).
 # cle-api    : en une minute, sans attendre le simulateur : essais des scripts (clé d'API avec une
 #              clé jetable, signature avec un faux serveur d'Apple et un faux codesign, cohérence
 #              du projet Xcode), puis contrôle des quatre secrets s'ils existent. Un secret mal
@@ -331,6 +332,26 @@ jobs:
           check "vues des widgets dessinées" "shots: [1-9]" "$out/run3-stderr.log"
           check "activité en direct d'exemple démarrée" "demo activity: started" "$out/run4-stderr.log"
           echo "Signature du simulateur : ${SIM_SIGNING:-?}"
+
+      # Le code Release (sans les outils de WidgetShots.swift, optimisé) n'est compilé pour de vrai
+      # que par le job TestFlight, sur `main` : le compiler ici aussi, pour un iPhone et sans
+      # signature, fait apparaître ses erreurs avant la fusion.
+      - name: Compiler aussi en Release pour un iPhone (sans signature, contrôle)
+        working-directory: apps/mobile/ios/App
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath "$RUNNER_TEMP/DerivedDataRelease" \
+            -quiet \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+          app="$RUNNER_TEMP/DerivedDataRelease/Build/Products/Release-iphoneos/App.app"
+          test -d "$app/PlugIns/CordeWidgets.appex"
+          echo "Release pour iPhone : application et extension compilées."
 
       - name: Joindre les captures et les journaux
         if: always()

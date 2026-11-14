@@ -111,7 +111,9 @@ poussée sur `main` qui touche `apps/mobile/`, `packages/ui/` ou le workflow lui
    vraie extension, Réglages au premier plan). Les images sont écrites **dans le journal** entre les lignes
    `-----BEGIN CORDE SCREENSHOT <nom>-----` et `-----END CORDE SCREENSHOT-----` (JPEG en base64), avec les
    journaux de l'application et une liste de contrôles (« ✓ bloc des widgets écrit… »). Les mêmes fichiers
-   sont joints à l'exécution (artefact `ios-smoke`, téléchargeable par le propriétaire du dépôt).
+   sont joints à l'exécution (artefact `ios-smoke`, téléchargeable par le propriétaire du dépôt). Puis il
+   compile aussi la configuration Release pour un iPhone, sans signature, pour voir ses erreurs avant
+   `main`.
 2. **Clé d'API** (une minute) : essaie les scripts (signature avec un faux serveur d'Apple et un faux
    `codesign`, cohérence du projet Xcode), puis contrôle que les quatre secrets sont utilisables (sans
    jamais afficher une valeur).
