@@ -5,15 +5,17 @@
 Corde est une application Windows qui tourne à côté du jeu. Elle lit la télémétrie de Le Mans Ultimate,
 l'affiche en direct dans un tableau de bord fait de widgets, enregistre chaque session, puis analyse ta
 conduite et te propose des ajustements de réglage que tu affines avec ton ressenti. Tout reste sur ton PC :
-pas de compte, pas de cloud.
+pas de compte, pas de cloud. Elle se prolonge sur le téléphone, dans le navigateur ou dans ses applications
+iPhone et Android, où le direct devient un tableau de bord de course.
 
 Le nom vient du **point de corde** : l'endroit où la trajectoire idéale touche l'intérieur du virage, celui
 que l'on vise à chaque tour. Corde s'appelait anciennement Muret (nom de travail).
 
 ![Écran d'accueil de Corde](docs/images/accueil.png)
 
-> **Version 1.0 (novembre 2026), première version officielle.** Corde fonctionne avec le jeu réel, mais
-> elle est jeune : certaines parties n'ont pas encore été essayées en conditions réelles (le tableau
+> **Version 1.1 (novembre 2026).** Nouveau : le [tableau de bord de course](#sur-le-téléphone) sur
+> téléphone, tablette et second écran, et « Voir une démonstration » dans les applications. Corde fonctionne
+> avec le jeu réel, mais elle est jeune : certaines parties n'ont pas encore été essayées en conditions réelles (le tableau
 > [Où en est le projet](#où-en-est-le-projet) le dit ligne par ligne), et l'installeur n'est pas encore
 > signé (voir [Installer](#installer-windows)). Les captures de cette page viennent du simulateur intégré.
 
@@ -112,6 +114,12 @@ Widgets).
 
 ![Tableau de bord du téléphone, page Course (course de démonstration)](docs/images/tableau-de-bord-telephone.png)
 
+<p>
+  <img src="docs/images/tableau-de-bord-pneus.png" width="32%" alt="Page Pneus &amp; freins">
+  <img src="docs/images/tableau-de-bord-carburant.png" width="32%" alt="Page Carburant &amp; énergie">
+  <img src="docs/images/tableau-de-bord-chronos.png" width="32%" alt="Page Chronos &amp; écarts">
+</p>
+
 ### L'application iPhone
 
 La même interface dans une vraie application iPhone (en test par TestFlight, sur invitation ; pas encore
@@ -131,6 +139,10 @@ Compilée uniquement par GitHub (aucun Mac nécessaire) : [docs/IOS.md](docs/IOS
 *Aperçu du mode application rendu dans Chromium à 390 px avec un faux pont Capacitor
 (`packages/ui/scripts/screenshot-app.mjs`) — ce n'est pas une capture d'iPhone : sur le téléphone, la
 page est affichée par WebKit, sous la barre d'état et au-dessus de la barre d'accueil de l'iPhone.*
+
+![Les widgets iPhone et le compte à rebours de la Dynamic Island (planche d'essai du simulateur, données d'exemple)](docs/images/widgets-iphone.jpg)
+
+![Le widget « Courses en images » (planche d'essai du simulateur, photos dessinées pour l'exemple)](docs/images/widget-courses-en-images.jpg)
 
 ### L'application Android
 
@@ -350,6 +362,8 @@ corde/
 
 ## Documentation
 
+- [docs/PRESENTATION.md](docs/PRESENTATION.md) — fiche de présentation à jour : ce que fait Corde, où elle
+  tourne, nouveautés, ce qui arrive, images et liens (pour un site ou une annonce)
 - [docs/SPEC.md](docs/SPEC.md) — cahier des charges : vision, personas, parcours, fonctionnalités par phase,
   widgets, fonctionnement de l'ingénieur, contraintes, questions ouvertes
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — architecture, flux de données, conventions, ports et chemins
