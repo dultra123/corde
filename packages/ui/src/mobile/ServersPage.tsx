@@ -2,6 +2,7 @@ import { type FormEvent, useState } from "react";
 import { type TranslationKey, useT } from "../i18n";
 import { codeDigits, formatCode } from "../net/hub-api";
 import { appController, useApp } from "./app-state";
+import { traitsOf } from "./device";
 import type { ProbeResult, ServerEntry } from "./servers";
 
 const ERR_KEYS: Record<string, TranslationKey> = {
@@ -24,7 +25,7 @@ function probeText(r: ProbeResult, t: ReturnType<typeof useT>["t"]): string {
 function PairForm({ server }: { server: ServerEntry }) {
   const { t } = useT();
   const [code, setCode] = useState("");
-  const [name, setName] = useState("iPhone");
+  const [name, setName] = useState(() => traitsOf(useApp.getState().os).deviceName);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const submit = async (e: FormEvent) => {

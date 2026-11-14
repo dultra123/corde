@@ -15,19 +15,42 @@
  *       The sound of the race reminders (two soft notes, 1.1 s, 16-bit PCM): copied into the
  *       web assets by `scripts/finish-web.mjs`, where the notifications plugin looks for it.
  *
- * Every image is rendered by Chromium (Playwright) from SVG. Needs `playwright` with its
- * Chromium (not installed by this repository).
+ * Every image of the iPhone is rendered by Chromium (Playwright) from SVG. Needs `playwright`
+ * with its Chromium (not installed by this repository).
  *
- *   node apps/mobile/scripts/make-assets.mjs
+ * The Android application's icon (adaptive, monochrome), small notification icon, launch screen
+ * icon and raw sound are written first, as vector drawables (`android-assets.mjs`): with
+ * `--android`, only those (no Chromium needed).
+ *
+ *   node apps/mobile/scripts/make-assets.mjs [--android]
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { androidResources, resDir, SOUND_SOURCE, SOUND_TARGET } from "./android-assets.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const mobile = resolve(here, "..");
 const require = createRequire(import.meta.url);
+
+// Android: vector drawables and the raw sound (from the sound written below, or already there).
+function writeAndroid() {
+  for (const [path, text] of Object.entries(androidResources())) {
+    const file = join(resDir(mobile), path);
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, text);
+  }
+  mkdirSync(dirname(join(mobile, SOUND_TARGET)), { recursive: true });
+  copyFileSync(join(mobile, SOUND_SOURCE), join(mobile, SOUND_TARGET));
+  console.log("android icons, small icon, launch icon and reminder sound written");
+}
+
+if (process.argv.includes("--android")) {
+  writeAndroid();
+  process.exit(0);
+}
+
 const { chromium } = require("playwright");
 
 const catalog = join(mobile, "ios/App/App/Assets.xcassets");
@@ -121,3 +144,4 @@ try {
 mkdirSync(join(mobile, "assets"), { recursive: true });
 writeFileSync(join(mobile, "assets/corde-reminder.wav"), chime());
 console.log("icon, launch screen and reminder sound written");
+writeAndroid();

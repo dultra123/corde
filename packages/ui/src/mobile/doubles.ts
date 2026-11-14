@@ -1,8 +1,10 @@
 import type { HttpOptions, HttpResponse, PermissionState } from "@capacitor/core";
 import type {
+  Channel,
   LocalNotificationSchema,
   PendingLocalNotificationSchema,
 } from "@capacitor/local-notifications";
+import type { AndroidNotificationsPort } from "./android";
 import type {
   HttpPort,
   NativeActivity,
@@ -88,6 +90,32 @@ export class FakeNotifications implements NotificationsPort {
     const ids = notifications.map((n) => n.id);
     this.cancelled.push(ids);
     this.pending = this.pending.filter((p) => !ids.includes(p.id));
+  }
+}
+
+/** Double of the Android-only methods of `LocalNotifications` (`mobile/android.ts`). */
+export class FakeAndroidNotifications implements AndroidNotificationsPort {
+  channels: Channel[] = [];
+  /** « Alarmes et rappels » for Corde. */
+  exact: PermissionState = "denied";
+  /** What the driver does on the « Alarmes et rappels » screen. */
+  exactAnswer: PermissionState = "granted";
+  /** Times that screen was opened. */
+  screens = 0;
+  failCheck = false;
+
+  async createChannel(channel: Channel) {
+    this.channels = this.channels.filter((c) => c.id !== channel.id);
+    this.channels.push({ ...channel });
+  }
+  async checkExactNotificationSetting() {
+    if (this.failCheck) throw new Error("not implemented");
+    return { exact_alarm: this.exact };
+  }
+  async changeExactNotificationSetting() {
+    this.screens += 1;
+    this.exact = this.exactAnswer;
+    return { exact_alarm: this.exact };
   }
 }
 

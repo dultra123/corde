@@ -3,6 +3,8 @@ import { connection } from "../net/connection";
 import { endpointFromHost, type ServerEndpoint } from "../net/url";
 import { useHub } from "../store/hub";
 import { useTelemetry } from "../store/telemetry";
+import type { AndroidReminders, ExactView } from "./android";
+import type { PhoneOs } from "./device";
 import type { PhoneRaces } from "./phone-races";
 import type { PermissionView } from "./reminders";
 import type { PairResult, ProbeResult, ServerBook, ServerEntry } from "./servers";
@@ -31,9 +33,15 @@ export interface AppState {
   keyboard: boolean;
   /** The Live Activity: allowed by iOS, the pick it follows, the driver's setting. */
   activity: ActivityView | null;
+  /** The phone's system (set once by `boot.ts`). */
+  os: PhoneOs;
+  /** Android: exact alarms allowed (`null`: not known yet, or the iPhone). */
+  exact: ExactView | null;
 }
 
 export const useApp = create<AppState>(() => ({
+  os: "ios",
+  exact: null,
   servers: [],
   activeId: null,
   paired: [],
@@ -79,8 +87,10 @@ export type ScanFn = () => Promise<string | null>;
 export class AppController {
   private refreshing: Promise<void> | null = null;
   private dropTimer: ReturnType<typeof setTimeout> | null = null;
-  /** Widgets and Live Activity (installed by `boot.ts`). */
+  /** Widgets and Live Activity (installed by `boot.ts` on the iPhone only). */
   widgets: WidgetSync | null = null;
+  /** Exact alarms of the reminders (installed by `boot.ts` on Android only). */
+  android: AndroidReminders | null = null;
 
   constructor(
     readonly book: ServerBook,

@@ -111,6 +111,8 @@ export interface ServerBookOptions {
   log?: LogPort;
   now?: () => number;
   newId?: () => string;
+  /** The name sent when pairing with an empty one (`iPhone`, `Android`). */
+  deviceName?: string;
 }
 
 export class ServerBook {
@@ -123,8 +125,10 @@ export class ServerBook {
   private readonly log: LogPort;
   private readonly now: () => number;
   private readonly newId: () => string;
+  private readonly deviceName: string;
 
   constructor(opts: ServerBookOptions) {
+    this.deviceName = opts.deviceName ?? "iPhone";
     this.prefs = opts.prefs;
     this.fetchFn = opts.fetch;
     this.log = opts.log ?? (() => {});
@@ -321,7 +325,11 @@ export class ServerBook {
       {
         method: "POST",
         headers: { Accept: "application/json", "Content-Type": "application/json" },
-        body: JSON.stringify({ code: digits, name: cleanName(deviceName, "iPhone"), kind: "app" }),
+        body: JSON.stringify({
+          code: digits,
+          name: cleanName(deviceName, this.deviceName),
+          kind: "app",
+        }),
       },
       PAIR_TIMEOUT_MS,
     );

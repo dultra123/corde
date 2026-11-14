@@ -33,6 +33,28 @@ const MARK = "corde-race";
  */
 export const CATEGORY = "corde-race";
 
+/**
+ * Android: the same sound as a raw resource of the application
+ * (`apps/mobile/android/app/src/main/res/raw/corde_reminder.wav`: a resource name has no `-`).
+ * On Android 8+ the sound belongs to the channel ({@link CHANNEL}), created with it.
+ */
+export const ANDROID_SOUND = "corde_reminder.wav";
+/** Android: the notification channel of the reminders (created by `mobile/android.ts`). */
+export const CHANNEL = "corde-races";
+/** Android: the monochrome small icon (`res/drawable/ic_stat_corde.xml`). */
+export const SMALL_ICON = "ic_stat_corde";
+/** Android: the colour of the small icon (the accent of the interface). */
+export const ICON_COLOR = "#ffb454";
+
+/**
+ * How the reminders are delivered on Android. `exact`: the driver allows exact alarms
+ * (« Alarmes et rappels ») — the reminder rings at its minute, phone asleep included; without
+ * it Android may deliver it a few minutes late. `undefined` on the iPhone: nothing changes.
+ */
+export interface AndroidStyle {
+  exact: boolean;
+}
+
 export interface PlannedReminder {
   /** Notification identifier (32-bit, positive). */
   id: number;
@@ -125,6 +147,8 @@ export interface ReminderExtra {
   /** Title + text: a change of language or name schedules it again. */
   sig: string;
   reminder: RaceReminder;
+  /** Android: scheduled as an exact alarm (a change of the permission schedules it again). */
+  exact?: boolean;
 }
 
 export function isReminderExtra(v: unknown): v is ReminderExtra {
@@ -133,7 +157,11 @@ export function isReminderExtra(v: unknown): v is ReminderExtra {
   return o.mark === MARK && typeof o.key === "string" && typeof o.at === "number";
 }
 
-export function notificationOf(p: PlannedReminder, lang: Lang): LocalNotificationSchema {
+export function notificationOf(
+  p: PlannedReminder,
+  lang: Lang,
+  android?: AndroidStyle,
+): LocalNotificationSchema {
   const { title, body } = reminderText(p.reminder, lang);
   const extra: ReminderExtra = {
     mark: MARK,
@@ -142,6 +170,24 @@ export function notificationOf(p: PlannedReminder, lang: Lang): LocalNotificatio
     sig: `${title}\n${body}`,
     reminder: p.reminder,
   };
+  if (android) {
+    // The channel carries the sound; `allowWhileIdle`: delivered in Doze too. Never
+    // `isExactNotification: true` without the permission: the plugin would then open the
+    // « Alarmes et rappels » screen by itself at every planning.
+    return {
+      id: p.id,
+      title,
+      body,
+      schedule: { at: new Date(p.at), allowWhileIdle: true },
+      sound: ANDROID_SOUND,
+      channelId: CHANNEL,
+      smallIcon: SMALL_ICON,
+      iconColor: ICON_COLOR,
+      isExactNotification: android.exact,
+      actionTypeId: CATEGORY,
+      extra: { ...extra, exact: android.exact },
+    };
+  }
   return {
     id: p.id,
     title,
@@ -162,30 +208,46 @@ export interface SyncResult {
   kept: number;
 }
 
+export interface SyncOptions {
+  /** Android ({@link AndroidStyle}); absent on the iPhone. */
+  android?: AndroidStyle;
+  /** Now (ms), for the Android pending list. */
+  now?: number;
+}
+
 /**
  * Makes the pending notifications of this module match `plan`. Never asks for the permission
  * (the page asks it at the first pick, `ensurePermission`): without it nothing is scheduled.
+ *
+ * On Android the plugin's pending list also holds the reminders already delivered (kept for
+ * its own queries; cancelling one does not remove it from the list): those, due before `now`,
+ * are left alone.
  */
 export async function syncReminders(
   port: NotificationsPort,
   plan: readonly PlannedReminder[],
   lang: Lang,
   log?: LogPort,
+  opts: SyncOptions = {},
 ): Promise<SyncResult> {
+  const { android } = opts;
+  const now = opts.now ?? Date.now();
   const pending = (await port.getPending()).notifications;
-  const wanted = new Map(plan.map((p) => [p.id, notificationOf(p, lang)]));
+  const wanted = new Map(plan.map((p) => [p.id, notificationOf(p, lang, android)]));
   const cancel: number[] = [];
   const keep = new Set<number>();
   for (const n of pending) {
     const extra: unknown = n.extra;
     if (!isReminderExtra(extra)) continue;
+    if (android && extra.at <= now) continue;
     const w = wanted.get(n.id);
     const same =
       w !== undefined &&
       isReminderExtra(w.extra) &&
       w.extra.key === extra.key &&
       w.extra.at === extra.at &&
-      w.extra.sig === extra.sig;
+      w.extra.sig === extra.sig &&
+      w.extra.exact === extra.exact;
     if (same && !keep.has(n.id)) keep.add(n.id);
     else cancel.push(n.id);
   }

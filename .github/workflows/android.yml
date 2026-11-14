@@ -1,0 +1,464 @@
+# Application Android (apps/mobile/android, Capacitor) — compilée seulement ici. Voir
+# docs/ANDROID.md et l'ADR 0013.
+#
+# build      : toujours. Interface en mode mobile, `cap sync android`, compilation Debug (et Release
+#              sans signature, pour compiler aussi son code), essais unitaires Gradle, lint Android,
+#              essais des scripts (images de l'application, signature). Contrôles de l'APK :
+#              version et numéro de build, autorisations du manifeste fusionné (rien de plus que
+#              prévu, pas de localisation), aucune bibliothèque Google Play services / Firebase /
+#              ML Kit (dépendances et code). APK Debug joint à l'exécution (artefact).
+# emulateur  : toujours, après build. Émulateur Android 15 sans services Google (image AOSP
+#              « default », KVM), APK Debug installé et essayé par apps/mobile/scripts/android-smoke.sh :
+#              démarrage, lien corde://races, bouton retour, appel http:// d'une adresse privée
+#              (faux serveur Corde sur la machine), lecteur de QR code, rappel de test reçu
+#              application tuée et téléphone en veille. Captures réduites en JPEG et écrites EN
+#              BASE64 DANS LE JOURNAL entre deux marqueurs
+#                -----BEGIN CORDE SCREENSHOT <nom>-----
+#                -----END CORDE SCREENSHOT-----
+#              (home, races, scan, notification ; décoder comme pour l'iPhone, docs/IOS.md §3).
+# signature-essai : sur une autre branche que `main` seulement. Le chemin de signature de
+#              `release`, avec une clé JETABLE créée ici (aucun secret lu) : APK et bundle Release
+#              signés puis contrôlés, rien publié.
+# release    : seulement sur le dépôt d'origine, sur `main`, jamais une PR ni un fork, et seulement
+#              si les deux secrets ANDROID_KEYSTORE_BASE64 (magasin PKCS12 encodé en base64, clé
+#              « corde ») et ANDROID_KEYSTORE_PASSWORD existent ; sinon il le dit et réussit. APK
+#              Release signé et bundle (AAB, pour le Play Store, gardé en artefact) signés avec la
+#              clé du propriétaire, contrôlés (apksigner : seule l'empreinte SHA-256 du certificat
+#              est affichée). Publication de Corde_<version>_android.apk :
+#                - dans la pré-release `continuous` (remplacé à chaque build). ci.yml recrée cette
+#                  pré-release à chaque poussée sur main : son job `continuous` reprend l'APK
+#                  qui s'y trouve avant de la supprimer, et ce job attend la fin de ci.yml pour le
+#                  même commit avant de publier (ordre garanti quand les deux tournent) ;
+#                - dans la release v<version> si elle existe, est publiée et n'a pas encore d'APK
+#                  Android (celui d'une release numérotée n'est jamais remplacé).
+#              Version = celle de apps/mobile/package.json ; numéro de build (versionCode) =
+#              numéro d'exécution de ce workflow, toujours croissant.
+#
+# Sécurité : jeton en lecture seule, sauf `release` (contents: write pour les releases, actions:
+# read pour attendre ci.yml) ; aucune valeur venant d'un tiers (nom de branche…) n'est collée dans
+# un script ; le magasin de clés n'est écrit que dans un dossier temporaire du runner (0700, fichier
+# 0600) et effacé à la fin, même en cas d'échec ; le mot de passe n'est passé qu'à Gradle, par
+# l'environnement ; ni lui ni le nom du certificat ne sont affichés. Actions tierces épinglées sur
+# un commit.
+
+name: Android
+
+on:
+  workflow_dispatch:
+  push:
+    # PROVISOIRE (lot Android) : android-app tant que le workflow n'existe pas sur main (un
+    # workflow absent de la branche par défaut ne peut pas être lancé à la main). À retirer.
+    branches: [main, android-app]
+    paths:
+      - "apps/mobile/**"
+      - "packages/ui/**"
+      - ".github/workflows/android.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  APP_ID: io.github.dultra123.corde
+
+jobs:
+  build:
+    name: Compilation (Debug, essais, lint, contrôles)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      # Version de pnpm lue dans le champ `packageManager` de package.json, comme dans ci.yml.
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # Capacitor 8 et le plugin Android de Gradle demandent Java 21.
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Installer les dépendances
+        run: pnpm install --frozen-lockfile
+
+      - name: Essais des scripts (images de l'application, signature)
+        run: |
+          set -euo pipefail
+          node --test apps/mobile/scripts/android-assets.test.mjs
+          bash apps/mobile/scripts/android-signing.test.sh
+
+      # La compilation de l'interface n'a pas besoin des types générés du protocole (ts-rs) :
+      # `vite build` retire les imports de types (le typecheck se fait dans ci.yml).
+      - name: Interface en mode mobile (apps/mobile/www)
+        run: pnpm --filter @corde/mobile build
+
+      - name: Copier l'interface dans le projet Android (cap sync android)
+        working-directory: apps/mobile
+        run: pnpm exec cap sync android
+
+      - name: Compiler (Debug et Release sans signature), essais unitaires, lint
+        working-directory: apps/mobile/android
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon --stacktrace -PcordeVersionCode="${BUILD_NUMBER}" \
+            :app:assembleDebug :app:assembleRelease :app:testDebugUnitTest :app:lintDebug
+
+      - name: Contrôler l'APK (version, autorisations, aucune bibliothèque Google)
+        working-directory: apps/mobile/android
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          apk=app/build/outputs/apk/debug/app-debug.apk
+          version=$(node -p "require('../package.json').version")
+          tools=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)
+          badging=$("$tools/aapt2" dump badging "$apk")
+          printf '%s\n' "$badging" | grep -E "^(package|sdkVersion|targetSdkVersion|application-label):"
+          printf '%s\n' "$badging" | grep -q "versionCode='${BUILD_NUMBER}' versionName='${version}'" ||
+            { echo "::error::version ou numéro de build inattendu (attendu ${version} / ${BUILD_NUMBER})"; exit 1; }
+          printf '%s\n' "$badging" | grep -q "package: name='${APP_ID}'" ||
+            { echo "::error::identifiant inattendu"; exit 1; }
+
+          perms=$("$tools/aapt2" dump permissions "$apk" | sed -n "s/^uses-permission: name='\([^']*\)'.*/\1/p" | sort)
+          echo "Autorisations du manifeste fusionné :"
+          printf '  %s\n' $perms
+          for p in INTERNET POST_NOTIFICATIONS SCHEDULE_EXACT_ALARM RECEIVE_BOOT_COMPLETED CAMERA; do
+            printf '%s\n' "$perms" | grep -qx "android.permission.${p}" ||
+              { echo "::error::autorisation attendue absente : ${p}"; exit 1; }
+          done
+          # Rien d'autre que ce que docs/ANDROID.md annonce (WAKE_LOCK : les rappels ; la
+          # permission « signature » qu'androidx.core ajoute à chaque application pour ses propres
+          # récepteurs).
+          unexpected=$(printf '%s\n' "$perms" | grep -v -x -E "android\.permission\.(INTERNET|POST_NOTIFICATIONS|SCHEDULE_EXACT_ALARM|RECEIVE_BOOT_COMPLETED|WAKE_LOCK|CAMERA)|${APP_ID//./\\.}\.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" || true)
+          if [ -n "$unexpected" ]; then
+            echo "::error::autorisations non prévues : ${unexpected//$'\n'/, }"
+            exit 1
+          fi
+
+          # Aucune bibliothèque Google Play services, Firebase ni ML Kit : ni dans les
+          # dépendances, ni dans le code de l'APK.
+          ./gradlew --no-daemon -q :app:dependencies --configuration releaseRuntimeClasspath > "$RUNNER_TEMP/deps.txt"
+          if grep -E "com\.google\.(android\.gms|firebase|mlkit|android\.datatransport)" "$RUNNER_TEMP/deps.txt"; then
+            echo "::error::une bibliothèque Google est dans les dépendances de l'application"
+            exit 1
+          fi
+          found=$(unzip -p "$apk" 'classes*.dex' | grep -a -c -E "Lcom/google/(android/gms|firebase|mlkit|android/datatransport)/" || true)
+          if [ "$found" != "0" ]; then
+            echo "::error::du code Google Play services / Firebase / ML Kit est dans l'APK (${found} références)"
+            exit 1
+          fi
+          echo "Aucune bibliothèque Google Play services, Firebase ni ML Kit."
+          ls -l app/build/outputs/apk/debug/*.apk app/build/outputs/apk/release/*.apk
+          {
+            echo "### Android ${version} (${BUILD_NUMBER})"
+            echo ""
+            echo "- APK Debug : $(du -h "$apk" | cut -f1)"
+            echo "- APK Release (sans signature) : $(du -h app/build/outputs/apk/release/*.apk | cut -f1)"
+            echo "- Autorisations : $(printf '%s ' $perms)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Joindre l'APK Debug
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-debug
+          path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Joindre les rapports (lint, essais)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-reports
+          path: |
+            apps/mobile/android/app/build/reports
+            apps/mobile/android/app/build/test-results
+          if-no-files-found: ignore
+          retention-days: 14
+
+  emulateur:
+    name: Émulateur (essai de fumée, captures, rappel)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-debug
+          path: ${{ runner.temp }}/apk
+
+      # L'émulateur a besoin de KVM (accélération matérielle), présent sur les machines Linux de
+      # GitHub mais réservé à root par défaut.
+      - name: Activer KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules > /dev/null
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # Image AOSP « default » : Android sans aucun service Google (comme un téléphone sans
+      # Google), Android 15 (bord à bord imposé). Téléphone de la taille d'un Pixel 6, en français.
+      # (Le script s'exécute ligne par ligne : tout est dans android-smoke.sh.)
+      - name: Essai de fumée sur l'émulateur
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 35
+          target: default
+          arch: x86_64
+          profile: pixel_6
+          ram-size: 3072M
+          disk-size: 4096M
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back emulated -change-locale fr-FR
+          disable-animations: true
+          script: bash apps/mobile/scripts/android-smoke.sh "$RUNNER_TEMP/apk/app-debug.apk" "$RUNNER_TEMP/smoke"
+
+      - name: Joindre les captures et les journaux
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-smoke
+          path: ${{ runner.temp }}/smoke
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # Sur une branche : le chemin de signature de `release`, avec une clé jetable (aucun secret).
+  signature-essai:
+    name: Signature (essai avec une clé jetable)
+    if: github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Interface en mode mobile et cap sync android
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm --filter @corde/mobile build
+          cd apps/mobile
+          pnpm exec cap sync android
+
+      - name: Clé jetable (sous les noms des secrets)
+        run: bash apps/mobile/scripts/android-signing.sh throwaway "$RUNNER_TEMP/android-throwaway"
+
+      - name: Magasin de clés (dossier temporaire)
+        run: bash apps/mobile/scripts/android-signing.sh setup "$RUNNER_TEMP/android-signing"
+
+      - name: APK et bundle Release signés
+        working-directory: apps/mobile/android
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          CORDE_KEYSTORE_PASSWORD="$ANDROID_KEYSTORE_PASSWORD" \
+            ./gradlew --no-daemon -PcordeVersionCode="${BUILD_NUMBER}" :app:assembleRelease :app:bundleRelease
+
+      - name: Contrôler la signature
+        run: |
+          bash apps/mobile/scripts/android-signing.sh check \
+            apps/mobile/android/app/build/outputs/apk/release/app-release.apk \
+            apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
+          ls -l apps/mobile/android/app/build/outputs/apk/release/app-release.apk apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
+
+      - name: Effacer le magasin de clés
+        if: always()
+        run: |
+          rm -rf "$RUNNER_TEMP/android-signing" "$RUNNER_TEMP/android-throwaway"
+          rm -f apps/mobile/android/app/build/outputs/apk/release/*.apk apps/mobile/android/app/build/outputs/bundle/release/*.aab
+
+  release:
+    name: APK signé et publication
+    needs: [build, emulateur]
+    # Jamais sur un fork ni une PR (ce workflow n'a pas de déclencheur pull_request : la condition
+    # le garantit aussi s'il en recevait un), et seulement depuis `main`.
+    if: github.repository == 'dultra123/corde' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+      actions: read
+    env:
+      # « true » seulement si les deux secrets existent (sinon le job le dit et ne fait rien).
+      SIGNING_READY: ${{ github.ref == 'refs/heads/main' && secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Secrets de signature présents ?
+        run: |
+          if [ "${SIGNING_READY}" != "true" ]; then
+            echo "::notice::secrets absents (ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD), pas d'APK signé (docs/ANDROID.md)"
+            echo "Secrets de signature absents : pas d'APK signé. L'APK Debug de l'exécution reste joint (artefact android-debug)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: actions/checkout@v5
+        if: env.SIGNING_READY == 'true'
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        if: env.SIGNING_READY == 'true'
+
+      - uses: actions/setup-node@v5
+        if: env.SIGNING_READY == 'true'
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: actions/setup-java@v5
+        if: env.SIGNING_READY == 'true'
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Interface en mode mobile et cap sync android
+        if: env.SIGNING_READY == 'true'
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm --filter @corde/mobile build
+          cd apps/mobile
+          pnpm exec cap sync android
+
+      - name: Magasin de clés du propriétaire (dossier temporaire)
+        if: env.SIGNING_READY == 'true'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: bash apps/mobile/scripts/android-signing.sh setup "$RUNNER_TEMP/android-signing"
+
+      - name: APK et bundle Release signés
+        if: env.SIGNING_READY == 'true'
+        working-directory: apps/mobile/android
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+          CORDE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: ./gradlew --no-daemon -PcordeVersionCode="${BUILD_NUMBER}" :app:assembleRelease :app:bundleRelease
+
+      - name: Contrôler la signature et nommer les fichiers
+        if: env.SIGNING_READY == 'true'
+        id: files
+        run: |
+          set -euo pipefail
+          out=apps/mobile/android/app/build/outputs
+          bash apps/mobile/scripts/android-signing.sh check "$out/apk/release/app-release.apk" "$out/bundle/release/app-release.aab"
+          version=$(node -p "require('./apps/mobile/package.json').version")
+          mkdir -p dist
+          cp "$out/apk/release/app-release.apk" "dist/Corde_${version}_android.apk"
+          cp "$out/bundle/release/app-release.aab" "dist/Corde_${version}_android.aab"
+          ls -l dist
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "apk=Corde_${version}_android.apk" >> "$GITHUB_OUTPUT"
+
+      - name: Effacer le magasin de clés
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/android-signing"
+
+      - name: Joindre l'APK et le bundle signés
+        if: env.SIGNING_READY == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release
+          path: dist
+          if-no-files-found: error
+          retention-days: 30
+
+      # ci.yml recrée la pré-release `continuous` à chaque poussée sur main (en reprenant l'APK
+      # Android qui s'y trouve) et crée la release v<version> : attendre qu'il ait fini pour ce
+      # commit, pour que l'APK publié ici ne soit pas perdu et que la release numérotée existe.
+      - name: Attendre ci.yml pour ce commit
+        if: env.SIGNING_READY == 'true'
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 120); do
+            running=$(gh run list --workflow ci.yml --commit "$GITHUB_SHA" --json status \
+              --jq '[.[] | select(.status != "completed")] | length')
+            if [ "$running" = "0" ]; then
+              echo "ci.yml : rien en cours pour ce commit."
+              exit 0
+            fi
+            echo "ci.yml en cours pour ce commit (${running}) : nouvel essai dans 30 s"
+            sleep 30
+          done
+          echo "::warning::ci.yml n'a pas fini en une heure : publication quand même"
+
+      - name: Publier l'APK (continuous, v<version>)
+        if: env.SIGNING_READY == 'true'
+        env:
+          VERSION: ${{ steps.files.outputs.version }}
+          APK: ${{ steps.files.outputs.apk }}
+        run: |
+          set -euo pipefail
+          # 1. Pré-release `continuous` : l'APK de cette exécution remplace le précédent (même nom
+          #    ou version précédente). Absente (ci.yml la recrée en ce moment) : quelques essais.
+          published=false
+          for attempt in 1 2 3 4 5; do
+            if gh release view continuous > /dev/null 2>&1; then
+              for old in $(gh release view continuous --json assets --jq '.assets[].name' | grep -E '^Corde_.*_android\.apk$' || true); do
+                [ "$old" = "$APK" ] || gh release delete-asset continuous "$old" --yes
+              done
+              gh release upload continuous "dist/${APK}" --clobber
+              published=true
+              break
+            fi
+            echo "pré-release continuous absente (essai ${attempt}) : nouvel essai dans 30 s"
+            sleep 30
+          done
+          if $published; then
+            echo "- ${APK} publié dans la pré-release continuous" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::pré-release continuous absente : APK non publié là (il reste dans l'artefact android-release)"
+          fi
+
+          # 2. Release numérotée v<version> : seulement si elle existe, est publiée et n'a pas encore
+          #    d'APK Android. Celui d'une release numérotée n'est jamais remplacé.
+          tag="v${VERSION}"
+          if state=$(gh release view "$tag" --json isDraft,assets \
+            --jq '[.isDraft, ([.assets[].name | select(endswith("_android.apk"))] | length)] | @tsv' 2> /dev/null); then
+            draft=$(printf '%s' "$state" | cut -f1)
+            count=$(printf '%s' "$state" | cut -f2)
+            if [ "$draft" = "true" ]; then
+              echo "::notice::release ${tag} encore en brouillon : APK non ajouté"
+            elif [ "$count" != "0" ]; then
+              echo "release ${tag} : elle a déjà un APK Android, jamais remplacé."
+            else
+              gh release upload "$tag" "dist/${APK}"
+              echo "- ${APK} ajouté à la release ${tag}" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          else
+            echo "pas de release ${tag} : rien à compléter."
+          fi

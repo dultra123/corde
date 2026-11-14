@@ -513,6 +513,26 @@ mod tests {
         assert!(!may_change_settings(lo, Some("capacitor://localhost")));
     }
 
+    /// The Android application serves its pages from `http://localhost` (Capacitor's
+    /// `server.androidScheme` set to `http` in apps/mobile/capacitor.config.json, ADR 0013):
+    /// already accepted as an origin, with no right of "this PC" from a phone — the peer of a
+    /// phone is never the loopback.
+    #[test]
+    fn the_android_application_is_allowed_but_never_counts_as_this_pc() {
+        for host in [
+            Some("192.168.1.20:8471"),
+            Some("10.8.0.1:8471"),
+            Some("pc-jeu.local:8471"),
+            None,
+        ] {
+            assert!(origin_allowed("http://localhost", host), "{host:?}");
+        }
+        let phone: IpAddr = "192.168.1.42".parse().unwrap();
+        assert!(!may_change_settings(phone, Some("http://localhost")));
+        let vpn: IpAddr = "10.8.0.2".parse().unwrap();
+        assert!(!may_change_settings(vpn, Some("http://localhost")));
+    }
+
     #[test]
     fn route_classes() {
         use Access::*;

@@ -1,4 +1,5 @@
 import type { ComponentType, ReactNode } from "react";
+import type { TranslationKey } from "../i18n";
 import type { Route } from "../nav/routes";
 import type { RacePick } from "../net/races-api";
 
@@ -30,6 +31,8 @@ export interface AppSlots {
   RemindersExtra?: ComponentType;
   /** On a row of « Mes courses »: the button that starts the countdown on the lock screen. */
   PickAction?: ComponentType<{ pick: RacePick; now: number }>;
+  /** A sentence that names the phone's system: its key for this phone (`mobile/device.ts`). */
+  phoneText?: (key: TranslationKey) => TranslationKey;
 }
 
 export const appSlots: AppSlots = {};

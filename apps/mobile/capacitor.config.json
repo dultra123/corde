@@ -4,6 +4,9 @@
   "webDir": "www",
   "backgroundColor": "#0b0e12",
   "loggingBehavior": "debug",
+  "server": {
+    "androidScheme": "http"
+  },
   "ios": {
     "scheme": "App",
     "backgroundColor": "#0b0e12",
@@ -14,13 +17,21 @@
     "handleApplicationNotifications": true,
     "limitsNavigationsToAppBoundDomains": false
   },
+  "android": {
+    "backgroundColor": "#0b0e12",
+    "allowMixedContent": false
+  },
   "plugins": {
     "SystemBars": {
       "style": "DARK",
-      "hidden": false
+      "hidden": false,
+      "insetsHandling": "css",
+      "initialViewportFitValueHint": "cover"
     },
     "LocalNotifications": {
-      "presentationOptions": ["list", "sound"]
+      "presentationOptions": ["list", "sound"],
+      "smallIcon": "ic_stat_corde",
+      "iconColor": "#ffb454"
     },
     "Keyboard": {
       "resize": "native",

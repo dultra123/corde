@@ -12,6 +12,7 @@ import { KEYS, readJson, writeJson } from "./kv";
 import type { LogPort, NotificationsPort, PrefsPort } from "./ports";
 import type { RaceBook } from "./race-book";
 import {
+  type AndroidStyle,
   cancelAllReminders,
   ensurePermission,
   type PermissionView,
@@ -33,6 +34,18 @@ export interface PhoneRacesOptions {
   onPermission?: (p: PermissionView) => void;
   /** Something the widgets show changed (`widget-sync.ts`). */
   onChange?: (what: "sources" | "picks" | "settings") => void;
+  /**
+   * Android: how the reminders are delivered, read before each planning (exact alarms allowed
+   * or not, `mobile/android.ts`). Absent on the iPhone.
+   */
+  androidStyle?: () => Promise<AndroidStyle>;
+  /**
+   * After the notification permission was asked (first pick, « Autoriser maintenant »), with
+   * the answer: Android then offers exact alarms. Not waited for (it may open a screen of the
+   * system); the reminders are planned again when the application comes back. Absent on the
+   * iPhone.
+   */
+  afterPermission?: (p: PermissionView) => Promise<void>;
 }
 
 /**
@@ -101,7 +114,9 @@ export class PhoneRaces implements RaceBackend {
     if (!asked) {
       await writeJson(this.opts.prefs, KEYS.notifAsked, true);
       try {
-        this.opts.onPermission?.(await ensurePermission(this.opts.notifications));
+        const p = await ensurePermission(this.opts.notifications);
+        this.opts.onPermission?.(p);
+        this.afterPermission(p);
       } catch (e) {
         this.opts.log?.(`reminders: permission request failed (${String(e)})`);
       }
@@ -148,12 +163,15 @@ export class PhoneRaces implements RaceBackend {
             await cancelAllReminders(this.opts.notifications);
             result = { blocked: false, scheduled: 0, cancelled: 0, kept: 0 };
           } else {
-            const plan = planReminders(picks, leads, this.now());
+            const now = this.now();
+            const plan = planReminders(picks, leads, now);
+            const android = await this.opts.androidStyle?.();
             result = await syncReminders(
               this.opts.notifications,
               plan,
               this.opts.lang(),
               this.opts.log,
+              android ? { android, now } : {},
             );
           }
         } catch (e) {
@@ -182,7 +200,15 @@ export class PhoneRaces implements RaceBackend {
     await writeJson(this.opts.prefs, KEYS.notifAsked, true);
     const p = await ensurePermission(this.opts.notifications);
     this.opts.onPermission?.(p);
+    this.afterPermission(p);
     if (p === "granted") void this.replan();
     return p;
+  }
+
+  /** Runs `afterPermission` without waiting for it (it may open a screen of the system). */
+  private afterPermission(p: PermissionView): void {
+    this.opts.afterPermission?.(p).catch((e: unknown) => {
+      this.opts.log?.(`reminders: after permission (${String(e)})`);
+    });
   }
 }

@@ -588,7 +588,11 @@ function RemindersCard({
         ))}
       </fieldset>
       <p className="races-hint faint">
-        {t(onPhone() ? "races.reminders.hintPhone" : "races.reminders.hint")}
+        {t(
+          onPhone()
+            ? (appSlots.phoneText?.("races.reminders.hintPhone") ?? "races.reminders.hintPhone")
+            : "races.reminders.hint",
+        )}
       </p>
       {Status && <Status />}
       <div className="races-sound">
