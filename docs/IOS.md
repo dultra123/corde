@@ -97,9 +97,19 @@ Tout se fait dans un navigateur, sans Mac.
    | **Accès utilisateur** | **Accès complet** : tous les membres du compte voient l'application (« Accès limité » sert à la cacher à une partie d'une équipe) ; le bouton **Créer** reste gris tant qu'aucun des deux n'est choisi |
 
    Puis **Créer**. La fiche publique (description, captures) n'est **pas** nécessaire pour TestFlight.
-5. **La clé d'API** : App Store Connect → **Utilisateurs et accès** → **Intégrations** → **Clés API**
-   (« Clés d'équipe ») → **Générer une clé API** (la première fois : accepter les conditions) → nom
-   `GitHub Actions`, accès **Gestionnaire d'apps** → **Générer**. Puis :
+   Après **Créer**, App Store Connect ouvre la page de l'application (« Distribution », version 1.0, page
+   produit) : **ne rien y remplir** et ne pas cliquer sur « Ajouter pour vérification ». Cette page ne sert
+   qu'à une sortie publique sur l'App Store.
+5. **La clé d'API** : App Store Connect → **Utilisateurs et accès** → onglet **Intégrations** → **App Store
+   Connect API** → **Clés d'équipe** → **Générer une clé API** (la première fois : **Demander l'accès** et
+   accepter les conditions) → nom `GitHub Actions`, accès **Gestionnaire d'apps** → **Générer**.
+
+   Où est « Utilisateurs et accès » : dans la barre du haut (Apps, Xcode Cloud, Tendances, Rapports,
+   Business…). Quand la fenêtre est étroite, il est rangé derrière les **trois points « … »** à droite de
+   « Business ». Lien direct :
+   [appstoreconnect.apple.com/access/integrations/api](https://appstoreconnect.apple.com/access/integrations/api).
+
+   Puis :
    - **Télécharger la clé** (`AuthKey_XXXXXXXXXX.p8`) — **une seule fois possible** ; ne l'envoyer à
      personne, ne la mettre dans aucun dépôt ;
    - noter l'**ID de clé** (colonne « ID de clé ») et l'**ID d'émetteur** (« Issuer ID », en haut de la
@@ -115,7 +125,7 @@ Tout se fait dans un navigateur, sans Mac.
    | `APPLE_TEAM_ID` | le Team ID (étape 2) |
 
 7. **Lancer** : GitHub → **Actions** → **iOS** → **Run workflow** → `main`. Compter 15 à 30 minutes.
-8. **TestFlight** : App Store Connect → Corde → **TestFlight**. Le build apparaît après le traitement par
+8. **TestFlight** : App Store Connect → **Apps** → l'application → onglet **TestFlight**. Le build apparaît après le traitement par
    Apple (souvent 5 à 30 minutes après la fin du workflow). La question de chiffrement est déjà réglée
    (`ITSAppUsesNonExemptEncryption = false` : Corde n'utilise que le chiffrement d'iOS). Créer un groupe
    de **testeurs internes**, s'y ajouter, puis installer l'application **TestFlight** sur l'iPhone et
