@@ -1,6 +1,6 @@
 # Corde — fiche de présentation
 
-> À jour pour la **version 1.4.2** (15 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
+> À jour pour la **version 1.4.3** (16 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
 > faut pour présenter Corde (site, page de présentation, annonce) : ce qu'elle fait, où elle tourne, ce qui
 > est nouveau, ce qui arrive, les images et les liens. Elle ne dit que ce qui existe ; le détail et l'état
 > exact de chaque partie sont dans le [README](../README.md) et dans [STATUS.md](STATUS.md).
@@ -20,7 +20,7 @@ Le nom vient du **point de corde** : l'endroit où la trajectoire idéale touche
 
 | | |
 |---|---|
-| Version actuelle | **1.4.2** (15 novembre 2026) |
+| Version actuelle | **1.4.3** (16 novembre 2026) |
 | Prix | Gratuit |
 | Licence | Logiciel libre, GPL-3.0-or-later ; code source public |
 | Jeu | Le Mans Ultimate |
@@ -197,6 +197,8 @@ redémarrer. Chaque version est signée et vérifiée avant l'installation ; rie
 
 ## Nouveautés
 
+- **1.4.3 (16 novembre 2026)** — nouveau logo (un compte-tours : le « C » ambre et son aiguille blanche) ;
+  sur un NAS, la page d'appairage du serveur indique la bonne commande.
 - **1.4.2 (15 novembre 2026)** — l'application du téléphone accepte l'adresse que donne un VPN maillé
   (`100.x.y.z`) pour ouvrir Corde serveur depuis l'extérieur ; sur un NAS, le serveur indique la bonne
   commande d'appairage.
