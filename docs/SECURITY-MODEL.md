@@ -141,6 +141,10 @@ PC seulement.
 | PUT | `/api/dashes/{id}` | D | — | ouverte | enregistrement d'un tableau de bord, validé (§5 bis-2) ; même règle que `PUT /api/layouts/{id}` |
 | DELETE | `/api/dashes/{id}` | S | — | **PC** | suppression depuis le Studio du PC ; même règle que `DELETE /api/layouts/{id}` |
 | DELETE | `/api/dashes` | S | — | **PC** | supprime tous les tableaux de bord ; l'interface ne l'utilise pas |
+| GET | `/api/dash-assets` | L | — | ouverte | médias des tableaux de bord (1.3.0) : liste (identifiant, type, taille) et place utilisée |
+| GET | `/api/dash-assets/{id}` | L | — | ouverte | un média : son type, `nosniff`, plages d'octets ; même règle que `GET /api/dashes` (§5 bis-3) |
+| POST | `/api/dash-assets` | D | — | **PC** | envoi (corps ≤ 30 Mio sur cette route seulement) d'une image ou d'une vidéo choisie dans le Studio du PC ; type lu dans les octets (§5 bis-3) |
+| DELETE | `/api/dash-assets/{id}` | S | — | **PC** | suppression d'un média qu'aucun tableau de bord ne cite (409 sinon) |
 | GET | `/api/sessions` | L | aucune | ouverte | liste des sessions |
 | GET | `/api/sessions/{id}` | L | aucune | ouverte | détail d'une session |
 | GET | `/api/sessions/{id}/laps/{lap}/samples` | L | aucune | ouverte | courbes d'un tour (Parquet) |
@@ -255,12 +259,61 @@ que sur demande.
   réglage inconnu est gardé tel quel (version future) mais jamais interprété.
 - **Interface** : rien d'une définition n'est exécuté ni injecté comme HTML (React insère les textes comme
   textes ; une couleur passe par `validColor` avant d'aller dans un `style` ; les types inconnus s'affichent
-  « élément inconnu »). Pas d'image, pas d'adresse, pas de police externe.
+  « élément inconnu »). Pas d'adresse, pas de police externe ; une image ou une vidéo seulement par
+  l'identifiant d'un fichier du PC (§5 bis-3).
 - **Import d'un fichier** (`.cordedash.json`) : lu dans le navigateur (≤ 1 Mio), même validation, message
   clair en cas de refus, nouvel identifiant si le sien est pris ; puis enregistré par `PUT
   /api/dashes/{id}` (validé une seconde fois par le serveur). Aucun format d'un autre logiciel n'est lu.
 - **Copie sur l'appareil** : 20 définitions et 2 Mio au plus dans le stockage du navigateur ou de
   l'application, revalidées à la lecture ; le brouillon de l'éditeur (`corde.studio.draft.<id>`) aussi.
+
+## 5 bis-3. Images et vidéos des tableaux de bord (1.3.0, ADR 0016)
+
+- **Origine** : uniquement des fichiers que le pilote choisit sur le PC (sélecteur de fichier du Studio) ou
+  qui arrivent dans un fichier `.cordedash` qu'il importe. Jamais d'adresse web, jamais de lien sortant :
+  aucune requête nouvelle hors du serveur Corde. Pas de SVG (il peut contenir un script), pas de son.
+- **Préparation dans le navigateur** (`dashdef/media.ts`), avant l'envoi : type lu dans les **octets de
+  signature** ; une photo (PNG, JPEG, WebP) est **redessinée dans un canvas et encodée à nouveau** (plus
+  aucune métadonnée : EXIF, position GPS, appareil, date ; orientation appliquée aux pixels ; 2560 px au
+  plus) ; un GIF est gardé tel quel (animation) ; un MP4 / MOV a ses boîtes `udta`, `meta` et XMP (`uuid`)
+  du premier niveau, de `moov` et de chaque `trak` **renommées `free` et remplies de zéros**, sans changer la
+  taille du fichier ni la place des échantillons ; un WebM est gardé tel quel.
+- **Stockage** (`corde-server/src/dash_assets.rs`) : `<données>/dash-assets/<sha256>.<ext>`, nom = empreinte
+  SHA-256 du contenu + extension du type reconnu (jamais un nom choisi par l'appareil, donc jamais un nom de
+  périphérique de Windows ni un chemin) ; écriture dans un fichier temporaire puis renommage. À
+  l'ouverture, un fichier dont le nom n'est pas un identifiant, dont la signature ne correspond pas à
+  l'extension ou trop gros est ignoré.
+- **Contrôles du serveur** à l'envoi : type par les octets de signature (PNG, JPEG, WebP, GIF, MP4/MOV,
+  WebM), **jamais** par l'extension ni par le `Content-Type` annoncé (415 sinon) ; image ≤ 4 Mio, vidéo
+  ≤ 30 Mio (413) ; 200 fichiers et 300 Mio au plus (409, message clair). Corps accepté jusqu'à 30 Mio sur
+  cette route seulement (1 Mio ailleurs). Le serveur ne décode jamais un média.
+- **Droits** : lecture comme `GET /api/dashes` (tout appareil autorisé ; appareil appairé sur le serveur
+  Corde) ; **envoi et suppression depuis ce PC seulement** (administrateur sur le serveur Corde), comme la
+  suppression d'un tableau de bord. Rien d'autre ne change au modèle d'accès.
+- **Réponse** : le `Content-Type` du type reconnu, `X-Content-Type-Options: nosniff`,
+  `Content-Security-Policy: default-src 'none'; sandbox` (un média ouvert seul ne peut rien exécuter),
+  `Cache-Control: private, max-age=31536000, immutable` (l'identifiant est le contenu), `ETag`, et les
+  **requêtes par plage d'octets** (`Range: bytes=…` → 206, hors limites → 416) dont la lecture vidéo d'un
+  iPhone a besoin.
+- **Ménage** : un média qu'aucune définition ne cite plus est supprimé au démarrage et après chaque
+  enregistrement ou suppression d'un tableau de bord, une fois vieux d'**un jour** (le temps d'enregistrer la
+  définition pour laquelle il vient d'être envoyé ; un brouillon qui le cite le garde vivant tant qu'il est
+  renvoyé). `DELETE /api/dash-assets/{id}` refuse (409) un média encore cité.
+- **Validation des définitions** (des deux côtés) : un réglage `asset` / `…Asset` et le fond d'une page ne
+  contiennent qu'un identifiant `[0-9a-f]{64}.(png|jpg|webp|gif|mp4|webm)` ; seuils (≤ 4), conditions
+  « afficher quand » (liste fermée, champ `[a-z0-9_]{1,40}`, opérateurs `lt` / `le` / `ge` / `gt`, nombres
+  finis bornés), style (couleurs `#rrggbb`, opacité 0–1, rayon ≤ 40, contour ≤ 8), police (liste fermée de
+  polices livrées). Aucune formule, aucun script.
+- **Affichage** : `<img>` / `<video muted loop playsinline>` sans commandes, sur l'adresse du serveur ; quand
+  un jeton est nécessaire (application et serveur Corde), le média est lu par `fetch` avec le jeton et
+  affiché depuis un objet local. Un média absent laisse une place vide, sans erreur.
+- **Partage** (`dashdef/archive.ts`) : `.cordedash` = zip fait et lu dans le navigateur (fflate, MIT) avec
+  `dashboard.json` et `media/<id>`. Lecture stricte : fichier ≤ 128 Mio, ≤ 64 entrées, chaque entrée bornée
+  une fois décompressée (définition 512 Kio, image 4 Mio, vidéo 30 Mio), total ≤ 128 Mio, décompression par
+  pas de 16 Kio arrêtée dès qu'une borne est franchie (la taille annoncée par l'archive n'est pas crue) ;
+  tout autre nom (chemins, `../`, majuscules, types non acceptés) est ignoré sans être décompressé ;
+  signature de chaque média vérifiée contre l'extension de son nom ; chaque média passe ensuite par la même
+  préparation et le même envoi qu'un fichier choisi. L'ancien `.cordedash.json` reste lu.
 
 ## 5 bis. Mises à jour de l'application de bureau (0.6)
 
@@ -439,7 +492,7 @@ noms donnés par `--allow-host` ; `Origin` ; tailles ; 5xx sans détail). Puis :
 | **Public** (sans jeton) | `GET /api/hub/pairing` (rôle, version, cet appareil est-il appairé), `POST /api/hub/pair` (`{code, name?, kind?}`) ; et les fichiers de l'interface (`GET /*`), qui affichent l'écran de code |
 | **Commandes locales** (boucle locale + pas d'`Origin` + clé de contrôle) | `POST /api/hub/local/pairing-code`, `GET /api/hub/local/devices`, `DELETE /api/hub/local/devices/{id}` |
 | **Appareil appairé** | toutes les autres routes `/api/*` du §4 (lectures, ressentis, dispositions, courses…) et `/ws` ; `GET /api/hub/status` ; `GET /api/hub/devices` ; `PATCH` / `DELETE /api/hub/devices/{id}` (soi-même ; un autre : administrateur ; changer `admin` : administrateur) ; `/api/sync/*` (§7.4) ; **toute route inconnue** (401 sans jeton, puis 404) |
-| **Administrateur** | `DELETE /api/sessions/{id}` (+ pierre tombale : le PC ne la renvoie plus), `POST /api/sessions/{id}/analysis/recompute`, `DELETE /api/layouts`, `DELETE /api/layouts/{id}`, `DELETE /api/dashes`, `DELETE /api/dashes/{id}`, `PUT /api/settings` (seulement `online_schedule` ; `lan_access` → 400) |
+| **Administrateur** | `DELETE /api/sessions/{id}` (+ pierre tombale : le PC ne la renvoie plus), `POST /api/sessions/{id}/analysis/recompute`, `DELETE /api/layouts`, `DELETE /api/layouts/{id}`, `DELETE /api/dashes`, `DELETE /api/dashes/{id}`, `POST /api/dash-assets`, `DELETE /api/dash-assets/{id}`, `PUT /api/settings` (seulement `online_schedule` ; `lan_access` → 400) |
 | **Refusées** (403 `not_on_server`) | `POST /api/sessions/{id}/setup-files` (écrirait hors du dossier de données ; le jeu est sur le PC), `POST /api/profile/import` (pas de fichiers du jeu), `POST /api/recording/start`, `/stop` (pas d'enregistreur) |
 
 Sur le PC, aucune de ces routes n'existe (404) : c'est ainsi que l'interface reconnaît un PC.

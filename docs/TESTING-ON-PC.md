@@ -161,7 +161,7 @@ tableau de bord est affiché (si le navigateur le permet ; sinon, règle la mise
 
 ---
 
-### Créer ton propre tableau de bord (Studio, 1.2)
+### Créer ton propre tableau de bord (Studio)
 
 Le **Studio** est l'éditeur de tableaux de bord de Corde, sur le PC (à la souris et au clavier).
 
@@ -191,14 +191,57 @@ Le **Studio** est l'éditeur de tableaux de bord de Corde, sur le PC (à la sour
 10. **Utilise-le** : sur le PC, dans le menu des dispositions (groupe **Tableaux de bord**) ; sur le
     téléphone, dans le menu ☰ → « Tableau de bord utilisé ». Chaque appareil a le sien.
 
-**Le partager** : dans la bibliothèque du Studio, **Exporter** enregistre un fichier `nom.cordedash.json`
-(la mise en page seulement : ni nom de PC, ni adresse, ni données de course ; ton pseudo seulement si tu l'as
-mis dans « Auteur »). Ton ami l'ouvre avec **Importer un fichier…** ; un fichier abîmé ou trop gros est
-refusé avec la raison.
+11. **Plusieurs éléments à la fois** : Maj + clic, ou trace un cadre sur une partie vide de la page. Glisse
+    l'un d'eux pour les déplacer ensemble (des repères roses montrent les bords et les centres alignés).
+    **Ctrl + C** puis **Ctrl + V** les copie, aussi sur une autre page ou un autre tableau de bord ;
+    Ctrl + A choisit toute la page. La case **Rechercher un élément** filtre la liste de gauche.
+12. **Brouillon** : quand un brouillon est repris, **Abandonner le brouillon** revient à la version enregistrée.
 
-Pas encore possible (plus tard) : images et logos, placement au pixel près, formules et conditions
-d'affichage, polices, galerie en ligne. Corde n'affiche rien sur l'écran intégré d'un volant (il reste piloté
-par le logiciel de son fabricant).
+#### Une photo, un logo, une vidéo (1.3)
+
+- **Image** (groupe « Images, formes et jauges ») : pose l'élément, puis **Choisir un fichier…** à droite.
+  PNG, JPEG, WebP ou GIF (animé accepté), 4 Mio au plus. Avant l'envoi, Corde **réenregistre la photo** sur
+  ton PC : la position GPS, l'appareil, la date et les autres informations cachées dans le fichier sont
+  retirées, et la photo est ramenée à 2560 pixels de large au plus. **Ajustement** : contenir (toute
+  l'image), couvrir (remplit la case, rogne) ou étirer ; dans **Style** : opacité, coins arrondis.
+- **Vidéo** : MP4 ou WebM, 30 Mio au plus, **sans son**, en boucle. Elle ne joue que sur la page affichée et
+  s'arrête quand le téléphone est mis en veille ou l'application quittée ; si l'appareil demande « moins
+  d'animations », elle reste sur sa première image. Les informations d'un MP4 (position, date, appareil)
+  sont effacées avant l'envoi.
+- **Fond de la page** : rien de choisi sur la page → panneau de droite, **Fond de cette page** : une
+  couleur, et / ou une image ou une vidéo, son ajustement et son opacité. Chaque page a le sien.
+- Les fichiers sont gardés **sur ce PC** (dossier des données de Corde, `dash-assets`). Ajouter ou retirer
+  une image se fait depuis le PC. Au plus 200 fichiers et 300 Mio ; un fichier qu'aucun tableau de bord
+  n'utilise plus est effacé au bout d'un jour.
+- Le téléphone les lit sur le PC : **PC éteint, l'image laisse une place vide**, le reste du tableau de bord
+  s'affiche.
+
+#### Couleurs selon la valeur, « Afficher quand… », style (1.3)
+
+- **Couleur selon la valeur** (Valeur, Barre, Jauge circulaire) : jusqu'à 4 règles « si la valeur est < 3 →
+  rouge ». La première qui s'applique gagne ; sinon, la couleur choisie plus haut. Pour une barre, la
+  valeur est en %.
+- **Afficher quand…** (tout élément) : toujours, limiteur des stands actif, dans les stands, drapeau jaune,
+  drapeau bleu, ou une donnée comparée à un nombre (par exemple « Autonomie carburant < 2 »). Dans
+  l'éditeur, un élément caché reste visible en transparence (avec un point bleu sur son cadre).
+- **Bandeau d'alerte** : un grand texte coloré, qui arrive réglé sur « le limiteur est actif » (« LIMITEUR »).
+  Change le texte et la condition pour « BOX », « CARBURANT »…
+- **Style** (tout élément) : fond, opacité, coins arrondis, contour.
+- **Tableau de bord** (rien de choisi) : couleurs (dont **Accent** et **Panneaux**) et **police des
+  chiffres** (Corde, Barlow, afficheur numérique, large style course).
+- Autres éléments : **Jauge circulaire** (vitesse, régime — maximum 0 : celui de la voiture — ou toute
+  donnée), **Forme** (rectangle, cercle, ligne), **Rampe de régime réglable** (nombre de segments, couleurs,
+  seuil d'allumage).
+
+**Le partager** : **Exporter** (bibliothèque ou éditeur) enregistre un fichier `nom.cordedash` : la mise en
+page **et ses images et vidéos** (ni nom de PC, ni adresse, ni données de course ; ton pseudo seulement si tu
+l'as mis dans « Auteur »). S'il contient une vidéo, Corde te le rappelle : elle est partagée telle quelle.
+Ton ami l'ouvre avec **Importer un fichier…** ; les images y repassent par le même nettoyage, et un fichier
+abîmé, trop gros ou piégé est refusé avec la raison. Les fichiers `.cordedash.json` de la 1.2 s'ouvrent
+toujours. Ne partage que des images dont tu as le droit.
+
+Pas encore possible (plus tard) : placement au pixel près, formules, galerie en ligne. Corde n'affiche rien
+sur l'écran intégré d'un volant (il reste piloté par le logiciel de son fabricant).
 
 ## 6 bis. Les courses en ligne et leurs rappels (facultatif)
 

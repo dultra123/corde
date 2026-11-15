@@ -8,6 +8,42 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [1.3.0] — 2026-11-15
+
+**Le Studio devient vraiment le tien** : photos, logos, vidéos et couleurs qui suivent la course.
+
+### Nouveautés
+
+- **Images et vidéos** : un logo, une photo ou une courte vidéo en boucle (sans son), en élément ou en
+  **fond de page**, choisis sur ton PC. Ajustement (toute l'image, remplir, étirer), opacité, coins arrondis.
+  Avant l'envoi, Corde **retire de tes photos la position GPS** et les autres informations de l'appareil
+  photo. Une vidéo ne joue que sur la page affichée et s'arrête quand le téléphone se met en veille.
+- **Couleur selon la valeur** : par exemple autonomie sous 3 tours en rouge, sous 6 en orange, sinon en vert
+  (Valeur, Barre, Jauge circulaire).
+- **Afficher quand…** : un élément n'apparaît qu'avec le limiteur, dans les stands, sous drapeau jaune ou
+  bleu, ou quand une donnée passe un seuil (par exemple « carburant < 2 tours »).
+- **Nouveaux éléments** : jauge circulaire (vitesse, régime…), formes, **bandeau d'alerte** (« LIMITEUR »,
+  « BOX »…) et rampe de régime réglable (nombre de feux, couleurs).
+- **Style** de chaque élément (fond, transparence, coins arrondis, contour) et **police des chiffres** au
+  choix (dont un style afficheur numérique et un style course large).
+- **Éditeur plus confortable** : plusieurs éléments à la fois (Maj + clic ou un cadre), déplacés ensemble
+  avec des repères d'alignement, **copier / coller** (Ctrl + C, Ctrl + V, aussi vers une autre page),
+  recherche dans la liste des éléments, bouton « Abandonner le brouillon ».
+- **Partage avec les images** : l'export devient un fichier `.cordedash` qui emporte ses images et vidéos.
+  Les fichiers `.cordedash.json` de la 1.2 s'ouvrent toujours.
+
+### Corrections
+
+- Sur un tableau de bord du Studio, le bouton ☰ ne cache plus le coin en haut à droite : sur PC il
+  n'apparaît qu'au passage de la souris, sur téléphone la page lui laisse sa place.
+
+### À savoir
+
+- Les images restent sur ton PC : PC éteint, le téléphone affiche une place vide à leur endroit.
+- Ajouter une image ou une vidéo se fait depuis le PC. 200 fichiers et 300 Mo au plus.
+- Une vidéo partagée l'est telle quelle : regarde ce qu'elle montre avant d'envoyer le fichier. Ne partage
+  que des images dont tu as le droit.
+
 ## [1.2.1] — 2026-11-15
 
 ### Nouveautés

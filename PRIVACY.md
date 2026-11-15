@@ -164,6 +164,20 @@ n'a ni compte, ni statistiques d'usage, ni publicité, ni service à nous.
   format, couleurs, pages, éléments et leurs réglages) : **ni nom d'appareil, ni adresse de serveur, ni
   chemin, ni donnée de course** ; l'auteur seulement si tu l'as saisi. Rien n'est envoyé ailleurs : le
   partage se fait en donnant le fichier à quelqu'un.
+- **Images et vidéos des tableaux de bord (1.3)** : seulement des fichiers que tu choisis sur ton PC ;
+  Corde ne va jamais chercher d'image sur internet. Ils sont gardés **sur le PC**
+  (`<données>/dash-assets/`) et lus par tes appareils sur le PC (PC éteint : une place vide).
+  - **Photos** : avant l'envoi, Corde réenregistre la photo dans l'application : **la position GPS,
+    l'appareil photo, la date et les autres métadonnées (EXIF) sont retirées**, et elle est ramenée à
+    2560 pixels au plus. Un **GIF** est gardé tel quel (son animation).
+  - **Vidéos** : les informations d'un **MP4 / MOV** (position, date, appareil, nom) sont effacées avant
+    l'envoi ; un **WebM** est gardé tel quel. La vidéo elle-même (ce qu'elle montre) est gardée telle quelle.
+  - **Fichier partagé** (`<nom>.cordedash`, depuis la 1.3) : la définition comme ci-dessus **plus les images
+    et vidéos qu'elle utilise**, telles qu'elles sont gardées sur ton PC (photos déjà nettoyées). Quand il
+    contient une vidéo, Corde te prévient : **elle est partagée telle quelle** — regarde ce qu'elle montre
+    avant de l'envoyer. À l'import, les images d'un ami passent par le même nettoyage.
+  - **Ne mets et ne partage que des images dont tu as le droit** (tes photos, tes dessins, un logo que tu
+    peux utiliser).
 
 ## Application Android
 

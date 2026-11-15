@@ -120,8 +120,12 @@ widgets du même menu ramène la grille. Un second écran l'ouvre en plein écra
 **Tes propres tableaux de bord (Studio)** : l'éditeur de tableaux de bord du PC place les données que tu
 veux sur une grille — valeurs, jauges, textes, blocs de Corde, widgets — sur plusieurs pages, au format d'un
 téléphone, d'une tablette, d'un écran ou d'un bandeau large. Glisser, redimensionner, annuler, aperçu avec une
-course de démonstration ; chaque appareil choisit le sien ; partage par fichier `.cordedash.json`. Pas à pas
-dans [docs/TESTING-ON-PC.md](docs/TESTING-ON-PC.md#créer-ton-propre-tableau-de-bord-studio-12).
+course de démonstration ; chaque appareil choisit le sien. Depuis la 1.3 : **photos, logos et vidéos** choisis
+sur ton PC (élément ou fond de page — la position GPS d'une photo est retirée avant l'envoi), **couleurs selon
+la valeur** (seuils), **« Afficher quand… »** (limiteur, stands, drapeaux, une donnée sous un seuil), style
+de chaque élément, police des chiffres, jauge circulaire, formes, bandeau d'alerte, rampe de régime réglable,
+sélection multiple et copier / coller. Partage par fichier `.cordedash` (avec ses images). Pas à pas dans
+[docs/TESTING-ON-PC.md](docs/TESTING-ON-PC.md#créer-ton-propre-tableau-de-bord-studio).
 
 ![Le Studio : la palette d'éléments, la page et les propriétés de l'élément choisi](docs/images/studio-edition.png)
 
@@ -432,8 +436,8 @@ l'[ADR 0008](docs/adr/0008-open-source-publication.md).
 
 Copyright (C) 2026 dultra__ et les contributeurs.
 
-Les polices Barlow et Barlow Semi Condensed, livrées avec l'interface, sont sous licence SIL Open Font
-License 1.1 (OFL-1.1). Les dépendances Rust et web gardent leurs propres licences, toutes compatibles
+Les polices Barlow, Barlow Semi Condensed, Share Tech Mono et Orbitron, livrées avec l'interface (aucune
+n'est téléchargée), sont sous licence SIL Open Font License 1.1 (OFL-1.1). Les dépendances Rust et web gardent leurs propres licences, toutes compatibles
 ([ADR 0005](docs/adr/0005-licences-et-header-s397.md), [ADR 0008](docs/adr/0008-open-source-publication.md)).
 
 Corde n'est pas affiliée à Studio 397 ni à Motorsport Games. « Le Mans Ultimate » est une marque de ses
