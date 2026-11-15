@@ -3,7 +3,7 @@
 > Corde s'appelait anciennement Muret (nom de travail) ; renommée le 11 novembre 2026 (version 0.3.0).
 
 > Fichier de reprise : n'importe qui (humain ou agent) doit pouvoir repartir d'ici.
-> Mis à jour à chaque jalon. Dernière mise à jour : 2026-11-16 (**version 1.4.3 : nouveau logo (le compte-tours), page d'appairage du serveur correcte dans un conteneur** ; avant, le 15 nov. : **version 1.4.2 : l'application du téléphone accepte l'adresse d'un VPN maillé (100.64/10), commande d'appairage correcte dans un conteneur** ; avant, le même jour : **version 1.4.1 : correction de l'interblocage du premier envoi PC → serveur, guide Synology relu sur un vrai NAS** ; avant, le même jour : **version 1.4.0 : Corde serveur en conteneur pour NAS Synology** ; avant, le même jour : **version 1.3.0 : Studio — images, vidéos, fonds de page, seuils de couleur, « afficher quand… », style, polices, jauge circulaire, formes, bandeau d'alerte, rampe réglable, sélection multiple, copier / coller** ; avant, le même jour : **version 1.2.0 : le tableau de bord dans le menu des dispositions du PC, et le Studio (tableaux de bord personnalisés)**, fusionnée dans `main` ; fiche de présentation `docs/PRESENTATION.md` pour le site ; avant, le 14 nov. : **version 1.1.0 : tableau de bord du téléphone**, quatre pages, écran allumé, démonstration dans l'application, fusionnée dans `main` ; avant, le même jour : lot **« certificat de distribution stable »** (iOS, CI seulement), fusionné dans `main` ; avant, le même jour : **application Android 1.0.0**, lot 1 sans widgets, fusionnée dans `main` ; avant, le même jour : **version 1.0.0, première version officielle** : PC, Corde serveur et application iPhone au même numéro, demandée par le propriétaire ; avant, le même jour : widget « Courses en images », application iPhone 0.10.0, fusionné dans `main` ; avant, le même jour : « Widgets iOS et activité en direct », application iPhone 0.9.0, branche `ios-widgets` ; premier build iPhone dans TestFlight ; « Application iPhone », version 0.8.0, le 12 ; avant : « Défilé des courses en ligne sur l'Accueil », 0.7.1 ; lot « Corde serveur » — serveur domestique Raspberry Pi, appairage, synchronisation depuis le PC —, version 0.7.0 ; avant : « Mises à jour depuis l'application », 0.6.0 ; « Widgets dans OBS », 0.5.0, et son correctif 0.5.1 ; « Courses en ligne », 0.4.0 ; publication dans `dultra123/corde`, sécurité réseau, adresse masquée sur l'accueil ; lot « Corde : renommage, migration des données, licence GPL, logo » ; avant : « S2 — calibration de l'ingénieur sur des données réelles », « réglages réels : fichiers .svm lus et écrits », « ressenti → symptômes → itération du plan », « Précision des tours », « Accueil » et « Application de bureau »).
+> Mis à jour à chaque jalon. Dernière mise à jour : 2026-11-16 (**version 1.5.0 : onglet Studio, format libre et forme des tableaux de bord (rectangle, coins arrondis, rond)** ; avant, le même jour : **version 1.4.3 : nouveau logo (le compte-tours), page d'appairage du serveur correcte dans un conteneur** ; avant, le 15 nov. : **version 1.4.2 : l'application du téléphone accepte l'adresse d'un VPN maillé (100.64/10), commande d'appairage correcte dans un conteneur** ; avant, le même jour : **version 1.4.1 : correction de l'interblocage du premier envoi PC → serveur, guide Synology relu sur un vrai NAS** ; avant, le même jour : **version 1.4.0 : Corde serveur en conteneur pour NAS Synology** ; avant, le même jour : **version 1.3.0 : Studio — images, vidéos, fonds de page, seuils de couleur, « afficher quand… », style, polices, jauge circulaire, formes, bandeau d'alerte, rampe réglable, sélection multiple, copier / coller** ; avant, le même jour : **version 1.2.0 : le tableau de bord dans le menu des dispositions du PC, et le Studio (tableaux de bord personnalisés)**, fusionnée dans `main` ; fiche de présentation `docs/PRESENTATION.md` pour le site ; avant, le 14 nov. : **version 1.1.0 : tableau de bord du téléphone**, quatre pages, écran allumé, démonstration dans l'application, fusionnée dans `main` ; avant, le même jour : lot **« certificat de distribution stable »** (iOS, CI seulement), fusionné dans `main` ; avant, le même jour : **application Android 1.0.0**, lot 1 sans widgets, fusionnée dans `main` ; avant, le même jour : **version 1.0.0, première version officielle** : PC, Corde serveur et application iPhone au même numéro, demandée par le propriétaire ; avant, le même jour : widget « Courses en images », application iPhone 0.10.0, fusionné dans `main` ; avant, le même jour : « Widgets iOS et activité en direct », application iPhone 0.9.0, branche `ios-widgets` ; premier build iPhone dans TestFlight ; « Application iPhone », version 0.8.0, le 12 ; avant : « Défilé des courses en ligne sur l'Accueil », 0.7.1 ; lot « Corde serveur » — serveur domestique Raspberry Pi, appairage, synchronisation depuis le PC —, version 0.7.0 ; avant : « Mises à jour depuis l'application », 0.6.0 ; « Widgets dans OBS », 0.5.0, et son correctif 0.5.1 ; « Courses en ligne », 0.4.0 ; publication dans `dultra123/corde`, sécurité réseau, adresse masquée sur l'accueil ; lot « Corde : renommage, migration des données, licence GPL, logo » ; avant : « S2 — calibration de l'ingénieur sur des données réelles », « réglages réels : fichiers .svm lus et écrits », « ressenti → symptômes → itération du plan », « Précision des tours », « Accueil » et « Application de bureau »).
 
 ## Où on en est
 
@@ -98,16 +98,31 @@
     du haut et sur la porte du serveur. Les captures de `docs/images/` montrent encore l'ancien logo dans
     la barre : à refaire. Avant cela, une heure d'essais de logo à sa demande (C avec vibreur, épingle,
     six directions, page blanche) : tout abandonné au profit du sien, rien dans le dépôt.
-  - **Travaux interrompus, à reprendre** : le propriétaire a demandé (20 h 26) un onglet Studio dans
-    l'en-tête et le format libre des tableaux de bord (tailles, formes, écran rond de volant), puis
-    (21 h 07) le partage de « Mes courses » entre PC, serveur et téléphone. Deux agents lancés ; tous deux
-    arrêtés à 21 h 17 par une interruption de la conversation, ce qui n'a été vu qu'à 23 h 52. État : la
-    branche `studio-format` (arbre `/home/claude/wt-studio-format`) contient un commit (forme de la page
-    côté serveur) et une quarantaine de fichiers non enregistrés, bien avancés mais ni relus ni testés
-    (onglet, `Format.tsx`, `format.ts`, ADR 0018, trois captures) ; le partage des courses n'a rien
-    produit (conception écrite dans la demande à l'agent : horodatage par course, suppressions
-    mémorisées 3 h après le départ, fusion identique en Rust et en TypeScript, route
-    `POST /api/races/picks/sync`, PC ↔ serveur dans `run_round`, téléphone ↔ tous ses serveurs appairés).
+  - **1.5.0 (16 nov.) — Studio : onglet, format libre, formes.** Demande du propriétaire (15 nov.,
+    20 h 26) : un onglet Studio dans l'en-tête, et un tableau de bord de n'importe quelle taille et
+    forme (écran rond de certains volants). Décision : ADR 0018. Fait : sixième onglet « Studio »
+    (`TopBar.tsx`, `nav/routes.ts`), `format.shape` (`rect` / `rounded` / `round`) et `format.radius`
+    facultatifs, validés des deux côtés (`dashdef/format.ts`, `crates/corde-server/src/dashes.rs`),
+    rognage dans `Renderer.tsx`, préréglages `wheel-round`, `square`, `screen-5-3`, `screen-3-2`, panneau
+    « Format » (`studio/Format.tsx`), dialogue « Nouveau tableau de bord » (modèle + format, dans
+    `studio/Library.tsx`), format affiché sur chaque carte de la bibliothèque, grille adaptée seulement
+    sur demande. Vérifié : 556 essais de l'interface, 138 du serveur, quatre captures
+    (`docs/images/studio-{onglet,nouveau,format,rond}.png`, par `packages/ui/scripts/screenshot-studio.mjs`),
+    un tableau de bord rond 480 × 480 qui remplit une fenêtre 480 × 480 et se centre dans 800 × 480.
+    **Non vérifié** : un vrai écran rond ; le rognage d'une vidéo de fond dans Safari et sur iPhone.
+    Histoire : deux agents lancés le 15 nov. ; tous deux arrêtés à 21 h 17 par une interruption de la
+    conversation, ce qui n'a été vu qu'à 23 h 52. Le propriétaire n'ayant pas demandé de les relancer, le
+    travail a été repris et fini sans agent (textes fr / en, tout le style du panneau, le dialogue).
+  - **À faire ensuite : partage de « Mes courses » entre PC, serveur et téléphone** (demande du 15 nov.,
+    21 h 07 : une course choisie sur le PC n'apparaît pas dans l'application du téléphone, y compris en
+    5G). Rien de codé. Conception retenue : un horodatage par course choisie, les suppressions mémorisées
+    jusqu'à 3 h après le départ, une règle de fusion identique en Rust et en TypeScript (le plus récent
+    gagne, à égalité la suppression gagne), route `POST /api/races/picks/sync`, PC ↔ serveur dans
+    `hub_link.rs::run_round`, téléphone ↔ tous ses serveurs appairés (au lancement, au retour au premier
+    plan, après chaque choix, toutes les 60 s à l'écran). ADR 0019 à écrire. Le NAS du propriétaire devra
+    être mis à jour (il est en 1.4.0) pour relayer en 5G.
+  - **À refaire** : les captures de `docs/images/` autres que celles du Studio montrent encore l'ancien
+    logo dans la barre du haut.
   - **À examiner** : un VPN maillé en mode « réseau en espace utilisateur » (sans interface TUN) présente
     ses connexions entrantes depuis `127.0.0.1`. Dans un conteneur, sans effet (le serveur voit la
     passerelle du pont). Sur un serveur installé sans conteneur, un appareil du VPN serait vu comme

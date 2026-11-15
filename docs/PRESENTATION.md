@@ -1,6 +1,6 @@
 # Corde — fiche de présentation
 
-> À jour pour la **version 1.4.3** (16 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
+> À jour pour la **version 1.5.0** (16 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
 > faut pour présenter Corde (site, page de présentation, annonce) : ce qu'elle fait, où elle tourne, ce qui
 > est nouveau, ce qui arrive, les images et les liens. Elle ne dit que ce qui existe ; le détail et l'état
 > exact de chaque partie sont dans le [README](../README.md) et dans [STATUS.md](STATUS.md).
@@ -20,7 +20,7 @@ Le nom vient du **point de corde** : l'endroit où la trajectoire idéale touche
 
 | | |
 |---|---|
-| Version actuelle | **1.4.3** (16 novembre 2026) |
+| Version actuelle | **1.5.0** (16 novembre 2026) |
 | Prix | Gratuit |
 | Licence | Logiciel libre, GPL-3.0-or-later ; code source public |
 | Jeu | Le Mans Ultimate |
@@ -63,14 +63,14 @@ Images : `tableau-de-bord-telephone.png` (page Course), `tableau-de-bord-pneus.p
 en portrait), `tableau-de-bord-pc.jpg` (dans la page Direct du PC), `tableau-de-bord-menu.png` (le menu des
 dispositions avec le groupe « Tableaux de bord »).
 
-### 3. Le Studio : tes propres tableaux de bord (enrichi en 1.3.0)
+### 3. Le Studio : tes propres tableaux de bord (enrichi en 1.3.0 et 1.5.0)
 
 Un éditeur, sur le PC, pour composer ses propres tableaux de bord de course : des pages d'éléments placés sur
 une grille. Une **valeur au choix** parmi une soixantaine de données (vitesse, écart, carburant, pressions,
 températures, électronique…), des jauges, du texte, l'heure, les blocs du tableau de bord Corde et les
 widgets. On glisse, on redimensionne, on annule, on regarde le résultat avec une course de démonstration.
 
-Nouveau (à paraître) :
+Nouveau en 1.5.0 :
 
 - **Un onglet « Studio »** dans la barre du haut du PC, à côté d'Accueil, Direct, Sessions, Courses et
   Profil : le Studio est une section comme les autres, on y entre et on en sort par les onglets.
@@ -221,6 +221,9 @@ redémarrer. Chaque version est signée et vérifiée avant l'installation ; rie
 
 ## Nouveautés
 
+- **1.5.0 (16 novembre 2026)** — le Studio a son onglet dans la barre du haut ; un tableau de bord prend le
+  format qu'on veut (formats prêts, taille libre) et la forme qu'on veut : rectangle, coins arrondis ou
+  rond, pour le petit écran rond d'un volant.
 - **1.4.3 (16 novembre 2026)** — nouveau logo (un compte-tours : le « C » ambre et son aiguille blanche) ;
   sur un NAS, la page d'appairage du serveur indique la bonne commande.
 - **1.4.2 (15 novembre 2026)** — l'application du téléphone accepte l'adresse que donne un VPN maillé

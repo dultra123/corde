@@ -8,6 +8,40 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [1.5.0] — 2026-11-16
+
+**Le Studio a son onglet, et un tableau de bord prend le format et la forme que tu veux — jusqu'au petit
+écran rond d'un volant.**
+
+### Nouveautés
+
+- **Un onglet « Studio »** dans la barre du haut du PC, à côté d'Accueil, Direct, Sessions, Courses et
+  Profil. On y entre et on en sort par les onglets, comme pour le reste.
+- **Le bouton « Format »** de l'éditeur dit le format en cours (« 852 × 393 », « Rond 480 × 480 »…) et
+  ouvre un panneau pour le changer à tout moment.
+- **Des formats prêts** : téléphone en paysage ou en portrait, tablette 4:3, écran 16:9, bandeau large de
+  volant, **écran rond de volant (480 × 480)**, carré, petit écran 5:3, petit écran 3:2, tout l'écran.
+- **Taille libre** : la largeur et la hauteur que tu veux, de 100 à 4000 pixels, et un bouton pour les
+  inverser.
+- **Forme de la page** : rectangle, **coins arrondis** (rayon au choix) ou **rond**. Rien n'est dessiné
+  hors de la forme ; dans l'éditeur, la zone qui sera cachée est hachurée.
+- **« Nouveau »** ouvre une fenêtre où tu choisis le modèle de départ (Vide, Corde en blocs, Endurance) et
+  le format, avant de créer.
+- Chaque tableau de bord de la bibliothèque affiche son format.
+
+### À savoir
+
+- **Changer de format garde tes éléments.** Si les cases de la grille deviennent très allongées, le panneau
+  le dit et propose « Adapter la grille » : rien n'est supprimé, et Ctrl + Z revient au format d'avant.
+- **Pour un petit écran branché au PC** (écran rond de volant, écran de tableau de bord) : ouvre un
+  navigateur sur cet écran à l'adresse `http://127.0.0.1:8471/#/dash`, en plein écran, et choisis ton
+  tableau de bord dans ☰. Le pas-à-pas est dans le guide « Tester sur ton PC ». Corde n'écrit pas sur
+  l'écran intégré d'un volant, qui reste piloté par le logiciel de son fabricant.
+- **Mets aussi à jour l'application du téléphone** : une version plus ancienne affiche un tableau de bord
+  rond ou arrondi en rectangle, sans le rogner.
+- Le rond et les coins arrondis ont été vérifiés dans l'application Windows et dans un navigateur ; pas
+  encore sur un vrai écran rond, ni sur iPhone avec une vidéo en fond.
+
 ## [1.4.3] — 2026-11-16
 
 **Corde change de logo.**
