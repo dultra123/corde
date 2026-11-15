@@ -15,9 +15,9 @@ que l'on vise à chaque tour. Corde s'appelait anciennement Muret (nom de travai
 
 ![Écran d'accueil de Corde](docs/images/accueil.png)
 
-> **Version 1.2 (novembre 2026).** Nouveau : le [tableau de bord de course](#sur-le-téléphone) se choisit
-> aussi sur le PC, dans le menu des dispositions, et le **Studio** permet de composer ses propres tableaux de
-> bord. Corde fonctionne avec le jeu réel, mais elle est jeune : certaines parties n'ont pas encore été essayées en conditions réelles (le tableau
+> **Version 1.3 (novembre 2026).** Nouveau : dans le **Studio**, tes tableaux de bord acceptent des photos,
+> des logos et des vidéos, des couleurs qui changent selon la valeur et des éléments qui n'apparaissent qu'au
+> bon moment. Corde fonctionne avec le jeu réel, mais elle est jeune : certaines parties n'ont pas encore été essayées en conditions réelles (le tableau
 > [Où en est le projet](#où-en-est-le-projet) le dit ligne par ligne), et l'installeur n'est pas encore
 > signé (voir [Installer](#installer-windows)). Les captures de cette page viennent du simulateur intégré.
 

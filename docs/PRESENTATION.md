@@ -1,6 +1,6 @@
 # Corde — fiche de présentation
 
-> À jour pour la **version 1.2.1** (15 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
+> À jour pour la **version 1.3.0** (15 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
 > faut pour présenter Corde (site, page de présentation, annonce) : ce qu'elle fait, où elle tourne, ce qui
 > est nouveau, ce qui arrive, les images et les liens. Elle ne dit que ce qui existe ; le détail et l'état
 > exact de chaque partie sont dans le [README](../README.md) et dans [STATUS.md](STATUS.md).
@@ -20,7 +20,7 @@ Le nom vient du **point de corde** : l'endroit où la trajectoire idéale touche
 
 | | |
 |---|---|
-| Version actuelle | **1.2.1** (15 novembre 2026) |
+| Version actuelle | **1.3.0** (15 novembre 2026) |
 | Prix | Gratuit |
 | Licence | Logiciel libre, GPL-3.0-or-later ; code source public |
 | Jeu | Le Mans Ultimate |
@@ -63,7 +63,7 @@ Images : `tableau-de-bord-telephone.png` (page Course), `tableau-de-bord-pneus.p
 en portrait), `tableau-de-bord-pc.jpg` (dans la page Direct du PC), `tableau-de-bord-menu.png` (le menu des
 dispositions avec le groupe « Tableaux de bord »).
 
-### 3. Le Studio : tes propres tableaux de bord (nouveau en 1.2.0)
+### 3. Le Studio : tes propres tableaux de bord (enrichi en 1.3.0)
 
 Un éditeur, sur le PC, pour composer ses propres tableaux de bord de course : des pages d'éléments placés sur
 une grille. Une **valeur au choix** parmi une soixantaine de données (vitesse, écart, carburant, pressions,
@@ -71,14 +71,34 @@ températures, électronique…), des jauges, du texte, l'heure, les blocs du ta
 widgets. Plusieurs formats : téléphone, tablette, écran, bandeau large. On glisse, on redimensionne, on
 annule, on regarde le résultat avec une course de démonstration.
 
-- **Chaque appareil choisit son tableau de bord** ; le téléphone en garde une copie pour l'afficher PC éteint.
-- **Partage par fichier** : un tableau de bord s'exporte et s'importe (`.cordedash.json`). Le fichier ne
-  contient que la mise en page.
+Depuis la 1.3.0 :
+
+- **Photos, logos et vidéos** choisis sur le PC, en élément ou en **fond de page** (vidéo en boucle, sans
+  son). Avant l'envoi, Corde retire d'une photo sa position GPS et les informations de l'appareil ; d'une
+  vidéo MP4, il ne garde que les images.
+- **Couleur selon la valeur** : par exemple l'autonomie en rouge sous 3 tours, en orange sous 6, en vert
+  sinon.
+- **« Afficher quand… »** : un élément n'apparaît qu'avec le limiteur, dans les stands, sous drapeau jaune
+  ou bleu, ou quand une donnée passe un seuil.
+- **Nouveaux éléments** : jauge circulaire, formes, bandeau d'alerte, rampe de régime réglable.
+- **Style** de chaque élément (fond, transparence, coins arrondis, contour) et police des chiffres au choix.
+- **Éditeur plus confortable** : sélection de plusieurs éléments, repères d'alignement, copier / coller,
+  recherche d'un élément.
+
+À savoir :
+
+- **Chaque appareil choisit son tableau de bord** ; le téléphone en garde une copie pour l'afficher PC éteint
+  (les images, elles, restent sur le PC : PC éteint, leur place est vide).
+- **Partage par fichier** : un tableau de bord s'exporte et s'importe (`.cordedash`, avec ses images et
+  vidéos). Le fichier ne contient ni nom de PC, ni adresse, ni données de course.
 - Le tableau de bord « Corde » reste le modèle de départ : on le duplique pour le modifier.
-- Pas encore dans le Studio : images et logos, formules.
+- Les images et vidéos viennent uniquement de fichiers choisis sur le PC : jamais d'un lien internet.
+- Pas encore dans le Studio : formules, sons.
 
 Images : `studio-edition.png` (l'éditeur : éléments à gauche, page au centre, propriétés à droite),
-`tableau-de-bord-personnalise.png` (un tableau de bord d'exemple fait avec le Studio).
+`studio-image.png` (un logo ajouté à une page, ses réglages à droite), `studio-couleurs.png` (les règles de
+couleur selon la valeur), `tableau-de-bord-photo.png` (un tableau de bord avec logo, image de fond, jauge
+circulaire et bandeau d'alerte), `tableau-de-bord-personnalise.png` (un tableau de bord d'exemple).
 
 ### 4. Sessions et tours
 
@@ -172,6 +192,11 @@ redémarrer. Chaque version est signée et vérifiée avant l'installation ; rie
 
 ## Nouveautés
 
+- **1.3.0 (15 novembre 2026)** — Studio : photos, logos et vidéos, couleurs selon la valeur, « Afficher
+  quand… », jauge circulaire, formes, bandeau d'alerte, style des éléments, sélection multiple et
+  copier / coller ; le partage emporte les images (`.cordedash`).
+- **1.2.1 (15 novembre 2026)** — changer de page du tableau de bord à la souris (flèches, glisser) ; une
+  couleur changée dans le Studio s'applique tout de suite.
 - **1.2.0 (15 novembre 2026)** — le tableau de bord de course se choisit aussi sur le PC, dans le menu des
   dispositions ; le Studio, pour composer ses propres tableaux de bord et les partager par fichier.
 - **1.1.0 (14 novembre 2026)** — tableau de bord de course pour le téléphone (quatre pages, écran allumé),
@@ -186,7 +211,8 @@ Le détail de chaque version est dans le [journal des versions](../CHANGELOG.md)
 
 À présenter comme « à venir », sans date :
 
-- Dans le Studio : images et logos, formules.
+- Dans le Studio : formules, sons.
+- Corde serveur sur un NAS (en préparation).
 - Widgets sur Android.
 - Publication sur l'App Store et le Play Store : pas décidée.
 - Signature de l'installeur Windows (aujourd'hui, Windows affiche un avertissement à l'installation).
