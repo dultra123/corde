@@ -147,6 +147,8 @@ fn run_command(cmd: Command) -> anyhow::Result<()> {
 }
 
 async fn run(cfg: ServerConfig) -> anyhow::Result<()> {
+    // Handlers first: a SIGTERM that arrives during start-up still stops the server cleanly.
+    let shutdown = shutdown_signal();
     let server = Server::bind(cfg).await?;
     println!();
     for line in server.banner() {
@@ -158,7 +160,7 @@ async fn run(cfg: ServerConfig) -> anyhow::Result<()> {
     println!("  Ctrl-C pour arrêter.");
     println!();
 
-    server.run(shutdown_signal()).await?;
+    server.run(shutdown).await?;
     tracing::info!("serveur arrêté");
     Ok(())
 }
