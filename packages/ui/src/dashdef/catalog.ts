@@ -1,4 +1,5 @@
 import type { Label } from "./fields";
+import type { DashCondition } from "./model";
 
 /**
  * The catalogue of elements a dashboard can hold (ADR 0015): name FR / EN, default and minimum
@@ -12,7 +13,9 @@ export type PropKind =
   | { kind: "number"; min: number; max: number; step: number }
   | { kind: "bool" }
   | { kind: "color" }
-  | { kind: "choice"; options: { value: string; label: Label }[] };
+  | { kind: "choice"; options: { value: string; label: Label }[] }
+  /** A picture or a video picked on the PC (`asset`, ADR 0016). */
+  | { kind: "media"; media: "image" | "video" };
 
 export interface PropSpec {
   key: string;
@@ -21,7 +24,7 @@ export interface PropSpec {
   default: string | number | boolean;
 }
 
-export type ElementGroup = "generic" | "corde" | "pages" | "widgets";
+export type ElementGroup = "generic" | "visual" | "corde" | "pages" | "widgets";
 
 export interface ElementSpec {
   type: string;
@@ -30,6 +33,12 @@ export interface ElementSpec {
   size: { w: number; h: number };
   min: { w: number; h: number };
   props: PropSpec[];
+  /** Takes colour rules (« seuils », ADR 0016). */
+  thresholds?: boolean;
+  /** The « Afficher quand… » it is added with. */
+  defaultShow?: DashCondition;
+  /** Settings it is added with, in the language of the interface (a text). */
+  localDefaults?: { fr: Record<string, unknown>; en: Record<string, unknown> };
 }
 
 const L = (fr: string, en: string): Label => ({ fr, en });
@@ -121,6 +130,20 @@ function page(type: string, fr: string, en: string): ElementSpec {
   };
 }
 
+const FIT: PropSpec = {
+  key: "fit",
+  label: L("Ajustement", "Fit"),
+  type: {
+    kind: "choice",
+    options: [
+      { value: "contain", label: L("Contenir (toute l'image)", "Contain (the whole picture)") },
+      { value: "cover", label: L("Couvrir (remplit, rogne)", "Cover (fills, crops)") },
+      { value: "fill", label: L("Étirer", "Stretch") },
+    ],
+  },
+  default: "contain",
+};
+
 export const ELEMENTS: readonly ElementSpec[] = [
   // ---- generic
   {
@@ -148,6 +171,7 @@ export const ELEMENTS: readonly ElementSpec[] = [
       ALIGN,
       FRAMED,
     ],
+    thresholds: true,
   },
   {
     type: "bar",
@@ -178,6 +202,7 @@ export const ELEMENTS: readonly ElementSpec[] = [
       COLOR,
       FRAMED,
     ],
+    thresholds: true,
   },
   {
     type: "text",
@@ -244,6 +269,183 @@ export const ELEMENTS: readonly ElementSpec[] = [
       COLOR,
       ALIGN,
       FRAMED,
+    ],
+  },
+  // ---- pictures, shapes, gauges (ADR 0016)
+  {
+    type: "image",
+    group: "visual",
+    name: L("Image (photo, logo)", "Picture (photo, logo)"),
+    size: { w: 4, h: 4 },
+    min: { w: 1, h: 1 },
+    props: [
+      {
+        key: "asset",
+        label: L("Image", "Picture"),
+        type: { kind: "media", media: "image" },
+        default: "",
+      },
+      FIT,
+    ],
+  },
+  {
+    type: "video",
+    group: "visual",
+    name: L("Vidéo (boucle muette)", "Video (silent loop)"),
+    size: { w: 6, h: 4 },
+    min: { w: 1, h: 1 },
+    props: [
+      {
+        key: "asset",
+        label: L("Vidéo", "Video"),
+        type: { kind: "media", media: "video" },
+        default: "",
+      },
+      { ...FIT, default: "cover" },
+    ],
+  },
+  {
+    type: "arc",
+    group: "visual",
+    name: L("Jauge circulaire", "Round gauge"),
+    size: { w: 5, h: 5 },
+    min: { w: 2, h: 2 },
+    props: [
+      { key: "field", label: L("Donnée", "Data"), type: { kind: "field" }, default: "speed_kmh" },
+      LABEL,
+      {
+        key: "min",
+        label: L("Minimum", "Minimum"),
+        type: { kind: "number", min: -100000, max: 100000, step: 1 },
+        default: 0,
+      },
+      {
+        key: "max",
+        label: L(
+          "Maximum (0 pour le régime : celui de la voiture)",
+          "Maximum (0 for the revs: the car's own)",
+        ),
+        type: { kind: "number", min: -100000, max: 100000, step: 1 },
+        default: 300,
+      },
+      {
+        key: "decimals",
+        label: L("Décimales (−1 : celles de la donnée)", "Decimals (−1: the data's own)"),
+        type: { kind: "number", min: -1, max: 3, step: 1 },
+        default: -1,
+      },
+      { key: "unit", label: L("Unité", "Unit"), type: { kind: "bool" }, default: true },
+      {
+        key: "showValue",
+        label: L("Valeur au centre", "Value in the centre"),
+        type: { kind: "bool" },
+        default: true,
+      },
+      { ...COLOR, label: L("Couleur de l'arc", "Arc colour") },
+    ],
+    thresholds: true,
+  },
+  {
+    type: "rpm",
+    group: "visual",
+    name: L("Rampe de régime réglable", "Custom rev lights"),
+    size: { w: 12, h: 1 },
+    min: { w: 3, h: 1 },
+    props: [
+      {
+        key: "segments",
+        label: L("Nombre de segments", "Number of lights"),
+        type: { kind: "number", min: 3, max: 30, step: 1 },
+        default: 15,
+      },
+      {
+        key: "start",
+        label: L(
+          "Allumage à partir de (fraction du régime maxi)",
+          "Lights from (fraction of the maximum revs)",
+        ),
+        type: { kind: "number", min: 0.3, max: 0.9, step: 0.01 },
+        default: 0.55,
+      },
+      {
+        key: "lowColor",
+        label: L("Premier tiers", "First third"),
+        type: { kind: "color" },
+        default: "#2fe07f",
+      },
+      {
+        key: "midColor",
+        label: L("Deuxième tiers", "Second third"),
+        type: { kind: "color" },
+        default: "#ffc93c",
+      },
+      {
+        key: "highColor",
+        label: L("Dernier tiers", "Last third"),
+        type: { kind: "color" },
+        default: "#ff4b3e",
+      },
+      {
+        key: "shiftColor",
+        label: L("Passage de rapport (clignote)", "Shift (flashes)"),
+        type: { kind: "color" },
+        default: "#3d8bff",
+      },
+    ],
+  },
+  {
+    type: "alert",
+    group: "visual",
+    name: L("Bandeau d'alerte", "Alert banner"),
+    size: { w: 10, h: 2 },
+    min: { w: 2, h: 1 },
+    props: [
+      { key: "text", label: L("Texte", "Text"), type: { kind: "text", max: 40 }, default: "" },
+      {
+        key: "fillColor",
+        label: L("Fond", "Background"),
+        type: { kind: "color" },
+        default: "#e5484d",
+      },
+      {
+        key: "color",
+        label: L("Texte", "Text colour"),
+        type: { kind: "color" },
+        default: "#ffffff",
+      },
+      { key: "blink", label: L("Clignote", "Flashes"), type: { kind: "bool" }, default: true },
+    ],
+    defaultShow: { when: "limiter" },
+    localDefaults: { fr: { text: "LIMITEUR" }, en: { text: "PIT LIMITER" } },
+  },
+  {
+    type: "shape",
+    group: "visual",
+    name: L("Forme (rectangle, cercle, ligne)", "Shape (rectangle, circle, line)"),
+    size: { w: 4, h: 3 },
+    min: { w: 1, h: 1 },
+    props: [
+      {
+        key: "shape",
+        label: L("Forme", "Shape"),
+        type: {
+          kind: "choice",
+          options: [
+            { value: "rect", label: L("Rectangle", "Rectangle") },
+            { value: "circle", label: L("Cercle / ovale", "Circle / oval") },
+            { value: "line-h", label: L("Ligne horizontale", "Horizontal line") },
+            { value: "line-v", label: L("Ligne verticale", "Vertical line") },
+          ],
+        },
+        default: "rect",
+      },
+      { key: "fillColor", label: L("Couleur", "Colour"), type: { kind: "color" }, default: "auto" },
+      {
+        key: "thickness",
+        label: L("Épaisseur d'une ligne", "Thickness of a line"),
+        type: { kind: "number", min: 1, max: 20, step: 1 },
+        default: 3,
+      },
     ],
   },
   // ---- the blocks of the pages of Corde
@@ -339,6 +541,7 @@ export const ELEMENTS: readonly ElementSpec[] = [
 
 export const ELEMENT_GROUPS: Record<ElementGroup, Label> = {
   generic: L("Éléments", "Elements"),
+  visual: L("Images, formes et jauges", "Pictures, shapes and gauges"),
   corde: L("Blocs du tableau de bord Corde", "Blocks of the Corde dashboard"),
   pages: L("Pages entières", "Whole pages"),
   widgets: L("Widgets du PC", "PC widgets"),
@@ -359,6 +562,12 @@ export function getElementSpec(type: string): ElementSpec | undefined {
 
 export function listElementSpecs(): ElementSpec[] {
   return [...ELEMENTS, ...extra.values()];
+}
+
+/** The settings an element is added with: its defaults, in the language of the interface. */
+export function initialProps(type: string, lang: "fr" | "en"): Record<string, unknown> {
+  const spec = getElementSpec(type);
+  return { ...(spec?.localDefaults?.[lang] ?? {}) };
 }
 
 /** The settings of an element with the defaults of its type filled in. */

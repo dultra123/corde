@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { type DashDefinition, validateDefinition } from "../dashdef/model";
+import { type DashDefinition, type DashElement, validateDefinition } from "../dashdef/model";
 
 /**
  * The dashboard being edited in the Studio: the current state, what « Annuler » and
@@ -74,7 +74,10 @@ interface EditorState {
   /** The definition as last saved on the PC (to know what is not saved yet). */
   saved: DashDefinition | null;
   pageId: string | null;
+  /** The element the inspector shows: the last one chosen (`null`: none, or several). */
   selected: string | null;
+  /** Every element chosen (Maj + clic, a frame drawn on the page). */
+  selection: string[];
   /** A drag in progress: its changes are one step of the history, committed at the end. */
   gesture: DashDefinition | null;
   open(def: DashDefinition, saved: DashDefinition | null): void;
@@ -88,7 +91,12 @@ interface EditorState {
   redo(): void;
   setPage(id: string): void;
   select(id: string | null): void;
+  /** Adds or takes away one element of the selection (Maj + clic). */
+  toggle(id: string): void;
+  selectMany(ids: string[]): void;
   markSaved(def: DashDefinition): void;
+  /** Back to the version saved on the PC; the draft is dropped. */
+  discardDraft(): void;
 }
 
 function sync(h: History) {
@@ -101,6 +109,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   saved: null,
   pageId: null,
   selected: null,
+  selection: [],
   gesture: null,
   open(def, saved) {
     set({
@@ -108,11 +117,12 @@ export const useEditor = create<EditorState>((set, get) => ({
       saved,
       pageId: def.pages[0]?.id ?? null,
       selected: null,
+      selection: [],
       gesture: null,
     });
   },
   close() {
-    set({ h: null, saved: null, pageId: null, selected: null, gesture: null });
+    set({ h: null, saved: null, pageId: null, selected: null, selection: [], gesture: null });
   },
   apply(fn) {
     const h = get().h;
@@ -123,7 +133,12 @@ export const useEditor = create<EditorState>((set, get) => ({
     const page = next.pages.some((p) => p.id === get().pageId)
       ? get().pageId
       : (next.pages[0]?.id ?? null);
-    set({ h: nh, pageId: page });
+    // Elements that are gone leave the selection.
+    const ids = new Set(next.pages.find((p) => p.id === page)?.elements.map((e) => e.id) ?? []);
+    const selection = get().selection.filter((id) => ids.has(id));
+    const selected =
+      get().selected !== null && ids.has(get().selected as string) ? get().selected : null;
+    set({ h: nh, pageId: page, selection, selected: selection.length > 1 ? null : selected });
   },
   begin() {
     const h = get().h;
@@ -152,7 +167,7 @@ export const useEditor = create<EditorState>((set, get) => ({
     const page = nh.present.pages.some((p) => p.id === get().pageId)
       ? get().pageId
       : (nh.present.pages[0]?.id ?? null);
-    set({ h: sync(nh), pageId: page, selected: null });
+    set({ h: sync(nh), pageId: page, selected: null, selection: [] });
   },
   redo() {
     const h = get().h;
@@ -162,19 +177,53 @@ export const useEditor = create<EditorState>((set, get) => ({
     const page = nh.present.pages.some((p) => p.id === get().pageId)
       ? get().pageId
       : (nh.present.pages[0]?.id ?? null);
-    set({ h: sync(nh), pageId: page, selected: null });
+    set({ h: sync(nh), pageId: page, selected: null, selection: [] });
   },
   setPage(id) {
-    set({ pageId: id, selected: null });
+    set({ pageId: id, selected: null, selection: [] });
   },
   select(id) {
-    set({ selected: id });
+    set({ selected: id, selection: id ? [id] : [] });
+  },
+  toggle(id) {
+    const cur = get().selection;
+    const selection = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
+    set({ selection, selected: selection.length === 1 ? (selection[0] as string) : null });
+  },
+  selectMany(ids) {
+    const selection = [...new Set(ids)];
+    set({ selection, selected: selection.length === 1 ? (selection[0] as string) : null });
   },
   markSaved(def) {
     clearDraft(def.id);
     set({ saved: def });
   },
+  discardDraft() {
+    const { saved, h } = get();
+    if (!saved || !h) return;
+    clearDraft(saved.id);
+    const pageId = saved.pages.some((p) => p.id === get().pageId)
+      ? get().pageId
+      : (saved.pages[0]?.id ?? null);
+    set({ h: historyOf(saved), pageId, selected: null, selection: [], gesture: null });
+  },
 }));
+
+// ---------------------------------------------------------------- clipboard
+
+/**
+ * The elements copied with Ctrl + C: kept for this visit of the Studio, pasted on any page of
+ * any dashboard (Ctrl + V), each copy with a new id.
+ */
+let clipboard: DashElement[] = [];
+
+export function copyElements(elements: readonly DashElement[]): void {
+  clipboard = elements.map((e) => structuredClone(e));
+}
+
+export function copiedElements(): DashElement[] {
+  return clipboard.map((e) => structuredClone(e));
+}
 
 /** The changes are not on the PC yet. */
 export function isDirty(s: Pick<EditorState, "h" | "saved">): boolean {

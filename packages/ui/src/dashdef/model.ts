@@ -1,9 +1,13 @@
 import type {
+  DashBackground,
+  DashCondition,
   DashDefinition,
   DashElement,
   DashFormat,
   DashPageDef,
+  DashStyle,
   DashTheme,
+  DashThreshold,
 } from "@corde/protocol";
 
 /**
@@ -16,7 +20,17 @@ import type {
  * puts every string in as text); the rules below keep it inert anyway.
  */
 
-export type { DashDefinition, DashElement, DashFormat, DashPageDef, DashTheme };
+export type {
+  DashBackground,
+  DashCondition,
+  DashDefinition,
+  DashElement,
+  DashFormat,
+  DashPageDef,
+  DashStyle,
+  DashTheme,
+  DashThreshold,
+};
 
 export const DASH_VERSION = 1;
 export const MAX_DASH_BYTES = 256 * 1024;
@@ -37,6 +51,21 @@ export const MAX_ROWS = 32;
 export const MIN_FORMAT_SIDE = 100;
 export const MAX_FORMAT_SIDE = 4000;
 export const MAX_FORMAT_RATIO = 8;
+/** Comparisons of the conditions and colour rules (ADR 0016): a closed list. */
+export const OPS = ["lt", "le", "ge", "gt"] as const;
+export type Op = (typeof OPS)[number];
+/** What « Afficher quand… » can test. */
+export const CONDITIONS = ["limiter", "pits", "yellow", "blue", "field"] as const;
+export type ConditionKind = (typeof CONDITIONS)[number];
+/** The fonts of the numbers, all shipped with Corde (no download). */
+export const FONTS = ["condensed", "barlow", "digital", "wide"] as const;
+export type FontId = (typeof FONTS)[number];
+/** How a picture fills its box. */
+export const FITS = ["contain", "cover", "fill"] as const;
+export type Fit = (typeof FITS)[number];
+export const MAX_THRESHOLDS = 4;
+export const MAX_RADIUS = 40;
+export const MAX_BORDER_WIDTH = 8;
 /** The dashboard shipped with Corde: never stored on the PC. */
 export const BUILTIN_ID = "corde";
 
@@ -82,6 +111,19 @@ const ID = /^[a-z0-9-]{1,40}$/;
 const TYPE = /^[a-z0-9.-]{1,40}$/;
 const COLOR = /^#[0-9a-fA-F]{6}$/;
 const PROP_KEY = /^[A-Za-z][A-Za-z0-9_]{0,31}$/;
+const FIELD_ID = /^[a-z0-9_]{1,40}$/;
+/** A media of the PC: the SHA-256 of its content and the extension of its type. */
+const ASSET_ID = /^[0-9a-f]{64}\.(png|jpg|webp|gif|mp4|webm)$/;
+
+/** The id of a picture or a video stored on the PC (`dash-assets`, ADR 0016). */
+export function validAssetId(id: unknown): id is string {
+  return typeof id === "string" && ASSET_ID.test(id);
+}
+
+/** A setting that cites a media (`asset`, `…Asset`). */
+export function isAssetKey(k: string): boolean {
+  return k === "asset" || k.endsWith("Asset");
+}
 
 export function validId(id: unknown): id is string {
   return typeof id === "string" && ID.test(id);
@@ -106,7 +148,11 @@ export interface DashProblem {
     | "elements"
     | "grid"
     | "outside"
-    | "props";
+    | "props"
+    | "media"
+    | "style"
+    | "condition"
+    | "archive";
   at: string;
 }
 
@@ -185,7 +231,82 @@ function props(v: unknown, at: string): Record<string, unknown> {
     if (k === "color" || k.endsWith("Color")) {
       if (!(val === null || val === "auto" || validColor(val))) fail("color", `${at}.${k}`);
     }
+    if (isAssetKey(k)) {
+      if (!(val === null || val === "" || validAssetId(val))) fail("media", `${at}.${k}`);
+    }
   }
+  return out;
+}
+
+function bounded(v: unknown, at: string, code: DashProblem["code"]): number {
+  if (typeof v !== "number" || !Number.isFinite(v) || Math.abs(v) > MAX_PROP_NUMBER) fail(code, at);
+  return v;
+}
+
+function opacity(v: unknown, at: string, code: DashProblem["code"]): number {
+  if (typeof v !== "number" || !Number.isFinite(v) || v < 0 || v > 1) fail(code, at);
+  return v;
+}
+
+function optColor(v: unknown, at: string): string {
+  if (!validColor(v)) fail("color", at);
+  return v;
+}
+
+function style(v: unknown, at: string): DashStyle {
+  if (!isObject(v)) fail("style", at);
+  const out: DashStyle = {};
+  if (v.bg != null) out.bg = optColor(v.bg, `${at}.bg`);
+  if (v.border != null) out.border = optColor(v.border, `${at}.border`);
+  if (v.opacity != null) out.opacity = opacity(v.opacity, `${at}.opacity`, "style");
+  if (v.radius != null) out.radius = int(v.radius, `${at}.radius`, 0, MAX_RADIUS, "style");
+  if (v.border_width != null)
+    out.border_width = int(v.border_width, `${at}.border_width`, 0, MAX_BORDER_WIDTH, "style");
+  return out;
+}
+
+function isOp(v: unknown): v is Op {
+  return typeof v === "string" && (OPS as readonly string[]).includes(v);
+}
+
+function condition(v: unknown, at: string): DashCondition {
+  if (!isObject(v)) fail("condition", at);
+  const when = v.when;
+  if (typeof when !== "string" || !(CONDITIONS as readonly string[]).includes(when))
+    fail("condition", at);
+  const has = (k: string) => v[k] !== undefined && v[k] !== null;
+  if (when !== "field") {
+    if (has("field") || has("op") || has("value")) fail("condition", at);
+    return { when };
+  }
+  if (typeof v.field !== "string" || !FIELD_ID.test(v.field)) fail("condition", at);
+  if (!isOp(v.op)) fail("condition", at);
+  return { when, field: v.field, op: v.op, value: bounded(v.value, at, "condition") };
+}
+
+function thresholds(v: unknown, at: string): DashThreshold[] {
+  if (!Array.isArray(v) || v.length > MAX_THRESHOLDS) fail("condition", at);
+  return v.map((t, i) => {
+    const a = `${at}[${i}]`;
+    if (!isObject(t) || !isOp(t.op)) fail("condition", a);
+    return { op: t.op, value: bounded(t.value, a, "condition"), color: optColor(t.color, a) };
+  });
+}
+
+function background(v: unknown, at: string): DashBackground {
+  if (!isObject(v)) fail("style", at);
+  const out: DashBackground = {};
+  if (v.color != null) out.color = optColor(v.color, `${at}.color`);
+  if (v.asset != null) {
+    if (!validAssetId(v.asset)) fail("media", `${at}.asset`);
+    out.asset = v.asset;
+  }
+  if (v.fit != null) {
+    if (typeof v.fit !== "string" || !(FITS as readonly string[]).includes(v.fit))
+      fail("style", `${at}.fit`);
+    out.fit = v.fit;
+  }
+  if (v.opacity != null) out.opacity = opacity(v.opacity, `${at}.opacity`, "style");
   return out;
 }
 
@@ -198,7 +319,11 @@ function element(v: unknown, at: string, cols: number, rows: number): DashElemen
   const w = int(v.w, at, 1, 255, "outside");
   const h = int(v.h, at, 1, 255, "outside");
   if (x + w > cols || y + h > rows) fail("outside", at);
-  return { id: v.id, type: v.type, x, y, w, h, props: props(v.props ?? {}, at) };
+  const el: DashElement = { id: v.id, type: v.type, x, y, w, h, props: props(v.props ?? {}, at) };
+  if (v.style != null) el.style = style(v.style, `${at}.style`);
+  if (v.show != null) el.show = condition(v.show, `${at}.show`);
+  if (v.thresholds != null) el.thresholds = thresholds(v.thresholds, `${at}.thresholds`);
+  return el;
 }
 
 function page(v: unknown, at: string): DashPageDef {
@@ -215,7 +340,9 @@ function page(v: unknown, at: string): DashPageDef {
     ids.add(el.id);
     return el;
   });
-  return { id: v.id, name, cols, rows, elements };
+  const pg: DashPageDef = { id: v.id, name, cols, rows, elements };
+  if (v.background != null) pg.background = background(v.background, `${at}.background`);
+  return pg;
 }
 
 function check(v: unknown): DashDefinition {
@@ -242,6 +369,11 @@ function check(v: unknown): DashDefinition {
     if (!validColor(th[k])) fail("color", `theme.${k}`);
     theme[k] = th[k] as string;
   }
+  if (th.font != null) {
+    if (typeof th.font !== "string" || !(FONTS as readonly string[]).includes(th.font))
+      fail("style", "theme.font");
+    theme.font = th.font;
+  }
   if (!Array.isArray(v.pages) || v.pages.length < 1 || v.pages.length > MAX_PAGES)
     fail("pages", "pages");
   const ids = new Set<string>();
@@ -264,6 +396,20 @@ function check(v: unknown): DashDefinition {
   };
   if (byteSize(def) > MAX_DASH_BYTES) fail("too-large", "");
   return def;
+}
+
+/** The media a definition cites (its elements' settings, its pages' backgrounds). */
+export function referencedAssets(def: DashDefinition): string[] {
+  const out = new Set<string>();
+  for (const p of def.pages) {
+    if (validAssetId(p.background?.asset)) out.add(p.background.asset);
+    for (const e of p.elements) {
+      for (const [k, v] of Object.entries(e.props)) {
+        if (isAssetKey(k) && validAssetId(v)) out.add(v);
+      }
+    }
+  }
+  return [...out];
 }
 
 /** UTF-8 size of the compact JSON of a value. */

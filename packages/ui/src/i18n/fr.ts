@@ -1582,7 +1582,7 @@ export const fr = {
   "studio.deleteConfirm":
     "Supprimer « {name} » ? Les appareils qui l'utilisent reviendront au tableau de bord Corde.",
   "studio.problem.not-json": "ce n'est pas un fichier de tableau de bord (JSON illisible).",
-  "studio.problem.too-large": "le fichier est trop gros (256 Kio au plus).",
+  "studio.problem.too-large": "le fichier est trop gros.",
   "studio.problem.version": "il vient d'une autre version de Corde (format inconnu).",
   "studio.problem.shape": "il manque des parties du tableau de bord.",
   "studio.problem.id": "un identifiant est invalide ou répété.",
@@ -1610,7 +1610,7 @@ export const fr = {
   "studio.back": "Arrière-plan",
   "studio.remove": "Supprimer",
   "studio.keysHint":
-    "Clavier : flèches pour déplacer, Maj + flèches pour redimensionner, Suppr pour supprimer, Ctrl + D pour dupliquer, Échap pour désélectionner.",
+    "Clavier : flèches pour déplacer, Maj + flèches pour redimensionner, Suppr pour supprimer, Ctrl + D pour dupliquer, Ctrl + C / Ctrl + V pour copier et coller (aussi sur une autre page), Échap pour désélectionner. Maj + clic ou un cadre tracé sur la page : plusieurs éléments.",
   "studio.preset.phone-landscape": "Téléphone en paysage (852 × 393)",
   "studio.preset.phone-portrait": "Téléphone en portrait (393 × 852)",
   "studio.preset.tablet": "Tablette 4:3 (1024 × 768)",
@@ -1664,6 +1664,94 @@ export const fr = {
   "studio.savedState": "Enregistré",
   "studio.draftRestored": "Brouillon repris : des modifications n'avaient pas été enregistrées.",
   "studio.demoHint": "« Course de démonstration » anime la page.",
+  "studio.media.pick": "Choisir un fichier…",
+  "studio.media.replace": "Remplacer…",
+  "studio.media.remove": "Retirer",
+  "studio.media.none": "Aucun fichier choisi.",
+  "studio.media.busy": "Préparation et envoi au PC…",
+  "studio.media.ok": "Enregistré sur ce PC.",
+  "studio.media.hintImage":
+    "PNG, JPEG, WebP ou GIF (animé accepté), 4 Mio au plus. Avant l'envoi, la photo est réenregistrée : la position GPS et les autres informations de l'appareil photo sont retirées.",
+  "studio.media.hintVideo":
+    "MP4 ou WebM, 30 Mio au plus. Lue en boucle, sans son, seulement sur la page affichée. Les informations d'un MP4 (position, date, appareil) sont effacées avant l'envoi.",
+  "studio.media.err.type":
+    "Ce fichier n'est ni une image (PNG, JPEG, WebP, GIF) ni une vidéo (MP4, WebM).",
+  "studio.media.err.wrongImage": "Choisis une image ici (une vidéo va dans l'élément « Vidéo »).",
+  "studio.media.err.wrongVideo": "Choisis une vidéo ici (une image va dans l'élément « Image »).",
+  "studio.media.err.too-large":
+    "Fichier trop gros : une image fait 4 Mio au plus, une vidéo 30 Mio.",
+  "studio.media.err.unreadable":
+    "Ce fichier n'a pas pu être lu (abîmé ou format non pris en charge).",
+  "studio.media.err.full":
+    "Trop de médias sur ce PC (200 fichiers ou 300 Mio au plus) : retire des images ou des vidéos inutilisées, puis enregistre.",
+  "studio.media.err.pc-only": "Ajouter une image ou une vidéo se fait depuis le PC de Corde.",
+  "studio.media.err.offline":
+    "Le serveur Corde de ce PC ne répond pas : le fichier n'est pas envoyé.",
+  "studio.media.err.refused": "Le serveur a refusé ce fichier.",
+  "studio.style.title": "Style",
+  "studio.style.bg": "Fond de l'élément",
+  "studio.style.none": "Aucun",
+  "studio.style.opacity": "Opacité (%)",
+  "studio.style.radius": "Coins arrondis",
+  "studio.style.border": "Contour",
+  "studio.style.borderWidth": "Épaisseur du contour",
+  "studio.show.title": "Afficher quand…",
+  "studio.show.always": "Toujours",
+  "studio.show.limiter": "Le limiteur des stands est actif",
+  "studio.show.pits": "Dans les stands",
+  "studio.show.yellow": "Drapeau jaune",
+  "studio.show.blue": "Drapeau bleu",
+  "studio.show.field": "Une donnée comparée à un nombre…",
+  "studio.show.hint":
+    "Dans l'éditeur, un élément caché par sa condition reste visible en transparence.",
+  "studio.op.lt": "est inférieure à",
+  "studio.op.le": "est inférieure ou égale à",
+  "studio.op.ge": "est supérieure ou égale à",
+  "studio.op.gt": "est supérieure à",
+  "studio.rules.title": "Couleur selon la valeur",
+  "studio.rules.add": "Ajouter une règle",
+  "studio.rules.remove": "Retirer cette règle",
+  "studio.rules.if": "Si la valeur",
+  "studio.rules.hint":
+    "La première règle qui s'applique donne la couleur ; sinon, la couleur choisie plus haut. 4 règles au plus.",
+  "studio.rules.hintBar": "Pour une barre, la valeur est en % (de 0 à 100).",
+  "studio.bg.title": "Fond de cette page",
+  "studio.bg.color": "Couleur",
+  "studio.bg.theme": "Celle du thème",
+  "studio.bg.media": "Image ou vidéo de fond",
+  "studio.bg.fit": "Ajustement",
+  "studio.bg.opacity": "Opacité de l'image (%)",
+  "studio.font": "Police des chiffres",
+  "studio.font.condensed": "Corde (Barlow Semi Condensed)",
+  "studio.font.barlow": "Barlow",
+  "studio.font.digital": "Afficheur numérique (Share Tech Mono)",
+  "studio.font.wide": "Large, style course (Orbitron)",
+  "studio.multi.title": "{n} éléments sélectionnés",
+  "studio.multi.hint":
+    "Glisse l'un d'eux pour les déplacer ensemble. Flèches : déplacer · Suppr : supprimer · Ctrl + C puis Ctrl + V : copier, aussi sur une autre page.",
+  "studio.multi.remove": "Supprimer la sélection",
+  "studio.copy": "Copier",
+  "studio.paste": "Coller",
+  "studio.search": "Rechercher un élément",
+  "studio.searchNone": "Aucun élément ne correspond.",
+  "studio.discardDraft": "Abandonner le brouillon",
+  "studio.discardConfirm":
+    "Abandonner les modifications non enregistrées et revenir à la version enregistrée sur le PC ?",
+  "studio.draftDiscarded": "Brouillon abandonné : voici la version enregistrée.",
+  "studio.exporting": "Préparation du fichier…",
+  "studio.exported": "« {name} » exporté.",
+  "studio.exportedVideo":
+    "« {name} » exporté. Il contient une vidéo : elle est partagée telle quelle.",
+  "studio.exportMissing":
+    "{n} image(s) ou vidéo(s) introuvable(s) sur ce PC n'ont pas été mises dans le fichier.",
+  "studio.importedMedia": "« {name} » importé, avec {n} image(s) ou vidéo(s).",
+  "studio.importing": "Import en cours…",
+  "studio.problem.media":
+    "une image ou une vidéo du fichier est invalide, d'un autre type que son nom, ou trop grosse.",
+  "studio.problem.style": "un réglage de style ou de fond est invalide.",
+  "studio.problem.condition": "une condition ou une règle de couleur est invalide.",
+  "studio.problem.archive":
+    "ce n'est pas un fichier de tableau de bord lisible (archive abîmée, ou trop d'entrées).",
   "settings.dashUsedHint":
     "Retenu sur cet appareil. Les tableaux de bord se créent dans le Studio, sur le PC (menu des dispositions du Direct).",
 } as const;

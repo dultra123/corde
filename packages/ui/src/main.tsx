@@ -6,6 +6,10 @@ import "@fontsource/barlow/600.css";
 import "@fontsource/barlow-semi-condensed/500.css";
 import "@fontsource/barlow-semi-condensed/600.css";
 import "@fontsource/barlow-semi-condensed/700.css";
+// Fonts of the numbers a dashboard of the Studio can pick (ADR 0016): files of the application,
+// downloaded by the browser only when a dashboard uses them.
+import "@fontsource/share-tech-mono/400.css";
+import "@fontsource/orbitron/700.css";
 import "gridstack/dist/gridstack.min.css";
 import "uplot/dist/uPlot.min.css";
 import "./styles/tokens.css";

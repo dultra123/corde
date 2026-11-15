@@ -2,8 +2,9 @@ import { useRef, useState } from "react";
 import { useThrottled } from "../dash/live";
 import { flagsOf } from "../dash/model";
 import { EMPTY_PAGE, type PageProps } from "../dash/parts";
+import { exportDash, importFile } from "../dashdef/archive";
 import { cordeDefinition, isBuiltin, TEMPLATE_IDS, type TemplateId } from "../dashdef/builtin";
-import { downloadFile, importText } from "../dashdef/io";
+import { MediaMotion } from "../dashdef/draw";
 import { type DashDefinition, MAX_DASHES } from "../dashdef/model";
 import { duplicateDefinition, newDefinition, renameDefinition } from "../dashdef/ops";
 import { DashPage } from "../dashdef/Renderer";
@@ -31,6 +32,15 @@ const TEMPLATE_KEY: Record<TemplateId, TranslationKey> = {
   endurance: "studio.template.endurance",
 };
 
+const MEDIA_UPLOAD_ERR: Record<string, TranslationKey> = {
+  type: "studio.media.err.type",
+  "too-large": "studio.media.err.too-large",
+  full: "studio.media.err.full",
+  "pc-only": "studio.media.err.pc-only",
+  offline: "studio.media.err.offline",
+  refused: "studio.media.err.refused",
+};
+
 export function saveMessage(r: SaveResult): TranslationKey | null {
   if (r.ok) return null;
   return r.reason === "offline"
@@ -48,7 +58,10 @@ function Thumb({ def, data }: { def: DashDefinition; data: PageProps }) {
   const page = def.pages[0];
   return (
     <div className="studio-thumb dash is-canvas" aria-hidden="true" inert>
-      {page && <DashPage def={def} page={page} data={data} lang={lang} />}
+      {/* A small preview: its videos show their first image only. */}
+      <MediaMotion.Provider value={false}>
+        {page && <DashPage def={def} page={page} data={data} lang={lang} />}
+      </MediaMotion.Provider>
     </div>
   );
 }
@@ -84,20 +97,42 @@ export function DashLibrary() {
 
   const onImport = async (f: File | undefined) => {
     if (!f) return;
-    if (f.size > 1024 * 1024) {
-      say("studio.problem.too-large");
-      return;
-    }
-    const text = await f.text();
-    const r = importText(text, taken);
-    if (!r.ok) {
+    if (f.size > 128 * 1024 * 1024) {
       setMessage({
-        text: `${t("studio.importRefused")} ${t(problemKey(r.problem))}`,
+        text: `${t("studio.importRefused")} ${t("studio.problem.too-large")}`,
         bad: true,
       });
       return;
     }
-    await store(r.def, "studio.imported");
+    say("studio.importing", false);
+    const r = await importFile(new Uint8Array(await f.arrayBuffer()), taken);
+    if (!r.ok) {
+      setMessage({
+        text:
+          "problem" in r
+            ? `${t("studio.importRefused")} ${t(problemKey(r.problem))}`
+            : t(MEDIA_UPLOAD_ERR[r.upload] ?? "studio.media.err.refused"),
+        bad: true,
+      });
+      return;
+    }
+    const saved = await saveDash(r.def);
+    if (!saved.ok) {
+      say(saveMessage(saved));
+      return;
+    }
+    if (r.media > 0) say("studio.importedMedia", false, { name: r.def.name, n: r.media });
+    else say("studio.imported", false, { name: r.def.name });
+  };
+
+  const onExport = async (d: DashDefinition) => {
+    say("studio.exporting", false);
+    const r = await exportDash(d);
+    const done = t(r.hasVideo ? "studio.exportedVideo" : "studio.exported", { name: d.name });
+    const missing = r.missing.length
+      ? ` ${t("studio.exportMissing", { n: r.missing.length })}`
+      : "";
+    setMessage({ text: `${done}${missing}`, bad: r.missing.length > 0 });
   };
 
   return (
@@ -151,7 +186,7 @@ export function DashLibrary() {
           <input
             ref={file}
             type="file"
-            accept=".json,application/json"
+            accept=".cordedash,.json,application/zip,application/json"
             hidden
             onChange={(e) => {
               void onImport(e.target.files?.[0]);
@@ -252,7 +287,7 @@ export function DashLibrary() {
                         {t("studio.rename")}
                       </button>
                     )}
-                    <button type="button" className="btn" onClick={() => downloadFile(d)}>
+                    <button type="button" className="btn" onClick={() => void onExport(d)}>
                       {t("studio.export")}
                     </button>
                     {!builtin && (

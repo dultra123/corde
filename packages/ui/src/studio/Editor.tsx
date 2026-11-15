@@ -2,9 +2,16 @@ import { useEffect, useState } from "react";
 import { useThrottled } from "../dash/live";
 import { flagsOf } from "../dash/model";
 import type { PageProps } from "../dash/parts";
+import { exportDash } from "../dashdef/archive";
 import { isBuiltin } from "../dashdef/builtin";
-import { downloadFile } from "../dashdef/io";
-import { addPage, movePage, removePage, renameDefinition, renamePage } from "../dashdef/ops";
+import {
+  addPage,
+  movePage,
+  pasteElements,
+  removePage,
+  renameDefinition,
+  renamePage,
+} from "../dashdef/ops";
 import { DashPage } from "../dashdef/Renderer";
 import { saveDash, useDashes } from "../dashdef/store";
 import { type TranslationKey, useT } from "../i18n";
@@ -12,7 +19,7 @@ import { navigate, routeHash } from "../nav/routes";
 import { connection } from "../net/connection";
 import { connectionPhase, type TelemetryState, useTelemetry } from "../store/telemetry";
 import { Canvas } from "./Canvas";
-import { isDirty, readDraft, useEditor } from "./editor-store";
+import { copiedElements, copyElements, isDirty, readDraft, useEditor } from "./editor-store";
 import { Inspector, Palette } from "./Inspector";
 import { saveMessage } from "./Library";
 
@@ -235,6 +242,18 @@ export function DashEditor({ id }: { id: string }) {
 
   useEffect(() => () => useEditor.getState().close(), []);
 
+  const onExport = async () => {
+    const cur = useEditor.getState().h?.present;
+    if (!cur) return;
+    setMessage({ text: t("studio.exporting"), bad: false });
+    const r = await exportDash(cur);
+    const done = t(r.hasVideo ? "studio.exportedVideo" : "studio.exported", { name: cur.name });
+    const missing = r.missing.length
+      ? ` ${t("studio.exportMissing", { n: r.missing.length })}`
+      : "";
+    setMessage({ text: `${done}${missing}`, bad: r.missing.length > 0 });
+  };
+
   const save = async () => {
     const cur = useEditor.getState().h?.present;
     if (!cur) return;
@@ -249,7 +268,7 @@ export function DashEditor({ id }: { id: string }) {
     }
   };
 
-  // Ctrl+Z / Ctrl+Y (Ctrl+Maj+Z) / Ctrl+S, outside the text fields.
+  // Ctrl+Z / Ctrl+Y (Ctrl+Maj+Z) / Ctrl+S / Ctrl+C / Ctrl+V / Ctrl+A, outside the text fields.
   // biome-ignore lint/correctness/useExhaustiveDependencies: `save` reads the store
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -260,7 +279,32 @@ export function DashEditor({ id }: { id: string }) {
         void save();
         return;
       }
-      if ((e.target as HTMLElement | null)?.closest?.("input, textarea")) return;
+      if ((e.target as HTMLElement | null)?.closest?.("input, textarea, select")) return;
+      const st = useEditor.getState();
+      const page = st.h?.present.pages.find((p) => p.id === st.pageId);
+      if (k === "c" && page && st.selection.length > 0) {
+        e.preventDefault();
+        copyElements(page.elements.filter((x) => st.selection.includes(x.id)));
+        return;
+      }
+      if (k === "v" && page) {
+        const copies = copiedElements();
+        if (copies.length === 0) return;
+        e.preventDefault();
+        let ids: string[] = [];
+        st.apply((d) => {
+          const r = pasteElements(d, page.id, copies);
+          ids = r.ids;
+          return r.def;
+        });
+        if (ids.length) useEditor.getState().selectMany(ids);
+        return;
+      }
+      if (k === "a" && page) {
+        e.preventDefault();
+        st.selectMany(page.elements.map((x) => x.id));
+        return;
+      }
       if (k === "z" && !e.shiftKey) {
         e.preventDefault();
         useEditor.getState().undo();
@@ -351,7 +395,7 @@ export function DashEditor({ id }: { id: string }) {
           <button type="button" className="btn" onClick={() => setPreview(true)}>
             {t("studio.preview")}
           </button>
-          <button type="button" className="btn" onClick={() => downloadFile(def)}>
+          <button type="button" className="btn" onClick={() => void onExport()}>
             {t("studio.export")}
           </button>
           <button
@@ -366,7 +410,25 @@ export function DashEditor({ id }: { id: string }) {
       </header>
       {(draftShown || message || data.idleKey) && (
         <div className="studio-notes">
-          {draftShown && <p className="studio-msg">{t("studio.draftRestored")}</p>}
+          {draftShown && (
+            <p className="studio-msg">
+              {t("studio.draftRestored")}{" "}
+              {useEditor.getState().saved && (
+                <button
+                  type="button"
+                  className="btn is-small"
+                  onClick={() => {
+                    if (!window.confirm(t("studio.discardConfirm"))) return;
+                    useEditor.getState().discardDraft();
+                    setDraftShown(false);
+                    setMessage({ text: t("studio.draftDiscarded"), bad: false });
+                  }}
+                >
+                  {t("studio.discardDraft")}
+                </button>
+              )}
+            </p>
+          )}
           <p className={`studio-msg${message?.bad ? " is-bad" : ""}`} role="status">
             {message?.text ?? ""}
           </p>

@@ -3,11 +3,16 @@ import { cordeDefinition, type TemplateId, template } from "./builtin";
 import { getElementSpec, propsWithDefaults } from "./catalog";
 import {
   BUILTIN_ID,
+  type DashBackground,
+  type DashCondition,
   type DashDefinition,
   type DashElement,
   type DashPageDef,
+  type DashStyle,
+  type DashThreshold,
   DEFAULT_COLS,
   DEFAULT_ROWS,
+  type FontId,
   MAX_COLS,
   MAX_ELEMENTS,
   MAX_ID_LEN,
@@ -242,12 +247,13 @@ export function addElement(
   );
   const defaults = propsWithDefaults(type, {});
   delete defaults.scale;
-  const el = clampRect(
+  const el: DashElement = clampRect(
     { id, type, x: spot.x, y: spot.y, w: size.w, h: size.h, props: { ...defaults, ...props } },
     page.cols,
     page.rows,
     spec?.min,
   );
+  if (spec?.defaultShow) el.show = { ...spec.defaultShow };
   return { def: withPage(def, pageId, (p) => ({ ...p, elements: [...p.elements, el] })), id };
 }
 
@@ -388,4 +394,211 @@ export function setAuthor(def: DashDefinition, author: string): DashDefinition {
   if (a) next.author = a;
   else delete next.author;
   return touch(next);
+}
+
+// ---------------------------------------------------------------- style, conditions (ADR 0016)
+
+function withElement(
+  def: DashDefinition,
+  pageId: string,
+  id: string,
+  fn: (e: DashElement) => DashElement,
+): DashDefinition {
+  return withPage(def, pageId, (p) => {
+    let changed = false;
+    const elements = p.elements.map((e) => {
+      if (e.id !== id) return e;
+      const next = fn(e);
+      if (next !== e) changed = true;
+      return next;
+    });
+    return changed ? { ...p, elements } : p;
+  });
+}
+
+/** Drops the keys left `undefined`; `undefined` when nothing is left. */
+function compact<T extends object>(o: T): T | undefined {
+  const out = Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as T;
+  return Object.keys(out).length ? out : undefined;
+}
+
+/** Changes the look of an element (a key `undefined`: back to the element's own). */
+export function setStyle(
+  def: DashDefinition,
+  pageId: string,
+  id: string,
+  patch: Partial<Record<keyof DashStyle, number | string | undefined>>,
+): DashDefinition {
+  return withElement(def, pageId, id, (e) => {
+    const style = compact({ ...(e.style ?? {}), ...patch } as DashStyle);
+    const next: DashElement = { ...e };
+    if (style) next.style = style;
+    else delete next.style;
+    return next;
+  });
+}
+
+/** « Afficher quand… » (`null`: always). */
+export function setShow(
+  def: DashDefinition,
+  pageId: string,
+  id: string,
+  show: DashCondition | null,
+): DashDefinition {
+  return withElement(def, pageId, id, (e) => {
+    const next: DashElement = { ...e };
+    if (show) next.show = { ...show };
+    else delete next.show;
+    return next;
+  });
+}
+
+/** The colour rules of an element (at most 4; none: the key goes). */
+export function setThresholds(
+  def: DashDefinition,
+  pageId: string,
+  id: string,
+  rules: DashThreshold[],
+): DashDefinition {
+  return withElement(def, pageId, id, (e) => {
+    const next: DashElement = { ...e };
+    if (rules.length) next.thresholds = rules.slice(0, 4).map((r) => ({ ...r }));
+    else delete next.thresholds;
+    return next;
+  });
+}
+
+/** The background of a page (a key `undefined`: removed; nothing left: no background). */
+export function setBackground(
+  def: DashDefinition,
+  pageId: string,
+  patch: Partial<Record<keyof DashBackground, number | string | undefined>>,
+): DashDefinition {
+  return withPage(def, pageId, (p) => {
+    const bg = compact({ ...(p.background ?? {}), ...patch } as DashBackground);
+    const next: DashPageDef = { ...p };
+    if (bg) next.background = bg;
+    else delete next.background;
+    return next;
+  });
+}
+
+export function setFont(def: DashDefinition, font: FontId): DashDefinition {
+  const cur = def.theme.font ?? "condensed";
+  if (cur === font) return def;
+  const theme = { ...def.theme };
+  if (font === "condensed") delete theme.font;
+  else theme.font = font;
+  return touch({ ...def, theme });
+}
+
+// ---------------------------------------------------------------- several elements
+
+/** Moves several elements by whole cells, together: held so that none leaves the grid. */
+export function moveElements(
+  def: DashDefinition,
+  pageId: string,
+  ids: readonly string[],
+  dx: number,
+  dy: number,
+): DashDefinition {
+  const page = def.pages.find((p) => p.id === pageId);
+  if (!page) return def;
+  const set = new Set(ids);
+  const moving = page.elements.filter((e) => set.has(e.id));
+  if (moving.length === 0) return def;
+  const minX = Math.min(...moving.map((e) => e.x));
+  const minY = Math.min(...moving.map((e) => e.y));
+  const maxX = Math.max(...moving.map((e) => e.x + e.w));
+  const maxY = Math.max(...moving.map((e) => e.y + e.h));
+  const ddx = Math.max(-minX, Math.min(page.cols - maxX, Math.round(dx)));
+  const ddy = Math.max(-minY, Math.min(page.rows - maxY, Math.round(dy)));
+  if (ddx === 0 && ddy === 0) return def;
+  return withPage(def, pageId, (p) => ({
+    ...p,
+    elements: p.elements.map((e) => (set.has(e.id) ? { ...e, x: e.x + ddx, y: e.y + ddy } : e)),
+  }));
+}
+
+export function removeElements(
+  def: DashDefinition,
+  pageId: string,
+  ids: readonly string[],
+): DashDefinition {
+  const set = new Set(ids);
+  return withPage(def, pageId, (p) => {
+    const elements = p.elements.filter((e) => !set.has(e.id));
+    return elements.length === p.elements.length ? p : { ...p, elements };
+  });
+}
+
+/**
+ * Puts copies of `elements` (from this page or another) on a page, each with a new id: at the
+ * same place when no element of this page sits exactly there, else one cell lower and to the
+ * right (held in the grid). Returns the ids of the copies (within the 80 elements of a page).
+ */
+export function pasteElements(
+  def: DashDefinition,
+  pageId: string,
+  elements: readonly DashElement[],
+): { def: DashDefinition; ids: string[] } {
+  const page = def.pages.find((p) => p.id === pageId);
+  if (!page || elements.length === 0) return { def, ids: [] };
+  const room = MAX_ELEMENTS - page.elements.length;
+  const list = elements.slice(0, Math.max(0, room));
+  if (list.length === 0) return { def, ids: [] };
+  const taken = new Set(page.elements.map((e) => e.id));
+  const free = list.every(
+    (c) => !page.elements.some((e) => e.x === c.x && e.y === c.y && e.w === c.w && e.h === c.h),
+  );
+  const shift = free ? 0 : 1;
+  const ids: string[] = [];
+  const copies = list.map((c) => {
+    const id = freshLocalId("e", taken);
+    taken.add(id);
+    ids.push(id);
+    const min = getElementSpec(c.type)?.min;
+    return clampRect(
+      { ...structuredClone(c), id, x: c.x + shift, y: c.y + shift },
+      page.cols,
+      page.rows,
+      min,
+    );
+  });
+  return {
+    def: withPage(def, pageId, (p) => ({ ...p, elements: [...p.elements, ...copies] })),
+    ids,
+  };
+}
+
+/** The ids of the elements that a rectangle of cells touches. */
+export function elementsIn(page: DashPageDef, r: Rect): string[] {
+  return page.elements.filter((e) => overlaps(r, e)).map((e) => e.id);
+}
+
+/**
+ * The guides of a move: the columns and rows where an edge or the centre of the moving box
+ * meets an edge or the centre of another element (or the middle of the page).
+ */
+export function alignGuides(
+  page: DashPageDef,
+  box: Rect,
+  moving: ReadonlySet<string>,
+): { x: number[]; y: number[] } {
+  const others = page.elements.filter((e) => !moving.has(e.id));
+  const marksX = new Set([
+    page.cols / 2,
+    ...others.flatMap((e) => [e.x, e.x + e.w / 2, e.x + e.w]),
+  ]);
+  const marksY = new Set([
+    page.rows / 2,
+    ...others.flatMap((e) => [e.y, e.y + e.h / 2, e.y + e.h]),
+  ]);
+  const xs = [box.x, box.x + box.w / 2, box.x + box.w].filter(
+    (m) => marksX.has(m) && m > 0 && m < page.cols,
+  );
+  const ys = [box.y, box.y + box.h / 2, box.y + box.h].filter(
+    (m) => marksY.has(m) && m > 0 && m < page.rows,
+  );
+  return { x: [...new Set(xs)], y: [...new Set(ys)] };
 }

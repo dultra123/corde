@@ -281,3 +281,217 @@
   color: var(--text-faint);
   font-size: 11px;
 }
+
+/* ---------------------------------------------------------------- ADR 0016 */
+
+/* « Afficher quand… »: hidden on the dashboard; in the editor, still there, faint. */
+.del-in[data-off="1"] {
+  visibility: hidden;
+}
+.dstage.is-editing .del-in[data-off="1"] {
+  visibility: visible;
+  filter: opacity(0.32);
+}
+
+/* The background of a page, under every element. */
+.dstage-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.dstage-bg > .del-media {
+  position: absolute;
+  inset: 0;
+}
+.dstage-bg > .del-media-missing {
+  display: none;
+}
+
+/* Fonts of the numbers: the digital one has a single weight. */
+.dstage[data-font="digital"] .num {
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.dstage[data-font="wide"] .num {
+  letter-spacing: 0.02em;
+}
+
+/* Picture, video. */
+.del-mediabox {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+}
+.del-media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-position: center;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+.del-mediabox > .del-media {
+  position: absolute;
+  inset: 0;
+}
+.del-media-missing {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: var(--text-faint);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  opacity: 0.55;
+}
+.del-media-missing svg {
+  width: min(28px, 40cqmin);
+  height: min(28px, 40cqmin);
+}
+
+/* Round gauge. */
+.del-arc {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+}
+.del-arc svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.del-arc path {
+  fill: none;
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+.del-arc-track {
+  stroke: var(--d-track);
+}
+.del-arc-centre {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2cqmin;
+  text-align: center;
+  padding-top: 6cqmin;
+}
+.del-arc-v {
+  font-size: min(calc(var(--u) * 9), 24cqmin);
+  line-height: 0.95;
+  white-space: nowrap;
+}
+.del-arc-v small {
+  display: block;
+  margin: 0.2em 0 0;
+  text-align: center;
+}
+.del-arc .dlab {
+  font-size: max(9px, min(calc(var(--u) * 2.9), 7cqmin));
+}
+
+/* Shape. */
+.del-shape {
+  height: 100%;
+}
+.del-shape.is-circle {
+  border-radius: 50%;
+}
+.del-shape-line {
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+.del-shape-line i {
+  display: block;
+}
+.del-shape-line.is-h i {
+  width: 100%;
+}
+.del-shape-line.is-v i {
+  height: 100%;
+}
+
+/* Alert banner. */
+.del-alert {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  border-radius: calc(var(--su) * 1);
+  overflow: hidden;
+  padding: 0 calc(var(--su) * 1.5);
+}
+.del-alert span {
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: min(60cqh, 16cqw);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.del-alert.is-blink {
+  animation: del-alert-blink 1s steps(1) infinite;
+}
+@keyframes del-alert-blink {
+  50% {
+    filter: brightness(0.55);
+  }
+}
+
+/* Rev lights of its own. */
+.del-rpm {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: max(2px, calc(var(--su) * 0.9));
+}
+.del-rpm i {
+  flex: 1;
+  height: min(100%, max(8px, calc(var(--su) * 4.4)));
+  border-radius: max(2px, calc(var(--su) * 0.8));
+  background: var(--led);
+  opacity: 0.14;
+}
+.del-rpm i[data-on="1"] {
+  opacity: 1;
+  box-shadow: 0 0 calc(var(--su) * 2) color-mix(in srgb, var(--led) 55%, transparent);
+}
+.del-rpm[data-state="shift"] i {
+  background: var(--rpm-shift);
+  opacity: 1;
+  animation: del-rpm-shift 0.2s steps(1) infinite;
+}
+@keyframes del-rpm-shift {
+  50% {
+    opacity: 0.14;
+  }
+}
+.del-rpm[data-state="limiter"] i {
+  background: var(--accent);
+  animation: del-rpm-limiter 0.6s steps(1) infinite;
+}
+.del-rpm[data-state="limiter"] i:nth-child(even) {
+  animation-delay: -0.3s;
+}
+@keyframes del-rpm-limiter {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.14;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .del-alert.is-blink,
+  .del-rpm[data-state] i {
+    animation: none;
+  }
+}

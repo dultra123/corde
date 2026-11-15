@@ -1,12 +1,4 @@
-import {
-  Component,
-  type ComponentType,
-  type ReactNode,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { Component, type ComponentType, type ReactNode, useEffect, useRef, useState } from "react";
 import {
   CarStripBlock,
   CurrentLapBlock,
@@ -49,8 +41,10 @@ import {
   registerElementSpec,
   strProp,
 } from "./catalog";
+import { colorOr, type ElementProps, readCtx, useElementDraw } from "./draw";
 import { type FieldSpec, formatValue, getField, label, unitOf } from "./fields";
-import { validColor } from "./model";
+import { thresholdColor } from "./rules";
+import { AlertEl, ArcEl, ImageEl, RpmEl, ShapeEl } from "./visuals";
 
 /**
  * The drawing of each element type. Every string of a definition goes into the page as text
@@ -58,18 +52,7 @@ import { validColor } from "./model";
  * definition is ever read as markup or code.
  */
 
-export interface ElementProps {
-  /** The type of the element (`widget.map`…). */
-  type: string;
-  props: Record<string, unknown>;
-  data: PageProps;
-  lang: Lang;
-}
-
-/** A colour of the definition, or the fallback (`auto`, anything not `#rrggbb`). */
-function colorOr(v: unknown, fallback: string | undefined): string | undefined {
-  return validColor(v) ? v : fallback;
-}
+export type { ElementProps };
 
 function Framed({
   on,
@@ -96,25 +79,7 @@ function fieldLabel(f: FieldSpec | undefined, props: Record<string, unknown>, la
   return label(f.short ?? f.label, lang);
 }
 
-function readCtx() {
-  const s = useTelemetry.getState();
-  return { frame: s.frame, laps: s.laps };
-}
-
-/**
- * `draw` on each new telemetry frame, and after every render of the element: a changed setting
- * (colour, data, decimals) shows at once, even while no frame arrives — the game closed, or the
- * Studio without the demonstration race. Without this, a new colour only showed after the
- * dashboard was opened again.
- */
-function useElementDraw(draw: () => void): void {
-  useFrameDraw(draw);
-  useLayoutEffect(() => {
-    draw();
-  });
-}
-
-function ValueEl({ props, data, lang }: ElementProps) {
+function ValueEl({ props, data, lang, thresholds }: ElementProps) {
   const f = getField(props.field);
   const ref = useRef<HTMLSpanElement | null>(null);
   const fixed = colorOr(props.color, undefined);
@@ -126,7 +91,11 @@ function ValueEl({ props, data, lang }: ElementProps) {
     const ctx = readCtx();
     const v = f ? f.read(ctx) : null;
     setText(ref.current, f ? formatValue(f, v, decimals < 0 ? null : decimals, lang) : "—");
-    const c = fixed ?? (f?.color && typeof v === "number" ? f.color(v, ctx) : null) ?? "";
+    const c =
+      thresholdColor(thresholds, v) ??
+      fixed ??
+      (f?.color && typeof v === "number" ? f.color(v, ctx) : null) ??
+      "";
     if (shown.current !== c) {
       ref.current.style.color = c;
       shown.current = c;
@@ -145,7 +114,7 @@ function ValueEl({ props, data, lang }: ElementProps) {
   );
 }
 
-function BarEl({ props, data, lang }: ElementProps) {
+function BarEl({ props, data, lang, thresholds }: ElementProps) {
   const f = getField(props.field);
   const fill = useRef<HTMLElement | null>(null);
   const text = useRef<HTMLSpanElement | null>(null);
@@ -160,7 +129,10 @@ function BarEl({ props, data, lang }: ElementProps) {
     if (fill.current) {
       const tr = vertical ? `scaleY(${v.toFixed(3)})` : `scaleX(${v.toFixed(3)})`;
       if (fill.current.style.transform !== tr) fill.current.style.transform = tr;
+      // The rules compare the value as shown (a percentage).
+      const pct = typeof raw === "number" && Number.isFinite(raw) ? raw * 100 : null;
       const c =
+        thresholdColor(thresholds, pct) ??
         fixed ??
         (f?.color && typeof raw === "number" ? f.color(raw, ctx) : null) ??
         "var(--d-text)";
@@ -452,6 +424,12 @@ const GENERIC: Record<string, ComponentType<ElementProps>> = {
   text: TextEl,
   panel: PanelEl,
   clock: ClockEl,
+  image: ImageEl,
+  video: ImageEl,
+  arc: ArcEl,
+  shape: ShapeEl,
+  alert: AlertEl,
+  rpm: RpmEl,
 };
 
 export function elementComponent(type: string): ComponentType<ElementProps> | undefined {

@@ -1,12 +1,12 @@
-import { downloadText } from "../sessions/lib/csv";
 import { BUILTIN_ID, type DashDefinition, type DashProblem, parseDefinition } from "./model";
 import { freshId, slug } from "./ops";
 
 /**
- * Sharing a dashboard as a file (`<name>.cordedash.json`). The file holds the definition only:
- * no device name, no address of a server, no path; the author only when the driver typed one.
- * An imported file goes through the same validation as everything else, and gets a new id when
- * its own is taken (or is « corde »).
+ * Sharing a dashboard as a file. The definition holds no device name, no address of a server,
+ * no path; the author only when the driver typed one. Since 1.3 it travels in a `.cordedash`
+ * archive with its pictures and videos (`archive.ts`); a `.cordedash.json` of 1.2 (the
+ * definition alone) is still read. An imported file goes through the same validation as
+ * everything else, and gets a new id when its own is taken (or is « corde »).
  */
 
 export const FILE_SUFFIX = ".cordedash.json";
@@ -29,6 +29,7 @@ export function exportText(def: DashDefinition): string {
       name: p.name,
       cols: p.cols,
       rows: p.rows,
+      ...(p.background ? { background: { ...p.background } } : {}),
       elements: p.elements.map((e) => ({
         id: e.id,
         type: e.type,
@@ -37,6 +38,9 @@ export function exportText(def: DashDefinition): string {
         w: e.w,
         h: e.h,
         props: e.props,
+        ...(e.style ? { style: { ...e.style } } : {}),
+        ...(e.show ? { show: { ...e.show } } : {}),
+        ...(e.thresholds?.length ? { thresholds: e.thresholds.map((t) => ({ ...t })) } : {}),
       })),
     })),
     updated_ms: def.updated_ms,
@@ -54,9 +58,4 @@ export function importText(text: string, taken: Iterable<string>): Imported {
   const def = checked.def;
   const id = def.id === BUILTIN_ID || used.has(def.id) ? freshId(def.name, used) : def.id;
   return { ok: true, def: { ...def, id, updated_ms: Date.now() } };
-}
-
-/** Hands the file to the browser (a download, as the CSV of a lap). */
-export function downloadFile(def: DashDefinition): void {
-  downloadText(fileName(def), exportText(def), "application/json");
 }
