@@ -2,7 +2,8 @@
 //!
 //! On the home server, three commands talk to the running service (`corde_server::hub::cli`):
 //! `corde-server pair` (a pairing code), `corde-server devices` (paired devices) and
-//! `corde-server revoke <id>`.
+//! `corde-server revoke <id>`; `corde-server healthcheck` asks the running home server whether
+//! it answers (the container image's health check).
 
 use clap::{Parser, Subcommand};
 use corde_server::hub::cli;
@@ -47,6 +48,13 @@ enum Command {
         id: String,
         #[arg(long)]
         data_dir: Option<PathBuf>,
+    },
+    /// Home server: exit 0 when the server answers on this machine (GET /api/hub/pairing on
+    /// 127.0.0.1), 1 otherwise. Used by the container image's health check.
+    Healthcheck {
+        /// Port of the server.
+        #[arg(long, default_value_t = corde_server::config::DEFAULT_PORT)]
+        port: u16,
     },
 }
 
@@ -122,6 +130,10 @@ fn run_command(cmd: Command) -> anyhow::Result<()> {
                 );
             }
         }
+        Command::Healthcheck { port } => {
+            cli::healthcheck(port)?;
+            println!("ok");
+        }
         Command::Revoke { id, data_dir } => {
             let dir = cli::resolve_data_dir(data_dir);
             if cli::revoke(&dir, &id)? {
@@ -135,15 +147,20 @@ fn run_command(cmd: Command) -> anyhow::Result<()> {
 }
 
 async fn run(cfg: ServerConfig) -> anyhow::Result<()> {
+    // Handlers first: a SIGTERM that arrives during start-up still stops the server cleanly.
+    let shutdown = shutdown_signal();
     let server = Server::bind(cfg).await?;
     println!();
     for line in server.banner() {
         println!("{line}");
     }
+    for line in server.first_pairing_lines() {
+        println!("{line}");
+    }
     println!("  Ctrl-C pour arrêter.");
     println!();
 
-    server.run(shutdown_signal()).await?;
+    server.run(shutdown).await?;
     tracing::info!("serveur arrêté");
     Ok(())
 }

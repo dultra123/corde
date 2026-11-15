@@ -78,6 +78,9 @@ pub struct Server {
     game_api: bool,
     allow_host: Vec<String>,
     sync_interval: Duration,
+    /// Home server with `--first-pairing-code` and no device paired: the code issued at
+    /// start-up and until when it is valid ([`hub::first`]).
+    first_pairing: Option<(hub::auth::IssuedCode, chrono::DateTime<chrono::Utc>)>,
 }
 
 impl Server {
@@ -146,12 +149,20 @@ impl Server {
                 .map(|s| ResultsImporter::new(Arc::clone(s), cfg.import_config())),
         };
         let engineer = state::Engineer::new(cfg.llm_kind())?;
+        let mut first_pairing = None;
+        if cfg.first_pairing_code && !hub_role {
+            tracing::warn!("--first-pairing-code ne sert qu'avec --role hub : ignoré");
+        }
         let role = if hub_role {
             let hub = hub::Hub::open(&data_dir)
                 .map_err(|e| anyhow::anyhow!("dossier du serveur illisible : {e}"))?;
             hub.auth
                 .write_control_file(local_addr.port())
                 .map_err(|e| anyhow::anyhow!("cannot write the control file: {e}"))?;
+            if cfg.first_pairing_code {
+                first_pairing = hub::first::issue_if_unpaired(&hub.auth)
+                    .map(|code| (code, hub::first::valid_until(chrono::Utc::now())));
+            }
             state::RoleState {
                 role: Role::Hub,
                 hub: Some(Arc::new(hub)),
@@ -225,6 +236,7 @@ impl Server {
             game_api,
             allow_host: cfg.allow_host.clone(),
             sync_interval: Duration::from_secs(cfg.sync_interval_s),
+            first_pairing,
         })
     }
 
@@ -270,6 +282,16 @@ impl Server {
             self.ui_dir.as_deref(),
             &self.data_dir,
         )
+    }
+
+    /// Home server with `--first-pairing-code` and no device paired: the framed block that
+    /// gives the first pairing code (printed once, on the standard output, by the binary).
+    /// Empty otherwise.
+    pub fn first_pairing_lines(&self) -> Vec<String> {
+        match &self.first_pairing {
+            Some((code, until)) => hub::first::block(code, self.local_addr.port(), *until),
+            None => Vec::new(),
+        }
     }
 
     /// Start the source thread and serve until `shutdown` resolves, then stop
@@ -364,27 +386,42 @@ impl Server {
 }
 
 /// Resolves on Ctrl-C (SIGINT) — and SIGTERM on Unix.
-pub async fn shutdown_signal() {
-    let ctrl_c = async {
+///
+/// On Unix both handlers are installed **when this function is called**, not when the future
+/// is first polled: call it before announcing that the server is up, so that a SIGTERM sent
+/// right after start-up (`docker stop`, a service manager) stops the server cleanly instead of
+/// killing it — or, as process 1 of a container, being ignored until SIGKILL. Needs a Tokio
+/// runtime.
+pub fn shutdown_signal() -> impl Future<Output = ()> + Send + 'static {
+    #[cfg(unix)]
+    {
+        use tokio::signal::unix::{signal, SignalKind};
+        let interrupt = signal(SignalKind::interrupt());
+        let terminate = signal(SignalKind::terminate());
+        async move {
+            let wait = |s: std::io::Result<tokio::signal::unix::Signal>, what: &'static str| async move {
+                match s {
+                    Ok(mut s) => {
+                        s.recv().await;
+                    }
+                    Err(e) => {
+                        tracing::warn!("cannot listen for {what}: {e}");
+                        std::future::pending::<()>().await;
+                    }
+                }
+            };
+            tokio::select! {
+                _ = wait(interrupt, "Ctrl-C") => {}
+                _ = wait(terminate, "SIGTERM") => {}
+            }
+        }
+    }
+    #[cfg(not(unix))]
+    async {
         if let Err(e) = tokio::signal::ctrl_c().await {
             tracing::warn!("cannot listen for Ctrl-C: {e}");
             std::future::pending::<()>().await;
         }
-    };
-    #[cfg(unix)]
-    let terminate = async {
-        match tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()) {
-            Ok(mut s) => {
-                s.recv().await;
-            }
-            Err(_) => std::future::pending::<()>().await,
-        }
-    };
-    #[cfg(not(unix))]
-    let terminate = std::future::pending::<()>();
-    tokio::select! {
-        _ = ctrl_c => {}
-        _ = terminate => {}
     }
 }
 

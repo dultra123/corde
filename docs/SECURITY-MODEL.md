@@ -405,6 +405,11 @@ aucune route de mise à jour. Vie privée : [PRIVACY.md](../PRIVACY.md#mises-à-
   revoke`, garde `Host` / `Origin` toujours devant), `tests/hub_sync.rs` (deux serveurs réels : coupure,
   reprise, aucun doublon, analyse identique, ressentis dans les deux sens, version incompatible refusée,
   envoi au démarrage et à la fin d'un enregistrement), `hub_link.rs` (jeton jamais montré, fichier 0600).
+- Image de conteneur et premier code (§7.6) : `hub/first.rs` (unitaires), `tests/hub_first_pairing.rs`
+  (vrai binaire : code affiché seulement sans appareil, utilisable une fois, écrit dans aucun fichier, rien
+  sans l'option, `healthcheck`, arrêt propre sur SIGTERM) ; `packaging/docker/smoke-test.sh` (CI, conteneur
+  réel avec `compose.yaml` : uid, capacités, lecture seule, appairage par l'API, terminal, redémarrage,
+  `Host` et `CORDE_ALLOW_HOST`, arrêt).
 - Les scripts de capture (`packages/ui/scripts/screenshot-home.mjs`, `screenshot-sessions.mjs --spawn`)
   échouent sur toute erreur de console : ils vérifient que l'interface fonctionne depuis une autre origine
   locale.
@@ -450,6 +455,8 @@ rester allumé sans surveillance, et pour être joint à travers un VPN.
 4. **Le service systemd durci** (`packaging/linux/corde.service`) : compte `corde` sans droits ni
    connexion, `NoNewPrivileges`, `ProtectSystem=strict`, `ProtectHome`, `PrivateTmp`, `PrivateDevices`,
    `ReadWritePaths=/var/lib/corde`, aucune capacité, appels système filtrés.
+   Dans l'image de conteneur (NAS, §7.6) : compte `corde` (8471), système de fichiers en lecture seule,
+   aucune capacité une fois démarré, `no-new-privileges`, mémoire limitée.
 
 **Ce qui ne protège pas :**
 
@@ -475,14 +482,14 @@ rester allumé sans surveillance, et pour être joint à travers un VPN.
 | Élément | Règle |
 |---|---|
 | Code d'appairage | 8 chiffres tirés du générateur aléatoire du système (sans biais), **un seul à la fois**, usage unique, **10 minutes** ; **3 erreurs l'annulent** ; jamais écrit dans le journal ni dans une réponse d'erreur |
-| Obtenir un code | uniquement sur le serveur : `sudo corde-server pair` appelle `POST /api/hub/local/pairing-code` sur `127.0.0.1`, **sans** en-tête `Origin`, avec la clé de `hub/control.json` (nouvelle à chaque démarrage, fichier 0600 du compte `corde`, lisible par root) |
+| Obtenir un code | uniquement sur le serveur : `sudo corde-server pair` appelle `POST /api/hub/local/pairing-code` sur `127.0.0.1`, **sans** en-tête `Origin`, avec la clé de `hub/control.json` (nouvelle à chaque démarrage, fichier 0600 du compte `corde`, lisible par root). Seule autre voie : `--first-pairing-code` (§7.6), qui écrit un code dans le journal du serveur tant qu'aucun appareil n'est appairé |
 | Limite d'essais | 5 par adresse et 30 au total par tranche de 10 minutes (429 + `Retry-After`), comptés avant de regarder le code ; une adresse IPv4 vue en IPv6 (`::ffff:`) compte pour la même |
 | Jeton d'appareil | 256 bits aléatoires (64 caractères hexadécimaux), remis **une fois** : cookie `corde_device` (`HttpOnly; SameSite=Strict; Path=/; Max-Age` ≈ 400 jours, pas `Secure`) pour un navigateur, corps de la réponse pour le PC et l'application iPhone (`"kind": "app"`). Le PC le garde dans `hub-link.json` (0600 sous Unix ; `%LOCALAPPDATA%` est propre à l'utilisateur sous Windows), l'application iPhone dans son stockage (§8) ; les deux l'envoient en `Authorization: Bearer`, et l'application, sur le WebSocket, en entrée `corde.token.<jeton>` de l'en-tête `Sec-WebSocket-Protocol` (lue seulement sur une demande de passage en WebSocket ; le serveur répond `corde.v1`, jamais cette entrée) |
 | Stockage côté serveur | `hub/devices.json` (0600, dossier `hub/` en 0700) : identifiant, nom, **SHA-256 du jeton**, dates, administrateur ; le jeton lui-même n'est jamais écrit. Un fichier illisible est mis de côté et le serveur démarre **sans aucun appareil** (fermé, jamais ouvert) |
 | Vérification | SHA-256 du jeton présenté comparé à **chaque** empreinte en temps constant (`subtle`), sans sortie anticipée |
 | Révocation | immédiate : l'appareil disparaît de la liste, ses requêtes suivantes reçoivent 401, ses WebSockets ouverts sont fermés (code 4401) |
 | Administrateur | le premier appareil appairé ; ensuite, un administrateur en désigne d'autres ; le dernier administrateur ne peut pas retirer ses droits (409) ; s'il n'en reste aucun, le prochain appairé l'est (`sudo corde-server pair --admin` force ce rôle) |
-| Journal | appairages (adresse, identifiant, nom), refus (adresse, motif), révocations ; jamais un code, un jeton ni une empreinte |
+| Journal | appairages (adresse, identifiant, nom), refus (adresse, motif), révocations ; jamais un jeton ni une empreinte ; jamais un code, **sauf** le premier code de `--first-pairing-code` (§7.6), sur la sortie standard |
 
 ### 7.3 Routes du serveur
 
@@ -520,6 +527,72 @@ refusé (409 `server_outdated`, « mets à jour le serveur »), et le PC refuse 
 - Le PC ne parle qu'à l'adresse enregistrée, en HTTP, **sans proxy**, avec des délais (5 s pour se
   connecter, 120 s par requête) ; il n'envoie que des sessions **fermées**.
 - Toutes les routes `/api/hub-link` qui changent quelque chose sont réservées au PC (§4).
+
+### 7.6 Corde serveur en conteneur (NAS) et premier code dans le journal
+
+Décision : [ADR 0017](adr/0017-corde-serveur-en-conteneur.md). Guide : [SYNOLOGY.md](SYNOLOGY.md). Code :
+`packaging/docker/` (`Dockerfile`, `entrypoint.sh`, `compose.yaml`), `crates/corde-server/src/hub/first.rs`.
+
+**L'image.** Même binaire que l'archive Linux, sur `debian:bookworm-slim` épinglé par empreinte, sans paquet
+ajouté. Le point d'entrée démarre en root le temps de donner au compte `corde` (uid / gid 8471) ce qui, dans
+`/var/lib/corde`, ne lui appartient pas encore (un dossier partagé de NAS appartient à un utilisateur du NAS ;
+`find … -exec chown -h`, liens non suivis, un seul système de fichiers), puis quitte root **pour de bon** :
+`setpriv --reuid --regid --init-groups --inh-caps=-all --no-new-privs`, et `exec` du serveur (processus 1,
+reçoit SIGTERM ; vérifié : arrêt en moins d'une seconde, code 0). Le passage d'uid 0 à 8471 vide les capacités
+effectives, permises et ambiantes ; `no_new_privs` empêche d'en regagner par un `exec`. L'ensemble limite
+(bounding set) n'est pas vidé (il faudrait `CAP_SETPCAP`) : sans moyen de regagner une capacité, il ne sert
+plus. Les fichiers créés par le serveur le sont avec `umask 077`.
+
+**Le projet compose** (`compose.yaml`, celui du guide) : système de fichiers en lecture seule (seuls
+`/var/lib/corde` et un `/tmp` en mémoire de 16 Mo s'écrivent), `cap_drop: [ALL]` plus `CHOWN`,
+`DAC_READ_SEARCH` (parcourir un dossier copié qui n'est pas encore à `corde`), `SETUID`, `SETGID` — utiles au
+seul point d'entrée —, `no-new-privileges:true`, 512 Mo, 256 processus. Vérifié par la CI à chaque poussée
+(`smoke-test.sh`) : processus 1 = `corde-server`, uid et gid 8471, `CapInh/CapPrm/CapEff/CapAmb` à zéro,
+`NoNewPrivs: 1`, écriture hors des données refusée.
+
+**Ce qui change par rapport au Pi :**
+
+- **`Host`** : le nom de la machine que voit le serveur est celui du conteneur, pas celui du NAS. Les
+  adresses IP restent acceptées ; un nom (celui du NAS, d'un VPN) s'ajoute par `CORDE_ALLOW_HOST`, noms
+  séparés par des virgules, validés par le point d'entrée (lettres, chiffres, points, tirets ; jamais
+  évalués) et passés un par un en `--allow-host`. Une valeur invalide empêche le démarrage.
+- **Le terminal du conteneur** (`docker exec`, ou l'onglet terminal de Container Manager) entre en root,
+  avec les seules capacités du conteneur. `/usr/local/bin/corde-server` y est le point d'entrée, qui repasse
+  sous le compte `corde` avant de lancer le binaire : `corde-server pair | devices | revoke` lisent
+  `hub/control.json` comme le service lui-même. Qui peut ouvrir ce terminal (un administrateur du NAS) a
+  donc le pouvoir de `sudo corde-server pair` sur un Pi.
+- **`corde-sauvegarde`** (même point d'entrée) écrit une archive du dossier de données **dans** ce dossier,
+  en 0644 pour que l'administrateur du NAS la récupère : elle contient tout (comme la sauvegarde du Pi), le
+  guide dit de l'effacer après.
+- **La ressource partagée** : Corde n'est qu'un conteneur parmi d'autres ; un autre conteneur qui monterait
+  le même dossier, ou un administrateur du NAS, lit tout. Rien de nouveau par rapport au point 3 du §7.1.
+
+**Le premier code dans le journal (`--first-pairing-code`).** Sur un NAS, le propriétaire n'a pas de
+terminal commode : sans autre voie, le premier appairage demanderait une commande. Avec l'option (activée
+par défaut **dans l'image seulement**, par `CORDE_FIRST_PAIRING_CODE=1` ; absente partout ailleurs, et
+`--role desktop` l'ignore), au démarrage et **seulement si aucun appareil n'est appairé**, le serveur émet un
+code administrateur par le mécanisme du §7.2 (usage unique, 10 minutes, 3 erreurs, limites d'essais) et
+l'écrit dans un cadre sur sa **sortie standard**, donc dans le journal du conteneur. Il n'est écrit nulle part
+ailleurs (ni fichier, ni API : vérifié par test sur tout le dossier de données). Un appareil appairé, plus
+rien ne s'affiche (vérifié par test et dans la CI) ; un redémarrage sans appareil donne un nouveau code,
+l'ancien meurt avec le processus.
+
+- **Qui peut le lire** : ceux qui lisent le journal du conteneur, c'est-à-dire, sur un NAS Synology, les
+  **comptes administrateurs de DSM** (Container Manager est une application d'administration ; nous n'avons
+  pas trouvé de réglage qui l'ouvre à un compte ordinaire, sans pouvoir le vérifier sur un NAS), plus
+  quiconque a reçu l'accès au démon Docker en ligne de commande ; sur un autre système, ceux qui ont accès
+  au démon Docker (`docker logs`). Tous ont déjà bien plus : ils peuvent ouvrir
+  un terminal dans le conteneur et lancer `corde-server pair`, ou lire les données sur le disque. Le code
+  dans le journal ne leur donne **rien de plus** que la commande ; c'est l'équivalent de `sudo corde-server
+  pair` lancé par root sur un Pi.
+- **Ce qui reste un risque** : le journal survit au code. Il est inoffensif une fois le code utilisé,
+  expiré (10 minutes) ou le processus redémarré, mais une copie du journal envoyée à quelqu'un (pour un
+  dépannage) **pendant ces 10 minutes** et avant tout appairage lui permettrait d'appairer un appareil
+  administrateur. Une fois un appareil appairé, le journal ne contient plus de code utilisable. Les
+  appareils inconnus se voient (et se révoquent) dans la page **Appareils**.
+- **Un journal envoyé ailleurs** (syslog distant, outil de supervision) emporte le code : sur une telle
+  installation, mettre `CORDE_FIRST_PAIRING_CODE=0` et passer par le terminal.
+- Avec `CORDE_FIRST_PAIRING_CODE=0`, l'image se comporte comme le Pi : aucun code sans terminal.
 
 ## 8. L'application iPhone
 

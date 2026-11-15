@@ -15,9 +15,10 @@ que l'on vise à chaque tour. Corde s'appelait anciennement Muret (nom de travai
 
 ![Écran d'accueil de Corde](docs/images/accueil.png)
 
-> **Version 1.3 (novembre 2026).** Nouveau : dans le **Studio**, tes tableaux de bord acceptent des photos,
-> des logos et des vidéos, des couleurs qui changent selon la valeur et des éléments qui n'apparaissent qu'au
-> bon moment. Corde fonctionne avec le jeu réel, mais elle est jeune : certaines parties n'ont pas encore été essayées en conditions réelles (le tableau
+> **Version 1.4 (novembre 2026).** Nouveau : **Corde serveur s'installe sur un NAS Synology** (ou toute
+> machine avec Docker), sans taper de commande ; et dans le **Studio**, tes tableaux de bord acceptent des
+> photos, des logos et des vidéos, des couleurs qui changent selon la valeur et des éléments qui
+> n'apparaissent qu'au bon moment. Corde fonctionne avec le jeu réel, mais elle est jeune : certaines parties n'ont pas encore été essayées en conditions réelles (le tableau
 > [Où en est le projet](#où-en-est-le-projet) le dit ligne par ligne), et l'installeur n'est pas encore
 > signé (voir [Installer](#installer-windows)). Les captures de cette page viennent du simulateur intégré.
 
@@ -36,7 +37,7 @@ que l'on vise à chaque tour. Corde s'appelait anciennement Muret (nom de travai
   - [L'ingénieur de course](#lingénieur-de-course)
   - [Courses en ligne](#courses-en-ligne)
   - [Dans OBS](#dans-obs)
-- [Corde serveur (Raspberry Pi)](#corde-serveur-raspberry-pi)
+- [Corde serveur (Raspberry Pi ou NAS)](#corde-serveur-raspberry-pi-ou-nas)
 - [Où en est le projet](#où-en-est-le-projet)
 - [Pour les développeurs](#pour-les-développeurs)
 - [Documentation](#documentation)
@@ -267,13 +268,13 @@ montrée qu'à la demande. Pas à pas : [docs/TESTING-ON-PC.md](docs/TESTING-ON-
 
 ![La page OBS de Corde : adresses, tailles conseillées, options et aperçus](docs/images/obs-page.png)
 
-## Corde serveur (Raspberry Pi)
+## Corde serveur (Raspberry Pi ou NAS)
 
-Un petit serveur chez toi, toujours allumé (un **Raspberry Pi 5**), qui garde tes sessions, l'ingénieur, ton
-profil et tes courses, et les montre à ton téléphone **PC éteint** — à la maison, ou dehors à travers un
-**VPN que tu montes toi-même**. Le PC reste le seul à lire le jeu : il enregistre comme d'habitude, puis
-envoie chaque session terminée au serveur (et, au démarrage, ce qui n'était pas encore parti). Le direct
-reste sur le PC.
+Un petit serveur chez toi, toujours allumé (un **Raspberry Pi 5**, ou ton **NAS**), qui garde tes sessions,
+l'ingénieur, ton profil et tes courses, et les montre à ton téléphone **PC éteint** — à la maison, ou dehors
+à travers un **VPN que tu montes toi-même**. Le PC reste le seul à lire le jeu : il enregistre comme
+d'habitude, puis envoie chaque session terminée au serveur (et, au démarrage, ce qui n'était pas encore
+parti). Le direct reste sur le PC.
 
 ![Le serveur Corde : l'écran de code d'appairage, l'accueil du serveur, ses appareils et la section « Serveur Corde » des réglages du PC](docs/images/serveur.png)
 
@@ -283,6 +284,11 @@ reste sur le PC.
 - **Jamais sur Internet** : on n'ouvre pas le port de Corde sur la box ; dehors, on entre chez soi par un VPN.
 - Installation : télécharge `corde-server-<version>-linux-arm64.tar.gz` (page des versions), puis
   `sudo ./install.sh` sur le Pi. Sur le PC : **Réglages → Serveur Corde**.
+
+**Sur un NAS** (Synology avec Container Manager, ou tout Docker) au lieu d'un Pi : importe le fichier
+`corde-server-<version>-docker-x64.tar.gz` (page des versions) dans Container Manager et crée le projet ; le
+premier code d'appairage s'affiche dans le journal du conteneur, sans terminal :
+[docs/SYNOLOGY.md](docs/SYNOLOGY.md).
 
 Pas à pas pour un non-informaticien : [docs/SERVEUR.md](docs/SERVEUR.md) · accès depuis l'extérieur :
 [docs/ACCES-EXTERIEUR.md](docs/ACCES-EXTERIEUR.md) · sécurité :
@@ -302,6 +308,7 @@ Pas à pas pour un non-informaticien : [docs/SERVEUR.md](docs/SERVEUR.md) · acc
 | Widgets dans OBS (fond transparent, page « OBS », dispositions overlay) | fait, vérifié dans Chromium ; à essayer dans une vraie source OBS |
 | Mises à jour depuis l'application (releases numérotées signées) | fait ; confirmé par le propriétaire sur son PC (il n'installe plus que par le bouton, jusqu'à la 1.1.0) |
 | Corde serveur (Raspberry Pi) : appairage, synchronisation depuis le PC, paquet Linux arm64 / x64 | fait (0.7.0), vérifié entre deux serveurs et sous émulation arm64 ; à installer sur un vrai Pi |
+| Corde serveur sur un NAS (image de conteneur pour Synology Container Manager, x64 et arm64) | fait (non publié) ; image x64 essayée pour de vrai par la CI (durcissement, appairage, redémarrage, arrêt) ; **jamais installée sur un vrai NAS** ; arm64 construite, jamais essayée |
 | Signature de l'installeur (plus d'avertissement Windows) | à décider |
 | Application iPhone (Capacitor) : courses sans PC avec rappels en notifications, connexion au PC et au serveur Corde | fait ; installée par TestFlight sur l'iPhone du pilote (14 nov.), en test sur invitation ; pas encore sur l'App Store |
 | Widgets iPhone (écran d'accueil, écran verrouillé) et compte à rebours dans la Dynamic Island | fait (0.9.0, iPhone seulement) ; fonctionnent sur l'iPhone du pilote (TestFlight) |
@@ -397,9 +404,11 @@ corde/
   [application iPhone](docs/adr/0011-application-mobile-capacitor.md),
   [widgets iOS et activité en direct](docs/adr/0012-widgets-activite-en-direct.md),
   [application Android](docs/adr/0013-application-android.md),
-  [tableau de bord du téléphone](docs/adr/0014-tableau-de-bord-telephone.md)
+  [tableau de bord du téléphone](docs/adr/0014-tableau-de-bord-telephone.md),
+  [Corde serveur en conteneur](docs/adr/0017-corde-serveur-en-conteneur.md)
 - [docs/TESTING-ON-PC.md](docs/TESTING-ON-PC.md) — installer et utiliser Corde sur Windows, dépannage
 - [docs/SERVEUR.md](docs/SERVEUR.md) — installer Corde serveur sur un Raspberry Pi, appairer, sauvegarder
+- [docs/SYNOLOGY.md](docs/SYNOLOGY.md) — installer Corde serveur sur un NAS Synology (Container Manager), sans commande
 - [docs/ACCES-EXTERIEUR.md](docs/ACCES-EXTERIEUR.md) — ouvrir le serveur depuis l'extérieur par un VPN, sans exposer Corde
 - [docs/IOS.md](docs/IOS.md) — l'application iPhone : ce qu'elle fait, comment sortent les versions (CI, TestFlight), ce qu'il faut faire côté Apple
 - [docs/ANDROID.md](docs/ANDROID.md) — l'application Android : l'installer (APK), ses autorisations, quoi essayer, la clé de signature et la CI

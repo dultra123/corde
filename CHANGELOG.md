@@ -8,6 +8,28 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [1.4.0] — 2026-11-15
+
+**Corde serveur sur un NAS Synology**, sans acheter de Raspberry Pi et sans taper de commande.
+
+### Nouveautés
+
+- **Corde serveur en image de conteneur** : un fichier `corde-server-<version>-docker-x64.tar.gz` sur la
+  page des versions, à importer dans **Container Manager** (DSM 7.2), puis un projet à créer en collant un
+  texte tout prêt. Tes données restent dans un dossier du NAS ; une mise à jour n'y touche pas. Marche aussi
+  sur tout autre NAS ou machine avec Docker. Pas à pas : `docs/SYNOLOGY.md`.
+- **Premier appairage sans terminal** : tant qu'aucun appareil n'est appairé, le code d'appairage s'affiche
+  dans le **journal du conteneur** à chaque démarrage (10 minutes, une seule fois). Les appareils suivants
+  s'appairent avec `corde-server pair` dans le terminal du conteneur, ouvert depuis le navigateur.
+- **Sauvegarde en une commande** sur le NAS (`corde-sauvegarde`), au même format que celle du Raspberry Pi :
+  on passe de l'un à l'autre en gardant tout.
+
+### À savoir
+
+- Comme sur le Pi : **jamais** de port 8471 ouvert sur Internet, ni QuickConnect, ni proxy inversé ; dehors,
+  on passe par un VPN.
+- Image pour processeur ARM 64 bits fournie aussi, mais jamais essayée sur un vrai NAS.
+
 ## [1.3.0] — 2026-11-15
 
 **Le Studio devient vraiment le tien** : photos, logos, vidéos et couleurs qui suivent la course.

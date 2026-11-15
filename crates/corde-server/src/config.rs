@@ -69,6 +69,13 @@ pub struct ServerConfig {
     /// the option for several names.
     #[arg(long = "allow-host", value_name = "NAME")]
     pub allow_host: Vec<String>,
+    /// Home server only, off by default: at start-up, when **no device at all** is paired,
+    /// issue one administrator pairing code (same rules as `corde-server pair --admin`) and
+    /// print it on the standard output, framed. For a server without a comfortable terminal
+    /// (the container image turns it on; docs/SECURITY-MODEL.md §7). Nothing is printed once a
+    /// device is paired.
+    #[arg(long)]
+    pub first_pairing_code: bool,
     /// PC paired with a home server: seconds between two rounds of sending (0 = only after
     /// a recording stops and when asked). Start-up and the end of every recording send too.
     #[arg(long, default_value_t = DEFAULT_SYNC_INTERVAL_S, hide = true)]
@@ -177,6 +184,7 @@ impl Default for ServerConfig {
         Self {
             role: Role::Desktop,
             allow_host: Vec::new(),
+            first_pairing_code: false,
             sync_interval_s: DEFAULT_SYNC_INTERVAL_S,
             port: DEFAULT_PORT,
             bind: None,
@@ -396,6 +404,10 @@ mod tests {
         assert_eq!(c.source, SourceKind::Auto);
         assert_eq!(c.bind, None);
         assert!(!c.lan);
+        assert!(!c.first_pairing_code, "off unless asked");
+        assert!(
+            ServerConfig::parse_from(["corde-server", "--first-pairing-code"]).first_pairing_code
+        );
         let c = ServerConfig::parse_from([
             "corde-server",
             "--source",

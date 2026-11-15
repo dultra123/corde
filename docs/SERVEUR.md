@@ -5,6 +5,9 @@
 > commandes. Compte une heure la première fois.
 > Accès depuis l'extérieur de la maison : [ACCES-EXTERIEUR.md](ACCES-EXTERIEUR.md) (à lire **après** ce guide).
 > Sécurité : [SECURITY-MODEL.md §7](SECURITY-MODEL.md#7-le-serveur-corde-mode-hub). Décision : [ADR 0010](adr/0010-serveur-domestique.md).
+>
+> **Tu as un NAS Synology** (ou un autre NAS avec Docker) allumé en permanence ? Corde serveur peut y tourner
+> à la place d'un Raspberry Pi, installé à la souris, sans commande : [SYNOLOGY.md](SYNOLOGY.md).
 
 ## En bref
 
@@ -33,6 +36,10 @@
 | **Stockage** | une carte microSD de bonne qualité (classe A2, 32 Go ou plus) suffit pour commencer. Pour un serveur allumé en permanence, un **SSD** (carte d'extension M.2 pour Pi 5, ou SSD USB) est plus durable et plus rapide. Une heure d'enregistrement occupe environ 60 Mo. |
 | **Boîtier** | avec refroidissement (le ventilateur officiel du Pi 5, ou un boîtier ventilé). |
 | **Réseau** | un **câble Ethernet** vers ta box de préférence (plus stable que le Wi-Fi). |
+
+**Pas de Raspberry Pi, mais un NAS ?** Un NAS Synology à processeur Intel ou AMD avec le paquet Container
+Manager (DSM 7.2), ou toute machine avec Docker, fait l'affaire : rien à acheter, et le reste de ce guide
+(appairage, appareils, accès extérieur) s'applique. Pas à pas : [SYNOLOGY.md](SYNOLOGY.md).
 
 ## 2. Installer Raspberry Pi OS Lite 64 bits
 
@@ -70,19 +77,19 @@ ou « réservation DHCP »). Sinon son adresse peut changer et le PC ne le retro
    - Le plus simple, directement sur le Pi (par SSH) :
 
      ```bash
-     wget https://github.com/dultra123/corde/releases/download/v1.3.0/corde-server-1.3.0-linux-arm64.tar.gz
+     wget https://github.com/dultra123/corde/releases/download/v1.4.0/corde-server-1.4.0-linux-arm64.tar.gz
      ```
    - Ou télécharge-la sur le PC, puis copie-la sur le Pi depuis PowerShell :
 
      ```powershell
-     scp $HOME\Downloads\corde-server-1.3.0-linux-arm64.tar.gz ton-utilisateur@corde.local:~
+     scp $HOME\Downloads\corde-server-1.4.0-linux-arm64.tar.gz ton-utilisateur@corde.local:~
      ```
    - Un PC Linux (pas un Pi) prend l'archive `…-linux-x64.tar.gz`.
 2. Sur le Pi (par SSH) :
 
    ```bash
-   tar -xzf corde-server-1.3.0-linux-arm64.tar.gz
-   cd corde-server-1.3.0-linux-arm64
+   tar -xzf corde-server-1.4.0-linux-arm64.tar.gz
+   cd corde-server-1.4.0-linux-arm64
    sudo ./install.sh
    ```
 
@@ -186,8 +193,8 @@ tout partira après la mise à jour).
 2. Sur le Pi :
 
    ```bash
-   tar -xzf corde-server-1.3.0-linux-arm64.tar.gz
-   cd corde-server-1.3.0-linux-arm64
+   tar -xzf corde-server-1.4.0-linux-arm64.tar.gz
+   cd corde-server-1.4.0-linux-arm64
    sudo ./install.sh
    ```
 

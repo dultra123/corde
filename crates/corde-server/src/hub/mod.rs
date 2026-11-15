@@ -9,12 +9,15 @@
 //! * [`routes`] — `/api/hub/*`: pairing state, typing the code, devices, status, and the
 //!   local control routes the `corde-server pair | devices | revoke` commands use.
 //! * [`receive`] — `/api/sync/*`: what a paired PC sends ([`crate::sync_wire`]).
-//! * [`cli`] — those commands.
+//! * [`cli`] — those commands, and `corde-server healthcheck`.
+//! * [`first`] — `--first-pairing-code`: the first code printed in the log while no device is
+//!   paired (a server without a terminal, e.g. the container image).
 //! * [`hub_guard`] — the middleware: every `/api/*` and `/ws` request needs a paired device
 //!   except the pairing state and the typed code ([`crate::guard::hub_route_access`]).
 
 pub mod auth;
 pub mod cli;
+pub mod first;
 pub mod receive;
 pub mod routes;
 

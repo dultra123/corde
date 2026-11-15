@@ -1,6 +1,6 @@
 # Corde — fiche de présentation
 
-> À jour pour la **version 1.3.0** (15 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
+> À jour pour la **version 1.4.0** (15 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
 > faut pour présenter Corde (site, page de présentation, annonce) : ce qu'elle fait, où elle tourne, ce qui
 > est nouveau, ce qui arrive, les images et les liens. Elle ne dit que ce qui existe ; le détail et l'état
 > exact de chaque partie sont dans le [README](../README.md) et dans [STATUS.md](STATUS.md).
@@ -20,13 +20,13 @@ Le nom vient du **point de corde** : l'endroit où la trajectoire idéale touche
 
 | | |
 |---|---|
-| Version actuelle | **1.3.0** (15 novembre 2026) |
+| Version actuelle | **1.4.0** (15 novembre 2026) |
 | Prix | Gratuit |
 | Licence | Logiciel libre, GPL-3.0-or-later ; code source public |
 | Jeu | Le Mans Ultimate |
 | PC | Windows (64 bits), installeur `Corde_<version>_x64-setup.exe` |
 | Téléphone | Navigateur du téléphone, application iPhone (iOS 17 ou plus récent), application Android (Android 8 ou plus récent) |
-| Serveur maison (facultatif) | Corde serveur, pour Raspberry Pi 5 (Linux arm64) ou Linux x64 |
+| Serveur maison (facultatif) | Corde serveur, pour Raspberry Pi 5 (Linux arm64), Linux x64, ou un NAS avec Docker (Synology : Container Manager) |
 | Langues | Français et anglais |
 | Auteur | dultra__ et les contributeurs |
 | Site officiel | <http://corderacing.com/> |
@@ -167,11 +167,15 @@ Chaque widget, ou une disposition entière, s'affiche sur fond transparent par-d
 
 Images : `obs-overlay.png`, `obs-page.png`.
 
-### 11. Corde serveur (Raspberry Pi), facultatif
+### 11. Corde serveur (Raspberry Pi ou NAS), facultatif
 
 Un petit serveur chez soi, toujours allumé, qui garde les sessions, l'ingénieur, le profil et les courses, et
 les montre au téléphone PC éteint. Seuls les appareils appairés (code à 8 chiffres) y accèdent ; il ne
 s'ouvre jamais sur Internet (de l'extérieur, on passe par son propre VPN).
+
+Deux façons de l'installer : sur un **Raspberry Pi** (ou une machine Linux), ou, depuis la 1.4.0, sur un
+**NAS Synology** déjà allumé à la maison (application Container Manager), à la souris, sans taper de
+commande. La même image marche sur tout NAS ou machine avec Docker.
 
 Image : `serveur.png`.
 
@@ -189,9 +193,12 @@ redémarrer. Chaque version est signée et vérifiée avant l'installation ; rie
 | iPhone | Application, par TestFlight sur invitation | En test |
 | Android | Application, fichier APK | Fichier pas encore publié |
 | Raspberry Pi 5 / Linux | Corde serveur, archive `corde-server-<version>-linux-arm64.tar.gz` | Pas encore essayé sur un vrai Pi |
+| NAS Synology (processeur Intel ou AMD) / Docker | Corde serveur, image `corde-server-<version>-docker-x64.tar.gz` | Essayé dans un conteneur en test automatique, pas encore sur un vrai NAS |
 
 ## Nouveautés
 
+- **1.4.0 (15 novembre 2026)** — Corde serveur s'installe sur un NAS Synology (ou toute machine avec
+  Docker) ; premier appairage sans terminal.
 - **1.3.0 (15 novembre 2026)** — Studio : photos, logos et vidéos, couleurs selon la valeur, « Afficher
   quand… », jauge circulaire, formes, bandeau d'alerte, style des éléments, sélection multiple et
   copier / coller ; le partage emporte les images (`.cordedash`).
@@ -212,7 +219,6 @@ Le détail de chaque version est dans le [journal des versions](../CHANGELOG.md)
 À présenter comme « à venir », sans date :
 
 - Dans le Studio : formules, sons.
-- Corde serveur sur un NAS (en préparation).
 - Widgets sur Android.
 - Publication sur l'App Store et le Play Store : pas décidée.
 - Signature de l'installeur Windows (aujourd'hui, Windows affiche un avertissement à l'installation).
@@ -238,7 +244,7 @@ Détails : [PRIVACY.md](../PRIVACY.md), [SECURITY-MODEL.md](SECURITY-MODEL.md).
   <https://github.com/dultra123/corde/releases/latest/download/latest.json>
 - Guide d'installation et d'utilisation : [TESTING-ON-PC.md](TESTING-ON-PC.md)
 - Application iPhone : [IOS.md](IOS.md) · application Android : [ANDROID.md](ANDROID.md)
-- Corde serveur : [SERVEUR.md](SERVEUR.md) · accès depuis l'extérieur : [ACCES-EXTERIEUR.md](ACCES-EXTERIEUR.md)
+- Corde serveur : [SERVEUR.md](SERVEUR.md) · sur un NAS Synology : [SYNOLOGY.md](SYNOLOGY.md) · accès depuis l'extérieur : [ACCES-EXTERIEUR.md](ACCES-EXTERIEUR.md)
 - Signaler une faille, en privé : onglet *Security* du dépôt → *Report a vulnerability*
 - Une image du dépôt par son adresse directe :
   `https://raw.githubusercontent.com/dultra123/corde/main/docs/images/<fichier>`

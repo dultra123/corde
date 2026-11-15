@@ -20,6 +20,9 @@ Appairer un appareil (PC, téléphone) :
 
   sudo corde-server pair
 
+Sur un NAS (Synology ou autre, avec Docker) : ne prends pas cette archive, mais le
+fichier corde-server-*-docker-x64.tar.gz de la même page (guide docs/SYNOLOGY.md).
+
 Ne redirige jamais le port 8471 depuis ta box : l'accès depuis l'extérieur passe par
 un VPN (docs/ACCES-EXTERIEUR.md).
 
