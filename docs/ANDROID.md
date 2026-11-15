@@ -1,6 +1,6 @@
 # Corde sur Android
 
-> Version 1.4.2 — tableaux de bord personnalisés du Studio (1.1.0 : tableau de bord de course et
+> Version 1.4.3 — tableaux de bord personnalisés du Studio (1.1.0 : tableau de bord de course et
 > démonstration ; 1.0.0 : première version Android, la même
 > que l'iPhone, sans les widgets ni le compte à rebours). Décision : [ADR 0013](adr/0013-application-android.md). Sécurité :
 > [SECURITY-MODEL.md §9](SECURITY-MODEL.md#9-lapplication-android). Vie privée :
@@ -49,8 +49,8 @@ interface, avec les onglets en bas de l'écran.
 L'application n'est pas sur le Play Store : on l'installe à partir d'un fichier **APK** publié sur GitHub.
 
 1. Sur le téléphone, ouvre la page des versions de Corde :
-   <https://github.com/dultra123/corde/releases>. Prends le fichier **`Corde_1.4.2_android.apk`** :
-   - dans la version numérotée (**Corde 1.4.2**), s'il y est : c'est la version stable ;
+   <https://github.com/dultra123/corde/releases>. Prends le fichier **`Corde_1.4.3_android.apk`** :
+   - dans la version numérotée (**Corde 1.4.3**), s'il y est : c'est la version stable ;
    - sinon dans **Corde — dernière version** (la pré-release `continuous`), refaite à chaque modification.
 2. Le navigateur prévient que ce type de fichier peut être dangereux : **Télécharger quand même**.
 3. Ouvre le fichier téléchargé (la notification « Téléchargement terminé », ou l'application **Fichiers** →
@@ -100,7 +100,7 @@ second canal, « Default », est créé par le module de notifications : Corde n
 
 Ce que la CI a vérifié sur l'émulateur est au §6. Le reste ne peut l'être que sur un vrai téléphone :
 
-1. **Installation** (§2) : l'icône Corde (le « C » ambre sur fond sombre) apparaît ; avec les icônes à thème
+1. **Installation** (§2) : l'icône Corde (un compte-tours : le « C » ambre et son aiguille blanche, sur fond sombre) apparaît ; avec les icônes à thème
    d'Android 13+, elle prend les couleurs du thème.
 2. **Lancement** : écran sombre avec le signe de Corde, puis l'Accueil. Rien ne doit passer **sous la barre
    d'état** (en haut) ni **sous la barre de gestes** (en bas) ; les onglets du bas sont entiers.

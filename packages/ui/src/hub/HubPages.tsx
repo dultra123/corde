@@ -7,6 +7,7 @@ import {
   fetchDevices,
   fetchHubStatus,
   type HubDevice,
+  pairCommand,
   revokeDevice,
   updateDevice,
 } from "../net/hub-api";
@@ -309,6 +310,7 @@ export function DevicesPage() {
   const { t } = useT();
   const list = useAsync((signal) => fetchDevices(signal), []);
   const admin = useHub((s) => s.device?.admin === true);
+  const container = useHub((s) => s.container);
   const devices = list.data?.devices ?? [];
   return (
     <div className="home-page hub-devices">
@@ -339,7 +341,8 @@ export function DevicesPage() {
         <h2 className="home-card-title">{t("hub.devices.add")}</h2>
         <ol className="hub-steps">
           <li>
-            {t("hub.devices.add1")} <code className="hub-cmd">sudo corde-server pair</code>
+            {t(container ? "hub.devices.add1Container" : "hub.devices.add1")}{" "}
+            <code className="hub-cmd">{pairCommand(container)}</code>
           </li>
           <li>{t("hub.devices.add2")}</li>
         </ol>

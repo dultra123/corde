@@ -1,16 +1,25 @@
 import { useState } from "react";
+import { CordeMark } from "../dashboard/Logo";
 import { useT } from "../i18n";
-import { codeDigits, formatCode, guessDeviceName, pairThisDevice } from "../net/hub-api";
+import {
+  codeDigits,
+  formatCode,
+  guessDeviceName,
+  pairCommand,
+  pairThisDevice,
+} from "../net/hub-api";
 import { errorMessage } from "../sessions/shared";
 import { useHub } from "../store/hub";
 
 /**
  * The home server's door (`corde-server --role hub`): shown instead of the app while this
- * device is not paired. The code is read on the server itself (`sudo corde-server pair`); once
- * accepted, the browser keeps a protected cookie and the app opens.
+ * device is not paired. The code is read on the server itself (`sudo corde-server pair`, or
+ * `corde-server pair` in the terminal of its container); once accepted, the browser keeps a
+ * protected cookie and the app opens.
  */
 export function PairingScreen() {
   const { t } = useT();
+  const container = useHub((s) => s.container);
   const [code, setCode] = useState("");
   const [name, setName] = useState(() => guessDeviceName() ?? t("hub.pair.defaultName"));
   const [busy, setBusy] = useState(false);
@@ -40,22 +49,13 @@ export function PairingScreen() {
           if (ready) void submit();
         }}
       >
-        <svg className="hub-door-logo" viewBox="0 0 32 32" aria-hidden="true">
-          <path
-            d="M23.39 9.11A9 9 0 1 0 23.39 22.89"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="5"
-            strokeLinecap="round"
-          />
-          <circle cx="14.7" cy="16" r="2.8" fill="currentColor" />
-        </svg>
+        <CordeMark className="hub-door-logo" />
         <h1 className="hub-door-title">{t("hub.pair.title")}</h1>
         <p className="dim">{t("hub.pair.lead")}</p>
         <ol className="hub-door-steps">
           <li>
-            {t("hub.pair.step1")}
-            <code className="hub-cmd">sudo corde-server pair</code>
+            {t(container ? "hub.pair.step1Container" : "hub.pair.step1")}
+            <code className="hub-cmd">{pairCommand(container)}</code>
           </li>
           <li>{t("hub.pair.step2")}</li>
         </ol>
@@ -92,7 +92,7 @@ export function PairingScreen() {
           </p>
         )}
         <p id="hub-pair-hint" className="faint hub-door-hint">
-          {t("hub.pair.hint")}
+          {t(container ? "hub.pair.hintContainer" : "hub.pair.hint")}
         </p>
       </form>
     </main>

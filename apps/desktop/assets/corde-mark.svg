@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!--
+    La marque Corde pour les petites tailles (moins de 64 px : zone de notification, barre des
+    tâches, onglet du navigateur, barre du haut de l'interface) : le même compte-tours que
+    `corde-icon.svg`, aiguille épaissie, sur sa tuile sombre (#0b0e12, liseré #2b3440).
+    Reprise telle quelle du système de design « Corde ». `packages/ui/public/favicon.svg` en
+    est la copie sans ce commentaire.
+  -->
+  <rect width="128" height="128" rx="28" fill="#0b0e12"/>
+  <rect x="1" y="1" width="126" height="126" rx="27" fill="none" stroke="#2b3440" stroke-width="2"/>
+  <path d="M101.48 101.48A53 53 0 1 1 45.87 14.20" fill="none" stroke="#44526a" stroke-width="4"/>
+  <path d="M56.62 11.52A53 53 0 0 1 101.48 26.52" fill="none" stroke="#ffb454" stroke-width="4"/>
+  <path d="M75.24 91.82A30 30 0 1 1 75.24 36.18" fill="none" stroke="#ffb454" stroke-width="11"/>
+  <path d="M91.23 24.45L89.05 23.04L61.15 62.15L54.32 70.83L61.70 75.62L66.85 65.85Z" fill="#e9edf2"/>
+  <circle cx="64" cy="64" r="7.5" fill="#0b0e12" stroke="#44526a" stroke-width="1.3"/>
+</svg>

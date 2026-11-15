@@ -193,6 +193,14 @@ async fn pairing_cookie_tokens_admin_and_revocation() {
     assert_eq!(r.status, 200);
     assert_eq!(r.json()["role"], "hub");
     assert_eq!(r.json()["paired"], false);
+    // The door names the command to type on the server: it must know whether the server runs
+    // in a container (true or false, whatever machine runs this test).
+    assert_eq!(
+        r.json()["container"],
+        corde_server::net::in_container(),
+        "{:?}",
+        r.json()
+    );
     assert_eq!(
         ws(to, &[]).await.err(),
         Some(401),

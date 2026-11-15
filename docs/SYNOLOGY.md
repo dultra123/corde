@@ -96,7 +96,7 @@ numéro 8471). Ne mets rien d'autre dedans.
 1. Sur le PC, ouvre la [dernière version de Corde](https://github.com/dultra123/corde/releases/latest)
    (section *Assets* en bas de la page).
 2. Télécharge **`corde-server-<version>-docker-x64.tar.gz`** (par exemple
-   `corde-server-1.4.2-docker-x64.tar.gz`, environ 40 Mo ; le numéro change à chaque version). **Ne le
+   `corde-server-1.4.3-docker-x64.tar.gz`, environ 40 Mo ; le numéro change à chaque version). **Ne le
    décompresse pas** : le NAS le lit tel quel.
 
 Les images apparaissent à partir de la première version publiée après l'arrivée de ce guide ; la pré-release
@@ -110,7 +110,7 @@ Les images apparaissent à partir de la première version publiée après l'arri
    téléchargé le fichier ; « À partir de ce DSM » sert pour un fichier déjà posé sur le NAS).
 3. Sélectionne `corde-server-<version>-docker-x64.tar.gz` et valide. L'envoi prend une minute environ.
 4. L'image **`corde-server`** apparaît dans la liste, avec son numéro dans la colonne **Identification**
-   (ex. `1.4.2`).
+   (ex. `1.4.3`).
 
 Si l'import refuse le fichier compressé : décompresse-le une fois sur le PC (clic droit → Extraire, ou
 7-Zip) pour obtenir `corde-server-<version>-docker-x64.tar`, puis importe ce `.tar`.
@@ -126,14 +126,14 @@ Container Manager s'occupe du reste.
 3. **Chemin** : clique sur **Définir le chemin**, déplie `docker`, choisis **`corde`** (créé au § 3), puis
    **Sélectionnez**. Le champ affiche `/docker/corde`.
 4. **Source** : choisis **Créer un fichier docker-compose.yml**. Une zone de texte s'ouvre en dessous.
-5. Colle ce texte (Ctrl + V), puis **remplace `1.4.2` par le numéro de l'image que tu as importée** (§ 5) :
+5. Colle ce texte (Ctrl + V), puis **remplace `1.4.3` par le numéro de l'image que tu as importée** (§ 5) :
 
    ```yaml
    version: "2.4"
 
    services:
      corde:
-       image: corde-server:1.4.2
+       image: corde-server:1.4.3
        container_name: corde
        restart: unless-stopped
        ports:
@@ -245,8 +245,10 @@ Puis, le téléphone sur le Wi-Fi de la maison :
   « Téléphone »…) → **Appairer cet appareil**. Ajoute la page à l'écran d'accueil pour l'ouvrir comme une
   application.
 
-> **L'appareil est appairé pour une adresse.** Ouvre toujours le serveur par la **même adresse**
-> (`http://192.168.1.50:8471`), y compris dehors à travers le VPN ([ACCES-EXTERIEUR.md](ACCES-EXTERIEUR.md)).
+> **L'appareil est appairé pour une adresse.** À la maison, ouvre toujours le serveur par la **même
+> adresse** (`http://192.168.1.50:8471`). Dehors, tout dépend du VPN (§ 17) : avec un VPN qui te remet dans
+> le réseau de la maison, c'est la même adresse ; avec un VPN maillé, le NAS a une **seconde adresse**
+> (`100.x.y.z`) et il faut un **second appairage** pour celle-ci.
 
 ## 10. Appairer d'autres appareils (terminal du conteneur)
 
@@ -398,14 +400,74 @@ Les règles de [ACCES-EXTERIEUR.md](ACCES-EXTERIEUR.md) valent pour le NAS comme
 - **N'expose pas Corde par les services d'accès à distance du NAS** : ni **QuickConnect**, ni le **proxy
   inversé** de DSM, ni le **portail web** de Container Manager, ni un nom **DDNS** qui mènerait au port de
   Corde. Ils publieraient Corde sur Internet.
-- **On entre chez soi par un VPN**, puis on ouvre `http://192.168.1.50:8471` comme à la maison. Les voies
-  A, B et C de [ACCES-EXTERIEUR.md](ACCES-EXTERIEUR.md) marchent telles quelles (dans la voie A, le
-  Raspberry Pi qui fait serveur WireGuard peut être n'importe quelle machine Linux de la maison, pas le NAS).
-  Le paquet **VPN Server** de Synology fait du NAS lui-même le serveur VPN de la maison : c'est l'équivalent
-  de la **voie B** (la box qui fait serveur VPN), avec le NAS à la place de la box. Il propose OpenVPN,
-  L2TP/IPsec et PPTP (pas WireGuard) : prends **OpenVPN**, jamais PPTP (chiffrement dépassé). Seul le port
-  du VPN est alors redirigé par la box, jamais celui de Corde ; suis la documentation de Synology pour le
-  régler, et applique la liste de vérification finale d'[ACCES-EXTERIEUR.md](ACCES-EXTERIEUR.md).
+- **On entre chez soi par un VPN**, puis on ouvre Corde serveur comme à la maison.
+
+### 17.1 Le plus simple sur un Synology : un VPN maillé (vérifié sur un DS220+, DSM 7.4.1)
+
+C'est la **voie C** d'[ACCES-EXTERIEUR.md](ACCES-EXTERIEUR.md#c-pas-dadresse-publique-cg-nat--un-réseau-maillé) :
+une application sur le téléphone, un paquet sur le NAS, le même compte des deux côtés. **Aucun port n'est
+ouvert sur la box et aucun réglage de DSM n'est touché.** À savoir avant de choisir : une société tierce
+met tes appareils en relation (elle connaît tes appareils et quand ils se connectent ; ce qui circule reste
+chiffré), et **qui contrôle ton compte peut ajouter un appareil à ton réseau** : protège ce compte par une
+double authentification.
+
+L'exemple ci-dessous est celui de **Tailscale**, dont le paquet se trouve dans le Centre de paquets de DSM.
+Son interface est en anglais et ses libellés peuvent changer.
+
+1. **Sur le téléphone** : installe l'application **Tailscale**, ouvre-la, accepte l'ajout d'une
+   configuration VPN, connecte-toi (un compte est créé à la première connexion). L'écran affiche un
+   interrupteur allumé et **Connected**.
+2. **Sur le NAS** : **Centre de paquets** → cherche **Tailscale** → **Installer**. Quand le paquet affiche
+   **En cours d'exécution** → **Ouvrir** : une page s'ouvre dans un nouvel onglet.
+3. Sur cette page, clique sur le bouton bleu (**Reauthenticate** ou **Log in** : la première fois, la page
+   annonce « Your device's key has expired », c'est normal) → connecte-toi avec **le même compte** que sur
+   le téléphone → **Connect**.
+4. Rouvre la page du paquet (**Ouvrir**) : sous **This device**, le nom du NAS, **Connected** et son adresse
+   dans le VPN, du type **`100.x.y.z`**. Note-la.
+5. **Essaie depuis l'extérieur** : téléphone en 4G/5G (Wi-Fi coupé), VPN allumé, ouvre
+   `http://100.x.y.z:8471` dans le navigateur : la page **Serveur Corde** doit s'afficher et demander un
+   code. Si elle ne s'affiche pas : vérifie l'interrupteur du VPN sur le téléphone, puis l'état
+   **Connected** sur la page du paquet.
+6. **Dans l'application Corde** (version **1.4.2** ou suivante : avant, elle refusait ces adresses) :
+   **Accueil** → **Mes serveurs** → **Ajouter un serveur** → **Adresse** : `100.x.y.z:8471` → **Nom** :
+   « NAS dehors » → **Ajouter** → **Appairer ce téléphone**, avec un **nouveau code** (§ 10) → **Utiliser**.
+   Sans l'application, la page ouverte à l'étape 5 s'appaire de la même façon.
+
+Ensuite :
+
+- **Deux lignes dans « Mes serveurs »**, une par adresse : le NAS à la maison (`192.168.…`) et le NAS dehors
+  (`100.…`). En principe, l'adresse du VPN marche aussi à la maison tant que le VPN est allumé (non
+  vérifié sur ce NAS) : tu pourrais alors n'utiliser qu'elle.
+- **Le paquet du Centre de paquets est ancien** (1.58.2 au moment de l'essai ; son éditeur indique ne plus
+  maintenir ce canal). Il fonctionne, mais mets-le à jour avec la tâche planifiée que recommande l'éditeur
+  (vérifié : 1.58.2 → 1.104.7, le NAS garde son adresse et reste **Connected**) : **Panneau de
+  configuration** → **Planificateur de tâches** → **Créer** → **Tâche planifiée** → **Script défini par
+  l'utilisateur** ; onglet **Général** : un nom (« Mise a jour Tailscale »), **Utilisateur** : `root`,
+  **Activé** coché ; onglet **Paramètres de tâche**, zone du script : `tailscale update --yes` ; **OK**
+  (DSM avertit qu'une tâche `root` a tous les droits, et peut demander ton mot de passe). Puis sélectionne
+  la tâche → **Exécuter** pour la première mise à jour ; ensuite elle tourne chaque jour. C'est un réglage
+  système du NAS : fais-le toi-même, en connaissance de cause.
+- **Par défaut, chaque appareil doit se reconnecter au VPN tous les 180 jours.** Pour un serveur, l'éditeur
+  permet de désactiver cette expiration pour l'appareil, dans la console d'administration du compte. Sinon,
+  le NAS sortira du VPN au bout de six mois et il faudra refaire l'étape 3.
+- **Limite ce que le téléphone atteint** avec les règles d'accès du service, pour qu'il ne joigne que le
+  port 8471 du NAS.
+- **Téléphone perdu ou volé** : retire-le de ton réseau dans la console d'administration du VPN, **et**
+  révoque-le dans Corde (§ 10).
+
+Non vérifié sur ce NAS : Android (même principe), les règles d'accès.
+
+### 17.2 Les autres voies
+
+Les voies A et B d'[ACCES-EXTERIEUR.md](ACCES-EXTERIEUR.md) marchent telles quelles (dans la voie A, le
+Raspberry Pi qui fait serveur WireGuard peut être n'importe quelle machine Linux de la maison, pas le NAS).
+Le paquet **VPN Server** de Synology fait du NAS lui-même le serveur VPN de la maison : c'est l'équivalent
+de la **voie B** (la box qui fait serveur VPN), avec le NAS à la place de la box. Il propose OpenVPN,
+L2TP/IPsec et PPTP (pas WireGuard) : prends **OpenVPN**, jamais PPTP (chiffrement dépassé). Seul le port
+du VPN est alors redirigé par la box, jamais celui de Corde ; suis la documentation de Synology pour le
+régler, et applique la liste de vérification finale d'[ACCES-EXTERIEUR.md](ACCES-EXTERIEUR.md). Avec ces
+voies, le téléphone se retrouve dans le réseau de la maison : il ouvre `http://192.168.1.50:8471`, la même
+adresse qu'à la maison, sans second appairage.
 
 ## 18. Ce qui protège tes données (résumé)
 

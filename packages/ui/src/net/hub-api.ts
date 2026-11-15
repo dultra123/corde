@@ -33,6 +33,16 @@ export interface HubPairing {
   version: string;
   paired: boolean;
   device: HubDeviceRef | null;
+  /**
+   * The server runs in a container (a NAS): its commands are typed in the terminal of the
+   * container, without `sudo`. Absent from a server older than 1.5.0.
+   */
+  container?: boolean;
+}
+
+/** The command that prints a pairing code, where the server runs. */
+export function pairCommand(container: boolean): string {
+  return container ? "corde-server pair" : "sudo corde-server pair";
 }
 
 export interface HubDevice {

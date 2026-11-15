@@ -26,6 +26,7 @@ import {
   IconStudio,
 } from "./icons";
 import { LayoutMenu } from "./LayoutMenu";
+import { CordeMark } from "./Logo";
 import { StatusPill } from "./StatusPill";
 
 function useFullscreen(): [boolean, () => void] {
@@ -113,16 +114,7 @@ export function TopBar({ onSettings, section = "dashboard", dash = false }: Prop
     <header className={`topbar is-${section}`}>
       <div className="topbar-left">
         <a className="brand" href={routeHash({ page: "home" })} title={t("app.name")}>
-          <svg viewBox="0 0 32 32" aria-hidden="true">
-            <path
-              d="M23.39 9.11A9 9 0 1 0 23.39 22.89"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="5"
-              strokeLinecap="round"
-            />
-            <circle cx="14.7" cy="16" r="2.8" fill="currentColor" />
-          </svg>
+          <CordeMark />
           <span className="sr-only">{t("app.name")}</span>
         </a>
         <NavTabs section={section} studio={studioTab} />

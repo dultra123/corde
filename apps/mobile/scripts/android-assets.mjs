@@ -1,13 +1,14 @@
 /**
  * The images and the sound of the Android application, written by `make-assets.mjs` from the
- * same sign as the iPhone icon (the favicon of `apps/desktop/assets/corde-icon.svg`: an open
- * ring and a dot, accent #ffb454 on #0b0e12). Android draws vectors itself, so every image is
+ * same sign as the iPhone icon (the logo of `apps/desktop/assets/corde-icon.svg`: a rev counter
+ * — a grey ring that turns amber in the red zone, a bold amber « C », a white needle — on
+ * #0b0e12). Android draws vectors itself, so every image is
  * a vector drawable (text, reviewed like code) — no Chromium needed for this part:
  *
  *   res/drawable/ic_launcher_foreground.xml   adaptive icon, foreground (108 dp, the sign in the
  *                                             66 dp safe zone)
- *   res/drawable/ic_launcher_monochrome.xml   themed icons (Android 13+): the same shape, tinted
- *                                             by the system
+ *   res/drawable/ic_launcher_monochrome.xml   themed icons (Android 13+): the same shape in one
+ *                                             colour, tinted by the system
  *   res/mipmap-anydpi/ic_launcher.xml         adaptive icon: background #0b0e12, foreground,
  *   res/mipmap-anydpi/ic_launcher_round.xml   monochrome (minimum SDK 26: no PNG needed)
  *   res/drawable/ic_stat_corde.xml            small icon of the notifications (white, 24 dp)
@@ -23,32 +24,72 @@ import { join } from "node:path";
 export const BG = "#0b0e12";
 export const ACCENT = "#ffb454";
 
-/** The sign in a 32-unit box (the favicon's own coordinates). */
-const RING = "M23.39,9.11A9,9 0,1 0,23.39 22.89";
-const DOT = "M11.9,16a2.8,2.8 0,1 0,5.6 0a2.8,2.8 0,1 0,-5.6 0z";
+/** The sign in its 128-unit box (the coordinates of the design system), as path data. */
+const RING = "M101.48,101.48A53,53 0,1 1,45.87 14.20";
+const ZONE = "M56.62,11.52A53,53 0,0 1,101.48 26.52";
+const CEE = "M75.24,91.82A30,30 0,1 1,75.24 36.18";
+/** The needle of the small sizes (thicker) and the one of the large ones. */
+const NEEDLE_MARK = "M91.23,24.45L89.05,23.04L61.15,62.15L54.32,70.83L61.70,75.62L66.85,65.85Z";
+const NEEDLE_FINE = "M92.24,21.53L91.32,20.93L62.41,62.97L55.20,72.59L59.73,75.53L65.59,65.03Z";
+const circle = (r) => `M${64 - r},64a${r},${r} 0,1 0,${2 * r} 0a${r},${r} 0,1 0,-${2 * r} 0z`;
 
-/** The sign as vector paths, `scale` times its 32 units, moved by `offset` (dp). */
-function signPaths(color, scale, offset, indent = "    ") {
+const RING_GREY = "#44526a";
+const NEEDLE_WHITE = "#e9edf2";
+
+function stroke(path, color, width, indent) {
+  return `${indent}    <path
+${indent}        android:fillColor="#00000000"
+${indent}        android:pathData="${path}"
+${indent}        android:strokeColor="${color}"
+${indent}        android:strokeWidth="${width}" />`;
+}
+
+function fill(path, color, indent, strokeColor, strokeWidth) {
+  const outline = strokeColor
+    ? `
+${indent}        android:strokeColor="${strokeColor}"
+${indent}        android:strokeWidth="${strokeWidth}"`
+    : "";
+  return `${indent}    <path
+${indent}        android:fillColor="${color}"
+${indent}        android:pathData="${path}"${outline} />`;
+}
+
+/**
+ * The sign as vector paths, `scale` times its 128 units, moved by `offset` (dp). `mono`: one
+ * colour for the themed icon and the notifications (Android keeps only the shape and tints it):
+ * the needle then ends in a plain hub. `fine`: the needle of the large sizes.
+ */
+function signPaths({ mono, fine }, scale, offset, indent = "    ") {
+  const parts = mono
+    ? [
+        stroke(RING, mono, 4, indent),
+        stroke(ZONE, mono, 4, indent),
+        stroke(CEE, mono, 11, indent),
+        fill(NEEDLE_MARK, mono, indent),
+        fill(circle(7.5), mono, indent),
+      ]
+    : [
+        stroke(RING, RING_GREY, 4, indent),
+        stroke(ZONE, ACCENT, 4, indent),
+        stroke(CEE, ACCENT, 11, indent),
+        fill(fine ? NEEDLE_FINE : NEEDLE_MARK, NEEDLE_WHITE, indent),
+        ...(fine
+          ? [fill(circle(6.6), "#10141a", indent, RING_GREY, 1.3), fill(circle(1.7), "#2b3440", indent)]
+          : [fill(circle(7.5), BG, indent, RING_GREY, 1.3)]),
+      ];
   return `${indent}<group
 ${indent}    android:scaleX="${scale}"
 ${indent}    android:scaleY="${scale}"
 ${indent}    android:translateX="${offset}"
 ${indent}    android:translateY="${offset}">
-${indent}    <path
-${indent}        android:fillColor="#00000000"
-${indent}        android:pathData="${RING}"
-${indent}        android:strokeColor="${color}"
-${indent}        android:strokeLineCap="round"
-${indent}        android:strokeWidth="5" />
-${indent}    <path
-${indent}        android:fillColor="${color}"
-${indent}        android:pathData="${DOT}" />
+${parts.join("\n")}
 ${indent}</group>`;
 }
 
-/** A vector drawable of `size` dp holding the sign at `scale`, centred. */
-function vector(comment, size, color, scale) {
-  const offset = Number(((size - 32 * scale) / 2).toFixed(2));
+/** A vector drawable of `size` dp holding the sign (`look`) at `scale`, centred. */
+function vector(comment, size, look, scale) {
+  const offset = Number(((size - 128 * scale) / 2).toFixed(2));
   return `<?xml version="1.0" encoding="utf-8"?>
 <!-- ${comment} Generated by apps/mobile/scripts/make-assets.mjs. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -56,7 +97,7 @@ function vector(comment, size, color, scale) {
     android:height="${size}dp"
     android:viewportWidth="${size}"
     android:viewportHeight="${size}">
-${signPaths(color, scale, offset)}
+${signPaths(look, scale, offset)}
 </vector>
 `;
 }
@@ -73,31 +114,32 @@ const ADAPTIVE = `<?xml version="1.0" encoding="utf-8"?>
 
 /**
  * Every text file, by path relative to `apps/mobile/android/app/src/main/res`. The adaptive
- * icon is 108 dp, of which a circle of 66 dp is always visible: the sign's box is 48 dp (scale
- * 1.5), its farthest point 20 dp from the centre. The small icon fills its 24 dp (Android
- * leaves the margin). The launch screen icon is 288 dp, the sign in its middle 80 dp.
+ * icon is 108 dp, of which a circle of 66 dp is always visible: the sign's box is 64 dp (scale
+ * 0.5), its farthest point (the outer edge of the ring) 27.5 dp from the centre. The small icon
+ * fills its 24 dp (Android leaves the margin). The launch screen icon is 288 dp, the sign in
+ * its middle 96 dp.
  */
 export function androidResources() {
   return {
     "drawable/ic_launcher_foreground.xml": vector(
-      "Adaptive icon, foreground: the sign, accent colour.",
+      "Adaptive icon, foreground: the sign in its colours.",
       108,
-      ACCENT,
-      1.5,
+      { fine: true },
+      0.5,
     ),
     "drawable/ic_launcher_monochrome.xml": vector(
       "Adaptive icon, monochrome (themed icons): only the shape counts.",
       108,
-      "#ffffff",
-      1.5,
+      { mono: "#ffffff" },
+      0.5,
     ),
     "drawable/ic_stat_corde.xml": vector(
       "Small icon of the notifications: white on transparent, Android tints it.",
       24,
-      "#ffffff",
-      0.75,
+      { mono: "#ffffff" },
+      0.1875,
     ),
-    "drawable/ic_splash.xml": vector("Icon of the launch screen.", 288, ACCENT, 2.5),
+    "drawable/ic_splash.xml": vector("Icon of the launch screen.", 288, { fine: true }, 0.75),
     "mipmap-anydpi/ic_launcher.xml": ADAPTIVE,
     "mipmap-anydpi/ic_launcher_round.xml": ADAPTIVE,
   };

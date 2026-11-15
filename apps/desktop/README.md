@@ -14,7 +14,8 @@ Mises à jour depuis l'application : [ADR 0009](../../docs/adr/0009-mises-a-jour
 apps/desktop/
 ├─ README.md
 ├─ assets/
-│  ├─ corde-icon.svg             # logo source : trajectoire en « C » et point de corde, ambre #ffb454 sur fond sombre
+│  ├─ corde-icon.svg             # logo source : un compte-tours (anneau gris, zone rouge ambre #ffb454, « C » ambre, aiguille blanche) sur fond sombre
+│  ├─ corde-mark.svg             # le même signe, aiguille épaissie, pour les tailles sous 64 px
 │  └─ corde-icon-1024.png        # rendu 1024 px (entrée de `tauri icon`)
 ├─ scripts/make-icons.mjs        # régénère assets/*.png et src-tauri/icons/* (+ pack-icons.py : .ico, .icns)
 ├─ updater-public-key.txt        # clé publique des mises à jour (copiée dans tauri.conf.json > plugins > updater)
@@ -82,7 +83,7 @@ const invoke = window.__TAURI__?.core?.invoke; // undefined dans un navigateur o
 await invoke("get_autostart");                 // → boolean
 await invoke("set_autostart", { enabled: true });
 await invoke("restart_app");                   // l'application s'arrête et se relance
-await invoke("app_version");                   // → "1.4.2"
+await invoke("app_version");                   // → "1.4.3"
 await invoke("check_update");                  // → état des mises à jour (voir plus bas)
 await window.__TAURI__.event.listen("update-status", (e) => console.log(e.payload));
 ```
@@ -105,7 +106,7 @@ aussi envoyé par l'événement **`update-status`** à chaque changement :
 
 ```json
 {
-  "current_version": "1.4.2", "auto_check": true,
+  "current_version": "1.4.3", "auto_check": true,
   "phase": "idle | checking | downloading | installing",
   "last_check_ms": 1762934400000, "last_check_ok": true,
   "available": { "version": "0.6.1", "date": "2026-11-20T18:00:00Z", "notes": "### Nouveautés…" },
@@ -163,7 +164,8 @@ jeu détecté, entrée en piste, affichage de la fenêtre, arrêt, paniques de t
 
 ### Icônes
 
-`node apps/desktop/scripts/make-icons.mjs` régénère tout depuis `assets/corde-icon.svg` : chaque PNG est
+`node apps/desktop/scripts/make-icons.mjs` régénère tout depuis `assets/corde-icon.svg` (et, sous 64 px,
+`assets/corde-mark.svg`, le même signe à l'aiguille épaissie) : chaque PNG est
 rendu à sa taille par Chromium (Playwright, celui de `packages/ui`), puis `scripts/pack-icons.py` (Python +
 Pillow) assemble `icon.ico` (16 à 256 px) et `icon.icns` (16 à 1024 px). Le signe est le même que celui de la
 barre de l'UI (`packages/ui/public/favicon.svg`, icônes web : `packages/ui/scripts/make-icons.mjs`). Pas de

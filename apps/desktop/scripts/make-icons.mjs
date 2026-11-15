@@ -3,11 +3,13 @@
  * Regenerates every icon of the desktop app from the vector logo.
  *
  *   assets/corde-icon.svg ──Chromium (Playwright)──▶ assets/corde-icon-1024.png
- *                                                    src-tauri/icons/*.png (each size drawn from the SVG)
+ *   assets/corde-mark.svg                            src-tauri/icons/*.png (each size drawn from the SVG)
  *                         ──Pillow (pack-icons.py)──▶ src-tauri/icons/icon.ico (16…256), icon.icns (16…1024)
  *
  * Every size is rendered from the vector, not scaled down from the big PNG, so the small ones
- * (16 / 24 / 32 px: notification area, task bar) stay sharp. Needs the `playwright` package of
+ * (16 / 24 / 32 px: notification area, task bar) stay sharp. Below 64 px the drawing is the mark
+ * (`corde-mark.svg`: the same sign with a thicker needle, on its own dark tile); from 64 px up,
+ * the application icon (`corde-icon.svg`, fine needle). Needs the `playwright` package of
  * the UI workspace (with its Chromium) and Python 3 with Pillow.
  *
  *   node apps/desktop/scripts/make-icons.mjs
@@ -26,6 +28,9 @@ const require = createRequire(join(repo, "packages/ui/package.json"));
 const { chromium } = require("playwright");
 
 const svg = readFileSync(join(desktop, "assets/corde-icon.svg"), "utf8");
+const mark = readFileSync(join(desktop, "assets/corde-mark.svg"), "utf8");
+/** Under this size the needle of the application icon is too fine to read: the mark is drawn. */
+const MARK_BELOW = 64;
 const icons = join(desktop, "src-tauri/icons");
 mkdirSync(icons, { recursive: true });
 
@@ -58,7 +63,10 @@ try {
       viewport: { width: size, height: size },
       deviceScaleFactor: 1,
     });
-    const sized = svg.replace(/width="1024" height="1024"/, `width="${size}" height="${size}"`);
+    const sized =
+      size < MARK_BELOW
+        ? mark.replace(/width="128" height="128"/, `width="${size}" height="${size}"`)
+        : svg.replace(/width="1024" height="1024"/, `width="${size}" height="${size}"`);
     await page.setContent(
       `<body style="margin:0;background:transparent;line-height:0">${sized}</body>`,
     );

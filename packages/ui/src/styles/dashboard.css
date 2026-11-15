@@ -76,20 +76,18 @@
   pointer-events: none;
 }
 
+/* The mark carries its own dark tile (never on an amber ground). */
 .brand {
   display: inline-flex;
   width: 24px;
   height: 24px;
-  border-radius: 5px;
-  background: var(--accent);
-  color: var(--bg);
   align-items: center;
   justify-content: center;
   flex: none;
 }
 .brand svg {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
 }
 
 .layoutmenu {

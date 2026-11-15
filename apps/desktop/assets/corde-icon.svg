@@ -1,25 +1,28 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
   <!--
-    Icône de l'application Corde : le signe de la barre de l'UI (packages/ui/public/favicon.svg,
-    même tracé, même couleur #ffb454) sur le fond sombre de l'interface (#0b0e12), carré arrondi.
-    Le signe : une trajectoire de virage en forme de « C » qui vient toucher le point de corde
-    (le disque), l'endroit où la trajectoire frôle l'intérieur du virage.
-    Le fond déborde très peu (marge de 32 px) : sous Windows une icône « pleine » reste
-    lisible en 16 px dans la zone de notification. Le liseré clair détache l'icône d'une
-    barre des tâches sombre.
-    Régénérer les icônes : node apps/desktop/scripts/make-icons.mjs
+    Icône de l'application Corde (logo de novembre 2026, repris tel quel du système de design
+    « Corde » : ne pas le redessiner, le recolorer ni changer l'angle de l'aiguille).
+    Le signe est un compte-tours : un anneau gris (#44526a) qui devient ambre (#ffb454) dans la
+    zone rouge, un « C » ambre épais au centre, et une fine aiguille blanche (#e9edf2), moyeu
+    sombre, qui pointe dans la zone rouge. Fond sombre de l'interface (dégradé #151a21 → #0b0e12),
+    carré arrondi, liseré #2b3440 qui détache l'icône d'une barre des tâches sombre.
+    Cette version (aiguille fine) sert à partir de 64 px ; en dessous, `corde-mark.svg`
+    (aiguille épaissie). Régénérer les icônes : node apps/desktop/scripts/make-icons.mjs
   -->
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#151a21"/>
-      <stop offset="1" stop-color="#0b0e12"/>
-    </linearGradient>
+  <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0" stop-color="#151a21"/>
+  <stop offset="1" stop-color="#0b0e12"/>
+  </linearGradient>
   </defs>
   <rect x="32" y="32" width="960" height="960" rx="200" fill="url(#bg)"/>
   <rect x="44" y="44" width="936" height="936" rx="188" fill="none" stroke="#2b3440" stroke-width="24"/>
-  <!-- Signe du favicon (viewBox 32), ×30, centré sur le carré. -->
-  <g transform="translate(32 32) scale(30)" fill="none" stroke="#ffb454">
-    <path d="M23.39 9.11A9 9 0 1 0 23.39 22.89" stroke-width="5" stroke-linecap="round"/>
-    <circle cx="14.7" cy="16" r="2.8" fill="#ffb454" stroke="none"/>
+  <g transform="translate(92 92) scale(6.5625)">
+  <path d="M101.48 101.48A53 53 0 1 1 45.87 14.20" fill="none" stroke="#44526a" stroke-width="4"/>
+  <path d="M56.62 11.52A53 53 0 0 1 101.48 26.52" fill="none" stroke="#ffb454" stroke-width="4"/>
+  <path d="M75.24 91.82A30 30 0 1 1 75.24 36.18" fill="none" stroke="#ffb454" stroke-width="11"/>
+  <path d="M92.24 21.53L91.32 20.93L62.41 62.97L55.20 72.59L59.73 75.53L65.59 65.03Z" fill="#e9edf2"/>
+  <circle cx="64" cy="64" r="6.6" fill="#10141a" stroke="#44526a" stroke-width="1.3"/>
+  <circle cx="64" cy="64" r="1.7" fill="#2b3440"/>
   </g>
 </svg>

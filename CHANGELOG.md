@@ -8,6 +8,29 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [1.4.3] — 2026-11-16
+
+**Corde change de logo.**
+
+### Nouveautés
+
+- **Nouveau logo : un compte-tours.** Un anneau gris qui devient ambre dans la zone rouge, le « C » ambre
+  au centre et une aiguille blanche. Il remplace l'ancien partout : icône de Windows, de l'iPhone et
+  d'Android (y compris l'icône à thème et celle des notifications), onglet du navigateur, barre du haut de
+  l'application et page d'appairage du serveur.
+
+### Corrections
+
+- **Sur un NAS, la page « Serveur Corde » indique la bonne commande** pour obtenir un code d'appairage :
+  `corde-server pair` dans le terminal du conteneur, avec le chemin dans Container Manager, au lieu de
+  « sudo corde-server pair ». Il faut pour cela mettre à jour Corde serveur sur le NAS.
+
+### À savoir
+
+- Windows garde parfois l'ancienne icône en mémoire sur le bureau ou dans la barre des tâches : elle se
+  met à jour au prochain redémarrage du PC.
+- **Guide Synology** : la mise à jour du paquet du VPN par une tâche planifiée, vérifiée sur un vrai NAS.
+
 ## [1.4.2] — 2026-11-15
 
 **Pour ouvrir Corde serveur depuis l'extérieur avec l'application du téléphone.**

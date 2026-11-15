@@ -3,7 +3,7 @@
 > Corde s'appelait anciennement Muret (nom de travail) ; renommée le 11 novembre 2026 (version 0.3.0).
 
 > Fichier de reprise : n'importe qui (humain ou agent) doit pouvoir repartir d'ici.
-> Mis à jour à chaque jalon. Dernière mise à jour : 2026-11-15 (**version 1.4.2 : l'application du téléphone accepte l'adresse d'un VPN maillé (100.64/10), commande d'appairage correcte dans un conteneur** ; avant, le même jour : **version 1.4.1 : correction de l'interblocage du premier envoi PC → serveur, guide Synology relu sur un vrai NAS** ; avant, le même jour : **version 1.4.0 : Corde serveur en conteneur pour NAS Synology** ; avant, le même jour : **version 1.3.0 : Studio — images, vidéos, fonds de page, seuils de couleur, « afficher quand… », style, polices, jauge circulaire, formes, bandeau d'alerte, rampe réglable, sélection multiple, copier / coller** ; avant, le même jour : **version 1.2.0 : le tableau de bord dans le menu des dispositions du PC, et le Studio (tableaux de bord personnalisés)**, fusionnée dans `main` ; fiche de présentation `docs/PRESENTATION.md` pour le site ; avant, le 14 nov. : **version 1.1.0 : tableau de bord du téléphone**, quatre pages, écran allumé, démonstration dans l'application, fusionnée dans `main` ; avant, le même jour : lot **« certificat de distribution stable »** (iOS, CI seulement), fusionné dans `main` ; avant, le même jour : **application Android 1.0.0**, lot 1 sans widgets, fusionnée dans `main` ; avant, le même jour : **version 1.0.0, première version officielle** : PC, Corde serveur et application iPhone au même numéro, demandée par le propriétaire ; avant, le même jour : widget « Courses en images », application iPhone 0.10.0, fusionné dans `main` ; avant, le même jour : « Widgets iOS et activité en direct », application iPhone 0.9.0, branche `ios-widgets` ; premier build iPhone dans TestFlight ; « Application iPhone », version 0.8.0, le 12 ; avant : « Défilé des courses en ligne sur l'Accueil », 0.7.1 ; lot « Corde serveur » — serveur domestique Raspberry Pi, appairage, synchronisation depuis le PC —, version 0.7.0 ; avant : « Mises à jour depuis l'application », 0.6.0 ; « Widgets dans OBS », 0.5.0, et son correctif 0.5.1 ; « Courses en ligne », 0.4.0 ; publication dans `dultra123/corde`, sécurité réseau, adresse masquée sur l'accueil ; lot « Corde : renommage, migration des données, licence GPL, logo » ; avant : « S2 — calibration de l'ingénieur sur des données réelles », « réglages réels : fichiers .svm lus et écrits », « ressenti → symptômes → itération du plan », « Précision des tours », « Accueil » et « Application de bureau »).
+> Mis à jour à chaque jalon. Dernière mise à jour : 2026-11-16 (**version 1.4.3 : nouveau logo (le compte-tours), page d'appairage du serveur correcte dans un conteneur** ; avant, le 15 nov. : **version 1.4.2 : l'application du téléphone accepte l'adresse d'un VPN maillé (100.64/10), commande d'appairage correcte dans un conteneur** ; avant, le même jour : **version 1.4.1 : correction de l'interblocage du premier envoi PC → serveur, guide Synology relu sur un vrai NAS** ; avant, le même jour : **version 1.4.0 : Corde serveur en conteneur pour NAS Synology** ; avant, le même jour : **version 1.3.0 : Studio — images, vidéos, fonds de page, seuils de couleur, « afficher quand… », style, polices, jauge circulaire, formes, bandeau d'alerte, rampe réglable, sélection multiple, copier / coller** ; avant, le même jour : **version 1.2.0 : le tableau de bord dans le menu des dispositions du PC, et le Studio (tableaux de bord personnalisés)**, fusionnée dans `main` ; fiche de présentation `docs/PRESENTATION.md` pour le site ; avant, le 14 nov. : **version 1.1.0 : tableau de bord du téléphone**, quatre pages, écran allumé, démonstration dans l'application, fusionnée dans `main` ; avant, le même jour : lot **« certificat de distribution stable »** (iOS, CI seulement), fusionné dans `main` ; avant, le même jour : **application Android 1.0.0**, lot 1 sans widgets, fusionnée dans `main` ; avant, le même jour : **version 1.0.0, première version officielle** : PC, Corde serveur et application iPhone au même numéro, demandée par le propriétaire ; avant, le même jour : widget « Courses en images », application iPhone 0.10.0, fusionné dans `main` ; avant, le même jour : « Widgets iOS et activité en direct », application iPhone 0.9.0, branche `ios-widgets` ; premier build iPhone dans TestFlight ; « Application iPhone », version 0.8.0, le 12 ; avant : « Défilé des courses en ligne sur l'Accueil », 0.7.1 ; lot « Corde serveur » — serveur domestique Raspberry Pi, appairage, synchronisation depuis le PC —, version 0.7.0 ; avant : « Mises à jour depuis l'application », 0.6.0 ; « Widgets dans OBS », 0.5.0, et son correctif 0.5.1 ; « Courses en ligne », 0.4.0 ; publication dans `dultra123/corde`, sécurité réseau, adresse masquée sur l'accueil ; lot « Corde : renommage, migration des données, licence GPL, logo » ; avant : « S2 — calibration de l'ingénieur sur des données réelles », « réglages réels : fichiers .svm lus et écrits », « ressenti → symptômes → itération du plan », « Précision des tours », « Accueil » et « Application de bureau »).
 
 ## Où on en est
 
@@ -68,15 +68,46 @@
     guide §10 : Action → Ouvrir le terminal, Créer ▾ → Lancer avec une commande, « Veuillez saisir une
     commande : », OK, puis la ligne `corde-server` de la liste de gauche). Le serveur du NAS reste en
     1.4.0, compatible.
-  - **À corriger** : à chaque tour d'envoi suivant, le PC renvoie les 55 sessions et les 59 résultats
-    (`sent 55 session(s), 0 file(s) (658 KiB), 59 result(s)`, toutes les 90 s environ) : les empreintes des
-    données réelles ne correspondent jamais au manifeste du serveur (les essais, sur des données simulées,
-    ne le montrent pas). Sans conséquence pour les données, mais inutile.
-  - **Accès extérieur (1.4.2, en cours chez le propriétaire)** : le paquet Tailscale du Centre de paquets
-    de DSM existe (1.58.2, que son éditeur dit ne plus maintenir : à mettre à jour après installation).
-    L'application du téléphone refusait `100.x.y.z` en HTTP (plage 100.64/10 exclue par `addresses.ts` et
-    absente des exceptions ATS) alors que la voie C du guide la demande : acceptée en 1.4.2. À vérifier sur
-    l'iPhone du propriétaire : ATS laisse bien passer `http://100.x.y.z:8471`.
+  - **Fausse alerte, vérifiée dans le journal du PC** : six envois complets des 55 sessions et des 59
+    résultats (`sent 55 session(s), 0 file(s) (658 KiB), 59 result(s)`) entre 19 h 05 et 19 h 12, à des
+    moments irréguliers. Ce sont des renvois forcés (bouton « Tout renvoyer », seule voie qui force
+    l'envoi), pas des empreintes qui ne correspondraient pas : ensuite, plus aucun envoi pendant une heure,
+    ni après le redémarrage du PC en 1.4.2 (20 h 09), alors que les tours périodiques ont lieu (le serveur
+    journalise leurs « hello »). Un tour normal n'envoie donc rien. Au passage : la mise à jour 1.4.1 →
+    1.4.2 par le bouton de l'application a fonctionné sur le PC du propriétaire.
+  - **Accès extérieur, vérifié de bout en bout le 15 nov. au soir (1.4.2)** : VPN maillé, paquet Tailscale
+    du Centre de paquets de DSM (1.58.2, que son éditeur dit ne plus maintenir) sur le NAS, application sur
+    l'iPhone. iPhone en 5G, Wi-Fi coupé : la page « Serveur Corde » s'ouvre à `http://100.x.y.z:8471` dans
+    le navigateur ; l'application Corde 1.4.2 (TestFlight, build 31) accepte l'adresse, s'appaire et montre
+    les sessions (« ça fonctionne super »). **ATS laisse donc passer `http://100.x.y.z`** avec l'exception
+    `100.64.0.0/10`. Aucun port ouvert sur la box, aucun réglage de DSM touché. Avant la 1.4.2,
+    l'application refusait ces adresses (`addresses.ts`, exceptions ATS) alors que la voie C du guide les
+    demande. Relevé pour le guide (SYNOLOGY §17.1, fait). Paquet mis à jour par le propriétaire avec la
+    tâche planifiée de l'éditeur (`tailscale update --yes`, utilisateur `root` ; 1.58.2 → 1.104.7, vérifié
+    sur la page du paquet). **Reste** : l'expiration de la clé du NAS (14 mai 2027) n'est pas désactivée,
+    faute de réponse. Non vérifié : Android, règles d'accès du VPN.
+  - **Corrigé en 1.4.3** : la page d'appairage servie par le serveur (`hub/PairingScreen.tsx`,
+    `hub/HubPages.tsx`) affichait « sudo corde-server pair » même dans un conteneur ; `/api/hub/pairing`
+    dit maintenant si le serveur est dans un conteneur. Visible chez le propriétaire après la mise à jour
+    de l'image du NAS (encore en 1.4.0).
+  - **1.4.3 (nuit du 15 au 16 nov.) — nouveau logo.** Le propriétaire a redessiné le logo dans une autre
+    session (système de design « Corde », artefact de son compte : un compte-tours, anneau gris, zone
+    rouge ambre, « C » ambre, aiguille blanche) et a demandé de l'appliquer. Repris tel quel
+    (`apps/desktop/assets/corde-icon.svg`, `corde-mark.svg` sous 64 px), toutes les icônes régénérées
+    (Windows, web, iPhone, Android, icône à thème et de notification en une couleur), marque dans la barre
+    du haut et sur la porte du serveur. Les captures de `docs/images/` montrent encore l'ancien logo dans
+    la barre : à refaire. Avant cela, une heure d'essais de logo à sa demande (C avec vibreur, épingle,
+    six directions, page blanche) : tout abandonné au profit du sien, rien dans le dépôt.
+  - **Travaux interrompus, à reprendre** : le propriétaire a demandé (20 h 26) un onglet Studio dans
+    l'en-tête et le format libre des tableaux de bord (tailles, formes, écran rond de volant), puis
+    (21 h 07) le partage de « Mes courses » entre PC, serveur et téléphone. Deux agents lancés ; tous deux
+    arrêtés à 21 h 17 par une interruption de la conversation, ce qui n'a été vu qu'à 23 h 52. État : la
+    branche `studio-format` (arbre `/home/claude/wt-studio-format`) contient un commit (forme de la page
+    côté serveur) et une quarantaine de fichiers non enregistrés, bien avancés mais ni relus ni testés
+    (onglet, `Format.tsx`, `format.ts`, ADR 0018, trois captures) ; le partage des courses n'a rien
+    produit (conception écrite dans la demande à l'agent : horodatage par course, suppressions
+    mémorisées 3 h après le départ, fusion identique en Rust et en TypeScript, route
+    `POST /api/races/picks/sync`, PC ↔ serveur dans `run_round`, téléphone ↔ tous ses serveurs appairés).
   - **À examiner** : un VPN maillé en mode « réseau en espace utilisateur » (sans interface TUN) présente
     ses connexions entrantes depuis `127.0.0.1`. Dans un conteneur, sans effet (le serveur voit la
     passerelle du pont). Sur un serveur installé sans conteneur, un appareil du VPN serait vu comme

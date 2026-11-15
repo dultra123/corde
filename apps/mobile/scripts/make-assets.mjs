@@ -58,28 +58,35 @@ const BG_TOP = "#151a21";
 const BG = "#0b0e12";
 const ACCENT = "#ffb454";
 
-/** The sign of the favicon (viewBox 32), drawn at `scale` around the centre of a `size` square. */
+/**
+ * The sign of the logo (a rev counter, 128-unit box, fine needle: the drawing of
+ * `apps/desktop/assets/corde-icon.svg`), drawn at `scale` around the centre of a `size` square.
+ */
 function sign(size, scale) {
-  const offset = (size - 32 * scale) / 2;
-  return `<g transform="translate(${offset} ${offset}) scale(${scale})" fill="none" stroke="${ACCENT}">
-    <path d="M23.39 9.11A9 9 0 1 0 23.39 22.89" stroke-width="5" stroke-linecap="round"/>
-    <circle cx="14.7" cy="16" r="2.8" fill="${ACCENT}" stroke="none"/>
+  const offset = (size - 128 * scale) / 2;
+  return `<g transform="translate(${offset} ${offset}) scale(${scale})">
+    <path d="M101.48 101.48A53 53 0 1 1 45.87 14.20" fill="none" stroke="#44526a" stroke-width="4"/>
+    <path d="M56.62 11.52A53 53 0 0 1 101.48 26.52" fill="none" stroke="${ACCENT}" stroke-width="4"/>
+    <path d="M75.24 91.82A30 30 0 1 1 75.24 36.18" fill="none" stroke="${ACCENT}" stroke-width="11"/>
+    <path d="M92.24 21.53L91.32 20.93L62.41 62.97L55.20 72.59L59.73 75.53L65.59 65.03Z" fill="#e9edf2"/>
+    <circle cx="64" cy="64" r="6.6" fill="#10141a" stroke="#44526a" stroke-width="1.3"/>
+    <circle cx="64" cy="64" r="1.7" fill="#2b3440"/>
   </g>`;
 }
 
-/** The icon: full-bleed gradient (no corner, no margin: iOS masks it), the sign at 2/3. */
+/** The icon: full-bleed gradient (no corner, no margin: iOS masks it), the sign at 3/4. */
 const ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
   <defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
     <stop offset="0" stop-color="${BG_TOP}"/><stop offset="1" stop-color="${BG}"/>
   </linearGradient></defs>
   <rect width="1024" height="1024" fill="url(#bg)"/>
-  ${sign(1024, 22)}
+  ${sign(1024, 6)}
 </svg>`;
 
 /** The launch screen: flat background, a small sign in the middle. */
 const SPLASH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2732 2732" width="2732" height="2732">
   <rect width="2732" height="2732" fill="${BG}"/>
-  ${sign(2732, 9)}
+  ${sign(2732, 2.6)}
 </svg>`;
 
 async function render(browser, svg, size, file) {
