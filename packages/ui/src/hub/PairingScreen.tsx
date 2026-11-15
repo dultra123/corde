@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CordeMark } from "../dashboard/Logo";
 import { useT } from "../i18n";
 import {
   codeDigits,
@@ -48,16 +49,7 @@ export function PairingScreen() {
           if (ready) void submit();
         }}
       >
-        <svg className="hub-door-logo" viewBox="0 0 32 32" aria-hidden="true">
-          <path
-            d="M23.39 9.11A9 9 0 1 0 23.39 22.89"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="5"
-            strokeLinecap="round"
-          />
-          <circle cx="14.7" cy="16" r="2.8" fill="currentColor" />
-        </svg>
+        <CordeMark className="hub-door-logo" />
         <h1 className="hub-door-title">{t("hub.pair.title")}</h1>
         <p className="dim">{t("hub.pair.lead")}</p>
         <ol className="hub-door-steps">

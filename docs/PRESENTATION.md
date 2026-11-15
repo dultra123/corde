@@ -253,7 +253,10 @@ Détails : [PRIVACY.md](../PRIVACY.md), [SECURITY-MODEL.md](SECURITY-MODEL.md).
 - Signaler une faille, en privé : onglet *Security* du dépôt → *Report a vulnerability*
 - Une image du dépôt par son adresse directe :
   `https://raw.githubusercontent.com/dultra123/corde/main/docs/images/<fichier>`
-- Icône : `apps/desktop/assets/corde-icon.svg` et `corde-icon-1024.png`
+- Icône : `apps/desktop/assets/corde-icon.svg` et `corde-icon-1024.png` ; pour les petites tailles (moins de
+  64 px), `apps/desktop/assets/corde-mark.svg`. Le logo est un **compte-tours** : un anneau gris qui devient
+  ambre dans la zone rouge, un « C » ambre au centre et une aiguille blanche. Toujours sur fond sombre, jamais
+  redessiné, recoloré ni tourné.
 
 ## Mentions à garder
 

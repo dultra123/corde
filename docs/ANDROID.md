@@ -100,7 +100,7 @@ second canal, « Default », est créé par le module de notifications : Corde n
 
 Ce que la CI a vérifié sur l'émulateur est au §6. Le reste ne peut l'être que sur un vrai téléphone :
 
-1. **Installation** (§2) : l'icône Corde (le « C » ambre sur fond sombre) apparaît ; avec les icônes à thème
+1. **Installation** (§2) : l'icône Corde (un compte-tours : le « C » ambre et son aiguille blanche, sur fond sombre) apparaît ; avec les icônes à thème
    d'Android 13+, elle prend les couleurs du thème.
 2. **Lancement** : écran sombre avec le signe de Corde, puis l'Accueil. Rien ne doit passer **sous la barre
    d'état** (en haut) ni **sous la barre de gestes** (en bas) ; les onglets du bas sont entiers.
