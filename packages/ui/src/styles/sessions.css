@@ -967,6 +967,15 @@ dialog.sheet.is-wide {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+/* A narrow window: only the current tab keeps its label (the others their icon and title). */
+@media (min-width: 700px) and (max-width: 1179px) {
+  .navtab:not(.is-current) .navtab-label {
+    display: none;
+  }
+  .navtab:not(.is-current) {
+    padding: 0 7px;
+  }
+}
 @media (max-width: 699px) {
   .navtab-label {
     display: none;

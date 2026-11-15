@@ -415,6 +415,44 @@
   color: var(--accent);
 }
 
+/* ------------------------------------------------------------------ desktop */
+/* Six tabs (the Studio has its own): each side of the bar takes at least the room of what it
+   holds, so the tabs are never squeezed nor covered. The status sits in the middle of the
+   window whenever both sides fit there, and moves aside otherwise. What gives way in a narrow
+   window: the labels of the tabs that are not the current one (under 1180 px; their icons and
+   their titles stay, `sessions.css`), the labels of the buttons (under 900 px), then the name
+   of the layout and the status text. */
+@media (min-width: 700px) {
+  .topbar {
+    grid-template-columns: minmax(min-content, 1fr) auto minmax(min-content, 1fr);
+  }
+  .topbar-center {
+    min-width: 0;
+  }
+  .status {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .status-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .topbar .layoutmenu {
+    max-width: 220px;
+  }
+}
+@media (min-width: 700px) and (max-width: 1179px) {
+  .topbar .layoutmenu {
+    max-width: 140px;
+  }
+}
+@media (min-width: 700px) and (max-width: 899px) {
+  .topbar-right .btn-label {
+    display: none;
+  }
+}
+
 /* ------------------------------------------------------------------ mobile */
 @media (max-width: 699px) {
   .topbar {

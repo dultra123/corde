@@ -43,7 +43,9 @@ export function SessionsShell({ route }: { route: Route }) {
   const mobile = useIsMobile();
   const onHub = useHub((s) => s.role === "hub");
   useRecordingWatch();
-  const section = sectionOf(route);
+  // The Studio is not shown by this shell (`App`), except on the home server, which has none:
+  // its address shows there what `#/` shows, under the same tab.
+  const section = route.page === "studio" ? "dashboard" : sectionOf(route);
   // Installed before the first render, never changes (`mobile/slots`).
   const gate = useAppServerGate(route);
   const app = appSlots.BottomTabs !== undefined;
@@ -60,6 +62,7 @@ export function SessionsShell({ route }: { route: Route }) {
       page = Servers ? <Servers /> : <HomePage onSettings={() => setSettingsOpen(true)} />;
       break;
     case "dashboard":
+    case "studio":
       page = <HubDirectPage />;
       break;
     case "devices":

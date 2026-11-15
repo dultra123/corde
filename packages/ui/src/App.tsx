@@ -12,7 +12,7 @@ import { useHub } from "./store/hub";
 import { useSettings } from "./store/settings";
 import { useUpdates } from "./store/updates";
 
-/** The Studio (editor of race dashboards, PC): its own chunk. */
+/** The Studio (editor of race dashboards, PC; its own tab of the top bar): its own chunk. */
 const StudioPage = lazy(() =>
   import("./studio/StudioPage").then((m) => ({ default: m.StudioPage })),
 );
@@ -24,7 +24,9 @@ const StudioPage = lazy(() =>
  * reminders (`ReminderBanner`) show over every page. The WebSocket connection lives outside
  * React (`net/connection`), so leaving the dashboard never interrupts the stream: the store keeps
  * filling up and the widgets pick it up again when the tab comes back. `nav/auto` moves between
- * the sections on its own when the driver takes the track or comes back to the garage.
+ * the sections on its own when the driver takes the track or comes back to the garage. A sixth
+ * section, on a PC only: the Studio (`#/dash-studio…`, `studio/`), where race dashboards are
+ * made, with its own tab of the top bar.
  *
  * Served by the home server (« Corde serveur », `store/hub`), the same app opens on the pairing
  * screen until this device is paired, and the live dashboard gives way to a page that sends the

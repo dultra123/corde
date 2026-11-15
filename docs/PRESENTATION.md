@@ -68,8 +68,23 @@ dispositions avec le groupe « Tableaux de bord »).
 Un éditeur, sur le PC, pour composer ses propres tableaux de bord de course : des pages d'éléments placés sur
 une grille. Une **valeur au choix** parmi une soixantaine de données (vitesse, écart, carburant, pressions,
 températures, électronique…), des jauges, du texte, l'heure, les blocs du tableau de bord Corde et les
-widgets. Plusieurs formats : téléphone, tablette, écran, bandeau large. On glisse, on redimensionne, on
-annule, on regarde le résultat avec une course de démonstration.
+widgets. On glisse, on redimensionne, on annule, on regarde le résultat avec une course de démonstration.
+
+Nouveau (à paraître) :
+
+- **Un onglet « Studio »** dans la barre du haut du PC, à côté d'Accueil, Direct, Sessions, Courses et
+  Profil : le Studio est une section comme les autres, on y entre et on en sort par les onglets.
+- **Le bouton « Format »** de l'éditeur dit le format en clair (« 852 × 393 », « Rond 480 × 480 ») et ouvre
+  un panneau : des formats courants, la largeur et la hauteur, un bouton pour les inverser, la forme de la
+  page. Le format se choisit aussi à la création (« Nouveau ») et se change à tout moment : les éléments
+  restent en place.
+- **Formats courants** : téléphone en paysage (852 × 393) ou en portrait (393 × 852), tablette 4:3
+  (1024 × 768), écran 16:9 (1920 × 1080), bandeau large de volant (800 × 240), **écran rond de volant
+  (480 × 480)**, écran carré (720 × 720), petit écran 5:3 (800 × 480), petit écran 3:2 (480 × 320), tout
+  l'écran — ou **personnalisé** : n'importe quelle taille de 100 à 4000 pixels de côté.
+- **Forme de la page** : rectangle, **coins arrondis** (rayon au choix) ou **rond** — pour le petit écran
+  rond au centre de certains volants. Rien n'est dessiné hors de la forme ; autour, c'est noir. Dans
+  l'éditeur, la zone qui sera cachée est hachurée.
 
 Depuis la 1.3.0 :
 
@@ -89,16 +104,24 @@ Depuis la 1.3.0 :
 
 - **Chaque appareil choisit son tableau de bord** ; le téléphone en garde une copie pour l'afficher PC éteint
   (les images, elles, restent sur le PC : PC éteint, leur place est vide).
+- **Sur un petit écran branché au PC** : une fenêtre de navigateur à l'adresse `…#/dash`, en plein écran ;
+  un tableau de bord 480 × 480 remplit exactement un écran 480 × 480. Corde n'écrit pas sur l'écran intégré
+  d'un volant, qui reste piloté par le logiciel de son fabricant.
+- **Un téléphone dont l'application n'est pas encore à jour** affiche un tableau de bord rond ou arrondi
+  en rectangle, sans rognage.
 - **Partage par fichier** : un tableau de bord s'exporte et s'importe (`.cordedash`, avec ses images et
   vidéos). Le fichier ne contient ni nom de PC, ni adresse, ni données de course.
 - Le tableau de bord « Corde » reste le modèle de départ : on le duplique pour le modifier.
 - Les images et vidéos viennent uniquement de fichiers choisis sur le PC : jamais d'un lien internet.
 - Pas encore dans le Studio : formules, sons.
 
-Images : `studio-edition.png` (l'éditeur : éléments à gauche, page au centre, propriétés à droite),
-`studio-image.png` (un logo ajouté à une page, ses réglages à droite), `studio-couleurs.png` (les règles de
-couleur selon la valeur), `tableau-de-bord-photo.png` (un tableau de bord avec logo, image de fond, jauge
-circulaire et bandeau d'alerte), `tableau-de-bord-personnalise.png` (un tableau de bord d'exemple).
+Images : `studio-onglet.png` (l'onglet Studio dans la barre du haut, et la bibliothèque), `studio-format.png`
+(le panneau « Format » ouvert : formats courants, taille, forme), `studio-rond.png` (un tableau de bord rond
+dans l'éditeur, l'extérieur du cercle hachuré), `studio-edition.png` (l'éditeur : éléments à gauche, page au
+centre, propriétés à droite — capture d'avant l'onglet), `studio-image.png` (un logo ajouté à une page, ses
+réglages à droite), `studio-couleurs.png` (les règles de couleur selon la valeur),
+`tableau-de-bord-photo.png` (un tableau de bord avec logo, image de fond, jauge circulaire et bandeau
+d'alerte), `tableau-de-bord-personnalise.png` (un tableau de bord d'exemple).
 
 ### 4. Sessions et tours
 

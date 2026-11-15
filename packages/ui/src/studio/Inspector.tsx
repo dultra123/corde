@@ -1,4 +1,4 @@
-import { type ReactNode, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   ELEMENT_GROUPS,
   type ElementGroup,
@@ -33,17 +33,13 @@ import {
   type FontId,
   MAX_BORDER_WIDTH,
   MAX_COLS,
-  MAX_FORMAT_SIDE,
   MAX_RADIUS,
   MAX_ROWS,
   MAX_THRESHOLDS,
   MIN_COLS,
-  MIN_FORMAT_SIDE,
   MIN_ROWS,
   OPS,
   type Op,
-  PRESET_IDS,
-  type PresetId,
   THEME_KEYS,
   validAssetId,
   validColor,
@@ -58,7 +54,6 @@ import {
   setBackground,
   setFont,
   setGrid,
-  setPreset,
   setProps,
   setShow,
   setStyle,
@@ -71,54 +66,9 @@ import { MediaView } from "../dashdef/visuals";
 import { type TranslationKey, useT } from "../i18n";
 import { DRAG_TYPE } from "./Canvas";
 import { useEditor } from "./editor-store";
+import { formatWords } from "./Format";
+import { Field, fieldId, NumberInput } from "./inputs";
 import { nameOf, textOf } from "./messages";
-
-let uid = 0;
-function fieldId(key: string): string {
-  uid += 1;
-  return `ins-${key}-${uid}`;
-}
-
-function Field({ label, children, id }: { label: string; children: ReactNode; id: string }) {
-  return (
-    <div className="ins-field">
-      <label htmlFor={id}>{label}</label>
-      {children}
-    </div>
-  );
-}
-
-function NumberInput({
-  id,
-  value,
-  min,
-  max,
-  step = 1,
-  onChange,
-}: {
-  id: string;
-  value: number;
-  min: number;
-  max: number;
-  step?: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <input
-      id={id}
-      className="input num"
-      type="number"
-      value={value}
-      min={min}
-      max={max}
-      step={step}
-      onChange={(e) => {
-        const v = Number(e.target.value);
-        if (e.target.value !== "" && Number.isFinite(v)) onChange(Math.max(min, Math.min(max, v)));
-      }}
-    />
-  );
-}
 
 /** A slider with its value. */
 function RangeInput({
@@ -821,16 +771,6 @@ function MultiInspector({ page, ids }: { page: DashPageDef; ids: string[] }) {
   );
 }
 
-const PRESET_KEY: Record<PresetId | "custom", TranslationKey> = {
-  "phone-landscape": "studio.preset.phone-landscape",
-  "phone-portrait": "studio.preset.phone-portrait",
-  tablet: "studio.preset.tablet",
-  "screen-16-9": "studio.preset.screen-16-9",
-  "wheel-strip": "studio.preset.wheel-strip",
-  fill: "studio.preset.fill",
-  custom: "studio.preset.custom",
-};
-
 const THEME_KEY: Record<(typeof THEME_KEYS)[number], TranslationKey> = {
   background: "studio.theme.background",
   panel: "studio.theme.panel",
@@ -922,27 +862,24 @@ function BackgroundSection({ page }: { page: DashPageDef }) {
   );
 }
 
-function DashInspector({ def, page }: { def: DashDefinition; page: DashPageDef }) {
+function DashInspector({
+  def,
+  page,
+  onFormat,
+}: {
+  def: DashDefinition;
+  page: DashPageDef;
+  onFormat: () => void;
+}) {
   const { t } = useT();
   const { apply } = useEditor.getState();
   const ids = {
     author: fieldId("author"),
-    preset: fieldId("preset"),
-    fw: fieldId("fw"),
-    fh: fieldId("fh"),
+    format: fieldId("format"),
     cols: fieldId("cols"),
     rows: fieldId("rows"),
     font: fieldId("font"),
   };
-  const preset = (PRESET_IDS as string[]).includes(def.format.preset)
-    ? def.format.preset
-    : "custom";
-  const setSize = (width: number, height: number) =>
-    apply((d) => {
-      const r = width / height;
-      if (r < 1 / 8 || r > 8) return d;
-      return { ...d, format: { preset: "custom", width, height }, updated_ms: Date.now() };
-    });
   return (
     <div className="ins">
       <h2 className="ins-title">{t("studio.dashSettings")}</h2>
@@ -956,42 +893,15 @@ function DashInspector({ def, page }: { def: DashDefinition; page: DashPageDef }
           onChange={(e) => apply((d) => setAuthor(d, e.target.value.replace(/[<>]/g, "")))}
         />
       </Field>
-      <Field label={t("studio.format")} id={ids.preset}>
-        <select
-          id={ids.preset}
-          className="select"
-          value={preset}
-          onChange={(e) => apply((d) => setPreset(d, e.target.value as PresetId | "custom"))}
-        >
-          {[...PRESET_IDS, "custom" as const].map((p) => (
-            <option key={p} value={p}>
-              {t(PRESET_KEY[p])}
-            </option>
-          ))}
-        </select>
-      </Field>
-      {preset === "custom" && (
-        <div className="ins-grid">
-          <Field label={t("studio.width")} id={ids.fw}>
-            <NumberInput
-              id={ids.fw}
-              value={def.format.width}
-              min={MIN_FORMAT_SIDE}
-              max={MAX_FORMAT_SIDE}
-              onChange={(v) => setSize(v, def.format.height)}
-            />
-          </Field>
-          <Field label={t("studio.height")} id={ids.fh}>
-            <NumberInput
-              id={ids.fh}
-              value={def.format.height}
-              min={MIN_FORMAT_SIDE}
-              max={MAX_FORMAT_SIDE}
-              onChange={(v) => setSize(def.format.width, v)}
-            />
-          </Field>
+      {/* The format is set in the bar of the editor (« Format »): here, what it is and the way there. */}
+      <Field label={t("studio.format")} id={ids.format}>
+        <div className="ins-format">
+          <span className="num">{formatWords(def.format, t)}</span>
+          <button id={ids.format} type="button" className="btn" onClick={onFormat}>
+            {t("studio.format.change")}
+          </button>
         </div>
-      )}
+      </Field>
       <h3 className="ins-sub">{t("studio.grid")}</h3>
       <div className="ins-grid">
         <Field label={t("studio.cols")} id={ids.cols}>
@@ -1051,7 +961,16 @@ function DashInspector({ def, page }: { def: DashDefinition; page: DashPageDef }
   );
 }
 
-export function Inspector({ def, page }: { def: DashDefinition; page: DashPageDef }) {
+export function Inspector({
+  def,
+  page,
+  onFormat,
+}: {
+  def: DashDefinition;
+  page: DashPageDef;
+  /** Opens the « Format » panel of the editor's bar. */
+  onFormat: () => void;
+}) {
   const selection = useEditor((s) => s.selection);
   const ids = selection.filter((id) => page.elements.some((e) => e.id === id));
   const el = ids.length === 1 ? page.elements.find((e) => e.id === ids[0]) : undefined;
@@ -1062,7 +981,7 @@ export function Inspector({ def, page }: { def: DashDefinition; page: DashPageDe
       ) : ids.length > 1 ? (
         <MultiInspector page={page} ids={ids} />
       ) : (
-        <DashInspector def={def} page={page} />
+        <DashInspector def={def} page={page} onFormat={onFormat} />
       )}
     </aside>
   );

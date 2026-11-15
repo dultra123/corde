@@ -20,21 +20,25 @@ html.is-studio body {
   display: none;
 }
 
-.studio {
+/* A section of the app: its top bar (the tabs), then the Studio in the rest of the window. */
+.app.is-studio {
   height: 100dvh;
+  min-height: 0;
+}
+.studio {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   background: var(--bg);
   color: var(--text);
-  padding-left: var(--safe-left);
-  padding-right: var(--safe-right);
 }
 .studio-bar {
   flex: none;
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 48px;
+  min-height: 44px;
   padding: 6px 10px;
   border-bottom: 1px solid var(--line);
   background: var(--panel);
@@ -524,4 +528,30 @@ html.is-studio body {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+/* « Nouveau tableau de bord » : le modèle, puis le format (les mêmes champs que dans l'éditeur). */
+dialog.sheet.studio-new {
+  width: min(560px, calc(100vw - 24px));
+}
+.studio-new .sheet-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: min(70vh, 640px);
+  overflow: auto;
+}
+.studio-new-models {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+.studio-new-model {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.studio-new-model input {
+  accent-color: var(--accent);
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useAutoPicksDash } from "../dash/view";
 import { useT } from "../i18n";
 import { hasUpdate } from "../lib/updates";
@@ -23,6 +23,7 @@ import {
   IconProfile,
   IconSessions,
   IconSettings,
+  IconStudio,
 } from "./icons";
 import { LayoutMenu } from "./LayoutMenu";
 import { StatusPill } from "./StatusPill";
@@ -43,16 +44,21 @@ function useFullscreen(): [boolean, () => void] {
   return [on, toggle];
 }
 
-/** The top-level tabs: home, live dashboard, recorded sessions, online races, driver profile. */
-function NavTabs({ section }: { section: Section }) {
+/**
+ * The top-level tabs: home, live dashboard, recorded sessions, online races, driver profile and,
+ * where it is offered (`studio`), the Studio.
+ */
+function NavTabs({ section, studio }: { section: Section; studio: boolean }) {
   const { t } = useT();
-  const tabs = [
-    { id: "home" as const, href: routeHash({ page: "home" }), icon: <IconHome /> },
-    { id: "dashboard" as const, href: routeHash({ page: "dashboard" }), icon: <IconLive /> },
-    { id: "sessions" as const, href: routeHash({ page: "sessions" }), icon: <IconSessions /> },
-    { id: "races" as const, href: routeHash({ page: "races" }), icon: <IconFlag /> },
-    { id: "profile" as const, href: routeHash({ page: "profile" }), icon: <IconProfile /> },
+  const tabs: { id: Section; href: string; icon: ReactNode }[] = [
+    { id: "home", href: routeHash({ page: "home" }), icon: <IconHome /> },
+    { id: "dashboard", href: routeHash({ page: "dashboard" }), icon: <IconLive /> },
+    { id: "sessions", href: routeHash({ page: "sessions" }), icon: <IconSessions /> },
+    { id: "races", href: routeHash({ page: "races" }), icon: <IconFlag /> },
+    { id: "profile", href: routeHash({ page: "profile" }), icon: <IconProfile /> },
   ];
+  if (studio)
+    tabs.push({ id: "studio", href: routeHash({ page: "studio" }), icon: <IconStudio /> });
   return (
     <nav className="navtabs" aria-label={t("nav.label")}>
       {tabs.map((tab) => (
@@ -61,6 +67,7 @@ function NavTabs({ section }: { section: Section }) {
           href={tab.href}
           className={`navtab${section === tab.id ? " is-current" : ""}`}
           aria-current={section === tab.id ? "page" : undefined}
+          aria-label={t(`nav.${tab.id}`)}
           title={t(`nav.${tab.id}`)}
         >
           {tab.icon}
@@ -96,6 +103,10 @@ export function TopBar({ onSettings, section = "dashboard", dash = false }: Prop
   // `auto` never picks the phone dashboard on a PC, so a PC never shows this button.
   const autoDash = useAutoPicksDash();
   const backToDash = onDashboard && autoDash && !editing && !dash;
+  // The Studio is made for a mouse and a keyboard, and lives on the PC: no tab on a phone (its
+  // browser or the application — the same rule as the phone dashboard, `dash/view.ts`), none
+  // on the home server.
+  const studioTab = !onHub && !autoDash;
   const widgetControls = onDashboard && !dash;
 
   return (
@@ -114,7 +125,7 @@ export function TopBar({ onSettings, section = "dashboard", dash = false }: Prop
           </svg>
           <span className="sr-only">{t("app.name")}</span>
         </a>
-        <NavTabs section={section} />
+        <NavTabs section={section} studio={studioTab} />
         {onDashboard && <LayoutMenu />}
       </div>
       <div className="topbar-center">
@@ -126,6 +137,7 @@ export function TopBar({ onSettings, section = "dashboard", dash = false }: Prop
             type="button"
             className="btn"
             onClick={() => useSettings.getState().update({ liveView: "auto" })}
+            aria-label={t("topbar.toDash")}
             title={t("topbar.toDash")}
           >
             <IconGauge />

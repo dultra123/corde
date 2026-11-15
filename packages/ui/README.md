@@ -28,6 +28,7 @@ pnpm --filter @corde/ui lint       # biome check
 pnpm --filter @corde/ui screenshot # build d'abord ; écrit screenshots/desktop.png et screenshots/mobile.png
 node scripts/screenshot-sessions.mjs   # idem pour les pages Sessions + Ingénieur, contre un serveur sim (voir en-tête du script)
 node scripts/screenshot-sessions.mjs --spawn --engineer-only   # seulement la page Ingénieur (desktop, page entière, mobile)
+node scripts/screenshot-studio.mjs --spawn   # le Studio (onglet, panneau « Format », tableau de bord rond) contre un serveur sim qui sert dist/ ; vérifie aussi qu'un tableau de bord rond 480 × 480 remplit une fenêtre 480 × 480 à `#/dash`
 python3 scripts/compose-mobile.py   # illustration « téléphone » du README (docs/images/mobile.png) : trois écrans entiers, à la même échelle
 ```
 

@@ -73,25 +73,75 @@ export const BUILTIN_ID = "corde";
 export const DEFAULT_COLS = 24;
 export const DEFAULT_ROWS = 12;
 
+/** The shapes of a page (ADR 0018), a closed list. Left out of a definition: `rect`. */
+export const SHAPES = ["rect", "rounded", "round"] as const;
+export type ShapeId = (typeof SHAPES)[number];
+
 export type PresetId =
   | "phone-landscape"
   | "phone-portrait"
   | "tablet"
   | "screen-16-9"
   | "wheel-strip"
+  | "wheel-round"
+  | "square"
+  | "screen-5-3"
+  | "screen-3-2"
   | "fill";
 
-/** The drawing formats offered (`custom` is any other size). */
-export const PRESETS: Record<PresetId, { width: number; height: number }> = {
+/**
+ * The drawing formats offered (`custom` is any other size, any shape): the same list as
+ * `PRESETS` of `corde-server/src/dashes.rs`. A preset is a name for these values, nothing more:
+ * an id that is not here (a definition made by a later version) is drawn as a custom size.
+ */
+export const PRESETS: Record<PresetId, { width: number; height: number; shape?: ShapeId }> = {
   "phone-landscape": { width: 852, height: 393 },
   "phone-portrait": { width: 393, height: 852 },
   tablet: { width: 1024, height: 768 },
   "screen-16-9": { width: 1920, height: 1080 },
   "wheel-strip": { width: 800, height: 240 },
+  "wheel-round": { width: 480, height: 480, shape: "round" },
+  square: { width: 720, height: 720 },
+  "screen-5-3": { width: 800, height: 480 },
+  "screen-3-2": { width: 480, height: 320 },
   fill: { width: 852, height: 393 },
 };
 
 export const PRESET_IDS = Object.keys(PRESETS) as PresetId[];
+
+/** The format of a preset, as a definition holds it. */
+export function presetFormat(id: PresetId): DashFormat {
+  return { preset: id, ...PRESETS[id] };
+}
+
+/** The preset of a format, `custom` for any id that is not in the list. */
+export function presetOf(format: Pick<DashFormat, "preset">): PresetId | "custom" {
+  return (PRESET_IDS as string[]).includes(format.preset) ? (format.preset as PresetId) : "custom";
+}
+
+/** The largest corner radius of a `rounded` page: half its short side. */
+export function maxShapeRadius(width: number, height: number): number {
+  return Math.floor(Math.min(width, height) / 2);
+}
+
+/**
+ * The shape a format is drawn with: `rect` when it names none (every definition before ADR
+ * 0018), when it names one this version does not know, or for `fill` (the whole screen).
+ */
+export function shapeOf(format: Pick<DashFormat, "preset" | "shape">): ShapeId {
+  if (format.preset === "fill") return "rect";
+  const s = format.shape;
+  return typeof s === "string" && (SHAPES as readonly string[]).includes(s)
+    ? (s as ShapeId)
+    : "rect";
+}
+
+/** The corner radius of a `rounded` format, in pixels of its size, held within its bounds. */
+export function radiusOf(format: DashFormat): number {
+  if (shapeOf(format) !== "rounded") return 0;
+  const r = typeof format.radius === "number" && Number.isFinite(format.radius) ? format.radius : 0;
+  return Math.max(0, Math.min(maxShapeRadius(format.width, format.height), Math.round(r)));
+}
 
 /** The colours of the dashboard shipped with Corde (`styles/dash.css`, `styles/tokens.css`). */
 export const DEFAULT_THEME: DashTheme = {
@@ -345,6 +395,33 @@ function page(v: unknown, at: string): DashPageDef {
   return pg;
 }
 
+/** The format: its preset id, its size, its proportions, its shape (ADR 0018). */
+function format(f: unknown): DashFormat {
+  if (!isObject(f) || typeof f.preset !== "string" || f.preset.length > 24 || !ID.test(f.preset))
+    fail("format", "format");
+  const width = int(f.width, "format", MIN_FORMAT_SIDE, MAX_FORMAT_SIDE, "format");
+  const height = int(f.height, "format", MIN_FORMAT_SIDE, MAX_FORMAT_SIDE, "format");
+  const ratio = width / height;
+  if (ratio < 1 / MAX_FORMAT_RATIO || ratio > MAX_FORMAT_RATIO) fail("format", "format");
+  const out: DashFormat = { preset: f.preset, width, height };
+  let shape: ShapeId = "rect";
+  if (f.shape != null) {
+    if (typeof f.shape !== "string" || !(SHAPES as readonly string[]).includes(f.shape))
+      fail("format", "format.shape");
+    shape = f.shape as ShapeId;
+    out.shape = shape;
+  }
+  // The whole screen has no shape of its own.
+  if (f.preset === "fill" && shape !== "rect") fail("format", "format.shape");
+  if (shape === "rounded") {
+    out.radius = int(f.radius, "format.radius", 1, maxShapeRadius(width, height), "format");
+  } else if (f.radius != null) {
+    // A radius only with rounded corners.
+    fail("format", "format.radius");
+  }
+  return out;
+}
+
 function check(v: unknown): DashDefinition {
   if (!isObject(v)) fail("shape", "");
   if (v.v !== DASH_VERSION) fail("version", "v");
@@ -355,13 +432,7 @@ function check(v: unknown): DashDefinition {
   if (v.author !== undefined && v.author !== null) {
     author = text(v.author, "author", 0, MAX_NAME_LEN);
   }
-  const f = v.format;
-  if (!isObject(f) || typeof f.preset !== "string" || f.preset.length > 24 || !ID.test(f.preset))
-    fail("format", "format");
-  const width = int(f.width, "format", MIN_FORMAT_SIDE, MAX_FORMAT_SIDE, "format");
-  const height = int(f.height, "format", MIN_FORMAT_SIDE, MAX_FORMAT_SIDE, "format");
-  const ratio = width / height;
-  if (ratio < 1 / MAX_FORMAT_RATIO || ratio > MAX_FORMAT_RATIO) fail("format", "format");
+  const fmt = format(v.format);
   const th = v.theme;
   if (!isObject(th)) fail("color", "theme");
   const theme = {} as DashTheme;
@@ -389,7 +460,7 @@ function check(v: unknown): DashDefinition {
     id: v.id,
     name,
     ...(author ? { author } : {}),
-    format: { preset: f.preset, width, height },
+    format: fmt,
     theme,
     pages,
     updated_ms: updated ? Math.max(0, Math.floor(v.updated_ms as number)) : 0,
@@ -418,7 +489,7 @@ export function byteSize(v: unknown): number {
 }
 
 /**
- * Checks a definition against every rule (ADR 0015) and returns a clean copy: only the known
+ * Checks a definition against every rule (ADRs 0015, 0016, 0018) and returns a clean copy: only the known
  * keys of the definition, its pages and its elements (the settings of an element are kept
  * whole, unknown ones included, once checked).
  */

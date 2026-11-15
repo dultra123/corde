@@ -1,17 +1,18 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useThrottled } from "../dash/live";
 import { flagsOf } from "../dash/model";
 import { EMPTY_PAGE, type PageProps } from "../dash/parts";
 import { exportDash, importFile } from "../dashdef/archive";
 import { cordeDefinition, isBuiltin, TEMPLATE_IDS, type TemplateId } from "../dashdef/builtin";
 import { MediaMotion } from "../dashdef/draw";
-import { type DashDefinition, MAX_DASHES } from "../dashdef/model";
+import { type DashDefinition, type DashFormat, MAX_DASHES, presetFormat } from "../dashdef/model";
 import { duplicateDefinition, newDefinition, renameDefinition } from "../dashdef/ops";
 import { DashPage } from "../dashdef/Renderer";
 import { deleteDash, type SaveResult, saveDash, useDashes } from "../dashdef/store";
 import { type TranslationKey, useT } from "../i18n";
 import { navigate, routeHash } from "../nav/routes";
 import type { TelemetryState } from "../store/telemetry";
+import { FormatFields, formatWords } from "./Format";
 import { problemKey } from "./messages";
 
 function previewData(s: TelemetryState): PageProps {
@@ -50,6 +51,84 @@ export function saveMessage(r: SaveResult): TranslationKey | null {
       : r.reason === "pc-only"
         ? "studio.err.pcOnly"
         : "studio.err.refused";
+}
+
+/** The format a new dashboard starts with: the one the models were drawn for. */
+const NEW_FORMAT: DashFormat = presetFormat("phone-landscape");
+
+/**
+ * « Nouveau tableau de bord »: the model to start from and the format of the dashboard (ADR
+ * 0018), chosen before anything is created. The format can be changed at any time afterwards
+ * (the « Format » control of the editor).
+ */
+function NewDashDialog({
+  open,
+  onClose,
+  onCreate,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onCreate: (model: TemplateId, format: DashFormat) => void;
+}) {
+  const { t } = useT();
+  const ref = useRef<HTMLDialogElement>(null);
+  const [model, setModel] = useState<TemplateId>("blank");
+  const [format, setFormat] = useState<DashFormat>(NEW_FORMAT);
+  useEffect(() => {
+    const d = ref.current;
+    if (!d) return;
+    if (open && !d.open) {
+      // Each opening starts from the same choice: nothing is left of the one before.
+      setModel("blank");
+      setFormat(NEW_FORMAT);
+      d.showModal();
+    } else if (!open && d.open) d.close();
+  }, [open]);
+  return (
+    <dialog
+      className="sheet studio-new"
+      ref={ref}
+      onClose={onClose}
+      aria-label={t("studio.newTitle")}
+    >
+      {open && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onCreate(model, format);
+          }}
+        >
+          <div className="sheet-head">{t("studio.newTitle")}</div>
+          <div className="sheet-body">
+            <fieldset className="fmt-set studio-new-models">
+              <legend className="ins-sub">{t("studio.newModel")}</legend>
+              {TEMPLATE_IDS.map((tid) => (
+                <label key={tid} className="studio-new-model">
+                  <input
+                    type="radio"
+                    name="studio-new-model"
+                    value={tid}
+                    checked={model === tid}
+                    onChange={() => setModel(tid)}
+                  />
+                  <span>{t(TEMPLATE_KEY[tid])}</span>
+                </label>
+              ))}
+            </fieldset>
+            <FormatFields format={format} onChange={setFormat} />
+          </div>
+          <div className="sheet-foot">
+            <button type="button" className="btn" onClick={onClose}>
+              {t("common.cancel")}
+            </button>
+            <button type="submit" className="btn is-primary">
+              {`${t("studio.create")} · ${formatWords(format, t)}`}
+            </button>
+          </div>
+        </form>
+      )}
+    </dialog>
+  );
 }
 
 /** The first page of a dashboard, small, with the data of the moment. */
@@ -138,43 +217,19 @@ export function DashLibrary() {
   return (
     <div className="studio">
       <header className="studio-bar">
-        <a className="btn" href={routeHash({ page: "dashboard" })}>
-          ← {t("studio.backToLive")}
-        </a>
         <h1 className="studio-title">
           {t("studio.title")} <span className="dim">· {t("studio.subtitle")}</span>
         </h1>
         <div className="studio-bar-right">
-          <div className="layoutmenu">
-            <button
-              type="button"
-              className="btn is-primary"
-              aria-haspopup="menu"
-              aria-expanded={newOpen}
-              disabled={full}
-              onClick={() => setNewOpen((o) => !o)}
-            >
-              {t("studio.new")}
-            </button>
-            {newOpen && (
-              <div className="menu is-right" role="menu">
-                {TEMPLATE_IDS.map((tid) => (
-                  <button
-                    key={tid}
-                    type="button"
-                    role="menuitem"
-                    className="menu-item"
-                    onClick={() => {
-                      setNewOpen(false);
-                      void store(newDefinition(tid, taken, lang), "studio.created", true);
-                    }}
-                  >
-                    {t(TEMPLATE_KEY[tid])}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <button
+            type="button"
+            className="btn is-primary"
+            aria-haspopup="dialog"
+            disabled={full}
+            onClick={() => setNewOpen(true)}
+          >
+            {t("studio.new")}
+          </button>
           <button
             type="button"
             className="btn"
@@ -245,6 +300,8 @@ export function DashLibrary() {
                         : ""}
                     {builtin ? " · " : ""}
                     {nOf(d.pages.length, "studio.page", "studio.pages")}
+                    {" · "}
+                    <span className="num">{formatWords(d.format, t)}</span>
                     {used && <span className="studio-badge">{t("studio.usedHere")}</span>}
                   </p>
                   <div className="studio-card-actions">
@@ -310,6 +367,14 @@ export function DashLibrary() {
           })}
         </ul>
       </main>
+      <NewDashDialog
+        open={newOpen}
+        onClose={() => setNewOpen(false)}
+        onCreate={(model, format) => {
+          setNewOpen(false);
+          void store(newDefinition(model, taken, lang, format), "studio.created", true);
+        }}
+      />
     </div>
   );
 }

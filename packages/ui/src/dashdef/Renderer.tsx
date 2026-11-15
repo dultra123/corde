@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { useRef } from "react";
+import { useId, useRef } from "react";
 import { setData } from "../dash/live";
 import type { PageProps } from "../dash/parts";
 import type { Lang } from "../store/settings";
@@ -13,15 +13,18 @@ import {
   pageComponent,
   UnknownElement,
 } from "./elements";
+import { shapePath, shapeRadiusCss } from "./format";
 import {
   aspectOf,
   type DashDefinition,
   type DashElement,
+  type DashFormat,
   type DashPageDef,
   type DashStyle,
   FITS,
   type FontId,
   type Fit as MediaFit,
+  shapeOf,
   validColor,
 } from "./model";
 import { conditionHolds } from "./rules";
@@ -31,6 +34,10 @@ import { MediaView } from "./visuals";
  * Draws one page of a definition at the scale of its box, keeping the proportions of its format
  * (`fill`: the whole box). The unit `--u` of the blocks comes from the size of the drawing, so
  * that a dashboard looks the same, only bigger or smaller, on any screen.
+ *
+ * A format with a shape (ADR 0018: rounded corners, round) clips the whole page to it — the
+ * elements, the background, its picture or video — and what is around the shape is black. In
+ * the editor nothing is clipped: the outside of the shape is hatched instead (`ShapeMask`).
  */
 
 /** The element type of a page that is one whole page of Corde over the whole grid, if it is. */
@@ -192,6 +199,42 @@ function PageBackground({ page, active }: { page: DashPageDef; active: boolean }
   );
 }
 
+/**
+ * The editor's view of the shape: everything outside it dimmed and hatched (it will not be
+ * drawn on the dashboard), and its outline. Drawn over the elements, under the handles.
+ */
+export function ShapeMask({ format }: { format: DashFormat }) {
+  const id = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const { width: w, height: h } = format;
+  const inner = shapePath(format);
+  const outside = `M0 0H${w}V${h}H0Z${inner}`;
+  // The hatching keeps the same look on a small format as on a large one.
+  const step = Math.max(w, h) / 48;
+  return (
+    <svg
+      className="dstage-mask"
+      viewBox={`0 0 ${w} ${h}`}
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
+      <defs>
+        <pattern
+          id={`hatch-${id}`}
+          width={step}
+          height={step}
+          patternUnits="userSpaceOnUse"
+          patternTransform="rotate(45)"
+        >
+          <rect className="dstage-mask-line" width={step / 4} height={step} />
+        </pattern>
+      </defs>
+      <path className="dstage-mask-dim" fillRule="evenodd" d={outside} />
+      <path fillRule="evenodd" d={outside} fill={`url(#hatch-${id})`} />
+      <path className="dstage-mask-edge" d={inner} />
+    </svg>
+  );
+}
+
 interface StageProps {
   def: DashDefinition;
   page: DashPageDef;
@@ -222,12 +265,16 @@ export function Stage({
     ? fitStage(size.width, size.height, aspectOf(def))
     : fitStage(def.format.width, def.format.height, aspectOf(def));
   const gap = fit.u * 1.8;
+  const shape = shapeOf(def.format);
+  const radius = shapeRadiusCss(def.format);
+  const shaped = radius !== null;
   return (
-    <div className="dstage-wrap" ref={wrap}>
+    <div className={`dstage-wrap${shaped && !editing ? " is-shaped" : ""}`} ref={wrap}>
       {fit.width > 0 && (
         <div
           className={`dstage${grid ? " has-grid" : ""}${editing ? " is-editing" : ""}`}
           data-font={fontOf(def)}
+          data-shape={shaped ? shape : "rect"}
           style={
             {
               ...themeStyle(def),
@@ -238,6 +285,7 @@ export function Stage({
               "--gap": `${gap / 2}px`,
               "--cols": page.cols,
               "--rows": page.rows,
+              ...(shaped ? { "--shape-r": radius } : {}),
               visibility: measured ? undefined : "hidden",
             } as CSSProperties
           }
@@ -248,6 +296,7 @@ export function Stage({
               <ElementView el={el} data={data} lang={lang} u={fit.u} />
             </div>
           ))}
+          {editing && shaped && <ShapeMask format={def.format} />}
           {overlay?.(fit)}
         </div>
       )}

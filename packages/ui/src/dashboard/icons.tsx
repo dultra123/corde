@@ -144,6 +144,14 @@ export const IconProfile = () => (
   </svg>
 );
 
+/** The Studio (a dashboard being laid out: a frame and its panels). */
+export const IconStudio = () => (
+  <svg {...base} aria-hidden="true">
+    <rect x="3" y="4.5" width="18" height="15" rx="2.5" />
+    <path d="M3 10h18M10.5 10v9.5" />
+  </svg>
+);
+
 /** A phone (access from the local network). */
 export const IconPhone = () => (
   <svg {...base} aria-hidden="true">

@@ -165,14 +165,27 @@ tableau de bord est affiché (si le navigateur le permet ; sinon, règle la mise
 
 Le **Studio** est l'éditeur de tableaux de bord de Corde, sur le PC (à la souris et au clavier).
 
-1. **Ouvre-le** : Direct → menu des dispositions → **Studio : créer un tableau de bord…** (ou Réglages →
-   « Ouvrir le Studio », ou ☰ du tableau de bord).
-2. **Nouveau** : pars d'un tableau de bord **vide**, de **Corde en blocs** (les quatre pages de Corde
-   découpées, à réarranger) ou de l'exemple **Endurance**. Le tableau de bord **Corde** lui-même ne se modifie
-   pas : **Dupliquer pour le modifier**.
-3. **Format** (panneau de droite, rien de choisi) : téléphone en paysage ou en portrait, tablette, écran
-   16:9, bandeau large type écran de volant, ou tout l'écran. La page garde ces proportions sur n'importe
-   quel écran.
+1. **Ouvre-le** : l'onglet **Studio** de la barre du haut, à droite de Profil (ou Direct → menu des
+   dispositions → **Studio : créer un tableau de bord…**, ou Réglages → « Ouvrir le Studio », ou ☰ du tableau
+   de bord). Les autres onglets en font sortir. Il n'y a pas d'onglet Studio sur un téléphone.
+2. **Nouveau** : choisis le **modèle de départ** — **Vide**, **Corde en blocs** (les quatre pages de Corde
+   découpées, à réarranger) ou l'exemple **Endurance** — et le **format** (voir le point suivant), puis
+   **Créer**. Le tableau de bord **Corde** lui-même ne se modifie pas : **Dupliquer pour le modifier**.
+3. **Format** : le bouton **Format** de la barre de l'éditeur, à droite du nom, dit le format en cours
+   (« 852 × 393 », « Rond 480 × 480 »…) et ouvre le panneau. Tu y trouves :
+   - les **formats courants** : Téléphone en paysage (852 × 393), Téléphone en portrait (393 × 852),
+     Tablette 4:3 (1024 × 768), Écran 16:9 (1920 × 1080), Bandeau large de volant (800 × 240), **Écran rond
+     de volant** (480 × 480, rond), Écran carré (720 × 720), Petit écran 5:3 (800 × 480), Petit écran 3:2
+     (480 × 320), Tout l'écran, Personnalisé ;
+   - la **taille** : **Largeur** et **Hauteur**, de 100 à 4000 pixels, 8 fois plus large que haut au
+     maximum (ou l'inverse), et le bouton **Inverser largeur et hauteur** ;
+   - la **forme de la page** : **Rectangle**, **Coins arrondis** (avec le **rayon des coins**) ou **Rond**.
+
+   La page garde ces proportions sur n'importe quel écran. Avec une forme, rien n'est dessiné en dehors :
+   dans l'éditeur, la zone hachurée montre ce qui sera caché (tu peux quand même y poser des éléments).
+   Changer de format **garde tes éléments** ; si les cases de la grille deviennent très allongées (d'un
+   format paysage à un carré, par exemple), le panneau le dit et propose **Adapter la grille** : aucun
+   élément ne bouge. **Annuler** (Ctrl + Z) revient au format d'avant.
 4. **Ajoute des éléments** depuis la liste de gauche : un clic les pose à la première place libre, ou fais
    les glisser sur la page. **Valeur** affiche une donnée au choix (vitesse, carburant, écart, pression d'un
    pneu… une soixantaine), **Barre / jauge** une donnée de 0 à 100 % (accélérateur, frein, réservoir,
@@ -196,6 +209,25 @@ Le **Studio** est l'éditeur de tableaux de bord de Corde, sur le PC (à la sour
     **Ctrl + C** puis **Ctrl + V** les copie, aussi sur une autre page ou un autre tableau de bord ;
     Ctrl + A choisit toute la page. La case **Rechercher un élément** filtre la liste de gauche.
 12. **Brouillon** : quand un brouillon est repris, **Abandonner le brouillon** revient à la version enregistrée.
+
+#### Un petit écran en plus (écran rond de volant, écran de tableau de bord)
+
+Corde affiche un tableau de bord dans une fenêtre : elle n'écrit pas sur l'écran intégré d'un volant, qui
+reste piloté par le logiciel de son fabricant. Pour un petit écran branché au PC comme un moniteur :
+
+1. Dans le Studio, crée le tableau de bord au **format de l'écran** (par exemple **Écran rond de volant**,
+   480 × 480) et enregistre-le.
+2. Ouvre un navigateur sur ce petit écran, à l'adresse **`http://127.0.0.1:8471/#/dash`**, et passe-le en
+   plein écran (F11). Ajoute `?autonav=0` avant le `#` (`http://127.0.0.1:8471/?autonav=0#/dash`) pour que
+   la page ne change jamais toute seule.
+3. Passe la souris sur la page, ouvre **☰** et choisis ton tableau de bord sous **Tableau de bord
+   utilisé**. Le choix est retenu dans ce navigateur.
+
+Un tableau de bord dessiné aux dimensions de l'écran le remplit exactement ; sur un écran d'autres
+proportions, il est centré, avec du noir autour. Les boutons (☰, flèches, points des pages) n'apparaissent
+que quand la souris est sur la page. À savoir : deux fenêtres du **même** navigateur partagent le choix du
+tableau de bord ; pour afficher autre chose que l'écran principal, utilise l'application Corde sur l'écran
+principal et un navigateur sur le petit écran (ou deux navigateurs différents).
 
 #### Une photo, un logo, une vidéo (1.3)
 

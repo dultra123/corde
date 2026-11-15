@@ -276,6 +276,57 @@ describe("back in the garage", () => {
   });
 });
 
+describe("in the Studio (a section of its own since it has its tab)", () => {
+  const LIBRARY: Route = { page: "studio" };
+  const EDITOR: Route = { page: "studio", id: "gt3" };
+
+  it("is a page like the sessions: taking the track opens the dashboard", () => {
+    for (const route of [LIBRARY, EDITOR]) {
+      const page = app({ route });
+      page.track(0, false);
+      expect(page.track(1000, true)).toEqual(DASHBOARD);
+      expect(page.route).toEqual(DASHBOARD);
+    }
+  });
+
+  it("stays in the Studio when the option is off", () => {
+    const page = app({ route: EDITOR, options: { dashboardOnTrack: false } });
+    page.track(0, false);
+    expect(page.track(1000, true)).toBeNull();
+    expect(page.tick(60_000)).toBeNull();
+    expect(page.route).toEqual(EDITOR);
+  });
+
+  it("waits 15 s after the tab was clicked, like after any manual change", () => {
+    const page = app({ route: HOME });
+    page.track(0, false);
+    page.click(10_000, LIBRARY);
+    expect(page.track(12_000, true)).toBeNull();
+    expect(isPending(page.state)).toBe(true);
+    expect(page.tick(24_000)).toBeNull();
+    expect(page.tick(25_000)).toEqual(DASHBOARD);
+  });
+
+  it("never opens the summary over the Studio when the driver comes back in", () => {
+    for (const route of [LIBRARY, EDITOR]) {
+      const page = onTrackFrom(DASHBOARD);
+      page.recorded("s1", 4);
+      page.click(2000, route);
+      page.track(60_000, false);
+      expect(page.tick(60_000 + LEAVE_DELAY_MS)).toBeNull();
+      expect(page.tick(200_000)).toBeNull();
+      expect(page.route).toEqual(route);
+      expect(isPending(page.state)).toBe(false);
+    }
+  });
+
+  it("is not armed by the start-up rule: a Studio address opened on track stays there", () => {
+    const page = app({ route: LIBRARY, boot: false });
+    expect(page.track(0, true)).toBeNull();
+    expect(page.route).toEqual(LIBRARY);
+  });
+});
+
 describe("never under the user's hand", () => {
   it("waits 15 s after a manual page change before opening the dashboard", () => {
     const page = app({ route: HOME });

@@ -243,6 +243,7 @@ export const fr = {
   "nav.sessions": "Sessions",
   "nav.races": "Courses",
   "nav.profile": "Profil",
+  "nav.studio": "Studio",
 
   // Common
   "common.cancel": "Annuler",
@@ -1216,6 +1217,8 @@ export const fr = {
   "hub.pair.lead":
     "Ce serveur garde tes sessions, ton profil et tes courses. Pour l'ouvrir sur cet appareil, appaire-le une fois avec un code.",
   "hub.pair.step1": "Sur le serveur, lance :",
+  "hub.pair.step1Container":
+    "Sur le NAS, dans le terminal du conteneur (Container Manager → Conteneur → corde → Action → Ouvrir le terminal → Créer → Lancer avec une commande), lance :",
   "hub.pair.step2": "Tape ici le code à 8 chiffres qu'il affiche.",
   "hub.pair.code": "Code d'appairage",
   "hub.pair.name": "Nom de cet appareil",
@@ -1224,6 +1227,8 @@ export const fr = {
   "hub.pair.busy": "Vérification…",
   "hub.pair.hint":
     "Le code est valable 10 minutes et ne sert qu'une fois ; trois codes faux l'annulent. Cet appareil garde ensuite une clé dans un cookie protégé : tu peux la révoquer à tout moment (page Appareils, ou « sudo corde-server revoke » sur le serveur).",
+  "hub.pair.hintContainer":
+    "Le code est valable 10 minutes et ne sert qu'une fois ; trois codes faux l'annulent. Cet appareil garde ensuite une clé dans un cookie protégé : tu peux la révoquer à tout moment (page Appareils, ou « corde-server revoke » dans le terminal du conteneur).",
   "hub.home.title": "Serveur Corde",
   "hub.home.subtitle": "Version {version} · toujours allumé, ouvert à tes appareils appairés",
   "hub.home.error": "Le serveur n'a pas répondu",
@@ -1278,6 +1283,7 @@ export const fr = {
   "hub.devices.confirm": "Confirmer",
   "hub.devices.add": "Ajouter un appareil",
   "hub.devices.add1": "Sur le serveur :",
+  "hub.devices.add1Container": "Sur le NAS, dans le terminal du conteneur :",
   "hub.devices.add2":
     "Ouvre l'adresse du serveur sur l'appareil et tape le code (sur le PC : Réglages → Serveur Corde).",
   "hub.devices.lost":
@@ -1547,8 +1553,10 @@ export const fr = {
   "studio.openShort": "Studio : créer un tableau de bord…",
   "studio.title": "Studio",
   "studio.subtitle": "Éditeur de tableaux de bord",
-  "studio.backToLive": "Direct",
   "studio.new": "Nouveau",
+  "studio.newTitle": "Nouveau tableau de bord",
+  "studio.newModel": "Modèle de départ",
+  "studio.create": "Créer",
   "studio.import": "Importer un fichier…",
   "studio.intro":
     "Crée tes propres tableaux de bord de course : des pages d'éléments placés sur une grille, dessinés à l'échelle de l'écran. Ils sont enregistrés sur ce PC ; chaque appareil (téléphone, tablette, second écran) choisit celui qu'il affiche.",
@@ -1612,13 +1620,48 @@ export const fr = {
   "studio.remove": "Supprimer",
   "studio.keysHint":
     "Clavier : flèches pour déplacer, Maj + flèches pour redimensionner, Suppr pour supprimer, Ctrl + D pour dupliquer, Ctrl + C / Ctrl + V pour copier et coller (aussi sur une autre page), Échap pour désélectionner. Maj + clic ou un cadre tracé sur la page : plusieurs éléments.",
-  "studio.preset.phone-landscape": "Téléphone en paysage (852 × 393)",
-  "studio.preset.phone-portrait": "Téléphone en portrait (393 × 852)",
-  "studio.preset.tablet": "Tablette 4:3 (1024 × 768)",
-  "studio.preset.screen-16-9": "Écran 16:9 (1920 × 1080)",
-  "studio.preset.wheel-strip": "Bandeau large, type écran de volant (800 × 240)",
-  "studio.preset.fill": "Tout l'écran, quelle que soit sa forme",
+  "studio.preset.phone-landscape": "Téléphone en paysage",
+  "studio.preset.phone-portrait": "Téléphone en portrait",
+  "studio.preset.tablet": "Tablette 4:3",
+  "studio.preset.screen-16-9": "Écran 16:9",
+  "studio.preset.wheel-strip": "Bandeau large de volant",
+  "studio.preset.wheel-round": "Écran rond de volant",
+  "studio.preset.square": "Carré",
+  "studio.preset.screen-5-3": "Petit écran 5:3",
+  "studio.preset.screen-3-2": "Petit écran 3:2",
+  "studio.preset.fill": "Tout l'écran",
   "studio.preset.custom": "Personnalisé",
+  "studio.shape.rect": "Rectangle",
+  "studio.shape.rounded": "Coins arrondis",
+  "studio.shape.round": "Rond",
+  "studio.format.title": "Format du tableau de bord",
+  "studio.format.change": "Changer le format…",
+  "studio.format.presets": "Formats prêts",
+  "studio.format.anySize": "Toute taille, toute forme",
+  "studio.format.free": "Suit l'écran qui l'affiche",
+  "studio.format.size": "Taille (pixels)",
+  "studio.format.swap": "Inverser largeur et hauteur",
+  "studio.format.sizeHint":
+    "De 100 à 4000 pixels de côté ; au plus 8 fois plus large que haut, ou l'inverse. C'est une taille de référence : la page garde ces proportions sur tous les écrans.",
+  "studio.format.fillHint":
+    "Tout l'écran : la page prend la taille et la forme de l'écran qui l'affiche. Donne une taille pour choisir toi-même ses proportions et sa forme.",
+  "studio.format.shape": "Forme",
+  "studio.format.radius": "Rayon des coins (pixels)",
+  "studio.format.shapeHint":
+    "Rien n'est affiché en dehors de la forme : dans l'éditeur, la zone hachurée montre ce qui sera caché.",
+  "studio.format.keepHint":
+    "Changer de format garde tes éléments : ils sont placés dans une grille, et la page est redessinée aux nouvelles proportions.",
+  "studio.format.gridNote":
+    "Avec ce format, les cases de la grille sont allongées sur {pages} (« {page} » : {grid}).",
+  "studio.format.gridAdapt": "Adapter la grille ({grid})",
+  "studio.format.gridAdaptHint":
+    "Chaque case est découpée en cases plus petites : tes éléments gardent leur place et leur taille, rien n'est supprimé.",
+  "studio.format.gridManual":
+    "Tu peux régler le nombre de colonnes et de lignes dans les réglages de la page.",
+  "studio.format.words.fill": "Tout l'écran",
+  "studio.format.words.round": "Rond {size}",
+  "studio.format.words.oval": "Ovale {size}",
+  "studio.format.words.rounded": "Coins arrondis {size}",
   "studio.theme.background": "Fond",
   "studio.theme.panel": "Panneaux",
   "studio.theme.line": "Bords",
@@ -1628,7 +1671,7 @@ export const fr = {
   "studio.dashSettings": "Tableau de bord",
   "studio.author": "Auteur (facultatif, exporté avec le fichier)",
   "studio.authorHint": "ton pseudo, si tu veux",
-  "studio.format": "Format de dessin",
+  "studio.format": "Format",
   "studio.width": "Largeur",
   "studio.height": "Hauteur",
   "studio.grid": "Grille de cette page",

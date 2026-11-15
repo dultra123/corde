@@ -226,6 +226,7 @@ export const en: Record<TranslationKey, string> = {
   "nav.sessions": "Sessions",
   "nav.races": "Races",
   "nav.profile": "Profile",
+  "nav.studio": "Studio",
 
   "common.cancel": "Cancel",
   "common.close": "Close",
@@ -1169,6 +1170,8 @@ export const en: Record<TranslationKey, string> = {
   "hub.pair.lead":
     "This server keeps your sessions, your profile and your races. To open it on this device, pair it once with a code.",
   "hub.pair.step1": "On the server, run:",
+  "hub.pair.step1Container":
+    "On the NAS, in the terminal of the container (Container Manager → Container → corde → Action → Open terminal → Create → Launch with command), run:",
   "hub.pair.step2": "Type here the 8-digit code it shows.",
   "hub.pair.code": "Pairing code",
   "hub.pair.name": "Name of this device",
@@ -1177,6 +1180,8 @@ export const en: Record<TranslationKey, string> = {
   "hub.pair.busy": "Checking…",
   "hub.pair.hint":
     'The code is valid for 10 minutes and works once; three wrong codes cancel it. This device then keeps a key in a protected cookie: you can revoke it at any time (Devices page, or "sudo corde-server revoke" on the server).',
+  "hub.pair.hintContainer":
+    'The code is valid for 10 minutes and works once; three wrong codes cancel it. This device then keeps a key in a protected cookie: you can revoke it at any time (Devices page, or "corde-server revoke" in the terminal of the container).',
   "hub.home.title": "Corde server",
   "hub.home.subtitle": "Version {version} · always on, open to your paired devices",
   "hub.home.error": "The server did not answer",
@@ -1230,6 +1235,7 @@ export const en: Record<TranslationKey, string> = {
   "hub.devices.confirm": "Confirm",
   "hub.devices.add": "Add a device",
   "hub.devices.add1": "On the server:",
+  "hub.devices.add1Container": "On the NAS, in the terminal of the container:",
   "hub.devices.add2":
     "Open the server's address on the device and type the code (on the PC: Settings → Corde server).",
   "hub.devices.lost":
@@ -1498,8 +1504,10 @@ export const en: Record<TranslationKey, string> = {
   "studio.openShort": "Studio: make a dashboard…",
   "studio.title": "Studio",
   "studio.subtitle": "Dashboard editor",
-  "studio.backToLive": "Live",
   "studio.new": "New",
+  "studio.newTitle": "New dashboard",
+  "studio.newModel": "Starting model",
+  "studio.create": "Create",
   "studio.import": "Import a file…",
   "studio.intro":
     "Make your own race dashboards: pages of elements placed on a grid, drawn at the scale of the screen. They are saved on this PC; every device (phone, tablet, second screen) picks the one it shows.",
@@ -1560,13 +1568,48 @@ export const en: Record<TranslationKey, string> = {
   "studio.remove": "Delete",
   "studio.keysHint":
     "Keyboard: arrows to move, Shift + arrows to resize, Delete to remove, Ctrl + D to duplicate, Ctrl + C / Ctrl + V to copy and paste (to another page too), Esc to deselect. Shift + click or a frame drawn on the page: several elements.",
-  "studio.preset.phone-landscape": "Phone, landscape (852 × 393)",
-  "studio.preset.phone-portrait": "Phone, portrait (393 × 852)",
-  "studio.preset.tablet": "Tablet 4:3 (1024 × 768)",
-  "studio.preset.screen-16-9": "16:9 screen (1920 × 1080)",
-  "studio.preset.wheel-strip": "Wide strip, wheel screen style (800 × 240)",
-  "studio.preset.fill": "The whole screen, whatever its shape",
+  "studio.preset.phone-landscape": "Phone, landscape",
+  "studio.preset.phone-portrait": "Phone, portrait",
+  "studio.preset.tablet": "Tablet 4:3",
+  "studio.preset.screen-16-9": "16:9 screen",
+  "studio.preset.wheel-strip": "Wide wheel strip",
+  "studio.preset.wheel-round": "Round wheel screen",
+  "studio.preset.square": "Square",
+  "studio.preset.screen-5-3": "Small 5:3 screen",
+  "studio.preset.screen-3-2": "Small 3:2 screen",
+  "studio.preset.fill": "The whole screen",
   "studio.preset.custom": "Custom",
+  "studio.shape.rect": "Rectangle",
+  "studio.shape.rounded": "Rounded corners",
+  "studio.shape.round": "Round",
+  "studio.format.title": "Format of the dashboard",
+  "studio.format.change": "Change the format…",
+  "studio.format.presets": "Ready-made formats",
+  "studio.format.anySize": "Any size, any shape",
+  "studio.format.free": "Follows the screen that shows it",
+  "studio.format.size": "Size (pixels)",
+  "studio.format.swap": "Swap width and height",
+  "studio.format.sizeHint":
+    "From 100 to 4000 pixels a side; at most 8 times wider than tall, or the other way round. It is a reference size: the page keeps these proportions on every screen.",
+  "studio.format.fillHint":
+    "The whole screen: the page takes the size and the shape of the screen that shows it. Give a size to choose its proportions and its shape yourself.",
+  "studio.format.shape": "Shape",
+  "studio.format.radius": "Corner radius (pixels)",
+  "studio.format.shapeHint":
+    "Nothing is shown outside the shape: in the editor, the hatched area shows what will be hidden.",
+  "studio.format.keepHint":
+    "Changing the format keeps your elements: they are placed on a grid, and the page is drawn again with the new proportions.",
+  "studio.format.gridNote":
+    "With this format, the cells of the grid are stretched on {pages} (“{page}”: {grid}).",
+  "studio.format.gridAdapt": "Adapt the grid ({grid})",
+  "studio.format.gridAdaptHint":
+    "Each cell is cut into smaller ones: your elements keep their place and their size, nothing is removed.",
+  "studio.format.gridManual":
+    "You can set the number of columns and rows in the settings of the page.",
+  "studio.format.words.fill": "The whole screen",
+  "studio.format.words.round": "Round {size}",
+  "studio.format.words.oval": "Oval {size}",
+  "studio.format.words.rounded": "Rounded corners {size}",
   "studio.theme.background": "Background",
   "studio.theme.panel": "Panels",
   "studio.theme.line": "Borders",
@@ -1576,7 +1619,7 @@ export const en: Record<TranslationKey, string> = {
   "studio.dashSettings": "Dashboard",
   "studio.author": "Author (optional, exported with the file)",
   "studio.authorHint": "your nickname, if you wish",
-  "studio.format": "Drawing format",
+  "studio.format": "Format",
   "studio.width": "Width",
   "studio.height": "Height",
   "studio.grid": "Grid of this page",

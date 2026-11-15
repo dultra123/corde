@@ -120,7 +120,7 @@ describe("parseRoute", () => {
     expect(sameRoute({ page: "session", id: "a" }, { page: "engineer", id: "a" })).toBe(false);
   });
 
-  it("maps routes to the four top-level tabs", () => {
+  it("maps routes to the top-level tabs", () => {
     expect(sectionOf({ page: "home" })).toBe("home");
     expect(sectionOf({ page: "dashboard" })).toBe("dashboard");
     expect(sectionOf({ page: "sessions" })).toBe("sessions");
@@ -136,6 +136,23 @@ describe("the devices page (home server)", () => {
     expect(parseRoute("#/devices")).toEqual({ page: "devices" });
     expect(routeHash({ page: "devices" })).toBe("#/devices");
     expect(sectionOf({ page: "devices" })).toBe("home");
+  });
+});
+
+describe("the Studio", () => {
+  it("is #/dash-studio and #/dash-studio/<id>, under its own tab", () => {
+    expect(parseRoute("#/dash-studio")).toEqual({ page: "studio" });
+    expect(parseRoute("#/dash-studio/")).toEqual({ page: "studio" });
+    expect(parseRoute("#/dash-studio/volant-rond")).toEqual({ page: "studio", id: "volant-rond" });
+    expect(parseRoute("#/dash-studio/Pas%20Un%20Id")).toEqual({ page: "studio" });
+    expect(parseRoute("#/dash-studio/a/b")).toEqual({ page: "studio" });
+    expect(routeHash({ page: "studio" })).toBe("#/dash-studio");
+    expect(routeHash({ page: "studio", id: "gt3" })).toBe("#/dash-studio/gt3");
+    expect(sectionOf({ page: "studio" })).toBe("studio");
+    expect(sectionOf({ page: "studio", id: "gt3" })).toBe("studio");
+    // The live dashboard keeps its own tab, `#/dash` included.
+    expect(sectionOf({ page: "dashboard", dash: true })).toBe("dashboard");
+    expect(sameRoute({ page: "studio" }, { page: "studio", id: "gt3" })).toBe(false);
   });
 });
 
