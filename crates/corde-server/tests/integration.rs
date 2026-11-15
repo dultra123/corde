@@ -418,6 +418,44 @@ async fn websocket_hello_frames_rate_ping_and_http_api() {
     .await;
     assert_eq!(code, 400);
     assert!(!server.data_dir.join("dashes").join("bad.json").exists());
+    // The shape of the page (ADR 0018): stored and given back as it was sent, on the disk too;
+    // a definition without one is given back without one.
+    let (_, one) = http_call("GET", server.http("/api/dashes/gt3"), None).await;
+    assert_eq!(
+        one["format"],
+        json!({ "preset": "phone-landscape", "width": 852, "height": 393 })
+    );
+    for format in [
+        json!({ "preset": "wheel-round", "width": 480, "height": 480, "shape": "round" }),
+        json!({ "preset": "custom", "width": 800, "height": 480, "shape": "rounded", "radius": 240 }),
+    ] {
+        let mut shaped = dash("rond");
+        shaped["format"] = format.clone();
+        let (code, stored) = http_call("PUT", server.http("/api/dashes/rond"), Some(shaped)).await;
+        assert_eq!(code, 200, "{stored}");
+        assert_eq!(stored["format"], format);
+        let (_, one) = http_call("GET", server.http("/api/dashes/rond"), None).await;
+        assert_eq!(one["format"], format);
+        let file = std::fs::read(server.data_dir.join("dashes").join("rond.json")).unwrap();
+        let on_disk: serde_json::Value = serde_json::from_slice(&file).unwrap();
+        assert_eq!(on_disk["format"], format);
+    }
+    for format in [
+        json!({ "preset": "custom", "width": 480, "height": 480, "shape": "star" }),
+        json!({ "preset": "custom", "width": 480, "height": 480, "shape": 3 }),
+        json!({ "preset": "custom", "width": 800, "height": 480, "shape": "rounded" }),
+        json!({ "preset": "custom", "width": 800, "height": 480, "shape": "rounded", "radius": 241 }),
+        json!({ "preset": "custom", "width": 800, "height": 480, "radius": 20 }),
+        json!({ "preset": "fill", "width": 852, "height": 393, "shape": "round" }),
+    ] {
+        let mut bad = dash("bad");
+        bad["format"] = format.clone();
+        let (code, _) = http_call("PUT", server.http("/api/dashes/bad"), Some(bad)).await;
+        assert_eq!(code, 400, "{format}");
+    }
+    assert!(!server.data_dir.join("dashes").join("bad.json").exists());
+    let (code, _) = http_call("DELETE", server.http("/api/dashes/rond"), None).await;
+    assert_eq!(code, 204);
     // At most 50.
     for i in 1..50 {
         let id = format!("d{i}");
