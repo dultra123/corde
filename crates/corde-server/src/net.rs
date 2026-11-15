@@ -266,6 +266,14 @@ pub fn banner_lines(
 }
 
 /// Lines of the start-up banner of the home server (`--role hub`).
+/// `true` inside a Docker / Podman container (their marker files): the addresses this
+/// process sees are then internal to the container, not the host's.
+pub fn in_container() -> bool {
+    ["/.dockerenv", "/run/.containerenv"]
+        .iter()
+        .any(|p| std::path::Path::new(p).exists())
+}
+
 pub fn hub_banner_lines(
     bound: SocketAddr,
     ui: Option<&std::path::Path>,
@@ -284,6 +292,12 @@ pub fn hub_banner_lines(
     }
     for (name, url) in endpoints {
         lines.push(format!("  Adresse : {url}   ({name})"));
+    }
+    if in_container() {
+        lines.push(
+            "            (dans un conteneur : adresse interne, utilise celle de la machine hôte, ex. le NAS)"
+                .to_string(),
+        );
     }
     lines.push(
         "  Accès   : appareils appairés seulement. Code d'appairage : sudo corde-server pair"

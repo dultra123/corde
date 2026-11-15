@@ -77,6 +77,9 @@ pub struct Server {
     game_api: bool,
     allow_host: Vec<String>,
     sync_interval: Duration,
+    /// Home server with `--first-pairing-code` and no device paired: the code issued at
+    /// start-up and until when it is valid ([`hub::first`]).
+    first_pairing: Option<(hub::auth::IssuedCode, chrono::DateTime<chrono::Utc>)>,
 }
 
 impl Server {
@@ -145,12 +148,20 @@ impl Server {
                 .map(|s| ResultsImporter::new(Arc::clone(s), cfg.import_config())),
         };
         let engineer = state::Engineer::new(cfg.llm_kind())?;
+        let mut first_pairing = None;
+        if cfg.first_pairing_code && !hub_role {
+            tracing::warn!("--first-pairing-code ne sert qu'avec --role hub : ignoré");
+        }
         let role = if hub_role {
             let hub = hub::Hub::open(&data_dir)
                 .map_err(|e| anyhow::anyhow!("dossier du serveur illisible : {e}"))?;
             hub.auth
                 .write_control_file(local_addr.port())
                 .map_err(|e| anyhow::anyhow!("cannot write the control file: {e}"))?;
+            if cfg.first_pairing_code {
+                first_pairing = hub::first::issue_if_unpaired(&hub.auth)
+                    .map(|code| (code, hub::first::valid_until(chrono::Utc::now())));
+            }
             state::RoleState {
                 role: Role::Hub,
                 hub: Some(Arc::new(hub)),
@@ -224,6 +235,7 @@ impl Server {
             game_api,
             allow_host: cfg.allow_host.clone(),
             sync_interval: Duration::from_secs(cfg.sync_interval_s),
+            first_pairing,
         })
     }
 
@@ -269,6 +281,16 @@ impl Server {
             self.ui_dir.as_deref(),
             &self.data_dir,
         )
+    }
+
+    /// Home server with `--first-pairing-code` and no device paired: the framed block that
+    /// gives the first pairing code (printed once, on the standard output, by the binary).
+    /// Empty otherwise.
+    pub fn first_pairing_lines(&self) -> Vec<String> {
+        match &self.first_pairing {
+            Some((code, until)) => hub::first::block(code, self.local_addr.port(), *until),
+            None => Vec::new(),
+        }
     }
 
     /// Start the source thread and serve until `shutdown` resolves, then stop

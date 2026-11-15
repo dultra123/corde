@@ -154,6 +154,35 @@ impl From<DeviceInfo> for DeviceInfoOut {
     }
 }
 
+/// `corde-server healthcheck`: the home server on this machine answers its public pairing
+/// state (`GET /api/hub/pairing` on the loopback, `role: "hub"`). No key, no data read.
+pub fn healthcheck(port: u16) -> anyhow::Result<()> {
+    let url = format!("http://127.0.0.1:{port}/api/hub/pairing");
+    let agent = ureq::config::Config::builder()
+        .http_status_as_error(false)
+        .proxy(None)
+        .timeout_global(Some(Duration::from_secs(5)))
+        .build()
+        .new_agent();
+    let mut resp = agent
+        .get(&url)
+        .call()
+        .map_err(|e| anyhow!("pas de réponse sur le port {port} : {e}"))?;
+    let status = resp.status().as_u16();
+    let text = resp.body_mut().read_to_string().unwrap_or_default();
+    if status != 200 {
+        return Err(anyhow!("réponse {status} sur le port {port}"));
+    }
+    let v: serde_json::Value =
+        serde_json::from_str(&text).map_err(|_| anyhow!("réponse illisible sur le port {port}"))?;
+    if v.get("role").and_then(|r| r.as_str()) != Some("hub") {
+        return Err(anyhow!(
+            "le port {port} n'est pas celui d'un serveur Corde (rôle hub)"
+        ));
+    }
+    Ok(())
+}
+
 /// `1234 5678`.
 pub fn format_code(code: &str) -> String {
     if code.len() == 8 {
