@@ -423,6 +423,35 @@
     transition: none;
   }
 }
+/* A dashboard with a shape (rounded corners, round; ADR 0018): black around the shape, whatever
+   the colours of its theme. */
+.dash.is-shaped {
+  background: #000;
+}
+/* A dashboard of the Studio drawn in a format of its own, in full screen, with a mouse (a PC
+   and its extra screens): the page takes the whole window, so that on a screen of the same
+   proportions the drawing fills it exactly (a 480 × 480 dashboard on a 480 × 480 screen). The
+   dots of the pages then show like the arrows and the ☰ button: while the pointer is over the
+   dashboard. A touch screen keeps the room of its buttons (the rules above), and the Direct
+   page of the PC (`is-embedded`) its margins. */
+@media (hover: hover) and (pointer: fine) {
+  .dash.is-format:not(.is-embedded) .dash-page {
+    padding: 0;
+  }
+  .dash.is-format:not(.is-embedded) .dash-dots {
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .dash.is-format:not(.is-embedded):hover .dash-dots,
+  .dash.is-format:not(.is-embedded) .dash-dots:focus-within {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dash.is-format .dash-dots {
+    transition: none;
+  }
+}
 .dash-foot {
   position: absolute;
   z-index: 2;

@@ -908,15 +908,29 @@ pub struct DashDefinition {
     pub updated_ms: u64,
 }
 
-/// The reference drawing size (the page keeps these proportions on any screen).
+/// The reference drawing size (the page keeps these proportions on any screen) and the shape of
+/// the page (ADR 0018).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[ts(export, export_to = "../../../packages/protocol/src/generated/")]
 pub struct DashFormat {
-    /// `phone-landscape`, `phone-portrait`, `tablet`, `screen-16-9`, `wheel-strip`, `custom`,
-    /// or `fill` (the page takes the whole screen, whatever its shape).
+    /// `phone-landscape`, `phone-portrait`, `tablet`, `screen-16-9`, `wheel-strip`,
+    /// `wheel-round`, `square`, `screen-5-3`, `screen-3-2`, `custom` (any size), or `fill` (the
+    /// page takes the whole screen, whatever its shape). A name for the values below, nothing
+    /// more: an id this version does not know is drawn as a custom size.
     pub preset: String,
     pub width: u16,
     pub height: u16,
+    /// The shape of the page, from a closed list (ADR 0018): `rect`, `rounded` (a rectangle with
+    /// rounded corners, see `radius`) or `round` (the circle or the ellipse inscribed in
+    /// `width` × `height`). Nothing is drawn outside the shape. Left out: `rect`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub shape: Option<String>,
+    /// With `rounded` only: the radius of the corners, in pixels of the reference size, from 1
+    /// to half the short side.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub radius: Option<u16>,
 }
 
 /// A few colours, `#rrggbb` only, and the font of the numbers.

@@ -118,10 +118,12 @@ widgets du même menu ramène la grille. Un second écran l'ouvre en plein écra
 
 ![Le tableau de bord dans la page Direct du PC, sous la barre du haut](docs/images/tableau-de-bord-pc.jpg)
 
-**Tes propres tableaux de bord (Studio)** : l'éditeur de tableaux de bord du PC place les données que tu
-veux sur une grille — valeurs, jauges, textes, blocs de Corde, widgets — sur plusieurs pages, au format d'un
-téléphone, d'une tablette, d'un écran ou d'un bandeau large. Glisser, redimensionner, annuler, aperçu avec une
-course de démonstration ; chaque appareil choisit le sien. Depuis la 1.3 : **photos, logos et vidéos** choisis
+**Tes propres tableaux de bord (Studio)** : l'éditeur de tableaux de bord du PC — l'onglet **Studio** de la
+barre du haut — place les données que tu veux sur une grille — valeurs, jauges, textes, blocs de Corde,
+widgets — sur plusieurs pages, au format d'un téléphone, d'une tablette, d'un écran, d'un bandeau large, d'un
+**petit écran rond de volant**, ou à la taille que tu veux ; la page peut être un rectangle, avoir des coins
+arrondis ou être ronde. Glisser, redimensionner, annuler, aperçu avec une course de démonstration ; chaque
+appareil choisit le sien. Depuis la 1.3 : **photos, logos et vidéos** choisis
 sur ton PC (élément ou fond de page — la position GPS d'une photo est retirée avant l'envoi), **couleurs selon
 la valeur** (seuils), **« Afficher quand… »** (limiteur, stands, drapeaux, une donnée sous un seuil), style
 de chaque élément, police des chiffres, jauge circulaire, formes, bandeau d'alerte, rampe de régime réglable,

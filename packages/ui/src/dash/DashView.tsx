@@ -1,6 +1,7 @@
 import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import { SettingsDialog } from "../dashboard/SettingsDialog";
 import { isBuiltin } from "../dashdef/builtin";
+import { aspectOf, shapeOf } from "../dashdef/model";
 import { DashPage, themeStyle } from "../dashdef/Renderer";
 import { useActiveDash } from "../dashdef/store";
 import { type TranslationKey, useT } from "../i18n";
@@ -233,9 +234,18 @@ export function DashView({ embedded = false }: { embedded?: boolean }) {
   const standings = snap.frame?.standings ?? [];
   const tone = flagTone(snap.flags);
   const idle = snap.idle ? t(snap.idle) : null;
+  // A dashboard of the Studio drawn in a format of its own (`is-format`: with a mouse and in
+  // full screen it takes the whole window, `styles/dash.css`), with a shape (`is-shaped`: black
+  // around it).
+  const custom = !isBuiltin(def);
+  const look =
+    (embedded ? " is-embedded" : "") +
+    (custom ? " is-custom" : "") +
+    (custom && aspectOf(def) !== null ? " is-format" : "") +
+    (custom && shapeOf(def.format) !== "rect" ? " is-shaped" : "");
   return (
     <div
-      className={`dash${embedded ? " is-embedded" : ""}${isBuiltin(def) ? "" : " is-custom"}`}
+      className={`dash${look}`}
       data-flag={tone ?? "none"}
       style={isBuiltin(def) ? undefined : (themeStyle(def) as CSSProperties)}
     >

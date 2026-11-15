@@ -1,12 +1,14 @@
 import type { Lang } from "../store/settings";
 import { cordeDefinition, type TemplateId, template } from "./builtin";
 import { getElementSpec, propsWithDefaults } from "./catalog";
+import { cleanFormat, sameFormat, suggestGrid, withPreset } from "./format";
 import {
   BUILTIN_ID,
   type DashBackground,
   type DashCondition,
   type DashDefinition,
   type DashElement,
+  type DashFormat,
   type DashPageDef,
   type DashStyle,
   type DashThreshold,
@@ -22,7 +24,6 @@ import {
   MAX_ROWS,
   MIN_COLS,
   MIN_ROWS,
-  PRESETS,
   type PresetId,
 } from "./model";
 
@@ -89,13 +90,20 @@ function touch(def: DashDefinition): DashDefinition {
   return { ...def, updated_ms: Date.now() };
 }
 
+/**
+ * A new dashboard from a model, in the format of the model or in `format` (ADR 0018): its pages
+ * then get the grid that suits it (`adaptGrids`: nothing of the model moves).
+ */
 export function newDefinition(
   from: TemplateId,
   taken: Iterable<string>,
   lang: Lang,
+  format?: DashFormat,
 ): DashDefinition {
   const t = template(from, lang);
-  return touch({ ...t, id: freshId(t.name, taken) });
+  const def: DashDefinition = { ...t, id: freshId(t.name, taken) };
+  if (!format) return touch(def);
+  return touch(adaptGrids({ ...def, format: cleanFormat(format) }));
 }
 
 /** A copy under a new id and name (« Corde » included: its copy can be modified). */
@@ -369,14 +377,51 @@ export function reorderElement(
 
 // ---------------------------------------------------------------- format, theme
 
+/**
+ * Another format (`dashdef/format.ts` builds it: a preset, a size, a shape). The pages and their
+ * elements are untouched: they are placed in cells, and drawn with the new proportions.
+ */
+export function setFormat(def: DashDefinition, format: DashFormat): DashDefinition {
+  const next = cleanFormat(format);
+  if (sameFormat(def.format, next)) return def;
+  return touch({ ...def, format: next });
+}
+
 export function setPreset(def: DashDefinition, preset: PresetId | "custom"): DashDefinition {
-  if (preset === "custom")
-    return def.format.preset === "custom"
-      ? def
-      : touch({ ...def, format: { ...def.format, preset } });
-  const size = PRESETS[preset];
-  if (def.format.preset === preset) return def;
-  return touch({ ...def, format: { preset, ...size } });
+  return setFormat(def, withPreset(def.format, preset));
+}
+
+/** A page with a finer grid: each column cut in `kc`, each row in `kr`, every element with it. */
+function refinePage(p: DashPageDef, kc: number, kr: number): DashPageDef {
+  return {
+    ...p,
+    cols: p.cols * kc,
+    rows: p.rows * kr,
+    elements: p.elements.map((e) => ({
+      ...e,
+      x: e.x * kc,
+      y: e.y * kr,
+      w: e.w * kc,
+      h: e.h * kr,
+    })),
+  };
+}
+
+/**
+ * Gives each page the grid that suits the format (`suggestGrid`): a finer one where elements
+ * are placed (every element keeps exactly its place and its size), a fresh one on an empty
+ * page. The same definition when every grid suits already.
+ */
+export function adaptGrids(def: DashDefinition): DashDefinition {
+  let changed = false;
+  const pages = def.pages.map((p) => {
+    const g = suggestGrid(def.format, p);
+    if (!g) return p;
+    changed = true;
+    if (p.elements.length === 0) return { ...p, cols: g.cols, rows: g.rows };
+    return refinePage(p, g.cols / p.cols, g.rows / p.rows);
+  });
+  return changed ? touch({ ...def, pages }) : def;
 }
 
 export function setThemeColor(

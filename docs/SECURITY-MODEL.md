@@ -256,7 +256,10 @@ que sur demande.
   par page, identifiants et types en jeux de caractères fermés, noms bornés, réglages plats et bornés,
   nombres finis, couleurs `#rrggbb` ; aucune chaîne avec `<`, `>`, caractère de contrôle, `://`, `www.`,
   `javascript:` / `data:` / `vbscript:` / `file:`. Le corps est refusé avec la raison (400). Un élément ou un
-  réglage inconnu est gardé tel quel (version future) mais jamais interprété.
+  réglage inconnu est gardé tel quel (version future) mais jamais interprété. La **forme de la page**
+  (ADR 0018) est un mot d'une liste fermée (`rect`, `rounded`, `round`) et un rayon entier borné par la
+  moitié du petit côté : ni tracé, ni chaîne CSS, ni image de masque ; l'interface n'en tire qu'un
+  pourcentage calculé à partir de ces nombres.
 - **Interface** : rien d'une définition n'est exécuté ni injecté comme HTML (React insère les textes comme
   textes ; une couleur passe par `validColor` avant d'aller dans un `style` ; les types inconnus s'affichent
   « élément inconnu »). Pas d'adresse, pas de police externe ; une image ou une vidéo seulement par

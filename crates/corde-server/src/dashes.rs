@@ -10,12 +10,13 @@
 //! the validation keeps it so anyway: bounded sizes, closed character sets for the ids,
 //! `#rrggbb` colours, no markup, no address, no nested object. A picture or a video is cited by
 //! the id of a file of [`crate::dash_assets`] only; conditions and colour rules are a field of
-//! the catalogue, a comparison of a closed list and a bounded number (ADR 0016).
+//! the catalogue, a comparison of a closed list and a bounded number (ADR 0016); the shape of
+//! the page is one of a closed list, its corner radius a bounded number (ADR 0018).
 
 use crate::dash_assets::valid_asset_id;
 use corde_protocol::{
-    DashBackground, DashCondition, DashDefinition, DashElement, DashStyle, DashThreshold,
-    DASH_DEFINITION_VERSION,
+    DashBackground, DashCondition, DashDefinition, DashElement, DashFormat, DashStyle,
+    DashThreshold, DASH_DEFINITION_VERSION,
 };
 use serde_json::Value;
 use std::collections::{BTreeMap, HashSet};
@@ -46,6 +47,26 @@ pub const MIN_FORMAT_SIDE: u16 = 100;
 pub const MAX_FORMAT_SIDE: u16 = 4000;
 /// Width / height of a format, at most this way or the other.
 pub const MAX_FORMAT_RATIO: f64 = 8.0;
+/// The shapes of a page (ADR 0018): a closed list. Left out of a definition: `rect`.
+pub const SHAPES: [&str; 3] = ["rect", "rounded", "round"];
+/// The format that takes the whole screen, whatever its proportions: it has no shape.
+pub const FILL_PRESET: &str = "fill";
+/// The formats the Studio offers: `(id, width, height, shape)`, the same list as `PRESETS` of
+/// `packages/ui/src/dashdef/model.ts` (plus `custom`, any size within the bounds). A preset is
+/// only a name for these values: [`validate`] does not depend on this list, and an id that is
+/// not in it (a definition made by a later version) is drawn as a custom size.
+pub const PRESETS: [(&str, u16, u16, Option<&str>); 10] = [
+    ("phone-landscape", 852, 393, None),
+    ("phone-portrait", 393, 852, None),
+    ("tablet", 1024, 768, None),
+    ("screen-16-9", 1920, 1080, None),
+    ("wheel-strip", 800, 240, None),
+    ("wheel-round", 480, 480, Some("round")),
+    ("square", 720, 720, None),
+    ("screen-5-3", 800, 480, None),
+    ("screen-3-2", 480, 320, None),
+    (FILL_PRESET, 852, 393, None),
+];
 /// The dashboard shipped with Corde (`packages/ui/src/dashdef/builtin.ts`): never stored.
 pub const BUILTIN_ID: &str = "corde";
 
@@ -314,6 +335,40 @@ pub fn referenced_assets(d: &DashDefinition) -> Vec<String> {
     out
 }
 
+/// The largest corner radius of a `rounded` page: half its short side.
+pub fn max_shape_radius(width: u16, height: u16) -> u16 {
+    width.min(height) / 2
+}
+
+/// The format of a definition: its preset id, its size, its proportions, its shape (ADR 0018).
+fn check_format(f: &DashFormat) -> Result<(), String> {
+    if f.preset.is_empty() || f.preset.len() > 24 || !valid_id(&f.preset) {
+        return Err("format: invalid preset".into());
+    }
+    if !(MIN_FORMAT_SIDE..=MAX_FORMAT_SIDE).contains(&f.width)
+        || !(MIN_FORMAT_SIDE..=MAX_FORMAT_SIDE).contains(&f.height)
+    {
+        return Err("format: size out of bounds".into());
+    }
+    let ratio = f64::from(f.width) / f64::from(f.height);
+    if !(1.0 / MAX_FORMAT_RATIO..=MAX_FORMAT_RATIO).contains(&ratio) {
+        return Err("format: proportions out of bounds".into());
+    }
+    let shape = f.shape.as_deref().unwrap_or("rect");
+    if !SHAPES.contains(&shape) {
+        return Err("format: unknown shape".into());
+    }
+    if f.preset == FILL_PRESET && shape != "rect" {
+        return Err("format: the whole screen has no shape".into());
+    }
+    match (shape, f.radius) {
+        ("rounded", Some(r)) if (1..=max_shape_radius(f.width, f.height)).contains(&r) => Ok(()),
+        ("rounded", _) => Err("format: radius is 1 to half the short side".into()),
+        (_, Some(_)) => Err("format: a radius only with rounded corners".into()),
+        _ => Ok(()),
+    }
+}
+
 fn check_element(what: &str, e: &DashElement, cols: u8, rows: u8) -> Result<(), String> {
     if !valid_id(&e.id) {
         return Err(format!("{what}: invalid id"));
@@ -342,7 +397,7 @@ fn check_element(what: &str, e: &DashElement, cols: u8, rows: u8) -> Result<(), 
     Ok(())
 }
 
-/// Checks a definition against every rule of ADR 0015 (the size included).
+/// Checks a definition against every rule of ADRs 0015, 0016 and 0018 (the size included).
 pub fn validate(d: &DashDefinition) -> Result<(), String> {
     if d.v != DASH_DEFINITION_VERSION {
         return Err(format!("unsupported version {}", d.v));
@@ -357,19 +412,7 @@ pub fn validate(d: &DashDefinition) -> Result<(), String> {
     if let Some(a) = &d.author {
         check_text("author", a, 0, MAX_NAME_LEN)?;
     }
-    let f = &d.format;
-    if f.preset.is_empty() || f.preset.len() > 24 || !valid_id(&f.preset) {
-        return Err("format: invalid preset".into());
-    }
-    if !(MIN_FORMAT_SIDE..=MAX_FORMAT_SIDE).contains(&f.width)
-        || !(MIN_FORMAT_SIDE..=MAX_FORMAT_SIDE).contains(&f.height)
-    {
-        return Err("format: size out of bounds".into());
-    }
-    let ratio = f64::from(f.width) / f64::from(f.height);
-    if !(1.0 / MAX_FORMAT_RATIO..=MAX_FORMAT_RATIO).contains(&ratio) {
-        return Err("format: proportions out of bounds".into());
-    }
+    check_format(&d.format)?;
     let t = &d.theme;
     for (k, c) in [
         ("background", &t.background),
@@ -602,7 +645,7 @@ impl DashStore {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use corde_protocol::{DashFormat, DashPageDef, DashTheme};
+    use corde_protocol::{DashPageDef, DashTheme};
     use serde_json::json;
 
     fn tmp_dir(name: &str) -> PathBuf {
@@ -629,6 +672,8 @@ pub(crate) mod tests {
                 preset: "phone-landscape".into(),
                 width: 852,
                 height: 393,
+                shape: None,
+                radius: None,
             },
             theme: DashTheme {
                 background: "#000000".into(),
@@ -746,6 +791,128 @@ pub(crate) mod tests {
             let mut d = dash("x");
             d.theme.accent = bad.into();
             assert!(validate(&d).is_err(), "{bad}");
+        }
+    }
+
+    /// A definition with this format (`shape` and `radius` as in the JSON, `null`: left out).
+    fn shaped(
+        preset: &str,
+        width: u16,
+        height: u16,
+        shape: Option<&str>,
+        radius: Option<u16>,
+    ) -> DashDefinition {
+        let mut d = dash("x");
+        d.format = DashFormat {
+            preset: preset.into(),
+            width,
+            height,
+            shape: shape.map(Into::into),
+            radius,
+        };
+        d
+    }
+
+    // The same cases as `packages/ui/src/dashdef/model.test.ts` (« the shape of the page »).
+    #[test]
+    fn page_shapes_are_a_closed_list_with_a_bounded_radius() {
+        for (preset, w, h, shape, radius, ok) in [
+            // No shape: a rectangle, as every definition before ADR 0018.
+            ("custom", 480, 480, None, None, true),
+            ("custom", 480, 480, Some("rect"), None, true),
+            // Round: the circle or the ellipse inscribed in the size, no radius.
+            ("wheel-round", 480, 480, Some("round"), None, true),
+            ("custom", 800, 480, Some("round"), None, true),
+            ("custom", 480, 480, Some("round"), Some(40), false),
+            // Rounded corners: a radius from 1 to half the short side.
+            ("custom", 800, 480, Some("rounded"), Some(1), true),
+            ("custom", 800, 480, Some("rounded"), Some(240), true),
+            ("custom", 480, 800, Some("rounded"), Some(240), true),
+            ("custom", 101, 300, Some("rounded"), Some(50), true),
+            ("custom", 101, 300, Some("rounded"), Some(51), false),
+            ("custom", 800, 480, Some("rounded"), Some(241), false),
+            ("custom", 800, 480, Some("rounded"), Some(0), false),
+            ("custom", 800, 480, Some("rounded"), None, false),
+            // A radius without rounded corners.
+            ("custom", 800, 480, None, Some(20), false),
+            ("custom", 800, 480, Some("rect"), Some(20), false),
+            // Not in the list.
+            ("custom", 480, 480, Some("circle"), None, false),
+            ("custom", 480, 480, Some("Round"), None, false),
+            ("custom", 480, 480, Some(""), None, false),
+            ("custom", 480, 480, Some("polygon(0 0)"), None, false),
+            ("custom", 480, 480, Some("url(x)"), None, false),
+            // The whole screen has no shape of its own.
+            ("fill", 852, 393, None, None, true),
+            ("fill", 852, 393, Some("rect"), None, true),
+            ("fill", 852, 393, Some("round"), None, false),
+            ("fill", 852, 393, Some("rounded"), Some(20), false),
+            // A shape does not loosen the bounds of the size.
+            ("custom", 99, 480, Some("round"), None, false),
+            ("custom", 4000, 400, Some("round"), None, false),
+        ] {
+            let d = shaped(preset, w, h, shape, radius);
+            assert_eq!(
+                validate(&d).is_ok(),
+                ok,
+                "{preset} {w}×{h} {shape:?} {radius:?}"
+            );
+        }
+        assert_eq!(max_shape_radius(800, 480), 240);
+        assert_eq!(max_shape_radius(101, 300), 50);
+    }
+
+    #[test]
+    fn every_preset_is_valid_and_an_unknown_one_is_a_custom_size() {
+        for (id, w, h, shape) in PRESETS {
+            assert_eq!(validate(&shaped(id, w, h, shape, None)), Ok(()), "{id}");
+        }
+        let ids: HashSet<&str> = PRESETS.iter().map(|p| p.0).collect();
+        assert_eq!(ids.len(), PRESETS.len(), "no preset twice");
+        // A preset of a later version: kept, drawn at its size.
+        assert_eq!(
+            validate(&shaped("wheel-oval-2030", 600, 400, None, None)),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn shapes_in_json() {
+        // Read: the fields of ADR 0018, `null` as left out.
+        let mut json = serde_json::to_value(dash("x")).unwrap();
+        json["format"] =
+            json!({ "preset": "wheel-round", "width": 480, "height": 480, "shape": "round" });
+        let d: DashDefinition = serde_json::from_value(json.clone()).unwrap();
+        assert_eq!(d.format.shape.as_deref(), Some("round"));
+        assert_eq!(validate(&d), Ok(()));
+        // Written back as it came.
+        assert_eq!(serde_json::to_value(&d).unwrap(), json);
+        json["format"] = json!({ "preset": "custom", "width": 800, "height": 480, "shape": "rounded", "radius": 24 });
+        let d: DashDefinition = serde_json::from_value(json.clone()).unwrap();
+        assert_eq!(
+            (d.format.shape.as_deref(), d.format.radius),
+            (Some("rounded"), Some(24))
+        );
+        assert_eq!(validate(&d), Ok(()));
+        assert_eq!(serde_json::to_value(&d).unwrap(), json);
+        json["format"] = json!({ "preset": "custom", "width": 800, "height": 480, "shape": null, "radius": null });
+        let d: DashDefinition = serde_json::from_value(json.clone()).unwrap();
+        assert_eq!((d.format.shape.as_deref(), d.format.radius), (None, None));
+        assert_eq!(validate(&d), Ok(()));
+        // Not the right kind of value: refused when read.
+        for bad in [
+            json!({ "preset": "custom", "width": 800, "height": 480, "shape": 3 }),
+            json!({ "preset": "custom", "width": 800, "height": 480, "shape": ["round"] }),
+            json!({ "preset": "custom", "width": 800, "height": 480, "shape": "rounded", "radius": 12.5 }),
+            json!({ "preset": "custom", "width": 800, "height": 480, "shape": "rounded", "radius": -4 }),
+            json!({ "preset": "custom", "width": 800, "height": 480, "shape": "rounded", "radius": "12" }),
+            json!({ "preset": "custom", "width": 800, "height": 480, "shape": "rounded", "radius": 70000 }),
+        ] {
+            json["format"] = bad.clone();
+            assert!(
+                serde_json::from_value::<DashDefinition>(json.clone()).is_err(),
+                "{bad}"
+            );
         }
     }
 
@@ -1123,6 +1290,13 @@ pub(crate) mod tests {
         }
         assert!(json["pages"][0].get("background").is_none());
         assert!(json["theme"].get("font").is_none());
+        // Nor those of ADR 0018: a definition without a shape is written back without one.
+        assert!(json["format"].get("shape").is_none());
+        assert!(json["format"].get("radius").is_none());
+        assert_eq!(
+            json["format"],
+            json!({ "preset": "phone-landscape", "width": 852, "height": 393 })
+        );
         let back: DashDefinition = serde_json::from_value(json).unwrap();
         assert_eq!(back, d);
     }

@@ -141,6 +141,9 @@ export const useEditor = create<EditorState>((set, get) => ({
     set({ h: nh, pageId: page, selection, selected: selection.length > 1 ? null : selected });
   },
   begin() {
+    // A gesture still open (a field being typed in when a drag starts): it ends here, as a
+    // step of its own, so that nothing it changed is lost from the history.
+    if (get().gesture) get().end();
     const h = get().h;
     if (h) set({ gesture: h.present });
   },

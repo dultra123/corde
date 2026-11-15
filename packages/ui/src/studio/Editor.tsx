@@ -4,6 +4,7 @@ import { flagsOf } from "../dash/model";
 import type { PageProps } from "../dash/parts";
 import { exportDash } from "../dashdef/archive";
 import { isBuiltin } from "../dashdef/builtin";
+import { aspectOf, shapeOf } from "../dashdef/model";
 import {
   addPage,
   movePage,
@@ -20,6 +21,7 @@ import { connection } from "../net/connection";
 import { connectionPhase, type TelemetryState, useTelemetry } from "../store/telemetry";
 import { Canvas } from "./Canvas";
 import { copiedElements, copyElements, isDirty, readDraft, useEditor } from "./editor-store";
+import { FormatControl } from "./Format";
 import { Inspector, Palette } from "./Inspector";
 import { saveMessage } from "./Library";
 
@@ -65,8 +67,13 @@ function Preview({ onClose }: { onClose: () => void }) {
   if (!def) return null;
   const i = Math.min(index, def.pages.length - 1);
   const page = def.pages[i];
+  // As on the screen it is made for: a format of its own takes the whole window, a shape has
+  // black around it (`styles/dash.css`).
+  const look =
+    (aspectOf(def) !== null ? " is-format" : "") +
+    (shapeOf(def.format) !== "rect" ? " is-shaped" : "");
   return (
-    <div className="dash studio-preview" role="dialog" aria-label={t("studio.preview")}>
+    <div className={`dash studio-preview${look}`} role="dialog" aria-label={t("studio.preview")}>
       <div className="dash-pages">
         <section className="dash-page">
           {page && <DashPage def={def} page={page} data={data} lang={lang} />}
@@ -227,6 +234,7 @@ export function DashEditor({ id }: { id: string }) {
   const [message, setMessage] = useState<{ text: string; bad: boolean } | null>(null);
   const [draftShown, setDraftShown] = useState(false);
   const [preview, setPreview] = useState(false);
+  const [formatOpen, setFormatOpen] = useState(false);
   const saved = defs.find((d) => d.id === id) ?? null;
   const loaded = h?.present.id === id;
 
@@ -365,6 +373,7 @@ export function DashEditor({ id }: { id: string }) {
             if (v.trim()) useEditor.getState().apply((d) => renameDefinition(d, v));
           }}
         />
+        <FormatControl def={def} open={formatOpen} onOpenChange={setFormatOpen} />
         <div className="studio-bar-right">
           <button
             type="button"
@@ -443,7 +452,7 @@ export function DashEditor({ id }: { id: string }) {
       <div className="studio-edit">
         <Palette page={page} />
         <Canvas def={def} page={page} data={data} />
-        <Inspector def={def} page={page} />
+        <Inspector def={def} page={page} onFormat={() => setFormatOpen(true)} />
       </div>
       {preview && <Preview onClose={() => setPreview(false)} />}
     </div>

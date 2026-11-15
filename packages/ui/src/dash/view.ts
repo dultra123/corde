@@ -52,8 +52,10 @@ export function useLiveView(route: Route): "dash" | "widgets" {
 }
 
 /**
- * `true` where « Automatique » picks the phone dashboard: the grid of widgets then offers the
- * way back to it (a PC never sees that button).
+ * `true` where « Automatique » picks the phone dashboard (a phone's browser, the phone
+ * application): the grid of widgets then offers the way back to it (a PC never sees that
+ * button), and the top bar has no « Studio » tab (the Studio is made for a mouse and a
+ * keyboard).
  */
 export function useAutoPicksDash(): boolean {
   const ctx = useMeasured();

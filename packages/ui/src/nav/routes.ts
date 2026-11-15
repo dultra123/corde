@@ -7,7 +7,8 @@ import { useSyncExternalStore } from "react";
  *   #/home                               home (status, last session, last races, phone access)
  *   #/                                   live dashboard (widgets, or the phone dashboard: `dash/view.ts`)
  *   #/dash                               live dashboard, always the race dashboard, full screen
- *   #/dash-studio                        the Studio: the library of race dashboards (PC)
+ *   #/dash-studio                        the Studio: the library of race dashboards (PC; its
+ *                                        own tab of the top bar)
  *   #/dash-studio/<id>                   the Studio: editing one dashboard
  *   #/sessions                           recorded sessions
  *   #/sessions/<id>                      one session (laps)
@@ -43,7 +44,7 @@ export type Route =
   | { page: "devices" }
   | { page: "servers" };
 
-export type Section = "home" | "dashboard" | "sessions" | "races" | "profile";
+export type Section = "home" | "dashboard" | "sessions" | "races" | "profile" | "studio";
 
 const SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
@@ -185,8 +186,8 @@ export function useRoute(): Route {
 /** Which top-level tab a route belongs to. */
 export function sectionOf(route: Route): Section {
   if (route.page === "home" || route.page === "devices" || route.page === "servers") return "home";
-  if (route.page === "dashboard" || route.page === "obs" || route.page === "studio")
-    return "dashboard";
+  if (route.page === "dashboard" || route.page === "obs") return "dashboard";
+  if (route.page === "studio") return "studio";
   if (route.page === "races") return "races";
   if (route.page === "profile" || route.page === "result") return "profile";
   return "sessions";
