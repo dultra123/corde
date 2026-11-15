@@ -3,7 +3,7 @@
 > Corde s'appelait anciennement Muret (nom de travail) ; renommée le 11 novembre 2026 (version 0.3.0).
 
 > Fichier de reprise : n'importe qui (humain ou agent) doit pouvoir repartir d'ici.
-> Mis à jour à chaque jalon. Dernière mise à jour : 2026-11-15 (**version 1.4.0 : Corde serveur en conteneur pour NAS Synology** ; avant, le même jour : **version 1.3.0 : Studio — images, vidéos, fonds de page, seuils de couleur, « afficher quand… », style, polices, jauge circulaire, formes, bandeau d'alerte, rampe réglable, sélection multiple, copier / coller** ; avant, le même jour : **version 1.2.0 : le tableau de bord dans le menu des dispositions du PC, et le Studio (tableaux de bord personnalisés)**, fusionnée dans `main` ; fiche de présentation `docs/PRESENTATION.md` pour le site ; avant, le 14 nov. : **version 1.1.0 : tableau de bord du téléphone**, quatre pages, écran allumé, démonstration dans l'application, fusionnée dans `main` ; avant, le même jour : lot **« certificat de distribution stable »** (iOS, CI seulement), fusionné dans `main` ; avant, le même jour : **application Android 1.0.0**, lot 1 sans widgets, fusionnée dans `main` ; avant, le même jour : **version 1.0.0, première version officielle** : PC, Corde serveur et application iPhone au même numéro, demandée par le propriétaire ; avant, le même jour : widget « Courses en images », application iPhone 0.10.0, fusionné dans `main` ; avant, le même jour : « Widgets iOS et activité en direct », application iPhone 0.9.0, branche `ios-widgets` ; premier build iPhone dans TestFlight ; « Application iPhone », version 0.8.0, le 12 ; avant : « Défilé des courses en ligne sur l'Accueil », 0.7.1 ; lot « Corde serveur » — serveur domestique Raspberry Pi, appairage, synchronisation depuis le PC —, version 0.7.0 ; avant : « Mises à jour depuis l'application », 0.6.0 ; « Widgets dans OBS », 0.5.0, et son correctif 0.5.1 ; « Courses en ligne », 0.4.0 ; publication dans `dultra123/corde`, sécurité réseau, adresse masquée sur l'accueil ; lot « Corde : renommage, migration des données, licence GPL, logo » ; avant : « S2 — calibration de l'ingénieur sur des données réelles », « réglages réels : fichiers .svm lus et écrits », « ressenti → symptômes → itération du plan », « Précision des tours », « Accueil » et « Application de bureau »).
+> Mis à jour à chaque jalon. Dernière mise à jour : 2026-11-15 (**version 1.4.1 : correction de l'interblocage du premier envoi PC → serveur, guide Synology relu sur un vrai NAS** ; avant, le même jour : **version 1.4.0 : Corde serveur en conteneur pour NAS Synology** ; avant, le même jour : **version 1.3.0 : Studio — images, vidéos, fonds de page, seuils de couleur, « afficher quand… », style, polices, jauge circulaire, formes, bandeau d'alerte, rampe réglable, sélection multiple, copier / coller** ; avant, le même jour : **version 1.2.0 : le tableau de bord dans le menu des dispositions du PC, et le Studio (tableaux de bord personnalisés)**, fusionnée dans `main` ; fiche de présentation `docs/PRESENTATION.md` pour le site ; avant, le 14 nov. : **version 1.1.0 : tableau de bord du téléphone**, quatre pages, écran allumé, démonstration dans l'application, fusionnée dans `main` ; avant, le même jour : lot **« certificat de distribution stable »** (iOS, CI seulement), fusionné dans `main` ; avant, le même jour : **application Android 1.0.0**, lot 1 sans widgets, fusionnée dans `main` ; avant, le même jour : **version 1.0.0, première version officielle** : PC, Corde serveur et application iPhone au même numéro, demandée par le propriétaire ; avant, le même jour : widget « Courses en images », application iPhone 0.10.0, fusionné dans `main` ; avant, le même jour : « Widgets iOS et activité en direct », application iPhone 0.9.0, branche `ios-widgets` ; premier build iPhone dans TestFlight ; « Application iPhone », version 0.8.0, le 12 ; avant : « Défilé des courses en ligne sur l'Accueil », 0.7.1 ; lot « Corde serveur » — serveur domestique Raspberry Pi, appairage, synchronisation depuis le PC —, version 0.7.0 ; avant : « Mises à jour depuis l'application », 0.6.0 ; « Widgets dans OBS », 0.5.0, et son correctif 0.5.1 ; « Courses en ligne », 0.4.0 ; publication dans `dultra123/corde`, sécurité réseau, adresse masquée sur l'accueil ; lot « Corde : renommage, migration des données, licence GPL, logo » ; avant : « S2 — calibration de l'ingénieur sur des données réelles », « réglages réels : fichiers .svm lus et écrits », « ressenti → symptômes → itération du plan », « Précision des tours », « Accueil » et « Application de bureau »).
 
 ## Où on en est
 
@@ -41,10 +41,34 @@
 
 ## Points bloqués / dépendants du pilote
 
-- **Corde serveur sur un NAS** (15 nov.) : le propriétaire a déjà un NAS (Synology, processeur Intel, peu de
-  mémoire) et préfère y héberger Corde serveur plutôt que d'acheter un Raspberry Pi → version 1.4.0 (image de
-  conteneur, guide `docs/SYNOLOGY.md`). À faire avec lui : suivre le guide sur son NAS, relever les libellés
-  de DSM qui diffèrent, puis l'accès extérieur (VPN). À lui demander : version de DSM et mémoire installée.
+- **Corde serveur sur un NAS, première installation réelle** (15 nov., DS220+ du propriétaire, DSM 7.4.1,
+  Container Manager 24.0.2, un disque de 4 To, 2 Go de mémoire ; faite à distance par le navigateur intégré
+  de l'application Claude, le propriétaire ne saisissant que son mot de passe DSM et le fichier de l'image) :
+  - **Vérifié sur le vrai NAS** : création du stockage (NAS réinstallé, sans volume), installation de
+    Container Manager, import de l'image 1.4.0 (93 Mo), projet créé avec le fichier de projet durci,
+    conteneur « Sain » (≈ 15 à 25 Mo de mémoire), premier code d'appairage dans le journal, nouveau code
+    après redémarrage du conteneur, appairage du PC (Corde 1.2.0) accepté par le serveur 1.4.0.
+  - **Relevé pour le guide** (fait) : libellés réels des §2 à 7 et 11 ; le noyau du NAS ne gère pas
+    `pids_limit` (avertissement, limite ignorée, le reste est appliqué) ; le journal du conteneur affiche la
+    ligne la plus récente en haut ; l'éditeur de texte du projet n'enregistre que ce qui a été saisi par une
+    vraie frappe ou un vrai collage (sans importance pour un humain).
+  - **Bug critique trouvé, corrigé en 1.4.1** : `run_round` (`hub_link.rs`) parcourait
+    `for name in store.db().result_file_names()…` ; le verrou de la base, temporaire de la tête du `for`,
+    vivait toute la boucle, et `store.db().export_result` le reprenait → **interblocage dès le premier
+    résultat importé** : état « Envoi en cours… » sans fin, base du PC verrouillée (`/api/sessions`,
+    `/api/results` muets, enregistreur bloqué) jusqu'au redémarrage de Corde, et de nouveau 15 s après chaque
+    démarrage tant que le PC est appairé. Présent depuis la 1.0.0 ; aucun essai n'avait de résultat sur le PC
+    au moment d'un envoi. Essai de non-régression : `a_pc_with_imported_results_sends_them_and_stays_alive`
+    (il reste bloqué sans la correction). Audit des autres `store.db()` en tête de `for` / `if let` /
+    `match` : aucun autre cas qui reprend le verrou.
+  - **État laissé chez le propriétaire** (à reprendre) : PC en 1.2.0 **figé** (appairé, premier envoi
+    bloqué) → il doit fermer Corde, installer la 1.4.1, relancer ; l'envoi doit alors aller au bout sans
+    nouvel appairage (le serveur du NAS reste en 1.4.0, compatible). Reste ensuite : appairer le téléphone
+    (terminal du conteneur : `corde-server pair`, à vérifier dans DSM), accès extérieur (VPN).
+  - **Aussi corrigé en 1.4.1** : l'application du téléphone affichait la section « Serveur Corde » du PC
+    (`isLocalPage()` vrai sur `capacitor://localhost`) ; textes « Raspberry Pi ou NAS ».
+  - Non expliqué : le NAS a redémarré une fois pendant l'import de l'image (interface DSM muette quelques
+    minutes, puis temps d'activité remis à zéro) ; l'image était importée au retour.
 - **1.3.0 (15 nov.)** — publiée après relecture (voir la ligne du tableau). Les trois valeurs GitHub
   (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `APPLE_DIST_KEY_BASE64`) n'étaient toujours pas
   collées à la 1.2.1 (CI 53, iOS 26 → TestFlight 1.2.1 (26), Android 15) : un mail de révocation d'Apple par

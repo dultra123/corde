@@ -27,6 +27,8 @@
  * No `@tauri-apps/api` dependency: only the minimal shape used here is declared.
  */
 
+import { APP_BUILD } from "../mobile/env";
+
 /** The part of `window.__TAURI__` this UI relies on. */
 export interface TauriGlobal {
   core?: {
@@ -143,8 +145,16 @@ export async function appVersion(): Promise<string> {
 /**
  * `true` when the page was opened on the PC that runs Corde (desktop shell, or a browser on
  * `127.0.0.1` / `localhost`). Only that PC may change the server settings.
+ *
+ * Never in the phone application: its own page is served from `localhost` too
+ * (`capacitor://localhost`, `https://localhost`), and that is the phone, not the PC. Without
+ * this, the phone showed the PC's « Serveur Corde » section, which can only fail there.
  */
-export function isLocalPage(hostname: string = window.location.hostname): boolean {
+export function isLocalPage(
+  hostname: string = window.location.hostname,
+  appBuild: boolean = APP_BUILD,
+): boolean {
+  if (appBuild) return false;
   const h = hostname.toLowerCase().replace(/^\[|\]$/g, "");
   return (
     h === "localhost" || h === "::1" || h === "tauri.localhost" || /^127(\.\d{1,3}){3}$/.test(h)

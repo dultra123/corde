@@ -662,6 +662,105 @@ async fn hub_sessions(hub_url: &str, reader: &Option<String>) -> usize {
     list.as_array().map_or(0, |l| l.len())
 }
 
+/// A PC that holds results imported from the game sends them, and stays alive. It used to
+/// lock its own database twice at the first result: the round never ended, and nothing that
+/// reads or writes the database answered any more (the pages about the sessions, the
+/// recorder). No test had a result on the PC, so nothing saw it before a real PC did.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn a_pc_with_imported_results_sends_them_and_stays_alive() {
+    let hub_data = temp_dir("hub-results");
+    let pc_data = temp_dir("pc-results");
+    let hub = start(ServerConfig {
+        role: Role::Hub,
+        port: 0,
+        bind: Some([127, 0, 0, 1].into()),
+        data_dir: Some(hub_data.clone()),
+        ..Default::default()
+    })
+    .await;
+    let hub_url = format!("http://{}", hub.bound);
+    let pc = start(quick_pc(&pc_data, false, 0)).await;
+    let pc_base = format!("http://{}", pc.bound);
+
+    // Results of the game on the PC, as the importer leaves them.
+    let store = Arc::clone(pc.state.store.as_ref().expect("the PC has a store"));
+    let samples = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../reference/samples");
+    let scan = tokio::task::spawn_blocking(move || {
+        corde_server::results_import::scan_dir_once(store, &samples, None)
+    })
+    .await
+    .unwrap();
+    assert!(scan.imported >= 2, "{scan:?}");
+
+    let c = pairing_code(&hub_data).await;
+    let st = Arc::clone(&pc.state);
+    let url = hub_url.clone();
+    tokio::task::spawn_blocking(move || hub_link::pair_blocking(&st, &url, &c, "PC de test"))
+        .await
+        .unwrap()
+        .expect("paired");
+
+    // The round ends (it does not wait for a lock it holds itself) and sends every result.
+    let report = tokio::time::timeout(
+        Duration::from_secs(30),
+        sync(&pc.state, SyncOptions::default()),
+    )
+    .await
+    .expect("the round ends")
+    .expect("the round succeeds");
+    assert_eq!(report.results_sent, scan.imported, "{report:?}");
+
+    // The PC still answers about its database, and says it is connected.
+    let (code, list) = tokio::time::timeout(
+        Duration::from_secs(10),
+        http("GET", format!("{pc_base}/api/results"), None, None),
+    )
+    .await
+    .expect("the PC's database is free");
+    assert_eq!(code, 200, "{list}");
+    let (_, link) = http("GET", format!("{pc_base}/api/hub-link"), None, None).await;
+    assert_eq!(link["state"], "connected", "{link}");
+    assert_eq!(link["pending_results"], 0, "{link}");
+
+    // A second round has nothing left to send.
+    let again = tokio::time::timeout(
+        Duration::from_secs(30),
+        sync(&pc.state, SyncOptions::default()),
+    )
+    .await
+    .expect("the second round ends")
+    .expect("the second round succeeds");
+    assert_eq!(again.results_sent, 0, "{again:?}");
+
+    // The server holds them: a device paired to read it sees the same number.
+    let c = pairing_code(&hub_data).await;
+    let (code, v) = http(
+        "POST",
+        format!("{hub_url}/api/hub/pair"),
+        None,
+        Some((
+            format!(r#"{{"code":"{c}","name":"lecteur","kind":"app"}}"#),
+            vec![],
+        )),
+    )
+    .await;
+    assert_eq!(code, 201, "{v}");
+    let reader = v["token"].as_str().map(str::to_string);
+    let (code, on_hub) = http("GET", format!("{hub_url}/api/results"), reader, None).await;
+    assert_eq!(code, 200, "{on_hub}");
+    let count = on_hub
+        .as_array()
+        .map(|a| a.len())
+        .or_else(|| on_hub["results"].as_array().map(|a| a.len()))
+        .unwrap_or(0);
+    assert_eq!(count, scan.imported as usize, "{on_hub}");
+
+    pc.stop().await;
+    hub.stop().await;
+    let _ = std::fs::remove_dir_all(&hub_data);
+    let _ = std::fs::remove_dir_all(&pc_data);
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn the_backlog_goes_at_start_up_and_each_recording_when_it_ends() {
     let hub_data = temp_dir("hub2");

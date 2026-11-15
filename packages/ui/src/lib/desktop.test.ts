@@ -221,4 +221,11 @@ describe("isLocalPage", () => {
       expect(isLocalPage(host), host).toBe(false);
     }
   });
+
+  it("is never the phone application, whose own page is served from localhost", () => {
+    // capacitor://localhost on an iPhone, https://localhost on Android: the phone, not the PC.
+    for (const host of ["localhost", "127.0.0.1", "tauri.localhost"]) {
+      expect(isLocalPage(host, true), host).toBe(false);
+    }
+  });
 });

@@ -1,6 +1,6 @@
 # Corde — fiche de présentation
 
-> À jour pour la **version 1.4.0** (15 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
+> À jour pour la **version 1.4.1** (15 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
 > faut pour présenter Corde (site, page de présentation, annonce) : ce qu'elle fait, où elle tourne, ce qui
 > est nouveau, ce qui arrive, les images et les liens. Elle ne dit que ce qui existe ; le détail et l'état
 > exact de chaque partie sont dans le [README](../README.md) et dans [STATUS.md](STATUS.md).
@@ -20,7 +20,7 @@ Le nom vient du **point de corde** : l'endroit où la trajectoire idéale touche
 
 | | |
 |---|---|
-| Version actuelle | **1.4.0** (15 novembre 2026) |
+| Version actuelle | **1.4.1** (15 novembre 2026) |
 | Prix | Gratuit |
 | Licence | Logiciel libre, GPL-3.0-or-later ; code source public |
 | Jeu | Le Mans Ultimate |
@@ -193,10 +193,12 @@ redémarrer. Chaque version est signée et vérifiée avant l'installation ; rie
 | iPhone | Application, par TestFlight sur invitation | En test |
 | Android | Application, fichier APK | Fichier pas encore publié |
 | Raspberry Pi 5 / Linux | Corde serveur, archive `corde-server-<version>-linux-arm64.tar.gz` | Pas encore essayé sur un vrai Pi |
-| NAS Synology (processeur Intel ou AMD) / Docker | Corde serveur, image `corde-server-<version>-docker-x64.tar.gz` | Essayé dans un conteneur en test automatique, pas encore sur un vrai NAS |
+| NAS Synology (processeur Intel ou AMD) / Docker | Corde serveur, image `corde-server-<version>-docker-x64.tar.gz` | Installé sur un vrai NAS (DS220+, DSM 7.4.1) : démarrage et appairage vérifiés ; envoi des sessions à confirmer avec la 1.4.1 |
 
 ## Nouveautés
 
+- **1.4.1 (15 novembre 2026)** — correction : Corde sur le PC ne se fige plus au premier envoi vers Corde
+  serveur ; guide Synology relu sur un vrai NAS.
 - **1.4.0 (15 novembre 2026)** — Corde serveur s'installe sur un NAS Synology (ou toute machine avec
   Docker) ; premier appairage sans terminal.
 - **1.3.0 (15 novembre 2026)** — Studio : photos, logos et vidéos, couleurs selon la valeur, « Afficher

@@ -776,8 +776,13 @@ fn run_round(
     link.update_status(|s| s.server_version = Some(manifest.server_version.clone()));
 
     // Results first: a session names the result it was reconciled against.
+    // Their names are read in a statement of their own: written as `for name in
+    // store.db()…`, the database stayed locked for the whole loop, the loop locked it again
+    // for the first result, and the PC waited for itself for ever — frozen (no page about
+    // the sessions, no recording) as soon as it held one imported result.
+    let names = store.db().result_file_names().map_err(local)?;
     let mut results = Vec::new();
-    for name in store.db().result_file_names().map_err(local)? {
+    for name in names {
         let Some(bundle) = store.db().export_result(&name).map_err(local)? else {
             continue;
         };

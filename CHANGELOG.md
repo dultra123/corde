@@ -8,6 +8,29 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [1.4.1] — 2026-11-15
+
+**Mise à jour à installer avant de relier un PC à Corde serveur.**
+
+### Corrections
+
+- **Corde sur le PC ne se fige plus au premier envoi vers Corde serveur.** Dès que le PC avait au moins un
+  résultat de course importé du jeu, le premier envoi bloquait sa base de données : les pages Sessions et
+  Profil ne répondaient plus, et plus rien ne s'enregistrait jusqu'au redémarrage de Corde. Toutes les
+  versions depuis la 1.0.0 étaient concernées, dès que le PC était appairé à un serveur (Raspberry Pi ou
+  NAS). Rien n'était perdu ; avec cette version, l'envoi va au bout. Si ton PC est resté figé : ferme Corde
+  (icône près de l'horloge → Quitter), installe cette version, relance.
+- **L'application du téléphone n'affiche plus la section « Serveur Corde » du PC** dans ses réglages : elle
+  ne pouvait qu'y échouer (« timeout »). Le téléphone se relie au serveur par Accueil → Mes serveurs.
+
+### À savoir
+
+- **Guide Synology relu sur un vrai NAS** (DS220+, DSM 7.4.1) : vrais noms des menus, préparation d'un NAS
+  neuf (création du stockage), et le journal du conteneur, que DSM affiche la ligne la plus récente en
+  haut. Les textes de Corde disent maintenant « Raspberry Pi ou NAS » et où trouver le code sur un NAS.
+- Le serveur (Raspberry Pi ou NAS) n'a pas besoin d'être mis à jour pour cette correction : elle est dans
+  Corde sur le PC.
+
 ## [1.4.0] — 2026-11-15
 
 **Corde serveur sur un NAS Synology**, sans acheter de Raspberry Pi et sans taper de commande.

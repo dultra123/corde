@@ -1234,7 +1234,8 @@ export const fr = {
   "hub.home.result": "résultat",
   "hub.home.results": "résultats",
   "hub.home.noPc": "Aucun PC n'a encore rien envoyé. Pour que tes sessions arrivent ici :",
-  "hub.home.noPc.step1": "sur le serveur, lance « sudo corde-server pair » ;",
+  "hub.home.noPc.step1":
+    "sur le serveur, lance « sudo corde-server pair » (sur un NAS : « corde-server pair » dans le terminal du conteneur) ;",
   "hub.home.noPc.step2":
     "sur le PC, ouvre Corde → Réglages → Serveur Corde, entre l'adresse du serveur et le code ;",
   "hub.home.noPc.step3": "le PC envoie alors tout ce qu'il a, puis chaque nouvelle session.",
@@ -1285,7 +1286,7 @@ export const fr = {
     "Seul un appareil administrateur peut révoquer ou renommer les autres appareils.",
   "hub.link.title": "Serveur Corde",
   "hub.link.lead":
-    "Un serveur chez toi (Raspberry Pi) qui garde tes sessions et les montre à ton téléphone, PC éteint. Le PC lui envoie chaque session terminée.",
+    "Un serveur chez toi (Raspberry Pi ou NAS) qui garde tes sessions et les montre à ton téléphone, PC éteint. Le PC lui envoie chaque session terminée.",
   "hub.link.state.unpaired": "Pas appairé",
   "hub.link.state.connected": "Connecté",
   "hub.link.state.syncing": "Envoi en cours…",
@@ -1307,7 +1308,7 @@ export const fr = {
   "hub.link.code": "Code d'appairage",
   "hub.link.pair": "Appairer",
   "hub.link.codeHint":
-    "Le code s'obtient sur le serveur : « sudo corde-server pair ». Il est valable 10 minutes.",
+    "Le code s'obtient sur le serveur : « sudo corde-server pair » (sur un NAS : dans le journal du conteneur la première fois, puis « corde-server pair » dans son terminal). Il est valable 10 minutes.",
   "races.off.remoteHub": "Le planning s'active depuis un appareil administrateur du serveur.",
   "races.hubLink": "Tes courses sont aussi sur ton serveur",
   "races.hubLink.hint": "(tes choix sur le PC et sur le serveur restent séparés)",
@@ -1382,7 +1383,7 @@ export const fr = {
   "mobile.gate.checking": "Connexion à {name}…",
   "mobile.gate.unpaired.title": "{name} demande un appairage",
   "mobile.gate.unpaired.body":
-    "C'est un serveur Corde : appaire ce téléphone avec un code obtenu sur le serveur (« sudo corde-server pair »).",
+    "C'est un serveur Corde : appaire ce téléphone avec un code obtenu sur le serveur (« sudo corde-server pair » ; sur un NAS, « corde-server pair » dans le terminal du conteneur).",
   "mobile.gate.unreachable.title": "{name} ne répond pas",
   "mobile.gate.unreachable.body": "Vérifie, dans l'ordre :",
   "mobile.gate.unreachable.on": "le PC est allumé et Corde est ouverte ;",
@@ -1437,7 +1438,7 @@ export const fr = {
   "servers.pair.name": "Nom de ce téléphone",
   "servers.pair.go": "Appairer",
   "servers.pair.hint":
-    "Le code s'obtient sur le serveur : « sudo corde-server pair ». Il est valable 10 minutes.",
+    "Le code s'obtient sur le serveur : « sudo corde-server pair » (sur un NAS : dans le journal du conteneur la première fois, puis « corde-server pair » dans son terminal). Il est valable 10 minutes.",
   "servers.pair.ok": "Appairé sous le nom « {name} ».",
   "servers.pair.wait": "Trop d'essais : réessaie dans {n} s.",
   "servers.pair.failed": "Appairage refusé ({code}).",

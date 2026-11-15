@@ -8,10 +8,11 @@
 > [SECURITY-MODEL.md §7](SECURITY-MODEL.md#7-le-serveur-corde-mode-hub). Décision :
 > [ADR 0017](adr/0017-corde-serveur-en-conteneur.md).
 >
-> **Les noms des menus** sont ceux de DSM 7.2 en français tels qu'ils apparaissent dans des guides
-> publiés ; Synology les change parfois d'une version à l'autre. Si un nom diffère un peu chez toi, cherche
-> le plus proche : l'étape reste la même. Quand un nom n'a pas pu être vérifié, l'étape décrit ce qu'il faut
-> faire sans le citer.
+> **Les noms des menus** des §2 à 7 et 11 ont été relevés sur un vrai NAS (DS220+, DSM 7.4.1, Container
+> Manager 24.0.2, novembre 2026), en français. Synology les change parfois d'une version à l'autre : si un
+> nom diffère un peu chez toi, cherche le plus proche, l'étape reste la même. Là où un nom n'a pas été
+> vérifié (terminal, suppression, sauvegarde, DSM 7.0 / 7.1), l'étape décrit ce qu'il faut faire sans le
+> citer.
 
 ## En bref
 
@@ -61,18 +62,30 @@ Exemple : un DS220+ a un processeur Intel (Celeron J4025) : fichier **x64**.
 1. Ouvre DSM dans le navigateur du PC (l'adresse du NAS) et connecte-toi avec un compte **administrateur**.
 2. Ouvre le **Centre de paquets**.
 3. Cherche **Container Manager** (champ de recherche en haut), puis clique sur **Installer**.
-4. S'il demande sur quel volume l'installer, garde **Volume 1** (ou ton seul volume).
+4. **Configurer le réseau bridge** : garde le sous-réseau proposé (`172.17.0.1/16`, « Par défaut »), puis
+   **Suivant**. Ne le change que si ton réseau à la maison utilise déjà des adresses en `172.17.…`.
+5. **Confirmer les paramètres** : laisse « Lancer après l'installation » coché, puis **Effectué**.
 
-L'installation crée en général un **dossier partagé `docker`** : c'est là qu'on range Corde. S'il n'existe
-pas, crée-le : **Panneau de configuration** → **Dossier partagé** → **Créer**, nom `docker`, sur le
-volume 1, sans rien changer d'autre.
+L'installation crée un **dossier partagé `docker`** : c'est là qu'on range Corde. S'il n'existe pas, crée-le :
+**Panneau de configuration** → **Dossier partagé** → **Créer**, nom `docker`, sur le volume 1, sans rien
+changer d'autre.
+
+**NAS tout neuf (ou réinstallé) ?** Le Centre de paquets répond « Vous n'avez créé aucun groupe de stockage
+ni volume » : il faut d'abord préparer le disque. Clique sur **Lancer** (ou ouvre le **Gestionnaire de
+stockage** → **Créer maintenant**), puis suis l'assistant en gardant ce qu'il propose : **Démarrer** → type
+de RAID **SHR** → coche ton ou tes disques → contrôle du disque (au choix) → taille : **Max** → **Btrfs
+(recommandé)** → chiffrement : laisse décoché → **Appliquer** → **OK**. **Cette étape efface tout ce qui se
+trouve sur les disques cochés.** Attends que le groupe de stockage et le volume soient « Sain », puis que DSM
+finisse d'installer ses propres paquets (sinon : « Un autre package est en cours de configuration,
+d'installation ou de restauration », réessaie une minute plus tard). Avec un seul disque, rien ne protège tes
+données d'une panne de ce disque : SHR permet d'en ajouter un second plus tard, en miroir.
 
 ## 3. Créer le dossier de Corde
 
 1. Ouvre **File Station**.
 2. Ouvre le dossier partagé **`docker`**.
-3. Crée un dossier (bouton de création de dossier, ou clic droit dans la liste) nommé **`corde`**.
-4. Ouvre `corde` et crée dedans un dossier nommé **`data`**.
+3. **Créer** → **Créer dossier**, nom **`corde`**, **OK**.
+4. Ouvre `corde` (double-clic) et crée dedans, de la même façon, un dossier nommé **`data`**.
 
 Résultat : `docker/corde/data`. Le dossier `data` gardera tout (sessions, appareils appairés, courses) ;
 Corde serveur se l'attribue tout seul au premier démarrage (il appartient ensuite à son compte « corde »,
@@ -83,7 +96,7 @@ numéro 8471). Ne mets rien d'autre dedans.
 1. Sur le PC, ouvre la [dernière version de Corde](https://github.com/dultra123/corde/releases/latest)
    (section *Assets* en bas de la page).
 2. Télécharge **`corde-server-<version>-docker-x64.tar.gz`** (par exemple
-   `corde-server-1.4.0-docker-x64.tar.gz`, environ 40 Mo ; le numéro change à chaque version). **Ne le
+   `corde-server-1.4.1-docker-x64.tar.gz`, environ 40 Mo ; le numéro change à chaque version). **Ne le
    décompresse pas** : le NAS le lit tel quel.
 
 Les images apparaissent à partir de la première version publiée après l'arrivée de ce guide ; la pré-release
@@ -92,11 +105,12 @@ Les images apparaissent à partir de la première version publiée après l'arri
 ## 5. Importer l'image dans Container Manager
 
 1. Ouvre **Container Manager**, section **Image** (menu de gauche).
-2. Ouvre le menu **Action**, puis **Importer**, et choisis l'import **à partir d'un fichier** venant de
-   **ton ordinateur** (le PC sur lequel tu as téléchargé le fichier ; l'autre choix sert pour un fichier
-   déjà posé sur le NAS).
+2. Clique sur **Importer** (s'il y a déjà des images dans la liste : menu **Action** → **Importer**), puis
+   **Ajouter à partir d'un fichier** → **À partir d'un périphérique local** (le PC sur lequel tu as
+   téléchargé le fichier ; « À partir de ce DSM » sert pour un fichier déjà posé sur le NAS).
 3. Sélectionne `corde-server-<version>-docker-x64.tar.gz` et valide. L'envoi prend une minute environ.
-4. L'image **`corde-server`**, étiquette **`<version>`** (ex. `1.4.0`), apparaît dans la liste.
+4. L'image **`corde-server`** apparaît dans la liste, avec son numéro dans la colonne **Identification**
+   (ex. `1.4.1`).
 
 Si l'import refuse le fichier compressé : décompresse-le une fois sur le PC (clic droit → Extraire, ou
 7-Zip) pour obtenir `corde-server-<version>-docker-x64.tar`, puis importe ce `.tar`.
@@ -106,19 +120,20 @@ Si l'import refuse le fichier compressé : décompresse-le une fois sur le PC (c
 Un **projet** est un conteneur décrit par un petit texte (format « compose ») : on le colle une fois, et
 Container Manager s'occupe du reste.
 
-1. Dans Container Manager, section **Projet**, clique sur **Créer**.
+1. Dans Container Manager, section **Projet**, clique sur **Créer** : l'écran **Paramètres généraux**
+   s'ouvre.
 2. **Nom du projet** : `corde`.
-3. **Chemin** : choisis le dossier **`docker/corde`** créé au § 3.
-4. **Source** : l'option qui **crée** le fichier compose (son nom varie selon la version :
-   « Créer docker-compose.yml », « Créer compose.yml »…). Une zone de texte s'ouvre.
-5. Colle ce texte, puis **remplace `1.4.0` par le numéro de l'image que tu as importée** (§ 5) :
+3. **Chemin** : clique sur **Définir le chemin**, déplie `docker`, choisis **`corde`** (créé au § 3), puis
+   **Sélectionnez**. Le champ affiche `/docker/corde`.
+4. **Source** : choisis **Créer un fichier docker-compose.yml**. Une zone de texte s'ouvre en dessous.
+5. Colle ce texte (Ctrl + V), puis **remplace `1.4.1` par le numéro de l'image que tu as importée** (§ 5) :
 
    ```yaml
    version: "2.4"
 
    services:
      corde:
-       image: corde-server:1.4.0
+       image: corde-server:1.4.1
        container_name: corde
        restart: unless-stopped
        ports:
@@ -149,10 +164,20 @@ Container Manager s'occupe du reste.
    les données vont dans `docker/corde/data` ; le conteneur **redémarre tout seul** (après une coupure ou
    un redémarrage du NAS) sauf si tu l'as arrêté toi-même ; le reste l'enferme (lecture seule, aucun droit
    particulier, mémoire limitée).
-6. **Suivant**. S'il propose des **paramètres du portail web** (Web Station) : **ne coche rien**, Corde n'en
-   a pas besoin (et ce portail servirait à publier le service).
-7. **Suivant**, puis **Effectué** (ou **Terminé**) : le projet se construit et démarre. Au bout de quelques
-   secondes, le conteneur `corde` est **vert** (en cours d'exécution).
+6. **Suivant**. Écran **Paramètres du portail Web** : laisse « Configurer le portail Web via Web Station »
+   **décoché**, Corde n'en a pas besoin (et ce portail servirait à publier le service).
+7. **Suivant**. Écran **Résumé** : laisse « Démarrer le projet dès sa création » coché, puis **Effectué**.
+8. Une fenêtre **Terminal : Créer - corde** montre la création. Elle doit finir par `Container corde
+   Started` et `Exit Code: 0` ; clique sur **Fermer**. La ligne « Your kernel does not support PIDs limit
+   capabilities… PIDs limit discarded » est normale sur un NAS Synology (une des limites du texte n'y est
+   pas prise en charge, les autres le sont).
+
+Dans la section **Conteneur**, `corde` a maintenant une pastille **verte** ; en l'ouvrant (double-clic), tu
+lis « En cours d'exécution », puis « Sain » au bout de quelques secondes.
+
+Si la fenêtre affiche `Top-level object must be a mapping` : le texte n'a pas été enregistré (zone restée
+vide). Ouvre le projet (double-clic) → onglet **Configurations YAML**, colle le texte, **Sauvegarder** →
+« Créer et démarrer le projet (reconstruire l'image) » → **OK**.
 
 ## 7. Lire le premier code d'appairage
 
@@ -160,7 +185,10 @@ Tant qu'**aucun appareil** n'est appairé, Corde serveur écrit à chaque démar
 son journal.
 
 1. Container Manager → section **Conteneur** → ouvre le conteneur **`corde`** (double-clic).
-2. Ouvre l'onglet du **journal** du conteneur. Tu y trouves un cadre comme celui-ci :
+2. Ouvre l'onglet **Journal** (à côté de **Général** et **Statistiques**). DSM y affiche **la ligne la plus
+   récente en haut** : le cadre se lit donc de bas en haut. Cherche simplement la ligne **« Code
+   d'appairage : … »** (fais défiler un peu, ou tape `Code` dans le champ **Rechercher** du journal). Dans
+   l'ordre où Corde l'écrit, le cadre est celui-ci :
 
    ```text
      ==========================================================================
@@ -174,9 +202,9 @@ son journal.
      ...
    ```
 
-3. Tu as **10 minutes** pour le taper (§ 8). Trop tard, ou trois codes faux ? **Redémarre le conteneur**
-   (section Conteneur → `corde` → menu Action → redémarrer, ou arrêter puis démarrer) : un nouveau code
-   s'affiche, tant qu'aucun appareil n'est appairé.
+3. Tu as **10 minutes** pour le taper (§ 8). Trop tard, ou trois codes faux ? **Redémarre le conteneur** :
+   dans le détail du conteneur, **Action** → **Redémarrer**, puis l'icône d'actualisation en bas à droite du
+   journal. Un nouveau code s'affiche, tant qu'aucun appareil n'est appairé.
 
 Une fois un appareil appairé, plus aucun code ne s'affiche (c'est voulu). Les adresses en `172.…` en haut du
 journal sont internes au conteneur : ne t'en sers pas, utilise celle du NAS.
@@ -188,10 +216,11 @@ celle du NAS :
 
 1. Sur le PC, dans Corde : **Réglages** (roue dentée) → section **Serveur Corde** → **Adresse du serveur**
    (`192.168.1.50`, le port 8471 est ajouté tout seul) → **Code d'appairage** (celui du journal) →
-   **Appairer**. Cette section n'apparaît que sur le PC lui-même (pas depuis le téléphone).
-2. L'état passe à **Connecté** et le PC envoie aussitôt tout ce qu'il a déjà enregistré (la première fois,
-   cela peut prendre quelques minutes : « En attente d'envoi » décompte). Ensuite il envoie chaque session
-   dès qu'elle se termine.
+   **Appairer**. Cela se fait **dans Corde sur le PC**, pas dans l'application du téléphone (le téléphone
+   s'appaire autrement, § 9).
+2. L'état passe à **Envoi en cours…** : le PC envoie tout ce qu'il a déjà enregistré (la première fois, cela
+   peut prendre plusieurs minutes), puis à **Connecté**. Ensuite il envoie chaque session dès qu'elle se
+   termine.
 
 Le premier appareil appairé devient **administrateur** du serveur (il peut révoquer les autres, page
 **Appareils**). Si tu préfères que ce soit ton téléphone, appaire-le en premier avec ce code (§ 9).
@@ -218,7 +247,7 @@ serveurs »).
 
 Container Manager ouvre un **terminal** dans le conteneur, depuis le navigateur (pas besoin de SSH) :
 
-1. Container Manager → **Conteneur** → ouvre **`corde`** → onglet du **terminal**.
+1. Container Manager → **Conteneur** → ouvre **`corde`** → **Action** → **Ouvrir le terminal**.
 2. Crée une session de terminal (bouton de création ; si on te demande une commande, prends `bash`).
 3. Tape, puis Entrée :
 
@@ -245,11 +274,12 @@ Le serveur doit avoir **la même version que Corde sur le PC, ou plus récente**
 
 1. Télécharge le nouveau `corde-server-<version>-docker-x64.tar.gz` (§ 4) et **importe-le** (§ 5) : une
    seconde étiquette (le nouveau numéro) apparaît à côté de l'ancienne.
-2. Container Manager → **Projet** → `corde` : **arrête** le projet.
-3. Modifie son texte (l'onglet qui montre le fichier YAML du projet) : remplace l'ancien numéro par le
-   nouveau sur la ligne `image: corde-server:…`, et enregistre.
-4. **Reconstruis** puis démarre le projet (selon la version de Container Manager, l'enregistrement le
-   propose directement, ou c'est une action du projet : construire / démarrer).
+2. Container Manager → **Projet** → ouvre `corde` (double-clic) → bouton **Arrêt** (tant que le projet
+   tourne, son texte est en lecture seule).
+3. Onglet **Configurations YAML** : remplace l'ancien numéro par le nouveau sur la ligne
+   `image: corde-server:…`, puis **Sauvegarder**.
+4. DSM demande quoi faire ensuite : garde **Créer et démarrer le projet (reconstruire l'image)**, puis
+   **OK**. La fenêtre de création doit finir par `Exit Code: 0`.
 5. Vérifie dans le journal (§ 7) la ligne `corde-server <nouvelle version> — serveur Corde (rôle hub)`.
 
 Les données (`docker/corde/data`) ne bougent pas : les appareils restent appairés. Quand tout marche, tu peux

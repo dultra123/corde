@@ -1187,7 +1187,8 @@ export const en: Record<TranslationKey, string> = {
   "hub.home.result": "result",
   "hub.home.results": "results",
   "hub.home.noPc": "No PC has sent anything yet. For your sessions to come here:",
-  "hub.home.noPc.step1": 'on the server, run "sudo corde-server pair";',
+  "hub.home.noPc.step1":
+    'on the server, run "sudo corde-server pair" (on a NAS: "corde-server pair" in the terminal of the container);',
   "hub.home.noPc.step2":
     "on the PC, open Corde → Settings → Corde server, type the server's address and the code;",
   "hub.home.noPc.step3": "the PC then sends everything it has, then every new session.",
@@ -1236,7 +1237,7 @@ export const en: Record<TranslationKey, string> = {
   "hub.devices.notAdmin": "Only an administrator device can revoke or rename the other devices.",
   "hub.link.title": "Corde server",
   "hub.link.lead":
-    "A server at home (Raspberry Pi) that keeps your sessions and shows them to your phone with the PC off. The PC sends it every finished session.",
+    "A server at home (Raspberry Pi or NAS) that keeps your sessions and shows them to your phone with the PC off. The PC sends it every finished session.",
   "hub.link.state.unpaired": "Not paired",
   "hub.link.state.connected": "Connected",
   "hub.link.state.syncing": "Sending…",
@@ -1258,7 +1259,7 @@ export const en: Record<TranslationKey, string> = {
   "hub.link.code": "Pairing code",
   "hub.link.pair": "Pair",
   "hub.link.codeHint":
-    'Get the code on the server: "sudo corde-server pair". It is valid for 10 minutes.',
+    'Get the code on the server: "sudo corde-server pair" (on a NAS: in the log of the container the first time, then "corde-server pair" in its terminal). It is valid for 10 minutes.',
   "races.off.remoteHub": "The schedule is turned on from an administrator device of the server.",
   "races.hubLink": "Your races are on your server too",
   "races.hubLink.hint": "(your picks on the PC and on the server stay separate)",
@@ -1332,7 +1333,7 @@ export const en: Record<TranslationKey, string> = {
   "mobile.gate.checking": "Connecting to {name}…",
   "mobile.gate.unpaired.title": "{name} needs pairing",
   "mobile.gate.unpaired.body":
-    'This is a Corde server: pair this phone with a code obtained on the server ("sudo corde-server pair").',
+    'This is a Corde server: pair this phone with a code obtained on the server ("sudo corde-server pair"; on a NAS, "corde-server pair" in the terminal of the container).',
   "mobile.gate.unreachable.title": "{name} does not answer",
   "mobile.gate.unreachable.body": "Check, in this order:",
   "mobile.gate.unreachable.on": "the PC is on and Corde is open;",
@@ -1388,7 +1389,7 @@ export const en: Record<TranslationKey, string> = {
   "servers.pair.name": "Name of this phone",
   "servers.pair.go": "Pair",
   "servers.pair.hint":
-    'Get the code on the server: "sudo corde-server pair". It is valid for 10 minutes.',
+    'Get the code on the server: "sudo corde-server pair" (on a NAS: in the log of the container the first time, then "corde-server pair" in its terminal). It is valid for 10 minutes.',
   "servers.pair.ok": 'Paired as "{name}".',
   "servers.pair.wait": "Too many attempts: try again in {n} s.",
   "servers.pair.failed": "Pairing refused ({code}).",
