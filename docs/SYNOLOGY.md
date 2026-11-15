@@ -54,7 +54,7 @@ Comme sur le Pi : le serveur n'est **jamais** ouvert sur Internet ; depuis l'ext
   n'a **jamais été essayé** sur un tel NAS. Le guide s'applique tel quel ; si ça ne marche pas, signale-le
   (et le Raspberry Pi reste la voie sûre).
 
-Ton DS220+ a un processeur Intel (Celeron J4025) : fichier **x64**.
+Exemple : un DS220+ a un processeur Intel (Celeron J4025) : fichier **x64**.
 
 ## 2. Installer Container Manager
 
@@ -63,7 +63,9 @@ Ton DS220+ a un processeur Intel (Celeron J4025) : fichier **x64**.
 3. Cherche **Container Manager** (champ de recherche en haut), puis clique sur **Installer**.
 4. S'il demande sur quel volume l'installer, garde **Volume 1** (ou ton seul volume).
 
-L'installation crée un **dossier partagé `docker`** : c'est là qu'on range Corde.
+L'installation crée en général un **dossier partagé `docker`** : c'est là qu'on range Corde. S'il n'existe
+pas, crée-le : **Panneau de configuration** → **Dossier partagé** → **Créer**, nom `docker`, sur le
+volume 1, sans rien changer d'autre.
 
 ## 3. Créer le dossier de Corde
 
@@ -81,8 +83,8 @@ numéro 8471). Ne mets rien d'autre dedans.
 1. Sur le PC, ouvre la [dernière version de Corde](https://github.com/dultra123/corde/releases/latest)
    (section *Assets* en bas de la page).
 2. Télécharge **`corde-server-<version>-docker-x64.tar.gz`** (par exemple
-   `corde-server-1.4.0-docker-x64.tar.gz` ; le numéro change à chaque version). **Ne le décompresse pas** :
-   le NAS le lit tel quel.
+   `corde-server-1.4.0-docker-x64.tar.gz`, environ 40 Mo ; le numéro change à chaque version). **Ne le
+   décompresse pas** : le NAS le lit tel quel.
 
 Les images apparaissent à partir de la première version publiée après l'arrivée de ce guide ; la pré-release
 « Corde — dernière version » les a aussi.

@@ -5,6 +5,9 @@
 > commandes. Compte une heure la première fois.
 > Accès depuis l'extérieur de la maison : [ACCES-EXTERIEUR.md](ACCES-EXTERIEUR.md) (à lire **après** ce guide).
 > Sécurité : [SECURITY-MODEL.md §7](SECURITY-MODEL.md#7-le-serveur-corde-mode-hub). Décision : [ADR 0010](adr/0010-serveur-domestique.md).
+>
+> **Tu as un NAS Synology** (ou un autre NAS avec Docker) allumé en permanence ? Corde serveur peut y tourner
+> à la place d'un Raspberry Pi, installé à la souris, sans commande : [SYNOLOGY.md](SYNOLOGY.md).
 
 ## En bref
 
@@ -33,6 +36,10 @@
 | **Stockage** | une carte microSD de bonne qualité (classe A2, 32 Go ou plus) suffit pour commencer. Pour un serveur allumé en permanence, un **SSD** (carte d'extension M.2 pour Pi 5, ou SSD USB) est plus durable et plus rapide. Une heure d'enregistrement occupe environ 60 Mo. |
 | **Boîtier** | avec refroidissement (le ventilateur officiel du Pi 5, ou un boîtier ventilé). |
 | **Réseau** | un **câble Ethernet** vers ta box de préférence (plus stable que le Wi-Fi). |
+
+**Pas de Raspberry Pi, mais un NAS ?** Un NAS Synology à processeur Intel ou AMD avec le paquet Container
+Manager (DSM 7.2), ou toute machine avec Docker, fait l'affaire : rien à acheter, et le reste de ce guide
+(appairage, appareils, accès extérieur) s'applique. Pas à pas : [SYNOLOGY.md](SYNOLOGY.md).
 
 ## 2. Installer Raspberry Pi OS Lite 64 bits
 
