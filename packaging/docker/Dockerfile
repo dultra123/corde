@@ -16,7 +16,7 @@
 # puis remplacer la valeur « Digest: sha256:… » ci-dessous (ligne BASE_IMAGE), et noter le
 # changement dans CHANGELOG.md. Le job CI « server-docker » affiche l'empreinte actuelle à côté de
 # l'empreinte épinglée.
-ARG BASE_IMAGE=debian:bookworm-slim@sha256:0000000000000000000000000000000000000000000000000000000000000000
+ARG BASE_IMAGE=debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc
 
 # Le compte « corde » (uid et gid 8471, le port de Corde), ajouté aux fichiers de comptes de
 # l'image de base. Cette étape tourne sur la machine qui construit ($BUILDPLATFORM) : pas
