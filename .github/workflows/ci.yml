@@ -6,12 +6,16 @@
 # server-linux : Corde serveur (rôle hub, Raspberry Pi) : corde-server pour Linux arm64 et x64 (zig, glibc
 #              2.28), essayé (x64 directement, arm64 sous qemu), archives corde-server-<version>-linux-<arch>.tar.gz
 #              (binaire, ui/, service systemd, install.sh, uninstall.sh, docs) → artefact corde-server-linux
+# server-docker : Corde serveur en image de conteneur (NAS Synology, Docker ; ADR 0017), construite depuis
+#              ces archives (rien n'est recompilé) pour linux/amd64 et linux/arm64, essayée pour de vrai (x64 :
+#              compose.yaml durci, appairage, arrêt, noms d'hôte), fichiers corde-server-<version>-docker-<arch>.tar.gz
+#              (docker save | gzip) → artefact corde-server-docker. Aucun registre.
 # desktop    : application de bureau (coquille Tauri 2, apps/desktop — workspace Cargo à part) sur windows-latest :
 #              installeur NSIS, artefact corde-setup (Corde_<version>_x64-setup.exe, et sa signature de mise à
 #              jour Corde_<version>_x64-setup.exe.sig quand le secret TAURI_SIGNING_PRIVATE_KEY existe). C'est le
 #              seul endroit où la coquille est compilée.
 # continuous : sur push main seulement, pré-release glissante étiquetée `continuous` (« Corde — dernière version ») :
-#              installeur + zip portable + archives de Corde serveur, anciens fichiers remplacés ; l'APK Android
+#              installeur + zip portable + archives et images de Corde serveur, anciens fichiers remplacés ; l'APK Android
 #              signé qu'android.yml y a mis (Corde_<version>_android.apk) est repris avant la suppression
 # version    : sur push main seulement, release NUMÉROTÉE v<version> (version de tauri.conf.json) si elle n'existe
 #              pas encore et que la signature de mise à jour a été produite : installeur, .sig, zip portable et
@@ -25,7 +29,8 @@
 #   - `continuous` : la pré-release glissante, recréée à chaque poussée sur main, pour essayer le dernier état.
 #     Une pré-release n'est jamais « latest » : elle n'est pas vue par les mises à jour de l'application.
 #   - `version` : la voie normale des versions. Changer le numéro (tauri.conf.json, Cargo.toml, package.json,
-#     section du CHANGELOG.md) et pousser sur main suffit : la release v<version> est créée une fois, marquée
+#     ligne « image: » de packaging/docker/compose.yaml — vérifiée par server-docker —, section du
+#     CHANGELOG.md) et pousser sur main suffit : la release v<version> est créée une fois, marquée
 #     « latest », et son latest.json est servi à
 #     https://github.com/dultra123/corde/releases/latest/download/latest.json (adresse fixée dans l'application).
 #     Les poussées suivantes avec le même numéro ne recréent rien. L'étiquette v<version> est créée par l'API
@@ -307,6 +312,85 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  server-docker:
+    name: Corde serveur (image de conteneur x64 et arm64)
+    # Les images reprennent le binaire et l'interface des archives Linux (rien n'est recompilé).
+    # Aucune publication dans un registre : les fichiers « docker save » vont dans les releases,
+    # comme les archives.
+    needs: server-linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Récupérer les archives de Corde serveur
+        uses: actions/download-artifact@v4
+        with:
+          name: corde-server-linux
+          path: server-dist
+
+      - name: Vérifier les scripts (shellcheck) et le texte compose du guide
+        run: |
+          shellcheck packaging/docker/make-image.sh packaging/docker/smoke-test.sh
+          shellcheck -s sh packaging/docker/entrypoint.sh
+          python3 -I packaging/docker/check-guide.py
+
+      # Informatif : l'empreinte de debian:bookworm-slim change à chaque mise à jour de Debian.
+      # Pour la suivre, recopier « Digest » dans la ligne BASE_IMAGE de packaging/docker/Dockerfile.
+      - name: Image de base (empreinte épinglée et empreinte actuelle)
+        run: |
+          grep '^ARG BASE_IMAGE=' packaging/docker/Dockerfile
+          docker buildx imagetools inspect debian:bookworm-slim | head -n 3 || true
+
+      - name: Construire les images (x64 et arm64) depuis les archives
+        run: |
+          set -euo pipefail
+          version=$(python3 -c "import tomllib; print(tomllib.load(open('Cargo.toml','rb'))['workspace']['package']['version'])")
+          echo "VERSION=${version}" >> "$GITHUB_ENV"
+          mkdir -p extracted docker-dist
+          for arch in x64 arm64; do
+            tar -C extracted -xzf "server-dist/corde-server-${version}-linux-${arch}.tar.gz"
+            dir="extracted/corde-server-${version}-linux-${arch}"
+            packaging/docker/make-image.sh "$version" "$arch" "$dir/corde-server" "$dir/ui" docker-dist
+          done
+          ls -l docker-dist
+
+      - name: Vérifier les fichiers d'image (architecture, licence, étiquettes)
+        run: |
+          set -euo pipefail
+          for pair in x64:amd64 arm64:arm64; do
+            arch=${pair%%:*}
+            want=${pair#*:}
+            docker image rm -f "corde-server:${VERSION}" > /dev/null 2>&1 || true
+            gunzip -c "docker-dist/corde-server-${VERSION}-docker-${arch}.tar.gz" | docker load
+            got=$(docker image inspect --format '{{.Architecture}}' "corde-server:${VERSION}")
+            echo "${arch} : architecture ${got}"
+            [ "$got" = "$want" ] || { echo "::error::${arch} : architecture ${got}, attendu ${want}"; exit 1; }
+            docker image inspect --format '{{json .Config.Labels}}' "corde-server:${VERSION}"
+            docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.licenses"}}' "corde-server:${VERSION}" | grep -qx 'GPL-3.0-or-later'
+            docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.version"}}' "corde-server:${VERSION}" | grep -qx "${VERSION}"
+            # La licence de l'archive, à l'identique.
+            c=$(docker create "corde-server:${VERSION}")
+            docker cp "$c:/opt/corde/LICENSE" "$RUNNER_TEMP/LICENSE-${arch}"
+            docker rm "$c" > /dev/null
+            cmp "$RUNNER_TEMP/LICENSE-${arch}" LICENSE
+          done
+
+      - name: Essai réel de l'image x64 (durcissement, appairage, arrêt, noms d'hôte)
+        run: |
+          set -euo pipefail
+          docker image rm -f "corde-server:${VERSION}" > /dev/null 2>&1 || true
+          gunzip -c "docker-dist/corde-server-${VERSION}-docker-x64.tar.gz" | docker load
+          packaging/docker/smoke-test.sh "$VERSION"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: corde-server-docker
+          path: docker-dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 30
+
   desktop:
     name: Application de bureau (installeur Windows)
     needs: web
@@ -474,12 +558,13 @@ jobs:
     name: Version continue (pré-release « continuous »)
     # Uniquement quand `main` du dépôt d'origine avance : jamais sur une branche, une PR, un tag
     # ni un fork.
-    # Après server-linux aussi, mais un échec de celui-ci ne bloque pas la publication (elle se fait
-    # alors sans les archives de Corde serveur) : d'où !cancelled() et les deux résultats exigés.
+    # Après server-linux et server-docker aussi, mais un échec de ceux-ci ne bloque pas la publication
+    # (elle se fait alors sans les fichiers de Corde serveur) : d'où !cancelled() et les deux résultats
+    # exigés.
     if: >-
       !cancelled() && needs.rust.result == 'success' && needs.desktop.result == 'success' &&
       github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'dultra123/corde'
-    needs: [rust, desktop, server-linux]
+    needs: [rust, desktop, server-linux, server-docker]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -509,6 +594,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: corde-server-linux
+          path: release
+
+      - name: Récupérer les images de Corde serveur (conteneur)
+        if: needs.server-docker.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: corde-server-docker
           path: release
 
       # L'APK Android signé (Corde_<version>_android.apk) est ajouté à cette pré-release par
@@ -570,6 +662,14 @@ jobs:
               esac
               echo "| \`$(basename "$a")\` | ${what} |"
             done
+            for a in release/corde-server-*-docker-*.tar.gz; do
+              [ -e "$a" ] || continue
+              case "$a" in
+                *-arm64.tar.gz) what="**Corde serveur** en image de conteneur pour processeur ARM 64 bits (Docker). Guide : [docs/SYNOLOGY.md](${docs}/SYNOLOGY.md)." ;;
+                *) what="**Corde serveur** en image de conteneur pour NAS Synology à processeur Intel ou AMD (Container Manager), ou tout Docker x86_64. Guide : [docs/SYNOLOGY.md](${docs}/SYNOLOGY.md)." ;;
+              esac
+              echo "| \`$(basename "$a")\` | ${what} |"
+            done
             for a in release/Corde_*_android.apk; do
               [ -e "$a" ] || continue
               echo "| \`$(basename "$a")\` | **Corde pour Android** (téléphone, Android 8 ou plus récent), signé, à installer à la main. Guide : [docs/ANDROID.md](${docs}/ANDROID.md). |"
@@ -606,12 +706,13 @@ jobs:
   version:
     name: Version numérotée (release v<version> et mises à jour)
     # Uniquement quand `main` du dépôt d'origine avance : jamais sur une branche, une PR, un tag ni un fork.
-    # Après server-linux aussi, mais un échec de celui-ci ne bloque pas la publication (elle se fait
-    # alors sans les archives de Corde serveur) : d'où !cancelled() et les deux résultats exigés.
+    # Après server-linux et server-docker aussi, mais un échec de ceux-ci ne bloque pas la publication
+    # (elle se fait alors sans les fichiers de Corde serveur) : d'où !cancelled() et les deux résultats
+    # exigés.
     if: >-
       !cancelled() && needs.rust.result == 'success' && needs.desktop.result == 'success' &&
       github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'dultra123/corde'
-    needs: [rust, desktop, server-linux]
+    needs: [rust, desktop, server-linux, server-docker]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -664,6 +765,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: corde-server-linux
+          path: release
+
+      - name: Récupérer les images de Corde serveur (conteneur)
+        if: steps.plan.outputs.publish == 'true' && needs.server-docker.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: corde-server-docker
           path: release
 
       # Sans signature de mise à jour (secret absent), pas de release numérotée : l'application ne
@@ -736,7 +844,7 @@ jobs:
     if: >-
       !cancelled() && needs.rust.result == 'success' && needs.desktop.result == 'success' &&
       github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && github.repository == 'dultra123/corde'
-    needs: [rust, desktop, server-linux]
+    needs: [rust, desktop, server-linux, server-docker]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -782,6 +890,12 @@ jobs:
           name: corde-server-linux
           path: corde-server-linux
 
+      - uses: actions/download-artifact@v4
+        if: steps.existing.outputs.found != 'true' && needs.server-docker.result == 'success'
+        with:
+          name: corde-server-docker
+          path: corde-server-docker
+
       - name: Créer les archives
         if: steps.existing.outputs.found != 'true'
         run: |
@@ -801,9 +915,10 @@ jobs:
             corde-*-windows.zip
             corde-*-linux.tar.gz
             corde-server-linux/corde-server-*-linux-*.tar.gz
+            corde-server-docker/corde-server-*-docker-*.tar.gz
           generate_release_notes: true
-          # Les archives de Corde serveur peuvent manquer (job server-linux en échec) : le motif
-          # correspondant ne fait pas échouer la publication. Les trois autres sont contrôlés
+          # Les fichiers de Corde serveur peuvent manquer (job server-linux ou server-docker en
+          # échec) : les motifs correspondants ne font pas échouer la publication. Les trois autres sont contrôlés
           # par l'étape « Créer les archives » ci-dessus.
           fail_on_unmatched_files: false
           make_latest: "false"

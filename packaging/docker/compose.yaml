@@ -1,0 +1,49 @@
+# Corde serveur dans un conteneur : le « Projet » de Container Manager (Synology), ou
+# « docker compose up -d » ailleurs. Guide pas à pas : docs/SYNOLOGY.md.
+#
+# Avant : importer l'image (fichier corde-server-<version>-docker-x64.tar.gz de la release) et
+# mettre ci-dessous le même numéro de version que ce fichier.
+#
+# « version: "2.4" » : lu aussi par l'ancien docker-compose 1.x de certains NAS (Docker Compose
+# v2 l'ignore, avec un simple avertissement).
+version: "2.4"
+
+services:
+  corde:
+    image: corde-server:1.2.1
+    container_name: corde
+    restart: unless-stopped
+    ports:
+      # Côté gauche : le port du NAS (à changer s'il est déjà pris, ex. "8472:8471").
+      # Ne JAMAIS rediriger ce port depuis ta box : l'accès extérieur passe par un VPN.
+      - "8471:8471"
+    volumes:
+      # Les données (sessions, appareils appairés, courses) : le dossier « data » à côté de ce
+      # fichier. Une mise à jour de l'image n'y touche pas.
+      - ./data:/var/lib/corde
+    environment:
+      # 1 : tant qu'aucun appareil n'est appairé, un code d'appairage s'affiche dans le journal du
+      # conteneur à chaque démarrage. 0 : jamais.
+      CORDE_FIRST_PAIRING_CODE: "1"
+      # Autres noms sous lesquels tu ouvres le serveur, séparés par des virgules (ex. un nom donné
+      # par ton VPN). Les adresses IP sont toujours acceptées.
+      CORDE_ALLOW_HOST: ""
+    # Durcissement : système de fichiers en lecture seule (seules les données s'écrivent),
+    # aucune capacité sauf celles qu'il faut au démarrage pour donner le dossier de données au
+    # compte « corde » puis quitter root (CHOWN, DAC_READ_SEARCH, SETUID, SETGID), aucun gain
+    # de privilège ensuite.
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_READ_SEARCH
+      - SETUID
+      - SETGID
+    security_opt:
+      - "no-new-privileges:true"
+    # Un NAS de 2 Go : Corde serveur en utilise bien moins, la limite protège le reste du NAS.
+    mem_limit: 512m
+    pids_limit: 256
