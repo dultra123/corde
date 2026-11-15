@@ -68,10 +68,13 @@
     guide §10 : Action → Ouvrir le terminal, Créer ▾ → Lancer avec une commande, « Veuillez saisir une
     commande : », OK, puis la ligne `corde-server` de la liste de gauche). Le serveur du NAS reste en
     1.4.0, compatible.
-  - **À corriger** : à chaque tour d'envoi suivant, le PC renvoie les 55 sessions et les 59 résultats
-    (`sent 55 session(s), 0 file(s) (658 KiB), 59 result(s)`, toutes les 90 s environ) : les empreintes des
-    données réelles ne correspondent jamais au manifeste du serveur (les essais, sur des données simulées,
-    ne le montrent pas). Sans conséquence pour les données, mais inutile.
+  - **Fausse alerte, vérifiée dans le journal du PC** : six envois complets des 55 sessions et des 59
+    résultats (`sent 55 session(s), 0 file(s) (658 KiB), 59 result(s)`) entre 19 h 05 et 19 h 12, à des
+    moments irréguliers. Ce sont des renvois forcés (bouton « Tout renvoyer », seule voie qui force
+    l'envoi), pas des empreintes qui ne correspondraient pas : ensuite, plus aucun envoi pendant une heure,
+    ni après le redémarrage du PC en 1.4.2 (20 h 09), alors que les tours périodiques ont lieu (le serveur
+    journalise leurs « hello »). Un tour normal n'envoie donc rien. Au passage : la mise à jour 1.4.1 →
+    1.4.2 par le bouton de l'application a fonctionné sur le PC du propriétaire.
   - **Accès extérieur, vérifié de bout en bout le 15 nov. au soir (1.4.2)** : VPN maillé, paquet Tailscale
     du Centre de paquets de DSM (1.58.2, que son éditeur dit ne plus maintenir) sur le NAS, application sur
     l'iPhone. iPhone en 5G, Wi-Fi coupé : la page « Serveur Corde » s'ouvre à `http://100.x.y.z:8471` dans
