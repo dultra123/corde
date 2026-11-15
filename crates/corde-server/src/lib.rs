@@ -28,6 +28,7 @@
 pub mod api;
 pub mod config;
 pub mod crypto;
+pub mod dash_assets;
 pub mod dashes;
 pub mod events;
 pub mod guard;

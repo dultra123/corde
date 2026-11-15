@@ -3,14 +3,20 @@
 //! Same shape as [`crate::layouts`]: a small synchronous write-through store with an in-memory
 //! cache, writes to a temporary file then `rename`. Every definition is checked by
 //! [`validate`] before it is stored, and again when it is read back from the disk: the same
-//! rules as the interface (`packages/ui/src/dashdef/validate.ts`), kept in sync by the tests of
+//! rules as the interface (`packages/ui/src/dashdef/model.ts`), kept in sync by the tests of
 //! both sides.
 //!
 //! A definition is pure data. Nothing in it is ever run or injected as HTML by the interface;
 //! the validation keeps it so anyway: bounded sizes, closed character sets for the ids,
-//! `#rrggbb` colours, no markup, no address, no nested object.
+//! `#rrggbb` colours, no markup, no address, no nested object. A picture or a video is cited by
+//! the id of a file of [`crate::dash_assets`] only; conditions and colour rules are a field of
+//! the catalogue, a comparison of a closed list and a bounded number (ADR 0016).
 
-use corde_protocol::{DashDefinition, DashElement, DASH_DEFINITION_VERSION};
+use crate::dash_assets::valid_asset_id;
+use corde_protocol::{
+    DashBackground, DashCondition, DashDefinition, DashElement, DashStyle, DashThreshold,
+    DASH_DEFINITION_VERSION,
+};
 use serde_json::Value;
 use std::collections::{BTreeMap, HashSet};
 use std::fs;
@@ -155,8 +161,157 @@ fn check_props(what: &str, props: &Value) -> Result<(), String> {
                 _ => return Err(format!("{at}: colours are #rrggbb")),
             }
         }
+        // A media setting (`asset`, `posterAsset`…): the id of a file of the PC, or nothing.
+        if is_asset_key(k) {
+            match v {
+                Value::String(s) if s.is_empty() || valid_asset_id(s) => {}
+                Value::Null => {}
+                _ => return Err(format!("{at}: not a media id")),
+            }
+        }
     }
     Ok(())
+}
+
+/// A setting that cites a media (`asset`, `…Asset`).
+fn is_asset_key(k: &str) -> bool {
+    k == "asset" || k.ends_with("Asset")
+}
+
+/// Comparisons of the conditions and colour rules: a closed list (no `<` in a definition).
+pub const OPS: [&str; 4] = ["lt", "le", "ge", "gt"];
+/// What a condition can test (ADR 0016).
+pub const CONDITIONS: [&str; 5] = ["limiter", "pits", "yellow", "blue", "field"];
+/// The fonts of the numbers (ADR 0016), all shipped with Corde.
+pub const FONTS: [&str; 4] = ["condensed", "barlow", "digital", "wide"];
+/// How a picture fills its box.
+pub const FITS: [&str; 3] = ["contain", "cover", "fill"];
+pub const MAX_THRESHOLDS: usize = 4;
+pub const MAX_RADIUS: u8 = 40;
+pub const MAX_BORDER_WIDTH: u8 = 8;
+
+/// A field of the catalogue (`fuel_laps`): `[a-z0-9_]{1,40}`. The catalogue itself lives in the
+/// interface; an unknown field there never holds.
+fn valid_field_id(s: &str) -> bool {
+    !s.is_empty()
+        && s.len() <= MAX_ID_LEN
+        && s.bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+}
+
+fn check_number(what: &str, v: f64) -> Result<(), String> {
+    if v.is_finite() && v.abs() <= MAX_PROP_NUMBER {
+        Ok(())
+    } else {
+        Err(format!("{what}: number out of bounds"))
+    }
+}
+
+fn check_opacity(what: &str, v: Option<f64>) -> Result<(), String> {
+    match v {
+        Some(o) if !(o.is_finite() && (0.0..=1.0).contains(&o)) => {
+            Err(format!("{what}: opacity is 0 to 1"))
+        }
+        _ => Ok(()),
+    }
+}
+
+fn check_opt_color(what: &str, c: &Option<String>) -> Result<(), String> {
+    match c {
+        Some(c) if !valid_color(c) => Err(format!("{what}: colours are #rrggbb")),
+        _ => Ok(()),
+    }
+}
+
+fn check_style(what: &str, s: &DashStyle) -> Result<(), String> {
+    check_opt_color(&format!("{what}.bg"), &s.bg)?;
+    check_opt_color(&format!("{what}.border"), &s.border)?;
+    check_opacity(&format!("{what}.opacity"), s.opacity)?;
+    if s.radius.is_some_and(|r| r > MAX_RADIUS) {
+        return Err(format!("{what}.radius: 0 to {MAX_RADIUS}"));
+    }
+    if s.border_width.is_some_and(|w| w > MAX_BORDER_WIDTH) {
+        return Err(format!("{what}.border_width: 0 to {MAX_BORDER_WIDTH}"));
+    }
+    Ok(())
+}
+
+fn check_condition(what: &str, c: &DashCondition) -> Result<(), String> {
+    if !CONDITIONS.contains(&c.when.as_str()) {
+        return Err(format!("{what}: unknown condition"));
+    }
+    if c.when == "field" {
+        match (&c.field, &c.op, c.value) {
+            (Some(f), Some(op), Some(v)) => {
+                if !valid_field_id(f) {
+                    return Err(format!("{what}: invalid field"));
+                }
+                if !OPS.contains(&op.as_str()) {
+                    return Err(format!("{what}: unknown comparison"));
+                }
+                check_number(what, v)
+            }
+            _ => Err(format!("{what}: a field, a comparison and a number")),
+        }
+    } else if c.field.is_some() || c.op.is_some() || c.value.is_some() {
+        Err(format!("{what}: nothing to compare"))
+    } else {
+        Ok(())
+    }
+}
+
+fn check_thresholds(what: &str, list: &[DashThreshold]) -> Result<(), String> {
+    if list.len() > MAX_THRESHOLDS {
+        return Err(format!("{what}: at most {MAX_THRESHOLDS} colour rules"));
+    }
+    for (i, t) in list.iter().enumerate() {
+        let at = format!("{what}[{i}]");
+        if !OPS.contains(&t.op.as_str()) {
+            return Err(format!("{at}: unknown comparison"));
+        }
+        check_number(&at, t.value)?;
+        if !valid_color(&t.color) {
+            return Err(format!("{at}: colours are #rrggbb"));
+        }
+    }
+    Ok(())
+}
+
+fn check_background(what: &str, b: &DashBackground) -> Result<(), String> {
+    check_opt_color(&format!("{what}.color"), &b.color)?;
+    if let Some(a) = &b.asset {
+        if !valid_asset_id(a) {
+            return Err(format!("{what}.asset: not a media id"));
+        }
+    }
+    if let Some(f) = &b.fit {
+        if !FITS.contains(&f.as_str()) {
+            return Err(format!("{what}.fit: contain, cover or fill"));
+        }
+    }
+    check_opacity(&format!("{what}.opacity"), b.opacity)
+}
+
+/// The media a definition cites (its elements' settings and its pages' backgrounds).
+pub fn referenced_assets(d: &DashDefinition) -> Vec<String> {
+    let mut out = Vec::new();
+    for p in &d.pages {
+        if let Some(a) = p.background.as_ref().and_then(|b| b.asset.as_ref()) {
+            out.push(a.clone());
+        }
+        for e in &p.elements {
+            if let Value::Object(map) = &e.props {
+                for (k, v) in map {
+                    if let Value::String(s) = v {
+                        if is_asset_key(k) && valid_asset_id(s) {
+                            out.push(s.clone());
+                        }
+                    }
+                }
+            }
+        }
+    }
+    out
 }
 
 fn check_element(what: &str, e: &DashElement, cols: u8, rows: u8) -> Result<(), String> {
@@ -174,7 +329,17 @@ fn check_element(what: &str, e: &DashElement, cols: u8, rows: u8) -> Result<(), 
     {
         return Err(format!("{what}: outside the page"));
     }
-    check_props(what, &e.props)
+    check_props(what, &e.props)?;
+    if let Some(s) = &e.style {
+        check_style(&format!("{what}.style"), s)?;
+    }
+    if let Some(c) = &e.show {
+        check_condition(&format!("{what}.show"), c)?;
+    }
+    if let Some(t) = &e.thresholds {
+        check_thresholds(&format!("{what}.thresholds"), t)?;
+    }
+    Ok(())
 }
 
 /// Checks a definition against every rule of ADR 0015 (the size included).
@@ -218,6 +383,11 @@ pub fn validate(d: &DashDefinition) -> Result<(), String> {
             return Err(format!("theme.{k}: colours are #rrggbb"));
         }
     }
+    if let Some(f) = &t.font {
+        if !FONTS.contains(&f.as_str()) {
+            return Err("theme.font: unknown font".into());
+        }
+    }
     if d.pages.is_empty() || d.pages.len() > MAX_PAGES {
         return Err(format!("pages: 1..={MAX_PAGES}"));
     }
@@ -233,6 +403,9 @@ pub fn validate(d: &DashDefinition) -> Result<(), String> {
         }
         if p.elements.len() > MAX_ELEMENTS {
             return Err(format!("{what}: more than {MAX_ELEMENTS} elements"));
+        }
+        if let Some(b) = &p.background {
+            check_background(&format!("{what}.background"), b)?;
         }
         let mut ids = HashSet::new();
         for (j, e) in p.elements.iter().enumerate() {
@@ -464,6 +637,7 @@ pub(crate) mod tests {
                 text: "#f2f5f8".into(),
                 dim: "#93a0ae".into(),
                 accent: "#ffb454".into(),
+                font: None,
             },
             pages: vec![DashPageDef {
                 id: "p1".into(),
@@ -478,7 +652,11 @@ pub(crate) mod tests {
                     w: 6,
                     h: 3,
                     props: json!({ "field": "speed_kmh", "label": "Vitesse", "color": "#ff0000", "decimals": 0, "framed": true }),
+                    style: None,
+                    show: None,
+                    thresholds: None,
                 }],
+                background: None,
             }],
             updated_ms: 1,
         }
@@ -678,6 +856,275 @@ pub(crate) mod tests {
         let many: serde_json::Map<String, Value> =
             (0..33).map(|i| (format!("k{i}"), json!(i))).collect();
         assert!(validate(&with_props(Value::Object(many))).is_err());
+    }
+
+    fn asset(ext: &str) -> String {
+        format!("{}.{ext}", "0123456789abcdef".repeat(4))
+    }
+
+    #[test]
+    fn media_settings_cite_an_id_only() {
+        for ok in [
+            json!({ "asset": asset("png") }),
+            json!({ "asset": asset("webm"), "fit": "cover" }),
+            json!({ "asset": "" }),
+            json!({ "asset": null }),
+            json!({ "posterAsset": asset("jpg") }),
+        ] {
+            assert_eq!(validate(&with_props(ok.clone())), Ok(()), "{ok}");
+        }
+        for bad in [
+            json!({ "asset": "https://exemple.org/logo.png" }),
+            json!({ "asset": "file:///C:/Users/x/logo.png" }),
+            json!({ "asset": "C:\\Users\\x\\logo.png" }),
+            json!({ "asset": "../dashes/x.json" }),
+            json!({ "asset": "logo.png" }),
+            json!({ "asset": asset("svg") }),
+            json!({ "asset": "data:image/png;base64,AAAA" }),
+            json!({ "asset": 3 }),
+            json!({ "asset": true }),
+            json!({ "posterAsset": "x" }),
+        ] {
+            assert!(validate(&with_props(bad.clone())).is_err(), "{bad}");
+        }
+        let mut d = with_props(json!({ "asset": asset("gif") }));
+        d.pages[0].background = Some(DashBackground {
+            color: Some("#101820".into()),
+            asset: Some(asset("mp4")),
+            fit: Some("contain".into()),
+            opacity: Some(0.5),
+        });
+        assert_eq!(validate(&d), Ok(()));
+        let mut refs = referenced_assets(&d);
+        refs.sort();
+        assert_eq!(refs, vec![asset("gif"), asset("mp4")]);
+    }
+
+    #[test]
+    fn page_backgrounds() {
+        let base = DashBackground {
+            color: None,
+            asset: None,
+            fit: None,
+            opacity: None,
+        };
+        for (b, ok) in [
+            (base.clone(), true),
+            (
+                DashBackground {
+                    color: Some("#000000".into()),
+                    ..base.clone()
+                },
+                true,
+            ),
+            (
+                DashBackground {
+                    opacity: Some(0.0),
+                    ..base.clone()
+                },
+                true,
+            ),
+            (
+                DashBackground {
+                    color: Some("red".into()),
+                    ..base.clone()
+                },
+                false,
+            ),
+            (
+                DashBackground {
+                    asset: Some("https://x.org/a.png".into()),
+                    ..base.clone()
+                },
+                false,
+            ),
+            (
+                DashBackground {
+                    asset: Some(asset("svg")),
+                    ..base.clone()
+                },
+                false,
+            ),
+            (
+                DashBackground {
+                    fit: Some("tile".into()),
+                    ..base.clone()
+                },
+                false,
+            ),
+            (
+                DashBackground {
+                    opacity: Some(1.5),
+                    ..base.clone()
+                },
+                false,
+            ),
+            (
+                DashBackground {
+                    opacity: Some(-0.1),
+                    ..base.clone()
+                },
+                false,
+            ),
+        ] {
+            let mut d = dash("x");
+            d.pages[0].background = Some(b.clone());
+            assert_eq!(validate(&d).is_ok(), ok, "{b:?}");
+        }
+    }
+
+    #[test]
+    fn element_styles() {
+        let ok = DashStyle {
+            bg: Some("#112233".into()),
+            opacity: Some(0.8),
+            radius: Some(40),
+            border: Some("#ffffff".into()),
+            border_width: Some(8),
+        };
+        let mut d = dash("x");
+        d.pages[0].elements[0].style = Some(ok.clone());
+        assert_eq!(validate(&d), Ok(()));
+        for bad in [
+            DashStyle {
+                bg: Some("rgba(0,0,0,0)".into()),
+                ..ok.clone()
+            },
+            DashStyle {
+                border: Some("url(x)".into()),
+                ..ok.clone()
+            },
+            DashStyle {
+                opacity: Some(2.0),
+                ..ok.clone()
+            },
+            DashStyle {
+                opacity: Some(f64::NAN),
+                ..ok.clone()
+            },
+            DashStyle {
+                radius: Some(41),
+                ..ok.clone()
+            },
+            DashStyle {
+                border_width: Some(9),
+                ..ok.clone()
+            },
+        ] {
+            let mut d = dash("x");
+            d.pages[0].elements[0].style = Some(bad.clone());
+            assert!(validate(&d).is_err(), "{bad:?}");
+        }
+    }
+
+    fn cond(
+        when: &str,
+        field: Option<&str>,
+        op: Option<&str>,
+        value: Option<f64>,
+    ) -> DashCondition {
+        DashCondition {
+            when: when.into(),
+            field: field.map(Into::into),
+            op: op.map(Into::into),
+            value,
+        }
+    }
+
+    #[test]
+    fn conditions_are_a_closed_list() {
+        for c in [
+            cond("limiter", None, None, None),
+            cond("pits", None, None, None),
+            cond("yellow", None, None, None),
+            cond("blue", None, None, None),
+            cond("field", Some("fuel_laps"), Some("lt"), Some(2.0)),
+            cond("field", Some("tyre_temp_fl"), Some("ge"), Some(-1e6)),
+        ] {
+            let mut d = dash("x");
+            d.pages[0].elements[0].show = Some(c.clone());
+            assert_eq!(validate(&d), Ok(()), "{c:?}");
+        }
+        for c in [
+            cond("always", None, None, None),
+            cond("script", None, None, None),
+            cond("LIMITER", None, None, None),
+            cond("limiter", Some("rpm"), None, None),
+            cond("field", None, Some("lt"), Some(2.0)),
+            cond("field", Some("fuel_laps"), None, Some(2.0)),
+            cond("field", Some("fuel_laps"), Some("lt"), None),
+            cond("field", Some("fuel_laps"), Some("<"), Some(2.0)),
+            cond("field", Some("fuel_laps"), Some("eq"), Some(2.0)),
+            cond("field", Some("fuel laps"), Some("lt"), Some(2.0)),
+            cond("field", Some("x.y"), Some("lt"), Some(2.0)),
+            cond("field", Some("fuel_laps"), Some("lt"), Some(1e7)),
+            cond("field", Some("fuel_laps"), Some("lt"), Some(f64::INFINITY)),
+        ] {
+            let mut d = dash("x");
+            d.pages[0].elements[0].show = Some(c.clone());
+            assert!(validate(&d).is_err(), "{c:?}");
+        }
+    }
+
+    #[test]
+    fn colour_rules() {
+        let rule = |op: &str, value: f64, color: &str| DashThreshold {
+            op: op.into(),
+            value,
+            color: color.into(),
+        };
+        let mut d = dash("x");
+        d.pages[0].elements[0].thresholds = Some(vec![
+            rule("lt", 1.0, "#ff0000"),
+            rule("le", 2.0, "#ff8800"),
+            rule("ge", 100.0, "#00ff00"),
+            rule("gt", 120.0, "#0000ff"),
+        ]);
+        assert_eq!(validate(&d), Ok(()));
+        d.pages[0].elements[0]
+            .thresholds
+            .as_mut()
+            .unwrap()
+            .push(rule("lt", 0.0, "#000000"));
+        assert!(validate(&d).is_err(), "5 rules");
+        for bad in [
+            rule(">", 1.0, "#ff0000"),
+            rule("lt", 1.0, "red"),
+            rule("lt", 1e9, "#ff0000"),
+            rule("lt", f64::NAN, "#ff0000"),
+        ] {
+            let mut d = dash("x");
+            d.pages[0].elements[0].thresholds = Some(vec![bad.clone()]);
+            assert!(validate(&d).is_err(), "{bad:?}");
+        }
+    }
+
+    #[test]
+    fn fonts_are_a_closed_list() {
+        for f in FONTS {
+            let mut d = dash("x");
+            d.theme.font = Some(f.into());
+            assert_eq!(validate(&d), Ok(()), "{f}");
+        }
+        for f in ["Comic Sans", "url(x)", "", "digital2"] {
+            let mut d = dash("x");
+            d.theme.font = Some(f.into());
+            assert!(validate(&d).is_err(), "{f}");
+        }
+    }
+
+    #[test]
+    fn a_definition_of_1_2_reads_the_same() {
+        // Without any of the fields of ADR 0016: valid, and written back without them.
+        let d = dash("x");
+        let json = serde_json::to_value(&d).unwrap();
+        for k in ["style", "show", "thresholds"] {
+            assert!(json["pages"][0]["elements"][0].get(k).is_none(), "{k}");
+        }
+        assert!(json["pages"][0].get("background").is_none());
+        assert!(json["theme"].get("font").is_none());
+        let back: DashDefinition = serde_json::from_value(json).unwrap();
+        assert_eq!(back, d);
     }
 
     #[test]

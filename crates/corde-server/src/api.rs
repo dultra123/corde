@@ -17,6 +17,12 @@
 //! PUT    /api/dashes/{id}    body DashDefinition (its id must be the path's) → stored definition
 //!                            · 400 invalid (`dashes::validate`) or reserved id · 409 already 50
 //! DELETE /api/dashes/{id}    204 / 404 (this PC only)
+//! GET    /api/dash-assets    {assets: [{id, mime, size}], count, bytes, max_count, max_bytes}
+//! POST   /api/dash-assets    body: the bytes of a picture or a video (this PC only) → 201 {id, mime, size}
+//!                            · 415 not PNG / JPEG / WebP / GIF / MP4 / WebM (by its first bytes)
+//!                            · 413 too large · 409 too many media (ADR 0016, `dash_assets`)
+//! GET    /api/dash-assets/{id}  the file, its own Content-Type, `nosniff`, byte ranges (206 / 416)
+//! DELETE /api/dash-assets/{id}  204 / 404 / 409 still cited by a dashboard (this PC only)
 //! GET    /api/sessions?limit=&track=&type=         SessionRow[] (most recent first)
 //! GET    /api/sessions/{id}                        session + laps + events + setups + files
 //! GET    /api/sessions/{id}/laps/{lap}/samples?channels=speed_kmh,throttle&points=2000
@@ -243,6 +249,18 @@ pub fn router_with(state: Arc<AppState>, ui_dir: Option<PathBuf>, allow_host: &[
         .route(
             "/api/dashes/{id}",
             get(get_dash).put(put_dash).delete(delete_dash),
+        )
+        .route(
+            "/api/dash-assets",
+            get(list_dash_assets)
+                .post(post_dash_asset)
+                .layer(DefaultBodyLimit::max(
+                    crate::dash_assets::MAX_VIDEO_BYTES as usize + 64 * 1024,
+                )),
+        )
+        .route(
+            "/api/dash-assets/{id}",
+            get(get_dash_asset).delete(delete_dash_asset),
         )
         .route("/api/sessions", get(list_sessions))
         .route(
@@ -486,7 +504,12 @@ async fn list_dashes(
 }
 
 async fn delete_dashes(State(state): State<Arc<AppState>>) -> AppResult {
-    let n = tokio::task::spawn_blocking(move || state.dashes.clear()).await??;
+    let n = tokio::task::spawn_blocking(move || {
+        let n = state.dashes.clear()?;
+        state.prune_dash_assets();
+        Ok::<_, std::io::Error>(n)
+    })
+    .await??;
     Ok(Json(json!({ "deleted": n })).into_response())
 }
 
@@ -519,7 +542,15 @@ async fn put_dash(
             "invalid dashboard: the id does not match the address",
         ));
     }
-    match tokio::task::spawn_blocking(move || state.dashes.upsert(dash)).await? {
+    match tokio::task::spawn_blocking(move || {
+        let r = state.dashes.upsert(dash);
+        if r.is_ok() {
+            state.prune_dash_assets();
+        }
+        r
+    })
+    .await?
+    {
         Ok(stored) => Ok(Json(stored).into_response()),
         Err(DashError::Invalid(m)) => Err(ApiError::bad_request(format!("invalid dashboard: {m}"))),
         Err(DashError::Full) => Err(ApiError::new(StatusCode::CONFLICT, "too_many_dashes")),
@@ -528,11 +559,133 @@ async fn put_dash(
 }
 
 async fn delete_dash(State(state): State<Arc<AppState>>, Path(id): Path<String>) -> AppResult {
-    let existed = tokio::task::spawn_blocking(move || state.dashes.delete(&id)).await??;
+    let existed = tokio::task::spawn_blocking(move || {
+        let existed = state.dashes.delete(&id)?;
+        state.prune_dash_assets();
+        Ok::<_, std::io::Error>(existed)
+    })
+    .await??;
     if existed {
         Ok(StatusCode::NO_CONTENT.into_response())
     } else {
         Err(ApiError::not_found("dash_not_found"))
+    }
+}
+
+// --- pictures and videos of the dashboards (ADR 0016) ----------------------------
+
+async fn list_dash_assets(State(state): State<Arc<AppState>>) -> Json<Value> {
+    use crate::dash_assets::{MAX_ASSETS, MAX_TOTAL_BYTES};
+    let (count, bytes) = state.dash_assets.usage();
+    Json(json!({
+        "assets": state.dash_assets.list(),
+        "count": count,
+        "bytes": bytes,
+        "max_count": MAX_ASSETS,
+        "max_bytes": MAX_TOTAL_BYTES,
+    }))
+}
+
+/// The body is the file itself; its type is read from its first bytes (`dash_assets::sniff`),
+/// whatever its `Content-Type` says.
+async fn post_dash_asset(State(state): State<Arc<AppState>>, body: Bytes) -> AppResult {
+    use crate::dash_assets::AssetError;
+    match tokio::task::spawn_blocking(move || state.dash_assets.put(&body)).await? {
+        Ok(info) => Ok((StatusCode::CREATED, Json(info)).into_response()),
+        Err(AssetError::Unsupported) => Err(ApiError::new(
+            StatusCode::UNSUPPORTED_MEDIA_TYPE,
+            "unsupported_media",
+        )),
+        Err(AssetError::TooLarge(_)) => Err(ApiError::new(
+            StatusCode::PAYLOAD_TOO_LARGE,
+            "media_too_large",
+        )),
+        Err(AssetError::Full) => Err(ApiError::new(StatusCode::CONFLICT, "too_many_media")),
+        Err(AssetError::Io(e)) => Err(e.into()),
+    }
+}
+
+/// A media: its own type (never guessed by the browser: `nosniff`), cached for good (its id is
+/// its content), one byte range when asked (a video on an iPhone asks for nothing else).
+async fn get_dash_asset(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    headers: HeaderMap,
+) -> AppResult {
+    use crate::dash_assets::parse_range;
+    let Some(info) = state.dash_assets.get(&id) else {
+        return Err(ApiError::not_found("media_not_found"));
+    };
+    let etag = format!("\"{}\"", info.id);
+    let base = [
+        (header::CONTENT_TYPE, info.mime.to_string()),
+        (header::X_CONTENT_TYPE_OPTIONS, "nosniff".to_string()),
+        (header::ACCEPT_RANGES, "bytes".to_string()),
+        (
+            header::CACHE_CONTROL,
+            "private, max-age=31536000, immutable".to_string(),
+        ),
+        (header::ETAG, etag.clone()),
+        (
+            header::CONTENT_SECURITY_POLICY,
+            "default-src 'none'; sandbox".to_string(),
+        ),
+    ];
+    let not_modified = headers
+        .get(header::IF_NONE_MATCH)
+        .and_then(|v| v.to_str().ok())
+        .is_some_and(|v| v.split(',').any(|t| t.trim() == etag || t.trim() == "*"));
+    if not_modified {
+        return Ok((StatusCode::NOT_MODIFIED, base).into_response());
+    }
+    let range = headers.get(header::RANGE).and_then(|v| v.to_str().ok());
+    let size = info.size;
+    match parse_range(range, size) {
+        Err(_) => Ok((
+            StatusCode::RANGE_NOT_SATISFIABLE,
+            base,
+            [(header::CONTENT_RANGE, format!("bytes */{size}"))],
+        )
+            .into_response()),
+        Ok(None) => {
+            let bytes =
+                tokio::task::spawn_blocking(move || state.dash_assets.read_range(&id, 0, size))
+                    .await??;
+            Ok((StatusCode::OK, base, bytes).into_response())
+        }
+        Ok(Some((start, end))) => {
+            let bytes = tokio::task::spawn_blocking(move || {
+                state.dash_assets.read_range(&id, start, end - start + 1)
+            })
+            .await??;
+            Ok((
+                StatusCode::PARTIAL_CONTENT,
+                base,
+                [(header::CONTENT_RANGE, format!("bytes {start}-{end}/{size}"))],
+                bytes,
+            )
+                .into_response())
+        }
+    }
+}
+
+async fn delete_dash_asset(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> AppResult {
+    let in_use = state
+        .dashes
+        .list()
+        .iter()
+        .any(|d| crate::dashes::referenced_assets(d).contains(&id));
+    if in_use {
+        return Err(ApiError::new(StatusCode::CONFLICT, "media_in_use"));
+    }
+    let existed = tokio::task::spawn_blocking(move || state.dash_assets.delete(&id)).await??;
+    if existed {
+        Ok(StatusCode::NO_CONTENT.into_response())
+    } else {
+        Err(ApiError::not_found("media_not_found"))
     }
 }
 

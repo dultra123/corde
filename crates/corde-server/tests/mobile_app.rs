@@ -233,6 +233,12 @@ async fn the_application_reaches_a_pc_with_the_network_access_open() {
         ("DELETE", "/api/layouts/phone", ""),
         ("DELETE", "/api/dashes/gt3", ""),
         ("DELETE", "/api/dashes", ""),
+        ("POST", "/api/dash-assets", "GIF89a"),
+        (
+            "DELETE",
+            "/api/dash-assets/0000000000000000000000000000000000000000000000000000000000000000.png",
+            "",
+        ),
         ("POST", "/api/profile/import", ""),
         ("POST", "/api/hub-link/sync", ""),
     ] {

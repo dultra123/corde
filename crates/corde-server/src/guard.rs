@@ -67,7 +67,10 @@ pub fn route_access(method: &Method, route: &str) -> Access {
             | ("DELETE", "/api/layouts/{id}")
             | ("DELETE", "/api/dashes")
             | ("DELETE", "/api/dashes/{id}")
+            | ("DELETE", "/api/dash-assets/{id}")
             | ("DELETE", "/api/sessions/{id}")
+            // Writes a file of up to 30 MiB on the PC (a picture or a video of a dashboard).
+            | ("POST", "/api/dash-assets")
             // Heavy work (full analysis, scan of every results file).
             | ("POST", "/api/sessions/{id}/analysis/recompute")
             | ("POST", "/api/profile/import")
@@ -128,6 +131,8 @@ pub fn hub_route_access(method: &Method, route: &str) -> HubAccess {
         | ("DELETE", "/api/layouts/{id}")
         | ("DELETE", "/api/dashes")
         | ("DELETE", "/api/dashes/{id}")
+        | ("DELETE", "/api/dash-assets/{id}")
+        | ("POST", "/api/dash-assets")
         | ("DELETE", "/api/sessions/{id}")
         | ("POST", "/api/sessions/{id}/analysis/recompute")
         | ("PUT", "/api/settings") => Admin,
@@ -553,6 +558,10 @@ mod tests {
             (Method::PUT, "/api/dashes/{id}", Open),
             (Method::DELETE, "/api/dashes", ThisPcOnly),
             (Method::DELETE, "/api/dashes/{id}", ThisPcOnly),
+            (Method::GET, "/api/dash-assets", Open),
+            (Method::GET, "/api/dash-assets/{id}", Open),
+            (Method::POST, "/api/dash-assets", ThisPcOnly),
+            (Method::DELETE, "/api/dash-assets/{id}", ThisPcOnly),
             (Method::POST, "/api/sessions/{id}/feedback", Open),
             (Method::POST, "/api/recording/start", Open),
             (Method::POST, "/api/recording/stop", Open),
@@ -618,6 +627,9 @@ mod tests {
             (Method::PUT, "/api/dashes/{id}", Device),
             (Method::DELETE, "/api/dashes", Admin),
             (Method::DELETE, "/api/dashes/{id}", Admin),
+            (Method::GET, "/api/dash-assets/{id}", Device),
+            (Method::POST, "/api/dash-assets", Admin),
+            (Method::DELETE, "/api/dash-assets/{id}", Admin),
             (Method::GET, "/api/does-not-exist", Device),
         ];
         for (m, r, want) in cases {

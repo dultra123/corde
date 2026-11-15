@@ -135,6 +135,8 @@ pub struct AppState {
     pub layouts: LayoutStore,
     /// Race dashboards made in the Studio (`<data-dir>/dashes`, ADR 0015).
     pub dashes: crate::dashes::DashStore,
+    /// Pictures and videos of those dashboards (`<data-dir>/dash-assets`, ADR 0016).
+    pub dash_assets: crate::dash_assets::AssetStore,
     /// Session store (`None` when the database could not be opened: the
     /// server still streams, `/api/sessions*` answer 503).
     pub store: Option<Arc<Store>>,
@@ -198,7 +200,8 @@ impl AppState {
         let (shutdown, _) = watch::channel(false);
         let races = crate::races::Races::open(&data_dir);
         let dashes = crate::dashes::DashStore::open_or_empty(&data_dir);
-        Arc::new(Self {
+        let dash_assets = crate::dash_assets::AssetStore::open_or_empty(&data_dir);
+        let state = Arc::new(Self {
             frame_tx,
             frame_rx,
             bus,
@@ -208,6 +211,7 @@ impl AppState {
             clients: AtomicU32::new(0),
             layouts,
             dashes,
+            dash_assets,
             store,
             recorder,
             importer,
@@ -225,7 +229,23 @@ impl AppState {
             role: role.role,
             hub: role.hub,
             link: role.link,
-        })
+        });
+        state.prune_dash_assets();
+        state
+    }
+
+    /// Removes the dashboard media no definition cites any more (ADR 0016): at start-up and
+    /// after a definition is saved or deleted. A media sent less than
+    /// [`crate::dash_assets::PRUNE_GRACE`] ago is kept (its definition may not be saved yet).
+    pub fn prune_dash_assets(&self) -> usize {
+        let referenced: std::collections::HashSet<String> = self
+            .dashes
+            .list()
+            .iter()
+            .flat_map(crate::dashes::referenced_assets)
+            .collect();
+        self.dash_assets
+            .prune(&referenced, crate::dash_assets::PRUNE_GRACE)
     }
 
     /// `true` on the home server.

@@ -884,8 +884,9 @@ pub struct DashboardLayout {
 pub const DASH_DEFINITION_VERSION: u8 = 1;
 
 /// A race dashboard made in the Studio: pages of elements placed on a grid, drawn at the scale
-/// of the screen. Pure data: no HTML, no address, no image, no script (validated by the server,
-/// `corde-server::dashes`, and by the interface, `packages/ui/src/dashdef/validate.ts`).
+/// of the screen. Pure data: no HTML, no address, no script; a picture or a video only by the id
+/// of a file stored on the PC (ADR 0016). Validated by the server, `corde-server::dashes`, and by
+/// the interface, `packages/ui/src/dashdef/model.ts`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export, export_to = "../../../packages/protocol/src/generated/")]
 pub struct DashDefinition {
@@ -918,7 +919,7 @@ pub struct DashFormat {
     pub height: u16,
 }
 
-/// A few colours, `#rrggbb` only.
+/// A few colours, `#rrggbb` only, and the font of the numbers.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[ts(export, export_to = "../../../packages/protocol/src/generated/")]
 pub struct DashTheme {
@@ -928,6 +929,11 @@ pub struct DashTheme {
     pub text: String,
     pub dim: String,
     pub accent: String,
+    /// Font of the numbers, from a closed list (`condensed`, `barlow`, `digital`, `wide`; ADR
+    /// 0016), every one shipped with Corde. Left out: `condensed`, the font of Corde.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub font: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
@@ -939,6 +945,91 @@ pub struct DashPageDef {
     pub cols: u8,
     pub rows: u8,
     pub elements: Vec<DashElement>,
+    /// The background of the page (ADR 0016): a colour, an image or a video of the PC.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub background: Option<DashBackground>,
+}
+
+/// The background of a page: a colour and / or a picture or a video chosen by the driver,
+/// cited by its id in `<data-dir>/dash-assets` (never a path, never an address).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../../packages/protocol/src/generated/")]
+pub struct DashBackground {
+    /// `#rrggbb`; left out: the colour of the theme.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub color: Option<String>,
+    /// A media id, `<sha-256 hex>.<png|jpg|webp|gif|mp4|webm>`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub asset: Option<String>,
+    /// `contain`, `cover` (default) or `fill`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub fit: Option<String>,
+    /// Opacity of the picture, 0 to 1 (default 1).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub opacity: Option<f64>,
+}
+
+/// The look of one element's box (ADR 0016). Every field optional: left out, the element's own.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../../packages/protocol/src/generated/")]
+pub struct DashStyle {
+    /// Background colour, `#rrggbb`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub bg: Option<String>,
+    /// Opacity of the whole element, 0 to 1.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub opacity: Option<f64>,
+    /// Rounded corners, 0 to 40 (a quarter of the unit of the drawing each).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub radius: Option<u8>,
+    /// Outline colour, `#rrggbb`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub border: Option<String>,
+    /// Outline width, 0 to 8.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub border_width: Option<u8>,
+}
+
+/// When an element shows (ADR 0016): a fact of the frame from a closed list, or a field of the
+/// catalogue compared with a number. No formula, no script.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../../packages/protocol/src/generated/")]
+pub struct DashCondition {
+    /// `limiter`, `pits`, `yellow`, `blue` or `field`.
+    pub when: String,
+    /// With `field`: an id of the catalogue (`fuel_laps`…), `[a-z0-9_]{1,40}`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub field: Option<String>,
+    /// With `field`: `lt`, `le`, `ge` or `gt`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub op: Option<String>,
+    /// With `field`: the number compared with, |n| ≤ 10⁶.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub value: Option<f64>,
+}
+
+/// A colour rule of a « Valeur » or a « Barre »: when the value is `op` `value`, this colour.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../../packages/protocol/src/generated/")]
+pub struct DashThreshold {
+    /// `lt`, `le`, `ge` or `gt`.
+    pub op: String,
+    pub value: f64,
+    /// `#rrggbb`.
+    pub color: String,
 }
 
 /// One element on a page: a type of the catalogue, its cell rectangle, its settings.
@@ -958,6 +1049,18 @@ pub struct DashElement {
     #[ts(type = "Record<string, unknown>")]
     #[serde(default = "empty_object")]
     pub props: serde_json::Value,
+    /// Background, opacity, corners, outline (ADR 0016).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub style: Option<DashStyle>,
+    /// Shown only when this holds (ADR 0016); left out: always.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub show: Option<DashCondition>,
+    /// Colour rules of a « Valeur » or a « Barre », the first that holds wins (≤ 4).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub thresholds: Option<Vec<DashThreshold>>,
 }
 
 fn empty_object() -> serde_json::Value {
