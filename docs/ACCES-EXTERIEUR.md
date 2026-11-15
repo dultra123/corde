@@ -217,6 +217,9 @@ Ce que cela implique :
 - Certains de ces services permettent d'héberger soi-même le serveur de coordination (par exemple
   Headscale pour Tailscale), mais il faut alors… un serveur joignable depuis Internet.
 - En cas de perte : retire l'appareil de ton réseau dans leur console **et** révoque-le dans Corde.
+- **« Mes courses »** (depuis la 1.6.0) : une course choisie sur le PC est envoyée au serveur Corde, et
+  l'application du téléphone l'y récupère par ce réseau, hors de chez toi aussi (et l'inverse). Le PC, le
+  serveur et l'application doivent être en 1.6.0 ou plus récent.
 - **Sur un NAS Synology**, cette voie a été suivie de bout en bout (paquet du Centre de paquets, essai en
   5G, appairage de l'application) : les étapes et les vrais libellés sont dans
   [SYNOLOGY.md §17.1](SYNOLOGY.md#17-depuis-lextérieur-de-la-maison).

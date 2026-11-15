@@ -6,6 +6,7 @@ import { useTelemetry } from "../store/telemetry";
 import type { AndroidReminders, ExactView } from "./android";
 import type { PhoneOs } from "./device";
 import type { PhoneRaces } from "./phone-races";
+import type { PicksSync, PicksSyncView } from "./picks-sync";
 import type { PermissionView } from "./reminders";
 import type { PairResult, ProbeResult, ServerBook, ServerEntry } from "./servers";
 import type { ActivityView, WidgetSync } from "./widget-sync";
@@ -37,6 +38,8 @@ export interface AppState {
   os: PhoneOs;
   /** Android: exact alarms allowed (`null`: not known yet, or the iPhone). */
   exact: ExactView | null;
+  /** « Mes courses »: the last exchange with the servers (`null` before the first one). */
+  picksShare: PicksSyncView | null;
 }
 
 export const useApp = create<AppState>(() => ({
@@ -51,6 +54,7 @@ export const useApp = create<AppState>(() => ({
   permission: null,
   keyboard: false,
   activity: null,
+  picksShare: null,
 }));
 
 /** `http://192.168.1.20:8471` → the endpoint of the shared connection layer. */
@@ -91,6 +95,8 @@ export class AppController {
   widgets: WidgetSync | null = null;
   /** Exact alarms of the reminders (installed by `boot.ts` on Android only). */
   android: AndroidReminders | null = null;
+  /** « Mes courses » shared with the servers (installed by `boot.ts`). */
+  picks: PicksSync | null = null;
 
   constructor(
     readonly book: ServerBook,
@@ -177,6 +183,8 @@ export class AppController {
     const r = await this.book.add(input, name);
     this.publish();
     if (r.ok && this.book.active()?.id === r.entry.id) await this.refresh();
+    // A new server: « Mes courses » are exchanged with it at once.
+    if (r.ok) void this.picks?.sync();
     return r;
   }
 
@@ -185,6 +193,7 @@ export class AppController {
     await this.book.remove(id);
     this.publish();
     if (wasActive) await this.refresh();
+    void this.picks?.sync();
   }
 
   async rename(id: string, name: string): Promise<void> {
@@ -213,6 +222,7 @@ export class AppController {
     const r = await this.book.pair(id, code, deviceName);
     this.publish();
     if (r.ok && this.book.active()?.id === id) await this.refresh();
+    if (r.ok) void this.picks?.sync();
     return r;
   }
 
@@ -226,6 +236,8 @@ export class AppController {
   /** The application came back to the front: the server may have changed, reminders too. */
   async resume(): Promise<void> {
     void this.races.replan();
+    // What was picked on the PC meanwhile (the reminders are planned again when it changes).
+    void this.picks?.sync();
     if (this.widgets) {
       void this.widgets.update();
       void this.widgets.activity({ kind: "foreground" });

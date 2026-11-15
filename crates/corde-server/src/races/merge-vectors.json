@@ -1,0 +1,917 @@
+{
+  "about": "Cases of the rule that merges two copies of « Mes courses » (ADR 0019). Read by the Rust tests (crates/corde-server/src/races/merge.rs) and by the TypeScript tests (packages/ui/src/races/picks-merge.test.ts): both must give `want` for (a, b) and for (b, a).",
+  "keep_after_start_ms": 10800000,
+  "max_picks": 50,
+  "max_removed": 200,
+  "cases": [
+    {
+      "name": "different picks are put together, by start",
+      "now": 1762891800000,
+      "a": {
+        "picks": [
+          {
+            "pick": {
+              "id": "one@1762899000000",
+              "race_id": "one",
+              "cat": "daily",
+              "src": "rc",
+              "name": "LMP3 Fixed",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762899000000,
+              "eve_ms": null
+            },
+            "changed_ms": 10
+          }
+        ],
+        "removed": []
+      },
+      "b": {
+        "picks": [
+          {
+            "pick": {
+              "id": "two@1762895400000",
+              "race_id": "two",
+              "cat": "daily",
+              "src": "rc",
+              "name": "LMP3 Fixed",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 20
+          }
+        ],
+        "removed": []
+      },
+      "want": {
+        "picks": [
+          {
+            "pick": {
+              "id": "two@1762895400000",
+              "race_id": "two",
+              "cat": "daily",
+              "src": "rc",
+              "name": "LMP3 Fixed",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 20
+          },
+          {
+            "pick": {
+              "id": "one@1762899000000",
+              "race_id": "one",
+              "cat": "daily",
+              "src": "rc",
+              "name": "LMP3 Fixed",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762899000000,
+              "eve_ms": null
+            },
+            "changed_ms": 10
+          }
+        ],
+        "removed": []
+      }
+    },
+    {
+      "name": "the latest change of a pick wins",
+      "now": 1762891800000,
+      "a": {
+        "picks": [
+          {
+            "pick": {
+              "id": "one@1762895400000",
+              "race_id": "one",
+              "cat": "daily",
+              "src": "rc",
+              "name": "Old name",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 10
+          }
+        ],
+        "removed": []
+      },
+      "b": {
+        "picks": [
+          {
+            "pick": {
+              "id": "one@1762895400000",
+              "race_id": "one",
+              "cat": "daily",
+              "src": "rc",
+              "name": "New name",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 20
+          }
+        ],
+        "removed": []
+      },
+      "want": {
+        "picks": [
+          {
+            "pick": {
+              "id": "one@1762895400000",
+              "race_id": "one",
+              "cat": "daily",
+              "src": "rc",
+              "name": "New name",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 20
+          }
+        ],
+        "removed": []
+      }
+    },
+    {
+      "name": "a removal later than the pick removes it",
+      "now": 1762891800000,
+      "a": {
+        "picks": [
+          {
+            "pick": {
+              "id": "one@1762895400000",
+              "race_id": "one",
+              "cat": "daily",
+              "src": "rc",
+              "name": "LMP3 Fixed",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 10
+          }
+        ],
+        "removed": []
+      },
+      "b": {
+        "picks": [],
+        "removed": [
+          {
+            "id": "one@1762895400000",
+            "removed_ms": 20
+          }
+        ]
+      },
+      "want": {
+        "picks": [],
+        "removed": [
+          {
+            "id": "one@1762895400000",
+            "removed_ms": 20
+          }
+        ]
+      }
+    },
+    {
+      "name": "a pick later than the removal brings it back",
+      "now": 1762891800000,
+      "a": {
+        "picks": [
+          {
+            "pick": {
+              "id": "one@1762895400000",
+              "race_id": "one",
+              "cat": "daily",
+              "src": "rc",
+              "name": "LMP3 Fixed",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 30
+          }
+        ],
+        "removed": []
+      },
+      "b": {
+        "picks": [],
+        "removed": [
+          {
+            "id": "one@1762895400000",
+            "removed_ms": 20
+          }
+        ]
+      },
+      "want": {
+        "picks": [
+          {
+            "pick": {
+              "id": "one@1762895400000",
+              "race_id": "one",
+              "cat": "daily",
+              "src": "rc",
+              "name": "LMP3 Fixed",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 30
+          }
+        ],
+        "removed": []
+      }
+    },
+    {
+      "name": "at the same instant, the removal wins",
+      "now": 1762891800000,
+      "a": {
+        "picks": [
+          {
+            "pick": {
+              "id": "one@1762895400000",
+              "race_id": "one",
+              "cat": "daily",
+              "src": "rc",
+              "name": "LMP3 Fixed",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 20
+          }
+        ],
+        "removed": []
+      },
+      "b": {
+        "picks": [],
+        "removed": [
+          {
+            "id": "one@1762895400000",
+            "removed_ms": 20
+          }
+        ]
+      },
+      "want": {
+        "picks": [],
+        "removed": [
+          {
+            "id": "one@1762895400000",
+            "removed_ms": 20
+          }
+        ]
+      }
+    },
+    {
+      "name": "two picks of the same instant: the name decides",
+      "now": 1762891800000,
+      "a": {
+        "picks": [
+          {
+            "pick": {
+              "id": "one@1762895400000",
+              "race_id": "one",
+              "cat": "daily",
+              "src": "rc",
+              "name": "Alpha",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 0
+          }
+        ],
+        "removed": []
+      },
+      "b": {
+        "picks": [
+          {
+            "pick": {
+              "id": "one@1762895400000",
+              "race_id": "one",
+              "cat": "daily",
+              "src": "rc",
+              "name": "Beta",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 0
+          }
+        ],
+        "removed": []
+      },
+      "want": {
+        "picks": [
+          {
+            "pick": {
+              "id": "one@1762895400000",
+              "race_id": "one",
+              "cat": "daily",
+              "src": "rc",
+              "name": "Beta",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 0
+          }
+        ],
+        "removed": []
+      }
+    },
+    {
+      "name": "two picks of the same instant: a picture is more than none",
+      "now": 1762891800000,
+      "a": {
+        "picks": [
+          {
+            "pick": {
+              "id": "one@1762895400000",
+              "race_id": "one",
+              "cat": "daily",
+              "src": "rc",
+              "name": "LMP3 Fixed",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 0
+          }
+        ],
+        "removed": []
+      },
+      "b": {
+        "picks": [
+          {
+            "pick": {
+              "id": "one@1762895400000",
+              "race_id": "one",
+              "cat": "daily",
+              "src": "rc",
+              "name": "LMP3 Fixed",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": "https://cdn.example/a.webp",
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 0
+          }
+        ],
+        "removed": []
+      },
+      "want": {
+        "picks": [
+          {
+            "pick": {
+              "id": "one@1762895400000",
+              "race_id": "one",
+              "cat": "daily",
+              "src": "rc",
+              "name": "LMP3 Fixed",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": "https://cdn.example/a.webp",
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 0
+          }
+        ],
+        "removed": []
+      }
+    },
+    {
+      "name": "two picks of the same instant: the later evening reminder",
+      "now": 1762891800000,
+      "a": {
+        "picks": [
+          {
+            "pick": {
+              "id": "sebring@1763064600000",
+              "race_id": "sebring",
+              "cat": "special",
+              "src": "lt",
+              "name": "Sebring 1000 Miles",
+              "level": null,
+              "track": "Sebring",
+              "duration": "",
+              "image": null,
+              "start_ms": 1763064600000,
+              "eve_ms": 1763007000000
+            },
+            "changed_ms": 0
+          }
+        ],
+        "removed": []
+      },
+      "b": {
+        "picks": [
+          {
+            "pick": {
+              "id": "sebring@1763064600000",
+              "race_id": "sebring",
+              "cat": "special",
+              "src": "lt",
+              "name": "Sebring 1000 Miles",
+              "level": null,
+              "track": "Sebring",
+              "duration": "",
+              "image": null,
+              "start_ms": 1763064600000,
+              "eve_ms": 1763010600000
+            },
+            "changed_ms": 0
+          }
+        ],
+        "removed": []
+      },
+      "want": {
+        "picks": [
+          {
+            "pick": {
+              "id": "sebring@1763064600000",
+              "race_id": "sebring",
+              "cat": "special",
+              "src": "lt",
+              "name": "Sebring 1000 Miles",
+              "level": null,
+              "track": "Sebring",
+              "duration": "",
+              "image": null,
+              "start_ms": 1763064600000,
+              "eve_ms": 1763010600000
+            },
+            "changed_ms": 0
+          }
+        ],
+        "removed": []
+      }
+    },
+    {
+      "name": "two picks of the same instant: names compared by code point",
+      "now": 1762891800000,
+      "a": {
+        "picks": [
+          {
+            "pick": {
+              "id": "one@1762895400000",
+              "race_id": "one",
+              "cat": "daily",
+              "src": "rc",
+              "name": "～ GT3",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 0
+          }
+        ],
+        "removed": []
+      },
+      "b": {
+        "picks": [
+          {
+            "pick": {
+              "id": "one@1762895400000",
+              "race_id": "one",
+              "cat": "daily",
+              "src": "rc",
+              "name": "🏁 GT3",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 0
+          }
+        ],
+        "removed": []
+      },
+      "want": {
+        "picks": [
+          {
+            "pick": {
+              "id": "one@1762895400000",
+              "race_id": "one",
+              "cat": "daily",
+              "src": "rc",
+              "name": "🏁 GT3",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 0
+          }
+        ],
+        "removed": []
+      }
+    },
+    {
+      "name": "what started three hours ago is dropped, picks and removals",
+      "now": 1762891800000,
+      "a": {
+        "picks": [
+          {
+            "pick": {
+              "id": "old@1762881000000",
+              "race_id": "old",
+              "cat": "daily",
+              "src": "rc",
+              "name": "LMP3 Fixed",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762881000000,
+              "eve_ms": null
+            },
+            "changed_ms": 10
+          },
+          {
+            "pick": {
+              "id": "fresh@1762881000001",
+              "race_id": "fresh",
+              "cat": "daily",
+              "src": "rc",
+              "name": "LMP3 Fixed",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762881000001,
+              "eve_ms": null
+            },
+            "changed_ms": 10
+          }
+        ],
+        "removed": [
+          {
+            "id": "gone-fresh@1762888200000",
+            "removed_ms": 5
+          }
+        ]
+      },
+      "b": {
+        "picks": [
+          {
+            "pick": {
+              "id": "older@1762873800000",
+              "race_id": "older",
+              "cat": "daily",
+              "src": "rc",
+              "name": "LMP3 Fixed",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762873800000,
+              "eve_ms": null
+            },
+            "changed_ms": 99
+          }
+        ],
+        "removed": [
+          {
+            "id": "gone-old@1762877400000",
+            "removed_ms": 5
+          }
+        ]
+      },
+      "want": {
+        "picks": [
+          {
+            "pick": {
+              "id": "fresh@1762881000001",
+              "race_id": "fresh",
+              "cat": "daily",
+              "src": "rc",
+              "name": "LMP3 Fixed",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762881000001,
+              "eve_ms": null
+            },
+            "changed_ms": 10
+          }
+        ],
+        "removed": [
+          {
+            "id": "gone-fresh@1762888200000",
+            "removed_ms": 5
+          }
+        ]
+      }
+    },
+    {
+      "name": "two removals: the latest instant is kept",
+      "now": 1762891800000,
+      "a": {
+        "picks": [],
+        "removed": [
+          {
+            "id": "one@1762895400000",
+            "removed_ms": 10
+          }
+        ]
+      },
+      "b": {
+        "picks": [],
+        "removed": [
+          {
+            "id": "one@1762895400000",
+            "removed_ms": 40
+          }
+        ]
+      },
+      "want": {
+        "picks": [],
+        "removed": [
+          {
+            "id": "one@1762895400000",
+            "removed_ms": 40
+          }
+        ]
+      }
+    },
+    {
+      "name": "an empty copy changes nothing",
+      "now": 1762891800000,
+      "a": {
+        "picks": [
+          {
+            "pick": {
+              "id": "one@1762895400000",
+              "race_id": "one",
+              "cat": "daily",
+              "src": "rc",
+              "name": "LMP3 Fixed",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 7
+          }
+        ],
+        "removed": [
+          {
+            "id": "two@1762895400000",
+            "removed_ms": 3
+          }
+        ]
+      },
+      "b": {
+        "picks": [],
+        "removed": []
+      },
+      "want": {
+        "picks": [
+          {
+            "pick": {
+              "id": "one@1762895400000",
+              "race_id": "one",
+              "cat": "daily",
+              "src": "rc",
+              "name": "LMP3 Fixed",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 7
+          }
+        ],
+        "removed": [
+          {
+            "id": "two@1762895400000",
+            "removed_ms": 3
+          }
+        ]
+      }
+    },
+    {
+      "name": "same start: by identifier",
+      "now": 1762891800000,
+      "a": {
+        "picks": [
+          {
+            "pick": {
+              "id": "b-race@1762895400000",
+              "race_id": "b-race",
+              "cat": "daily",
+              "src": "rc",
+              "name": "LMP3 Fixed",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 1
+          }
+        ],
+        "removed": []
+      },
+      "b": {
+        "picks": [
+          {
+            "pick": {
+              "id": "a-race@1762895400000",
+              "race_id": "a-race",
+              "cat": "daily",
+              "src": "rc",
+              "name": "LMP3 Fixed",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 2
+          }
+        ],
+        "removed": []
+      },
+      "want": {
+        "picks": [
+          {
+            "pick": {
+              "id": "a-race@1762895400000",
+              "race_id": "a-race",
+              "cat": "daily",
+              "src": "rc",
+              "name": "LMP3 Fixed",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 2
+          },
+          {
+            "pick": {
+              "id": "b-race@1762895400000",
+              "race_id": "b-race",
+              "cat": "daily",
+              "src": "rc",
+              "name": "LMP3 Fixed",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 1
+          }
+        ],
+        "removed": []
+      }
+    },
+    {
+      "name": "a copy that holds a pick and its later removal",
+      "now": 1762891800000,
+      "a": {
+        "picks": [
+          {
+            "pick": {
+              "id": "one@1762895400000",
+              "race_id": "one",
+              "cat": "daily",
+              "src": "rc",
+              "name": "LMP3 Fixed",
+              "level": "beginner",
+              "track": "Monza",
+              "duration": "32 min",
+              "image": null,
+              "start_ms": 1762895400000,
+              "eve_ms": null
+            },
+            "changed_ms": 10
+          }
+        ],
+        "removed": [
+          {
+            "id": "one@1762895400000",
+            "removed_ms": 15
+          }
+        ]
+      },
+      "b": {
+        "picks": [],
+        "removed": []
+      },
+      "want": {
+        "picks": [],
+        "removed": [
+          {
+            "id": "one@1762895400000",
+            "removed_ms": 15
+          }
+        ]
+      }
+    },
+    {
+      "name": "removals are listed by identifier",
+      "now": 1762891800000,
+      "a": {
+        "picks": [],
+        "removed": [
+          {
+            "id": "zulu@1762895400000",
+            "removed_ms": 9
+          }
+        ]
+      },
+      "b": {
+        "picks": [],
+        "removed": [
+          {
+            "id": "alpha@1762899000000",
+            "removed_ms": 1
+          }
+        ]
+      },
+      "want": {
+        "picks": [],
+        "removed": [
+          {
+            "id": "alpha@1762899000000",
+            "removed_ms": 1
+          },
+          {
+            "id": "zulu@1762895400000",
+            "removed_ms": 9
+          }
+        ]
+      }
+    }
+  ]
+}

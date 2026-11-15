@@ -2,6 +2,9 @@
 //! so that the PC and the phone share them:
 //!
 //! * `<data-dir>/races/picks.json` — the starts the driver picked (≤ [`MAX_PICKS`]);
+//! * `<data-dir>/races/picks-sync.json` — when each pick was last changed and which picks
+//!   were removed: what lets two devices merge their copies ([`super::merge`], ADR 0019).
+//!   Apart from `picks.json`, which keeps its shape: an older version still reads it;
 //! * `<data-dir>/races/settings.json` — reminder delays, categories and levels
 //!   shown, manual hour correction, driver ratings, access requirements;
 //! * `<data-dir>/races/reminders.json` — the reminders already sent (no
@@ -11,6 +14,7 @@
 //! network (see `docs/SECURITY-MODEL.md`). Reading is tolerant: a missing or
 //! broken file means the defaults.
 
+use super::merge::{self, PickSet, Removed, Stamped, MAX_REMOVED};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::collections::{BTreeMap, BTreeSet};
@@ -21,6 +25,7 @@ use std::sync::Mutex;
 
 pub const RACES_DIR: &str = "races";
 pub const PICKS_FILE: &str = "picks.json";
+pub const SYNC_FILE: &str = "picks-sync.json";
 pub const SETTINGS_FILE: &str = "settings.json";
 pub const FIRED_FILE: &str = "reminders.json";
 
@@ -350,9 +355,24 @@ impl RaceSettings {
     }
 }
 
+/// What `picks-sync.json` holds.
+#[derive(Debug, Default, Serialize, Deserialize)]
+struct SyncFile {
+    /// Last change of each pick, by identifier (absent: 0, picked before the sharing).
+    #[serde(default)]
+    changed: BTreeMap<String, i64>,
+    /// Removed picks, by identifier, with the instant of the removal.
+    #[serde(default)]
+    removed: BTreeMap<String, i64>,
+}
+
 #[derive(Debug, Default)]
 struct Inner {
     picks: Vec<Pick>,
+    /// Last change of each pick (absent: 0).
+    changed: BTreeMap<String, i64>,
+    /// Removed picks and when, until their start is three hours old.
+    removed: BTreeMap<String, i64>,
     settings: RaceSettings,
     /// Reminders already sent: `<pick_id>#<lead|eve|day>`.
     fired: BTreeSet<String>,
@@ -411,6 +431,9 @@ impl RaceStore {
             })
             .take(MAX_PICKS)
             .collect();
+        let sync: SyncFile = read_json(&dir.join(SYNC_FILE))
+            .and_then(|v| serde_json::from_value(v).ok())
+            .unwrap_or_default();
         let settings = read_json(&dir.join(SETTINGS_FILE))
             .map(RaceSettings::from_disk)
             .unwrap_or_default();
@@ -421,6 +444,16 @@ impl RaceStore {
             dir,
             inner: Mutex::new(Inner {
                 picks,
+                changed: sync
+                    .changed
+                    .into_iter()
+                    .filter(|(id, ms)| valid_pick_id(id) && *ms >= 0)
+                    .collect(),
+                removed: sync
+                    .removed
+                    .into_iter()
+                    .filter(|(id, ms)| valid_pick_id(id) && *ms >= 0)
+                    .collect(),
                 settings,
                 fired,
             }),
@@ -447,12 +480,100 @@ impl RaceStore {
         inner
             .fired
             .retain(|k| k.rsplit_once('#').is_some_and(|(id, _)| ids.contains(id)));
-        before != inner.picks.len() || fired_before != inner.fired.len()
+        let marks_before = inner.changed.len() + inner.removed.len();
+        inner.changed.retain(|id, _| ids.contains(id.as_str()));
+        let limit = now_ms - KEEP_AFTER_START_MS;
+        inner
+            .removed
+            .retain(|id, _| merge::start_of(id).is_some_and(|start| start > limit));
+        before != inner.picks.len()
+            || fired_before != inner.fired.len()
+            || marks_before != inner.changed.len() + inner.removed.len()
     }
 
     fn save_picks(&self, inner: &Inner) -> io::Result<()> {
         write_json(&self.dir, PICKS_FILE, &inner.picks)?;
-        write_json(&self.dir, FIRED_FILE, &inner.fired)
+        write_json(&self.dir, FIRED_FILE, &inner.fired)?;
+        write_json(
+            &self.dir,
+            SYNC_FILE,
+            &SyncFile {
+                changed: inner.changed.clone(),
+                removed: inner.removed.clone(),
+            },
+        )
+    }
+
+    /// The instant to give a change of `id` made here, now: later than everything this
+    /// device knows of that pick, whatever the clocks of the others say.
+    fn stamp(inner: &Inner, id: &str, now_ms: i64) -> i64 {
+        let known = inner
+            .changed
+            .get(id)
+            .max(inner.removed.get(id))
+            .copied()
+            .unwrap_or(0);
+        now_ms.max(known + 1)
+    }
+
+    fn set_of(inner: &Inner) -> PickSet {
+        PickSet {
+            picks: inner
+                .picks
+                .iter()
+                .map(|p| Stamped {
+                    pick: p.clone(),
+                    changed_ms: inner.changed.get(&p.id).copied().unwrap_or(0),
+                })
+                .collect(),
+            removed: inner
+                .removed
+                .iter()
+                .map(|(id, ms)| Removed {
+                    id: id.clone(),
+                    removed_ms: *ms,
+                })
+                .collect(),
+        }
+    }
+
+    /// This device's copy of « Mes courses », to send to another one.
+    pub fn export_set(&self, now_ms: i64) -> PickSet {
+        let mut g = self.lock();
+        if Self::prune(&mut g, now_ms) {
+            if let Err(e) = self.save_picks(&g) {
+                tracing::warn!("courses : enregistrement impossible — {e}");
+            }
+        }
+        // Through the rule itself: the limits and the order are the ones of a merged copy.
+        merge::merge(Self::set_of(&g), PickSet::default(), now_ms)
+    }
+
+    /// Merge the copy of another device into this one ([`merge::merge`]). Returns the
+    /// merged copy and whether this device's picks or removals changed.
+    pub fn merge_set(&self, remote: PickSet, now_ms: i64) -> io::Result<(PickSet, bool)> {
+        let mut g = self.lock();
+        Self::prune(&mut g, now_ms);
+        let mine = merge::merge(Self::set_of(&g), PickSet::default(), now_ms);
+        let merged = merge::merge(mine.clone(), remote, now_ms);
+        let changed = merged != mine;
+        if changed {
+            g.picks = merged.picks.iter().map(|s| s.pick.clone()).collect();
+            g.changed = merged
+                .picks
+                .iter()
+                .filter(|s| s.changed_ms > 0)
+                .map(|s| (s.pick.id.clone(), s.changed_ms))
+                .collect();
+            g.removed = merged
+                .removed
+                .iter()
+                .map(|r| (r.id.clone(), r.removed_ms))
+                .collect();
+            Self::prune(&mut g, now_ms);
+            self.save_picks(&g)?;
+        }
+        Ok((merged, changed))
     }
 
     /// The picks still useful (started less than 3 h ago), by start.
@@ -471,6 +592,7 @@ impl RaceStore {
         pick.validate()?;
         let mut g = self.lock();
         Self::prune(&mut g, now_ms);
+        let id = pick.id.clone();
         let new = match g.picks.iter_mut().find(|p| p.id == pick.id) {
             Some(p) => {
                 *p = pick;
@@ -487,6 +609,9 @@ impl RaceStore {
                 true
             }
         };
+        let stamp = Self::stamp(&g, &id, now_ms);
+        g.removed.remove(&id);
+        g.changed.insert(id, stamp);
         g.picks
             .sort_by(|a, b| a.start_ms.cmp(&b.start_ms).then(a.id.cmp(&b.id)));
         self.save_picks(&g)?;
@@ -499,11 +624,33 @@ impl RaceStore {
         let before = g.picks.len();
         g.picks.retain(|p| p.id != id);
         let removed = g.picks.len() != before;
+        if removed {
+            // Remembered: the other devices must remove it too, not send it back.
+            let stamp = Self::stamp(&g, id, now_ms);
+            g.changed.remove(id);
+            g.removed.insert(id.to_string(), stamp);
+            Self::trim_removed(&mut g);
+        }
         Self::prune(&mut g, now_ms);
         if removed {
             self.save_picks(&g)?;
         }
         Ok(removed)
+    }
+
+    /// At most [`MAX_REMOVED`] removals: the oldest ones go first.
+    fn trim_removed(inner: &mut Inner) {
+        while inner.removed.len() > MAX_REMOVED {
+            let oldest = inner
+                .removed
+                .iter()
+                .min_by(|a, b| a.1.cmp(b.1).then_with(|| b.0.cmp(a.0)))
+                .map(|(id, _)| id.clone());
+            match oldest {
+                Some(id) => inner.removed.remove(&id),
+                None => break,
+            };
+        }
     }
 
     pub fn settings(&self) -> RaceSettings {
@@ -520,12 +667,26 @@ impl RaceStore {
         write_json(&self.dir, SETTINGS_FILE, &next)?;
         g.settings = next.clone();
         if delta != 0 {
+            // For the other devices: the pick at the old hour is removed, the one at the new
+            // hour is picked.
+            let mut moved = Vec::new();
             for p in g.picks.iter_mut() {
                 if p.src == "rc" && p.cat == "daily" {
+                    let old = p.id.clone();
                     p.start_ms += delta * 3_600_000;
                     p.id = pick_id(&p.race_id, p.start_ms);
+                    moved.push((old, p.id.clone()));
                 }
             }
+            for (old, new) in moved {
+                let gone = Self::stamp(&g, &old, now_ms);
+                let here = Self::stamp(&g, &new, now_ms);
+                g.changed.remove(&old);
+                g.removed.insert(old, gone);
+                g.removed.remove(&new);
+                g.changed.insert(new, here);
+            }
+            Self::trim_removed(&mut g);
             Self::prune(&mut g, now_ms);
             self.save_picks(&g)?;
         }
@@ -731,6 +892,134 @@ mod tests {
             serde_json::from_slice(&fs::read(dir.join("races/settings.json")).unwrap()).unwrap();
         assert_eq!(on_disk["hour_fix"], json!(1));
         assert_eq!(RaceStore::open(&dir).settings().hour_fix, 1);
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn changes_are_stamped_for_the_other_devices() {
+        let dir = tmp_dir("stamps");
+        let store = RaceStore::open(&dir);
+        let start = NOW + 3_600_000;
+        let p = pick("one-stint-sprint-advanced", start);
+        store.put_pick(p.clone(), NOW).unwrap();
+        let set = store.export_set(NOW);
+        assert_eq!(set.picks.len(), 1);
+        assert_eq!(set.picks[0].changed_ms, NOW);
+        assert!(set.removed.is_empty());
+
+        // Removed: remembered, later than the pick even on the same millisecond.
+        assert!(store.delete_pick(&p.id, NOW).unwrap());
+        let set = store.export_set(NOW);
+        assert!(set.picks.is_empty());
+        assert_eq!(
+            set.removed,
+            vec![Removed {
+                id: p.id.clone(),
+                removed_ms: NOW + 1
+            }]
+        );
+        // Removing what is not there remembers nothing.
+        assert!(!store.delete_pick("other@1762895400000", NOW).unwrap());
+        assert_eq!(store.export_set(NOW).removed.len(), 1);
+
+        // Picked again: later than the removal, which is forgotten.
+        store.put_pick(p.clone(), NOW).unwrap();
+        let set = store.export_set(NOW);
+        assert_eq!(set.picks[0].changed_ms, NOW + 2);
+        assert!(set.removed.is_empty());
+
+        // Reopened from disk: the instants are kept.
+        let again = RaceStore::open(&dir);
+        assert_eq!(again.export_set(NOW), set);
+        // Three hours after the start, a removal is forgotten like a pick.
+        assert!(again.delete_pick(&p.id, NOW).unwrap());
+        assert_eq!(again.export_set(NOW).removed.len(), 1);
+        let later = start + KEEP_AFTER_START_MS;
+        assert_eq!(again.export_set(later), PickSet::default());
+        assert!(RaceStore::open(&dir).export_set(NOW).removed.is_empty());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_copy_of_another_device_is_merged() {
+        let dir = tmp_dir("merge");
+        let store = RaceStore::open(&dir);
+        let start = NOW + 3_600_000;
+        let mine = pick("mine", start);
+        store.put_pick(mine.clone(), NOW).unwrap();
+        // Picked before the sharing existed (no instant on disk): counts as 0.
+        fs::remove_file(dir.join(RACES_DIR).join(SYNC_FILE)).unwrap();
+        let store = RaceStore::open(&dir);
+        assert_eq!(store.export_set(NOW).picks[0].changed_ms, 0);
+
+        // Another device: one more pick, stamped by a clock a day ahead.
+        let ahead = NOW + 86_400_000;
+        let theirs = pick("theirs", start + 60_000);
+        let remote = PickSet {
+            picks: vec![Stamped {
+                pick: theirs.clone(),
+                changed_ms: ahead,
+            }],
+            removed: vec![],
+        };
+        let (merged, changed) = store.merge_set(remote.clone(), NOW).unwrap();
+        assert!(changed);
+        assert_eq!(merged.picks.len(), 2);
+        assert_eq!(store.picks(NOW), vec![mine.clone(), theirs.clone()]);
+        // The same copy again: nothing changes, nothing is written.
+        let (again, changed) = store.merge_set(remote.clone(), NOW).unwrap();
+        assert!(!changed);
+        assert_eq!(again, merged);
+
+        // Removed here: wins over the clock that runs ahead, so the other device removes it
+        // too instead of sending it back.
+        assert!(store.delete_pick(&theirs.id, NOW).unwrap());
+        let (merged, changed) = store.merge_set(remote, NOW).unwrap();
+        assert!(!changed);
+        assert_eq!(merged.picks.len(), 1);
+        assert_eq!(merged.removed[0].removed_ms, ahead + 1);
+
+        // A removal made elsewhere removes the pick here, and its reminders already sent.
+        store.mark_fired(&[format!("{}#15", mine.id)]);
+        let remote = PickSet {
+            picks: vec![],
+            removed: vec![Removed {
+                id: mine.id.clone(),
+                removed_ms: 5,
+            }],
+        };
+        let (_, changed) = store.merge_set(remote, NOW).unwrap();
+        assert!(changed);
+        assert!(store.picks(NOW).is_empty());
+        assert!(store.reminder_input().2.is_empty());
+        assert!(RaceStore::open(&dir).picks(NOW).is_empty());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_hour_correction_is_a_removal_and_a_pick_for_the_others() {
+        let dir = tmp_dir("hourfix-sync");
+        let store = RaceStore::open(&dir);
+        let start = NOW + 3_600_000;
+        let p = pick("one-stint-sprint-advanced", start);
+        store.put_pick(p.clone(), NOW).unwrap();
+        store
+            .patch_settings(br#"{"hour_fix":1}"#, NOW + 10)
+            .unwrap();
+        let set = store.export_set(NOW + 10);
+        assert_eq!(set.picks.len(), 1);
+        assert_eq!(
+            set.picks[0].pick.id,
+            pick_id("one-stint-sprint-advanced", start + 3_600_000)
+        );
+        assert_eq!(set.picks[0].changed_ms, NOW + 10);
+        assert_eq!(
+            set.removed,
+            vec![Removed {
+                id: p.id,
+                removed_ms: NOW + 10
+            }]
+        );
         let _ = fs::remove_dir_all(&dir);
     }
 

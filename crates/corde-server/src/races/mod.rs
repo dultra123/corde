@@ -10,6 +10,9 @@
 //! GET    /api/races/picks                       Pick[] (started less than 3 h ago), by start
 //! PUT    /api/races/picks/{id}                  body Pick → 201 new / 200 replaced · 400 invalid · 409 > 50
 //! DELETE /api/races/picks/{id}                  204 / 404
+//! POST   /api/races/picks/sync                  body PickSet (this device's copy: picks and removals,
+//!                                               each with the instant of its change) → the merged
+//!                                               PickSet · 400 not an object, a list too long, > 256 KiB
 //! GET    /api/races/settings                    RaceSettings
 //! PUT    /api/races/settings                    body: some keys of RaceSettings → RaceSettings · 400 invalid
 //! ```
@@ -17,9 +20,15 @@
 //! The parsing of the pages is done by the UI (`packages/ui/src/races/`); the
 //! server only fetches them (closed list) and keeps the picks. A task sends
 //! `race_reminder` on the WebSocket when a reminder is due ([`reminders`]).
+//!
+//! « Mes courses » are shared between the devices (ADR 0019): the phone application sends its
+//! copy to every server it knows, the PC sends its own to the home server
+//! (`hub_link::run_picks_periodic`), and each one keeps the merge ([`merge`]). The settings
+//! of the page are not shared.
 //! The game itself is never contacted for this, and nothing is sent to the
 //! sites but a plain `GET`: registration happens in the game.
 
+pub mod merge;
 pub mod reminders;
 pub mod sources;
 pub mod store;
@@ -32,6 +41,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use corde_protocol::ServerMessage;
+use merge::PickSet;
 use serde::Deserialize;
 use serde_json::json;
 use sources::RaceSources;
@@ -47,6 +57,9 @@ pub const REMINDER_TICK: Duration = Duration::from_secs(5);
 pub struct Races {
     pub sources: RaceSources,
     pub store: RaceStore,
+    /// Notified when the picks changed on this server: the PC then sends its copy to the
+    /// home server without waiting (`hub_link::run_picks_periodic`).
+    pub changed: tokio::sync::Notify,
 }
 
 impl Races {
@@ -54,6 +67,7 @@ impl Races {
         Self {
             sources: RaceSources::default(),
             store: RaceStore::open(data_dir),
+            changed: tokio::sync::Notify::new(),
         }
     }
 }
@@ -129,9 +143,11 @@ pub async fn put_pick(
     }
     let pick = Pick::from_request(&id, &body).map_err(store_error)?;
     let saved = pick.clone();
-    let new = tokio::task::spawn_blocking(move || state.races.store.put_pick(pick, now_ms()))
+    let st = Arc::clone(&state);
+    let new = tokio::task::spawn_blocking(move || st.races.store.put_pick(pick, now_ms()))
         .await?
         .map_err(store_error)?;
+    state.races.changed.notify_one();
     let code = if new {
         StatusCode::CREATED
     } else {
@@ -150,14 +166,43 @@ pub async fn delete_pick(
             "identifiant de choix invalide",
         ));
     }
-    let removed = tokio::task::spawn_blocking(move || state.races.store.delete_pick(&id, now_ms()))
+    let st = Arc::clone(&state);
+    let removed = tokio::task::spawn_blocking(move || st.races.store.delete_pick(&id, now_ms()))
         .await?
         .map_err(store_error)?;
     if removed {
+        state.races.changed.notify_one();
         Ok(StatusCode::NO_CONTENT.into_response())
     } else {
         Err(ApiError::new(StatusCode::NOT_FOUND, "choix inconnu"))
     }
+}
+
+/// `POST /api/races/picks/sync`: another device (the phone application, the PC) sends its
+/// copy of « Mes courses »; this server merges it into its own and answers the result.
+pub async fn sync_picks(
+    State(state): State<Arc<AppState>>,
+    body: Bytes,
+) -> Result<Response, ApiError> {
+    let (remote, skipped) = PickSet::from_wire(&body).map_err(store_error)?;
+    if skipped > 0 {
+        tracing::info!(
+            "courses : {skipped} élément(s) non reconnu(s) d'un autre appareil, laissés de côté"
+        );
+    }
+    let st = Arc::clone(&state);
+    let (merged, changed) =
+        tokio::task::spawn_blocking(move || st.races.store.merge_set(remote, now_ms()))
+            .await?
+            .map_err(store_error)?;
+    if changed {
+        tracing::info!(
+            "courses : « Mes courses » mises à jour depuis un autre appareil ({} choisie(s))",
+            merged.picks.len()
+        );
+        state.races.changed.notify_one();
+    }
+    Ok(Json(merged).into_response())
 }
 
 pub async fn get_settings(State(state): State<Arc<AppState>>) -> Result<Response, ApiError> {
@@ -168,10 +213,12 @@ pub async fn put_settings(
     State(state): State<Arc<AppState>>,
     body: Bytes,
 ) -> Result<Response, ApiError> {
-    let saved =
-        tokio::task::spawn_blocking(move || state.races.store.patch_settings(&body, now_ms()))
-            .await?
-            .map_err(store_error)?;
+    let st = Arc::clone(&state);
+    let saved = tokio::task::spawn_blocking(move || st.races.store.patch_settings(&body, now_ms()))
+        .await?
+        .map_err(store_error)?;
+    // The hour correction moves picks: the other devices must follow.
+    state.races.changed.notify_one();
     Ok(Json(saved).into_response())
 }
 

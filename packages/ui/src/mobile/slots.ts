@@ -31,6 +31,8 @@ export interface AppSlots {
   RemindersExtra?: ComponentType;
   /** On a row of « Mes courses »: the button that starts the countdown on the lock screen. */
   PickAction?: ComponentType<{ pick: RacePick; now: number }>;
+  /** Under « Mes courses »: the servers the picks are shared with (ADR 0019). */
+  PicksShare?: ComponentType;
   /** A sentence that names the phone's system: its key for this phone (`mobile/device.ts`). */
   phoneText?: (key: TranslationKey) => TranslationKey;
   /**

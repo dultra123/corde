@@ -968,6 +968,134 @@ pub fn unpair_blocking(state: &AppState) -> Result<bool, String> {
     Ok(revoked)
 }
 
+// --- « Mes courses » -----------------------------------------------------------
+
+/// How often this PC exchanges « Mes courses » with the home server (the phone may have
+/// changed them there). A change made on this PC is sent at once.
+pub const PICKS_SYNC_EVERY: Duration = Duration::from_secs(30);
+/// After a failure, and for a home server too old to share the picks.
+const PICKS_RETRY: Duration = Duration::from_secs(60);
+const PICKS_RETRY_OLD_SERVER: Duration = Duration::from_secs(600);
+
+/// How one exchange of « Mes courses » with the home server ended.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PicksExchange {
+    /// Done; `changed`: this PC learnt something (a pick or a removal made elsewhere).
+    Done { changed: bool },
+    /// The home server is older than the sharing of the picks (ADR 0019): nothing is lost,
+    /// the sessions are still sent.
+    ServerTooOld,
+    /// No home server paired.
+    NotPaired,
+}
+
+/// One exchange: this PC's copy of « Mes courses » goes to the home server, the merged copy
+/// comes back and is merged here (`races::merge`). Apart from the rounds of the sessions: a
+/// long upload does not delay it, and it never changes the state shown on the link's page.
+/// Blocking. The picks' lock is not held during the request.
+pub fn sync_picks_once(state: &AppState) -> Result<PicksExchange, SyncError> {
+    use crate::races::merge::{PickSet, MAX_SYNC_BODY};
+    let Some(link) = state.link.clone() else {
+        return Ok(PicksExchange::NotPaired);
+    };
+    let Some(file) = link.file() else {
+        return Ok(PicksExchange::NotPaired);
+    };
+    let Some(token) = file.token.as_deref() else {
+        return Ok(PicksExchange::NotPaired);
+    };
+    let mine = state.races.store.export_set(crate::races::now_ms());
+    let body = serde_json::to_vec(&mine).map_err(local)?;
+    let mut resp = agent(Duration::from_secs(10))
+        .post(&format!("{}/api/races/picks/sync", file.url))
+        .header("Authorization", &format!("Bearer {token}"))
+        .header("Content-Type", "application/json")
+        .send(&body[..])
+        .map_err(|e| SyncError::Unreachable(e.to_string()))?;
+    match resp.status().as_u16() {
+        200 => {}
+        401 => return Err(SyncError::Revoked),
+        // Before the sharing, this address only knew PUT and DELETE of one pick.
+        404 | 405 => return Ok(PicksExchange::ServerTooOld),
+        status => {
+            return Err(SyncError::Http {
+                status,
+                message: "échange des courses refusé".into(),
+            })
+        }
+    }
+    let bytes = resp
+        .body_mut()
+        .with_config()
+        .limit(MAX_SYNC_BODY as u64)
+        .read_to_vec()
+        .map_err(|e| SyncError::Unreachable(e.to_string()))?;
+    let (theirs, _skipped) = PickSet::from_wire(&bytes).map_err(local)?;
+    let (_, changed) = state
+        .races
+        .store
+        .merge_set(theirs, crate::races::now_ms())
+        .map_err(local)?;
+    Ok(PicksExchange::Done { changed })
+}
+
+/// Exchanges « Mes courses » with the home server shortly after start-up, at each change of
+/// the picks on this PC and every [`PICKS_SYNC_EVERY`]. Does nothing while no server is
+/// paired (and on the home server itself, which has no link).
+pub async fn run_picks_periodic(
+    state: Arc<AppState>,
+    mut shutdown: tokio::sync::watch::Receiver<bool>,
+) {
+    let Some(link) = state.link.clone() else {
+        return;
+    };
+    let mut wait = Duration::from_secs(5);
+    let mut told_old = false;
+    loop {
+        tokio::select! {
+            _ = tokio::time::sleep(wait) => {}
+            _ = state.races.changed.notified() => {
+                // Several changes in a row (a few picks, the hour correction) leave together.
+                tokio::time::sleep(Duration::from_millis(400)).await;
+            }
+            _ = shutdown.changed() => return,
+        }
+        if !link.is_paired() {
+            wait = PICKS_SYNC_EVERY;
+            continue;
+        }
+        let st = Arc::clone(&state);
+        let result = tokio::task::spawn_blocking(move || sync_picks_once(&st)).await;
+        wait = match result {
+            Ok(Ok(PicksExchange::Done { changed })) => {
+                if changed {
+                    tracing::info!(
+                        "courses : « Mes courses » mises à jour depuis le serveur Corde"
+                    );
+                }
+                told_old = false;
+                PICKS_SYNC_EVERY
+            }
+            Ok(Ok(PicksExchange::ServerTooOld)) => {
+                if !told_old {
+                    tracing::info!(
+                        "courses : le serveur Corde est trop ancien pour partager « Mes courses » (mets-le à jour)"
+                    );
+                    told_old = true;
+                }
+                PICKS_RETRY_OLD_SERVER
+            }
+            Ok(Ok(PicksExchange::NotPaired)) => PICKS_SYNC_EVERY,
+            Ok(Err(e)) => {
+                // The rounds of the sessions report the state of the link; here, only a trace.
+                tracing::debug!("courses : échange avec le serveur Corde impossible ({e})");
+                PICKS_RETRY
+            }
+            Err(_) => PICKS_RETRY,
+        };
+    }
+}
+
 // --- background task ---------------------------------------------------------
 
 /// Sends at start-up, after every recording that stops, every `interval` (0 = only when
@@ -1108,6 +1236,8 @@ pub async fn pair_route(
         .await?
         .map_err(|(code, msg)| ApiError::new(code, msg))?;
     link.wake.notify_one();
+    // « Mes courses » are exchanged with the new server without waiting.
+    state.races.changed.notify_one();
     Ok(Json(status).into_response())
 }
 

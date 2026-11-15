@@ -1,6 +1,6 @@
 # Corde — fiche de présentation
 
-> À jour pour la **version 1.5.0** (16 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
+> À jour pour la **version 1.6.0** (16 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
 > faut pour présenter Corde (site, page de présentation, annonce) : ce qu'elle fait, où elle tourne, ce qui
 > est nouveau, ce qui arrive, les images et les liens. Elle ne dit que ce qui existe ; le détail et l'état
 > exact de chaque partie sont dans le [README](../README.md) et dans [STATUS.md](STATUS.md).
@@ -20,7 +20,7 @@ Le nom vient du **point de corde** : l'endroit où la trajectoire idéale touche
 
 | | |
 |---|---|
-| Version actuelle | **1.5.0** (16 novembre 2026) |
+| Version actuelle | **1.6.0** (16 novembre 2026) |
 | Prix | Gratuit |
 | Licence | Logiciel libre, GPL-3.0-or-later ; code source public |
 | Jeu | Le Mans Ultimate |
@@ -151,13 +151,19 @@ toutes tes courses par circuit et par voiture.
 
 Images : `profil.png`, `resultat-course.png`.
 
-### 7. Courses en ligne et rappels
+### 7. Courses en ligne et rappels (enrichi en 1.6.0)
 
 Le planning en ligne de Le Mans Ultimate : courses quotidiennes, hebdomadaires, événements spéciaux,
 championnats, avec circuit, durée, catégories et niveaux SR / DR requis. Tu choisis tes départs ; Corde
 affiche le compte à rebours et te prévient avant le départ, sur le PC et sur le téléphone. L'inscription se
 fait toujours dans le jeu. Le planning est désactivé par défaut ; une fois activé, Corde lit deux pages
 publiques (racecontrol.gg et lmu.tools), sans compte. Planning non officiel.
+
+Nouveau en 1.6.0 : **« Mes courses » te suivent d'un appareil à l'autre.** Le PC, le serveur Corde et
+l'application du téléphone s'échangent les courses choisies et retirées : choisie sur le PC, elle est dans
+l'application du téléphone à sa prochaine ouverture, à la maison comme en 5G (par le serveur Corde et le
+VPN), et l'inverse. L'application du téléphone indique avec quels serveurs les courses sont partagées. Il
+faut que les trois soient à jour ; les réglages de la page restent propres à chaque appareil.
 
 Image : `courses.png`.
 
@@ -221,6 +227,8 @@ redémarrer. Chaque version est signée et vérifiée avant l'installation ; rie
 
 ## Nouveautés
 
+- **1.6.0 (16 novembre 2026)** — « Mes courses » partagées entre le PC, le serveur Corde et l'application
+  du téléphone, à la maison comme en 5G : une course choisie ou retirée sur l'un l'est sur les autres.
 - **1.5.0 (16 novembre 2026)** — le Studio a son onglet dans la barre du haut ; un tableau de bord prend le
   format qu'on veut (formats prêts, taille libre) et la forme qu'on veut : rectangle, coins arrondis ou
   rond, pour le petit écran rond d'un volant.

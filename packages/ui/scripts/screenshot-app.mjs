@@ -17,7 +17,9 @@
  * iPhone — iOS renders with WebKit, not Chromium). Fails on any console error, and checks:
  * the tab bar is at the bottom; the schedule is read through the native HTTP only, at the two
  * addresses, with Corde's User-Agent; picking a start asks for the notifications once and
- * schedules the reminders; no horizontal overflow; the PC server answers.
+ * schedules the reminders; no horizontal overflow; the PC server answers; « Mes courses » are
+ * shared with the PC both ways (ADR 0019): the phone's pick reaches the PC, a race picked then
+ * removed on the PC is picked then removed on the phone, with its reminders.
  */
 import { spawn } from "node:child_process";
 import { createReadStream, existsSync, mkdirSync, mkdtempSync, rmSync, statSync } from "node:fs";
@@ -423,6 +425,95 @@ try {
     (await page.locator(".app-live input[type=checkbox]").count()) === 1,
     "courses: Live Activity setting shown",
   );
+
+  // « Mes courses » shared with the PC (ADR 0019). The phone's pick is on the PC…
+  const pcPicks = async () => (await fetch(`http://127.0.0.1:${port}/api/races/picks`)).json();
+  const phonePicks = () =>
+    page.evaluate(() =>
+      JSON.parse(window.__fake.prefs.get("corde.races.picks.v1") ?? "[]").map((p) => p.id),
+    );
+  const mineId = (await phonePicks())[0];
+  let onPc = [];
+  for (let i = 0; i < 40 && onPc.length === 0; i++) {
+    await sleep(250);
+    onPc = await pcPicks();
+  }
+  check(
+    onPc.length === 1 && onPc[0].id === mineId,
+    "shared: the pick made on the phone is on the PC",
+  );
+  // … a race picked on the PC comes to the phone when the application comes back to the front…
+  const resume = () =>
+    page.evaluate(() => {
+      for (const l of window.__fake.listeners)
+        if (l.plugin === "App" && l.event === "appStateChange") l.callback({ isActive: true });
+    });
+  const pcStart = now + 5 * 3600e3;
+  const pcPick = {
+    id: `weekly-gt3-sprint@${pcStart}`,
+    race_id: "weekly-gt3-sprint",
+    cat: "weekly",
+    src: "lt",
+    name: "GT3 Sprint",
+    level: null,
+    track: "Spa-Francorchamps",
+    duration: "45 min",
+    image: null,
+    start_ms: pcStart,
+    eve_ms: null,
+  };
+  const put = await fetch(
+    `http://127.0.0.1:${port}/api/races/picks/${encodeURIComponent(pcPick.id)}`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(pcPick),
+    },
+  );
+  check(put.status === 201, "shared: a race picked on the PC");
+  const pendingBefore = await page.evaluate(() => window.__fake.pending.length);
+  await resume();
+  await page.waitForFunction(
+    (id) =>
+      JSON.parse(window.__fake.prefs.get("corde.races.picks.v1") ?? "[]").some((p) => p.id === id),
+    pcPick.id,
+    { timeout: 10_000 },
+  );
+  await page.waitForFunction(
+    () => document.querySelectorAll(".races-mine-row").length === 2,
+    null,
+    { timeout: 10_000 },
+  );
+  check(true, "shared: the PC's race is in « Mes courses » of the phone");
+  await page.waitForFunction((n) => window.__fake.pending.length > n, pendingBefore, {
+    timeout: 10_000,
+  });
+  check(true, "shared: its reminders are planned on the phone");
+  const share = (await page.locator(".app-share").textContent()) ?? "";
+  check(
+    share.includes("Partagées avec : PC de jeu.") && share.includes("Serveur Corde"),
+    `shared: the page says with whom (${share.trim()})`,
+  );
+  await page.locator(".races-mine").scrollIntoViewIfNeeded();
+  await sleep(300);
+  await page.screenshot({ path: join(outDir, "app-races-shared.png") });
+  // … and removed on the PC, it leaves the phone; the phone's own pick stays.
+  const del = await fetch(
+    `http://127.0.0.1:${port}/api/races/picks/${encodeURIComponent(pcPick.id)}`,
+    { method: "DELETE" },
+  );
+  check(del.status === 204, "shared: the race removed on the PC");
+  await resume();
+  await page.waitForFunction(
+    () => document.querySelectorAll(".races-mine-row").length === 1,
+    null,
+    { timeout: 10_000 },
+  );
+  const left = await phonePicks();
+  check(
+    left.length === 1 && left[0] === mineId,
+    "shared: it left the phone, the phone's own pick stays",
+  );
   check((await overflow()) <= 0, "courses: no horizontal overflow");
   await page.evaluate(() => window.scrollTo(0, 0));
   await sleep(400);
@@ -452,6 +543,7 @@ try {
   check((await page.locator(".app-server").count()) === 2, "servers: the two servers are listed");
   check((await page.locator(".app-pair").count()) === 1, "servers: the home server offers pairing");
   check((await overflow()) <= 0, "servers: no horizontal overflow");
+  await page.evaluate(() => window.scrollTo(0, 0));
   await sleep(300);
   await page.screenshot({ path: join(outDir, "app-servers.png") });
 

@@ -304,6 +304,7 @@ pub fn router_with(state: Arc<AppState>, ui_dir: Option<PathBuf>, allow_host: &[
             post(crate::races::post_unreadable),
         )
         .route("/api/races/picks", get(crate::races::list_picks))
+        .route("/api/races/picks/sync", post(crate::races::sync_picks))
         .route(
             "/api/races/picks/{id}",
             axum::routing::put(crate::races::put_pick).delete(crate::races::delete_pick),

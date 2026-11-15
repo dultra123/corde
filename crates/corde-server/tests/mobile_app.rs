@@ -219,6 +219,26 @@ async fn the_application_reaches_a_pc_with_the_network_access_open() {
         .unwrap_or_default()
         .contains("authorization"));
 
+    // « Mes courses » exchanged with this PC (ADR 0019): the preflight, then the copy.
+    let pre = [
+        ("Host", host.as_str()),
+        ("Origin", APP),
+        ("Access-Control-Request-Method", "POST"),
+        ("Access-Control-Request-Headers", "content-type"),
+    ];
+    let r = raw(to, "OPTIONS", "/api/races/picks/sync", &pre, "").await;
+    assert!((200..300).contains(&r.status), "{} {}", r.status, r.head);
+    let r = raw(
+        to,
+        "POST",
+        "/api/races/picks/sync",
+        &h,
+        r#"{"picks":[],"removed":[]}"#,
+    )
+    .await;
+    assert_eq!(r.status, 200, "{}", r.body);
+    assert_eq!(r.json()["picks"], serde_json::json!([]));
+
     // WebSocket: without subprotocol, and asking for `corde.v1` (echoed).
     assert_eq!(ws_open(to, &host, "/ws", None).await, Ok(None));
     assert_eq!(
@@ -367,6 +387,14 @@ async fn the_application_pairs_with_the_home_server_and_uses_its_token() {
     ];
     let r = raw(to, "OPTIONS", "/api/sessions", &pre, "").await;
     assert!((200..300).contains(&r.status), "{} {}", r.status, r.head);
+
+    // « Mes courses » exchanged with the home server (ADR 0019): with the token only.
+    let r = raw(to, "POST", "/api/races/picks/sync", &auth, "{}").await;
+    assert_eq!(r.status, 200, "{}", r.body);
+    assert_eq!(r.json()["removed"], serde_json::json!([]));
+    let no_token = [("Host", host.as_str()), ("Origin", APP)];
+    let r = raw(to, "POST", "/api/races/picks/sync", &no_token, "{}").await;
+    assert_eq!(r.status, 401, "{}", r.body);
 
     // WebSocket: the token as a subprotocol entry; the answer names `corde.v1` only.
     let protocols = format!("corde.v1, corde.token.{token}");

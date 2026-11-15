@@ -1012,6 +1012,8 @@ export const en: Record<TranslationKey, string> = {
   "races.mine.reminder": "Reminder",
   "races.mine.remove": "Remove",
   "races.mine.specialRule": "special events: the evening before at 18:00 and on the day",
+  "races.mine.shared":
+    "Your picked races follow you: the PC, the Corde server and the phone app exchange them.",
   "races.next.kicker": "Next start",
   "races.next.special": "Next event",
   "races.next.startAt": "start",
@@ -1268,7 +1270,7 @@ export const en: Record<TranslationKey, string> = {
     'Get the code on the server: "sudo corde-server pair" (on a NAS: in the log of the container the first time, then "corde-server pair" in its terminal). It is valid for 10 minutes.',
   "races.off.remoteHub": "The schedule is turned on from an administrator device of the server.",
   "races.hubLink": "Your races are on your server too",
-  "races.hubLink.hint": "(your picks on the PC and on the server stay separate)",
+  "races.hubLink.hint": "(your picked races are the same there)",
   // iPhone application (apps/mobile)
   "races.unreadable.bodyPhone":
     "No race was recognised in it: the site may have changed. Open the site to check, and report it on the project page.",
@@ -1316,6 +1318,13 @@ export const en: Record<TranslationKey, string> = {
     "iOS does not allow the countdown for Corde: iPhone Settings → Corde → Live Activities.",
   "mobile.live.start": "Countdown",
   "mobile.live.on": "On the lock screen",
+  "mobile.share.none":
+    'Your picked races stay on this phone. Add your PC or your Corde server in "My servers" to find them everywhere.',
+  "mobile.share.ok": "Shared with: {list}.",
+  "mobile.share.nobody": "None of your servers answers: your races stay on this phone for now.",
+  "mobile.share.away": "Unreachable for now: {list}.",
+  "mobile.share.old": "Corde to update before it can share the races: {list}.",
+  "mobile.share.unpaired": 'To pair in "My servers": {list}.',
   "mobile.widgets.hint":
     "Widgets: touch and hold the Home Screen (or the Lock Screen) → Edit → Add Widget → Corde. They update when Corde is open.",
   "mobile.widgets.diag.title": "Widget diagnosis",
@@ -1373,7 +1382,7 @@ export const en: Record<TranslationKey, string> = {
   "mobile.role.hub": "Corde server",
   "servers.title": "My servers",
   "servers.subtitle":
-    "The gaming PC for the live view at home; your Corde server for your sessions anywhere. The Races page needs neither.",
+    "The gaming PC for the live view at home; your Corde server for your sessions anywhere. The Races page works without them; with them, your picked races are the same everywhere.",
   "servers.empty": "No server yet.",
   "servers.active": "Active",
   "servers.use": "Use",

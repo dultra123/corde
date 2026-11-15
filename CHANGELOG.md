@@ -8,6 +8,33 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [1.6.0] — 2026-11-16
+
+**« Mes courses » te suivent : une course choisie sur le PC est dans l'application du téléphone, et
+l'inverse — à la maison comme en 5G.**
+
+### Nouveautés
+
+- **« Mes courses » partagées entre tes appareils.** Le PC, le serveur Corde (Raspberry Pi ou NAS) et
+  l'application du téléphone s'échangent les courses que tu choisis et celles que tu retires. Choisis sur
+  le PC, retrouve-la sur le téléphone ; retire-la sur le téléphone, elle disparaît du PC.
+- **Aussi hors de chez toi** : en 5G, le téléphone passe par ton serveur Corde (avec le VPN), qui a reçu
+  les courses du PC.
+- **Sous « Mes courses », l'application du téléphone dit avec qui elles sont partagées** — et ce qui
+  manque : un serveur injoignable, à appairer, ou à mettre à jour.
+
+### À savoir
+
+- **Mets à jour les trois** : Corde sur le PC, l'application du téléphone, et **Corde serveur** sur le
+  Raspberry Pi ou le NAS. Un serveur resté sur une version plus ancienne ne relaie pas les courses (rien
+  n'est perdu : elles restent sur chaque appareil).
+- **Sur le téléphone, ouvre l'application** pour récupérer une course choisie sur le PC : elle ne fait rien
+  en arrière-plan. Ses rappels sont programmés à ce moment-là ; les widgets suivent.
+- L'échange prend moins d'une minute. Le PC et le téléphone sonnent chacun leur rappel.
+- Les réglages de la page Courses (délais de rappel, catégories, correction d'heure) restent propres à
+  chaque appareil.
+- Pas encore essayé sur Android.
+
 ## [1.5.0] — 2026-11-16
 
 **Le Studio a son onglet, et un tableau de bord prend le format et la forme que tu veux — jusqu'au petit

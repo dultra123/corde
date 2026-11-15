@@ -15,6 +15,8 @@ export const MAX_SERVERS = 10;
 const NAME_MAX = 40;
 const PROBE_TIMEOUT_MS = 6_000;
 const PAIR_TIMEOUT_MS = 15_000;
+/** The exchange of « Mes courses »: short, many servers are asked side by side. */
+const PICKS_TIMEOUT_MS = 5_000;
 
 export interface ServerEntry {
   id: string;
@@ -53,6 +55,18 @@ export type PairResult =
       message: string | null;
       retryAfterS: number | null;
     };
+
+/** How the exchange of « Mes courses » with one server ended ({@link ServerBook.exchangePicks}). */
+export type PicksExchange =
+  /** The server merged the copy and answered its own (`body`: unchecked JSON). */
+  | { kind: "ok"; body: unknown }
+  /** A Corde older than the sharing of the picks (ADR 0019). */
+  | { kind: "old" }
+  /** A home server this phone is not paired with (or not any more). */
+  | { kind: "unpaired" }
+  /** No answer: server off, other network. */
+  | { kind: "unreachable" }
+  | { kind: "error"; status: number };
 
 function randomId(): string {
   const b = new Uint8Array(8);
@@ -307,6 +321,35 @@ export class ServerBook {
     }
     this.log(`servers: test of ${e.label} → ${result.kind}`);
     return result;
+  }
+
+  /**
+   * Sends this phone's copy of « Mes courses » to a server (`POST /api/races/picks/sync`,
+   * ADR 0019) and returns the copy it answers. A PC needs no pairing; a home server is asked
+   * with this phone's token, which stays in this module. Nothing is written to the log here:
+   * the exchange runs every minute (`picks-sync.ts` logs what changes).
+   */
+  async exchangePicks(id: string, copy: unknown): Promise<PicksExchange> {
+    const e = this.entries.find((x) => x.id === id);
+    if (!e) return { kind: "unreachable" };
+    if (e.role === "hub" && !this.tokens.has(id)) return { kind: "unpaired" };
+    const res = await fetchWithin(
+      this.fetchFn,
+      `${e.base}/api/races/picks/sync`,
+      {
+        method: "POST",
+        headers: { ...this.headers(id), "Content-Type": "application/json" },
+        body: JSON.stringify(copy),
+      },
+      PICKS_TIMEOUT_MS,
+    );
+    if (!res) return { kind: "unreachable" };
+    if (res.status === 401) return { kind: "unpaired" };
+    // Before the sharing, this address only knew PUT and DELETE of one pick.
+    if (res.status === 404 || res.status === 405) return { kind: "old" };
+    if (!res.ok) return { kind: "error", status: res.status };
+    const body = await jsonOf(res);
+    return body ? { kind: "ok", body } : { kind: "error", status: res.status };
   }
 
   /**

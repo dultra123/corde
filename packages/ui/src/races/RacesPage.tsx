@@ -65,8 +65,8 @@ const remoteKey = (): "races.off.remoteHub" | "races.off.remote" =>
   isHub() ? "races.off.remoteHub" : "races.off.remote";
 
 /**
- * On a PC paired with a home server: « your races are on your server too » (picks are not
- * synchronised between the two: each keeps its own).
+ * On a PC paired with a home server: « your races are on your server too » (the PC and the
+ * server exchange the picks, ADR 0019: the same on both).
  */
 function HubRacesLink() {
   const { t } = useT();
@@ -393,6 +393,7 @@ function MyRaces({
   const list = upcomingPicks(picks, now);
   const next = list.find((p) => p.cat !== "special") ?? list[0] ?? null;
   const PickAction = appSlots.PickAction;
+  const Share = appSlots.PicksShare;
   const leads = settings?.leads ?? [];
   const before = leads.filter((l) => l > 0);
   let leadText = t("races.leads.none");
@@ -459,6 +460,7 @@ function MyRaces({
           </p>
         </>
       )}
+      {Share ? <Share /> : <p className="races-mine-foot faint">{t("races.mine.shared")}</p>}
     </section>
   );
 }

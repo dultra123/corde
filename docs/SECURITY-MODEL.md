@@ -169,6 +169,7 @@ PC seulement.
 | GET | `/api/races/sources` | **X** si `online_schedule` : `GET` des deux pages de la liste fermée (`races::sources`), cache 10 / 60 min, relecture forcée ≤ 1/min | — (0.4) | ouverte | la page Courses, aussi sur le téléphone ; aucune adresse ne vient de la requête ; rien n'est lu si le réglage est faux |
 | POST | `/api/races/sources/{source}/unreadable` | D (`diagnostics/races/<source>.html`, copie déjà détenue par le serveur, une par source) | — (0.4) | ouverte | l'interface signale une page sans course ; `source` ∈ {`racecontrol`, `lmutools`}, le contenu ne vient pas du client |
 | GET | `/api/races/picks` | L | — (0.4) | ouverte | « Mes courses », partagées PC / téléphone |
+| POST | `/api/races/picks/sync` | D (`races/picks.json`, `races/picks-sync.json`) | — (1.6) | ouverte | un autre appareil (application du téléphone, PC) envoie sa copie de « Mes courses » : choix et retraits, chacun avec l'instant de son changement ; le serveur la fusionne dans la sienne et répond le résultat (ADR 0019). Ne permet rien de plus que `PUT` et `DELETE` ci-dessous : mêmes choix validés un par un (une entrée refusée est laissée de côté), ≤ 50 choix, ≤ 200 retraits, ≤ 256 Kio |
 | PUT | `/api/races/picks/{id}` | D (`races/picks.json`) | — (0.4) | ouverte | choix validé (identifiant `<course>@<départ>`, champs bornés, image `https://` seulement, champs inconnus refusés), ≤ 50 choix (409 au-delà) |
 | DELETE | `/api/races/picks/{id}` | S (un choix, recréable) | — (0.4) | ouverte | retirer une course depuis le téléphone |
 | GET | `/api/races/settings` | L | — (0.4) | ouverte | délais de rappel, affichage, correction d'heure, DR / SR, exigences |
@@ -189,7 +190,9 @@ rappels des courses choisies toutes les 5 s (`races/mod.rs` : message `race_remi
 rappels envoyés notés dans `races/reminders.json`, aucun appel extérieur) ; **seulement si le PC est appairé
 à un serveur Corde** (0.7) : envoi au serveur de la maison au démarrage, à la fin de chaque enregistrement
 et toutes les 5 minutes (`hub_link.rs`, routes `/api/sync/*` du §7, en HTTP vers l'adresse enregistrée,
-jamais par un proxy).
+jamais par un proxy) ; et, depuis la 1.6, échange de « Mes courses » avec ce même serveur à chaque
+changement et toutes les 30 s (`POST /api/races/picks/sync`, même adresse, même jeton, 10 s au plus ; rien
+d'autre que les courses choisies et retirées n'y est envoyé).
 
 **Appels vers Internet (planning des courses, 0.4)** : seulement `https://racecontrol.gg/` et
 `https://lmu.tools/schedule` (constante `SOURCES` de `crates/corde-server/src/races/sources.rs`), seulement
@@ -389,6 +392,9 @@ aucune route de mise à jour. Vie privée : [PRIVACY.md](../PRIVACY.md#mises-à-
   cache, aucune lecture tant que le réglage est faux, redirections limitées au site, en-têtes réels envoyés
   (serveur HTTP local), pas de cookie, limite de taille, validation des choix et des réglages, copie de
   diagnostic, rappel reçu sur le WebSocket.
+- `races/merge.rs`, `tests/races_sync.rs` (1.6, ADR 0019) : la copie d'un autre appareil est bornée et
+  validée entrée par entrée ; sur le serveur de la maison la route exige un appareil appairé (401 sans
+  jeton) ; un PC, un serveur de la maison et un « téléphone » réels s'échangent choix et retraits.
 - `tests/access_policy.rs` → `an_obs_browser_source_loads_the_overlay_from_the_server` (0.5) : la page
   overlay, ses fichiers, `GET /api/layouts` et le WebSocket chargés comme le fait une source OBS, depuis
   `127.0.0.1`, `localhost` et, si la machine a une adresse réseau, depuis cette adresse avec l'accès réseau
@@ -648,6 +654,13 @@ L'accès réseau reste désactivé par défaut, et le serveur Corde exige toujou
   échappent à ATS depuis iOS 10 ; la documentation d'iOS 17 parle d'exceptions en notation CIDR : les
   exceptions sont là pour le cas où ATS s'appliquerait aux adresses IP. Une adresse publique en HTTP reste
   bloquée par ATS (et refusée par l'application avant).
+- **« Mes courses » partagées** (1.6, ADR 0019, `mobile/picks-sync.ts`) : l'application envoie sa copie des
+  courses choisies et retirées à **chaque serveur de « Mes serveurs »** (`POST /api/races/picks/sync`,
+  5 s au plus) et fusionne la réponse, validée entrée par entrée comme un choix fait sur le téléphone. Rien
+  d'autre n'est envoyé (ni réglages, ni identité). Un serveur de la maison reçoit le jeton de l'appareil,
+  lu par le seul module des serveurs ; un serveur de la maison non appairé n'est pas contacté. Le journal
+  ne reçoit que des décomptes. Même limite que ci-dessus : hors du réseau de la maison et VPN coupé, la
+  requête vers une adresse privée part sur le réseau où se trouve le téléphone.
 - **Liens `corde://`** : ouvrent une page d'une liste fermée, sans paramètre ; ne déclenchent aucune action.
   Les widgets et l'activité en direct ouvrent `corde://races`.
 

@@ -15,6 +15,7 @@
 //! POST /api/sessions/{id}/setup-files ── corde_engineer::setup::build_setup ──▶ UserData/player/Settings/<Track>/Corde_*.svm
 //! GET /api/races/sources (setting `online_schedule`) ── GET racecontrol.gg, lmu.tools (cache) ──▶ HTML parsed by the UI
 //! reminder task (every 5 s) ── races/picks.json ──▶ broadcast race_reminder
+//! picks task (PC paired with a home server: every 30 s and at each change) ── POST /api/races/picks/sync ──▶ home server
 //! hub link (paired PC only) ── closed sessions, results, feedback ──▶ home server (/api/sync/*)
 //! ```
 //!
@@ -349,6 +350,10 @@ impl Server {
             sync_interval,
             state.shutdown.subscribe(),
         ));
+        let picks_task = tokio::spawn(hub_link::run_picks_periodic(
+            Arc::clone(&state),
+            state.shutdown.subscribe(),
+        ));
         let app = api::router_with(Arc::clone(&state), ui_dir, &allow_host);
         let graceful = {
             let state = Arc::clone(&state);
@@ -381,6 +386,7 @@ impl Server {
         // Lets the hub write the devices' last use once more.
         let _ = tokio::time::timeout(Duration::from_secs(2), hub_task).await;
         link_task.abort();
+        picks_task.abort();
         result.map_err(Into::into)
     }
 }

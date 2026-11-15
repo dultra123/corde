@@ -120,4 +120,97 @@ describe("the races kept on the phone", () => {
     );
     await expect(book.patchSettings({ leads: [7] })).rejects.toMatchObject({ status: 400 });
   });
+
+  it("stamps each change for the other devices, and remembers a removal", async () => {
+    const prefs = new FakePrefs();
+    let now = NOW;
+    const book = new RaceBook(prefs, () => now);
+    const p = pick("one-stint-sprint", NOW + H);
+    await book.put(p);
+    expect(await book.exportSet()).toEqual({
+      picks: [{ pick: p, changed_ms: NOW }],
+      removed: [],
+    });
+    // Removed: remembered, later than the pick even on the same millisecond.
+    expect(await book.remove(p.id)).toBe(true);
+    expect(await book.exportSet()).toEqual({
+      picks: [],
+      removed: [{ id: p.id, removed_ms: NOW + 1 }],
+    });
+    // Removing what is not there remembers nothing.
+    expect(await book.remove(`other@${NOW + H}`)).toBe(false);
+    expect((await book.exportSet()).removed).toHaveLength(1);
+    // Picked again: later than the removal, which is forgotten.
+    await book.put(p);
+    const set = await book.exportSet();
+    expect(set).toEqual({ picks: [{ pick: p, changed_ms: NOW + 2 }], removed: [] });
+    // Read back by a new book (a new start of the application).
+    expect(await new RaceBook(prefs, () => now).exportSet()).toEqual(set);
+    // Three hours after the start, a removal is forgotten like a pick.
+    await book.remove(p.id);
+    now = NOW + H + 3 * H;
+    expect(await book.exportSet()).toEqual({ picks: [], removed: [] });
+    expect(JSON.parse(prefs.data.get(KEYS.picksSync) ?? "")).toEqual({ changed: {}, removed: {} });
+  });
+
+  it("merges the copy of another device, and wins over a clock that runs ahead", async () => {
+    const prefs = new FakePrefs();
+    const mine = pick("mine", NOW + H);
+    // Picked before the sharing existed: on the phone, without an instant.
+    prefs.data.set(KEYS.picks, JSON.stringify([mine]));
+    prefs.data.set(KEYS.picksSync, JSON.stringify({ changed: { "bad id": 5 }, removed: 7 }));
+    const book = new RaceBook(prefs, () => NOW);
+    expect((await book.exportSet()).picks).toEqual([{ pick: mine, changed_ms: 0 }]);
+
+    const ahead = NOW + 24 * H;
+    const theirs = pick("theirs", NOW + H + 60_000);
+    const remote = { picks: [{ pick: theirs, changed_ms: ahead }], removed: [] };
+    const first = await book.mergeSet(remote);
+    expect(first.changed).toBe(true);
+    expect(await book.list()).toEqual([mine, theirs]);
+    // The same copy again: nothing changes.
+    expect((await book.mergeSet(remote)).changed).toBe(false);
+
+    // Removed here: later than the clock that runs ahead, so it is not sent back.
+    await book.remove(theirs.id);
+    const again = await book.mergeSet(remote);
+    expect(again.changed).toBe(false);
+    expect(again.set.removed).toEqual([{ id: theirs.id, removed_ms: ahead + 1 }]);
+    expect(await book.list()).toEqual([mine]);
+
+    // A removal made elsewhere removes the pick here.
+    const gone = await book.mergeSet({ picks: [], removed: [{ id: mine.id, removed_ms: 5 }] });
+    expect(gone.changed).toBe(true);
+    expect(await book.list()).toEqual([]);
+    expect(await new RaceBook(prefs, () => NOW).list()).toEqual([]);
+  });
+
+  it("turns the hour correction into a removal and a pick for the other devices", async () => {
+    let now = NOW;
+    const book = new RaceBook(new FakePrefs(), () => now);
+    const p = pick("daily-rc", NOW + H);
+    await book.put(p);
+    now = NOW + 10;
+    await book.patchSettings({ hour_fix: 1 });
+    const set = await book.exportSet();
+    expect(set.picks.map((s) => [s.pick.id, s.changed_ms])).toEqual([
+      [`daily-rc@${NOW + 2 * H}`, NOW + 10],
+    ]);
+    expect(set.removed).toEqual([{ id: p.id, removed_ms: NOW + 10 }]);
+  });
+
+  it("reads the storage once, whoever asks first", async () => {
+    const prefs = new FakePrefs();
+    const p = pick("one", NOW + H);
+    prefs.data.set(KEYS.picks, JSON.stringify([p]));
+    const book = new RaceBook(prefs, () => NOW);
+    // The page and the exchange with the servers start together.
+    const other = pick("two", NOW + 2 * H);
+    const [list] = await Promise.all([
+      book.list(),
+      book.mergeSet({ picks: [{ pick: other, changed_ms: 9 }], removed: [] }),
+    ]);
+    expect(list).toEqual([p]);
+    expect(await book.list()).toEqual([p, other]);
+  });
 });

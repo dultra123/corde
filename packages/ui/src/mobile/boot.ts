@@ -21,6 +21,7 @@ import { phoneTextKey } from "./device";
 import { userAgent } from "./env";
 import { hashOfAppLink } from "./links";
 import { PhoneRaces } from "./phone-races";
+import { PicksSync } from "./picks-sync";
 import {
   App,
   androidNotifications,
@@ -48,6 +49,7 @@ import {
   BottomTabs,
   HomeServerCard,
   PickAction,
+  PicksShare,
   ReminderStatus,
   RemindersExtra,
   startDemo,
@@ -55,6 +57,9 @@ import {
   useServerOnline,
 } from "./ui";
 import { WidgetSync } from "./widget-sync";
+
+/** « Mes courses » are exchanged with the servers this often while the application is shown. */
+const PICKS_SYNC_EVERY_MS = 60_000;
 
 /** Errors of the native side never stop the interface: they are written to the log. */
 function quiet(p: Promise<unknown>, what: string): void {
@@ -178,6 +183,8 @@ export async function bootApp(): Promise<void> {
   const schedule = new PhoneSchedule({ http, cookies, userAgent: userAgent(), log });
   // Widgets and Live Activity follow every change of the races (created just below).
   let widgets: WidgetSync | null = null;
+  // « Mes courses » are exchanged with the servers after every change (created below).
+  let picksSync: PicksSync | null = null;
   const races = new PhoneRaces({
     prefs,
     schedule,
@@ -188,7 +195,10 @@ export async function bootApp(): Promise<void> {
     onPermission: (p) => useApp.setState({ permission: p }),
     onChange: (what) => {
       void widgets?.update();
-      if (what === "picks") void widgets?.activity({ kind: "picks" });
+      if (what === "picks") {
+        void widgets?.activity({ kind: "picks" });
+        void picksSync?.sync();
+      }
     },
     ...(android
       ? {
@@ -216,9 +226,24 @@ export async function bootApp(): Promise<void> {
     log,
     deviceName: traits.deviceName,
   });
+  picksSync = new PicksSync({
+    servers,
+    book,
+    log,
+    // Picks made on another device: the pages, the reminders and the widgets follow (not
+    // through `onChange` above, which would start another exchange).
+    onMerged: () => {
+      useRaces.getState().bumpPicks();
+      void races.replan();
+      void widgets?.update();
+      void widgets?.activity({ kind: "picks" });
+    },
+    onView: (view) => useApp.setState({ picksShare: view }),
+  });
   const controller = new AppController(servers, races, () => scanQrCode(t("servers.add.scan")));
   controller.widgets = widgets;
   controller.android = android;
+  controller.picks = picksSync;
   setController(controller);
 
   // The shared interface, wired to the phone.
@@ -235,6 +260,7 @@ export async function bootApp(): Promise<void> {
     ReminderStatus,
     RemindersExtra,
     PickAction,
+    PicksShare,
     phoneText: (key: TranslationKey) => phoneTextKey(key, traits.os),
     // The phone dashboard keeps the screen on (both systems, no permission).
     keepAwake: async (on: boolean) => {
@@ -328,6 +354,12 @@ export async function bootApp(): Promise<void> {
     .then((p) => useApp.setState({ permission: p }))
     .catch(() => {});
   void races.replan();
+  // « Mes courses » of the other devices: now, then every minute while the application is
+  // shown (it also runs when the application comes back, `AppController.resume`).
+  void picksSync.sync();
+  setInterval(() => {
+    if (document.visibilityState !== "hidden") void picksSync?.sync();
+  }, PICKS_SYNC_EVERY_MS);
   // Widgets (iPhone): the block is written once at start (the schedule follows when the
   // Courses page or the home carousel reads it); the Live Activity is checked against the picks.
   void widgets?.update(true);

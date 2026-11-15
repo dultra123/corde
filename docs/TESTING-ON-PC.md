@@ -35,7 +35,7 @@ L'option `Automatically Record Telemetry` peut rester désactivée : Corde enreg
 1. Ouvre la page de la dernière version :
    **<https://github.com/dultra123/corde/releases/latest>**.
 2. Tout en bas, section **Assets**, clique sur le fichier dont le nom finit par **`-setup.exe`**
-   (par exemple `Corde_1.5.0_x64-setup.exe`).
+   (par exemple `Corde_1.6.0_x64-setup.exe`).
 3. Ton navigateur peut hésiter : Edge affiche parfois « … n'est pas couramment téléchargé ». Clique sur
    les **…** à côté du fichier → **Conserver** → **Conserver quand même**.
 
@@ -297,6 +297,13 @@ programme un rappel la veille à 18:00 et le jour même à 10:00. Tes choix sont
 téléphone voit les mêmes. L'inscription se fait toujours **dans le jeu** (Multijoueur) : Corde ne
 t'inscrit pas.
 
+**Sur tous tes appareils** (depuis la 1.6.0) : l'**application Corde** du téléphone récupère les courses
+choisies sur le PC, et le PC celles du téléphone, en moins d'une minute — il suffit que ce PC soit dans
+**Mes serveurs** de l'application (Accueil → Mes serveurs). Hors de chez toi, ça passe par ton serveur
+Corde (Raspberry Pi ou NAS, à jour lui aussi) et ton VPN. Sous **Mes courses**, l'application indique avec
+qui elles sont partagées. Elle ne fait rien en arrière-plan : ouvre-la pour récupérer une course choisie sur
+le PC.
+
 **Les rappels** : 15 et 5 minutes avant le départ par défaut (**Rappels avant le départ** : 60, 30, 15, 10,
 5, 2 min ou au départ). À l'heure dite, un bandeau apparaît en haut de n'importe quelle page de Corde —
 « Départ dans 5 min — LMP3 Fixed, Monza, 21:30 » — avec un son court (plus insistant à 5 minutes et
@@ -515,7 +522,7 @@ Bon à savoir :
   envoyé (voir `PRIVACY.md`).
 - **La 0.6.0 elle-même s'installe encore à la main** (ci-dessous) : c'est elle qui apporte le bouton. Les
   versions suivantes arrivent par le bouton.
-- Les mises à jour du bouton sont les **versions numérotées** (page des versions, « Corde 1.5.0 »…). La
+- Les mises à jour du bouton sont les **versions numérotées** (page des versions, « Corde 1.6.0 »…). La
   version de développement « Corde — dernière version » (pré-version reconstruite à chaque modification
   du projet, <https://github.com/dultra123/corde/releases/tag/continuous>) s'installe toujours à la main.
 

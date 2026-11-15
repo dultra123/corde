@@ -8,6 +8,7 @@ import { hm } from "../races/format";
 import { useTelemetry } from "../store/telemetry";
 import { appController, type ServerStatus, useApp } from "./app-state";
 import { phoneTextKey } from "./device";
+import type { ExchangeOutcome } from "./picks-sync";
 import type { NativeDiagnostics } from "./ports";
 import { MANUAL_LEAD_MS } from "./widgets";
 
@@ -306,6 +307,36 @@ export function ReminderStatus() {
         </p>
       )}
     </>
+  );
+}
+
+/**
+ * Under « Mes courses »: the servers the picks were exchanged with the last time
+ * (`picks-sync.ts`), and the ones that need something from the driver.
+ */
+export function PicksShare() {
+  const { t } = useT();
+  const view = useApp((s) => s.picksShare);
+  const known = useApp((s) => s.servers.length);
+  if (known === 0) return <p className="races-mine-foot faint">{t("mobile.share.none")}</p>;
+  if (!view || view.servers.length === 0) return null;
+  const names = (...kinds: ExchangeOutcome[]) =>
+    view.servers
+      .filter((s) => kinds.includes(s.outcome))
+      .map((s) => s.name)
+      .join(", ");
+  const ok = names("ok");
+  const away = names("unreachable", "error");
+  const old = names("old");
+  const unpaired = names("unpaired");
+  const nobody = !ok && !old && !unpaired;
+  return (
+    <p className="races-mine-foot faint app-share" role="status">
+      {ok && t("mobile.share.ok", { list: ok })}
+      {nobody ? t("mobile.share.nobody") : away && ` ${t("mobile.share.away", { list: away })}`}
+      {old && ` ${t("mobile.share.old", { list: old })}`}
+      {unpaired && ` ${t("mobile.share.unpaired", { list: unpaired })}`}
+    </p>
   );
 }
 

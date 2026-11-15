@@ -1053,6 +1053,8 @@ export const fr = {
   "races.mine.reminder": "Rappel",
   "races.mine.remove": "Retirer",
   "races.mine.specialRule": "événements spéciaux : la veille à 18:00 et le jour même",
+  "races.mine.shared":
+    "Tes courses choisies te suivent : le PC, le serveur Corde et l'application du téléphone se les échangent.",
   "races.next.kicker": "Prochain départ",
   "races.next.special": "Prochain événement",
   "races.next.startAt": "départ",
@@ -1317,7 +1319,7 @@ export const fr = {
     "Le code s'obtient sur le serveur : « sudo corde-server pair » (sur un NAS : dans le journal du conteneur la première fois, puis « corde-server pair » dans son terminal). Il est valable 10 minutes.",
   "races.off.remoteHub": "Le planning s'active depuis un appareil administrateur du serveur.",
   "races.hubLink": "Tes courses sont aussi sur ton serveur",
-  "races.hubLink.hint": "(tes choix sur le PC et sur le serveur restent séparés)",
+  "races.hubLink.hint": "(tes courses choisies y sont les mêmes qu'ici)",
 
   // iPhone application (apps/mobile)
   "races.unreadable.bodyPhone":
@@ -1366,6 +1368,14 @@ export const fr = {
     "iOS n'autorise pas le compte à rebours pour Corde : Réglages de l'iPhone → Corde → Activités en direct.",
   "mobile.live.start": "Compte à rebours",
   "mobile.live.on": "Sur l'écran verrouillé",
+  "mobile.share.none":
+    "Tes courses choisies restent sur ce téléphone. Ajoute ton PC ou ton serveur Corde dans « Mes serveurs » pour les retrouver partout.",
+  "mobile.share.ok": "Partagées avec : {list}.",
+  "mobile.share.nobody":
+    "Aucun de tes serveurs ne répond : tes courses restent sur ce téléphone pour l'instant.",
+  "mobile.share.away": "Injoignable pour l'instant : {list}.",
+  "mobile.share.old": "Corde à mettre à jour pour partager les courses : {list}.",
+  "mobile.share.unpaired": "À appairer dans « Mes serveurs » : {list}.",
   "mobile.widgets.hint":
     "Widgets : appui long sur l'écran d'accueil (ou l'écran verrouillé) → Modifier → Ajouter un widget → Corde. Ils se mettent à jour quand Corde est ouverte.",
   "mobile.widgets.diag.title": "Diagnostic des widgets",
@@ -1423,7 +1433,7 @@ export const fr = {
   "mobile.role.hub": "Serveur Corde",
   "servers.title": "Mes serveurs",
   "servers.subtitle":
-    "Le PC de jeu pour le direct à la maison ; ton serveur Corde pour tes sessions partout. La page Courses n'en a pas besoin.",
+    "Le PC de jeu pour le direct à la maison ; ton serveur Corde pour tes sessions partout. La page Courses marche sans eux ; avec eux, tes courses choisies sont les mêmes partout.",
   "servers.empty": "Aucun serveur pour l'instant.",
   "servers.active": "Actif",
   "servers.use": "Utiliser",

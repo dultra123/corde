@@ -12,6 +12,8 @@ export const KEYS = {
   token: (serverId: string) => `corde.servers.token.${serverId}`,
   racesEnabled: "corde.races.enabled",
   picks: "corde.races.picks.v1",
+  /** When each pick was last changed, and the removed ones (shared picks, ADR 0019). */
+  picksSync: "corde.races.picks.sync.v1",
   raceSettings: "corde.races.settings.v1",
   /** Notifications already asked for (the system asks the driver once). */
   notifAsked: "corde.races.notifications.asked",

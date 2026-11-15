@@ -92,7 +92,9 @@ pub fn route_access(method: &Method, route: &str) -> Access {
     // and only when `online_schedule` is on), POST
     // /api/races/sources/{source}/unreadable (keeps a copy the server already
     // holds, one file per source), GET /api/races/picks, PUT / DELETE
-    // /api/races/picks/{id} (≤ 50 validated picks), GET / PUT
+    // /api/races/picks/{id} (≤ 50 validated picks), POST /api/races/picks/sync
+    // (a device's copy of the picks, merged: the same validated picks, bounded
+    // lists, ≤ 256 KiB — it can do nothing PUT and DELETE cannot), GET / PUT
     // /api/races/settings (validated keys).
     if pc_only {
         Access::ThisPcOnly
@@ -582,6 +584,7 @@ mod tests {
             (Method::GET, "/api/races/picks", Open),
             (Method::PUT, "/api/races/picks/{id}", Open),
             (Method::DELETE, "/api/races/picks/{id}", Open),
+            (Method::POST, "/api/races/picks/sync", Open),
             (Method::GET, "/api/races/settings", Open),
             (Method::PUT, "/api/races/settings", Open),
         ];
@@ -619,6 +622,7 @@ mod tests {
             (Method::PUT, "/api/sync/sessions/{id}", Device),
             (Method::POST, "/api/sessions/{id}/feedback", Device),
             (Method::PUT, "/api/races/picks/{id}", Device),
+            (Method::POST, "/api/races/picks/sync", Device),
             (Method::DELETE, "/api/sessions/{id}", Admin),
             (Method::POST, "/api/sessions/{id}/analysis/recompute", Admin),
             (Method::PUT, "/api/settings", Admin),

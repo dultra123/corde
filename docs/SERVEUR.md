@@ -77,19 +77,19 @@ ou « réservation DHCP »). Sinon son adresse peut changer et le PC ne le retro
    - Le plus simple, directement sur le Pi (par SSH) :
 
      ```bash
-     wget https://github.com/dultra123/corde/releases/download/v1.5.0/corde-server-1.5.0-linux-arm64.tar.gz
+     wget https://github.com/dultra123/corde/releases/download/v1.6.0/corde-server-1.6.0-linux-arm64.tar.gz
      ```
    - Ou télécharge-la sur le PC, puis copie-la sur le Pi depuis PowerShell :
 
      ```powershell
-     scp $HOME\Downloads\corde-server-1.5.0-linux-arm64.tar.gz ton-utilisateur@corde.local:~
+     scp $HOME\Downloads\corde-server-1.6.0-linux-arm64.tar.gz ton-utilisateur@corde.local:~
      ```
    - Un PC Linux (pas un Pi) prend l'archive `…-linux-x64.tar.gz`.
 2. Sur le Pi (par SSH) :
 
    ```bash
-   tar -xzf corde-server-1.5.0-linux-arm64.tar.gz
-   cd corde-server-1.5.0-linux-arm64
+   tar -xzf corde-server-1.6.0-linux-arm64.tar.gz
+   cd corde-server-1.6.0-linux-arm64
    sudo ./install.sh
    ```
 
@@ -157,7 +157,7 @@ Sur le serveur, tu retrouves : **Accueil** (dernière synchronisation, appareils
 |---|---|
 | Voir sessions, tours, analyses, profil, résultats | oui, tout appareil appairé |
 | Écrire un ressenti (page Ingénieur) | oui : il **redescend vers le PC** à la synchronisation suivante, et ceux du PC remontent. Si tu en écris un sur le PC et un sur le serveur pour la même session avant qu'ils ne se soient synchronisés, les deux sont gardés des deux côtés ; le second dit qu'il a été calculé en parallèle |
-| Choisir des courses, rappels | oui, sur le serveur, indépendamment du PC (les choix ne sont **pas** synchronisés entre les deux : sur le PC appairé, la page Courses propose un lien vers celle du serveur) |
+| Choisir des courses, rappels | oui. Depuis la 1.6.0, **« Mes courses » sont les mêmes** sur le serveur, sur le PC appairé et dans l'application du téléphone : ils se les échangent (choix et retraits, en moins d'une minute). Chacun sonne ses propres rappels et garde ses propres réglages de la page. Avec un serveur plus ancien, chacun garde ses choix |
 | Activer le planning en ligne | appareil **administrateur** seulement |
 | Supprimer une session | appareil administrateur ; elle n'est plus renvoyée par le PC (elle reste sur le PC) |
 | Recalculer une analyse | appareil administrateur |
@@ -187,14 +187,15 @@ revoke`), **et** retire sa clé du VPN ([ACCES-EXTERIEUR.md](ACCES-EXTERIEUR.md#
 
 Le serveur doit avoir **la même version que Corde sur le PC, ou plus récente**. Si le PC est plus récent,
 la section « Serveur Corde » affiche « Serveur à mettre à jour » et rien n'est envoyé (rien n'est perdu :
-tout partira après la mise à jour).
+tout partira après la mise à jour). Il faut la **1.6.0 ou plus récente** pour que le serveur relaie
+« Mes courses » entre le PC et le téléphone.
 
 1. Copie la nouvelle archive sur le Pi (§3).
 2. Sur le Pi :
 
    ```bash
-   tar -xzf corde-server-1.5.0-linux-arm64.tar.gz
-   cd corde-server-1.5.0-linux-arm64
+   tar -xzf corde-server-1.6.0-linux-arm64.tar.gz
+   cd corde-server-1.6.0-linux-arm64
    sudo ./install.sh
    ```
 
@@ -230,8 +231,8 @@ sudo systemctl start corde
 ```
 
 Le PC, lui, garde ses propres données : en cas de perte du serveur, réinstaller puis appairer le PC
-(« Tout renvoyer ») recrée tout, sauf les ressentis saisis seulement sur le serveur, les choix de courses
-du serveur et les sessions supprimées du PC.
+(« Tout renvoyer ») recrée tout, sauf les ressentis saisis seulement sur le serveur et les sessions
+supprimées du PC (les courses choisies reviennent toutes seules du PC et du téléphone).
 
 ## 9. Commandes utiles
 
