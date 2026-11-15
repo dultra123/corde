@@ -35,12 +35,28 @@
   navigateur sait l'écrire, sinon PNG / WebP / JPEG), orientation appliquée, **2560 px** au plus : il ne
   reste aucune métadonnée (EXIF, GPS, appareil, date). Un **GIF** est gardé tel quel (son animation ;
   il ne porte pas d'EXIF).
-- Un **MP4 / MOV** : les boîtes `udta`, `meta` et XMP (`uuid` d'Adobe) du premier niveau, de `moov` et de
-  chaque `trak` sont **renommées `free` et remplies de zéros** — même taille, aucun décalage des
-  échantillons (les tables d'offsets restent justes), la vidéo se lit encore. Vérifié sur un MP4 fabriqué
-  avec une position (essai Vitest) et sur une vraie vidéo VP9 de ffmpeg envoyée par l'éditeur : fichier
-  stocké de même taille, plus de position, décodable par ffmpeg et lu par Chromium. Un **WebM** est gardé tel
-  quel ; l'export prévient toujours qu'une vidéo est partagée telle quelle.
+- Un **MP4 / MOV** ne garde que **ses images** (`stripMp4Metadata`), sans changer de taille ni déplacer un
+  seul échantillon gardé (les tables d'offsets restent justes) :
+  - les boîtes `udta`, `meta` et `uuid` (XMP, boîtes de fabricant) de `moov` et de chaque `trak`, et toute
+    boîte du premier niveau dont un lecteur n'a pas besoin, sont **renommées `free` et remplies de zéros** ;
+  - chaque piste qui n'est pas une piste d'images (`hdlr` ≠ `vide`) est retirée de la même façon : **le son**
+    (une vidéo de tableau de bord est toujours muette ; sans cela, la voix du pilote partirait dans un
+    fichier partagé sans qu'il l'entende jamais), les **données en continu d'une caméra d'action** (sa trace
+    GPS), le texte, le code temporel ; dans `mdat`, tout octet qui n'est pas un échantillon d'une piste
+    d'images est mis à zéro (tables `stco` / `co64`, `stsc`, `stsz`) ;
+  - fichier **fragmenté** (logiciel de capture, enregistreur du navigateur) : même chose fragment par
+    fragment (`moof` / `traf` / `tfhd` / `trun`, tailles par défaut de `mvex/trex`), avec les `trex`, `tfra`
+    et `sidx` des pistes retirées. Seule exception : une ancienne disposition où un fragment d'images trouve
+    ses échantillons « après ceux du fragment précédent » — retirer ce fragment les déplacerait, les pistes
+    sont alors toutes gardées (métadonnées vidées quand même) ;
+  - un fichier **sans piste d'images** (un son M4A, une photo HEIC : ils commencent aussi par `ftyp`) est
+    refusé.
+  Vérifié par les essais Vitest (fichiers fabriqués) et, à la main, sur douze vraies vidéos de ffmpeg (H.264
+  et VP9 ; AAC, Opus, PCM ; sous-titres, code temporel ; `moov` avant ou après ; six variantes fragmentées) :
+  une seule piste reste, les images décodées sont identiques une à une, plus de position ni de titre, et
+  Chromium les lit en boucle sans erreur ni son décodé. Non vérifié : Safari / iPhone.
+- Un **WebM** est gardé tel quel, **son compris** (le retirer demanderait de réécrire le fichier) ; l'export
+  prévient toujours qu'une vidéo est partagée telle quelle.
 
 ### C. Partage : `.cordedash`
 

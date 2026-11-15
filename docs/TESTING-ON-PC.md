@@ -206,8 +206,8 @@ Le **Studio** est l'éditeur de tableaux de bord de Corde, sur le PC (à la sour
   l'image), couvrir (remplit la case, rogne) ou étirer ; dans **Style** : opacité, coins arrondis.
 - **Vidéo** : MP4 ou WebM, 30 Mio au plus, **sans son**, en boucle. Elle ne joue que sur la page affichée et
   s'arrête quand le téléphone est mis en veille ou l'application quittée ; si l'appareil demande « moins
-  d'animations », elle reste sur sa première image. Les informations d'un MP4 (position, date, appareil)
-  sont effacées avant l'envoi.
+  d'animations », elle reste sur sa première image. D'un MP4, Corde ne garde que les images : le son, la
+  position, la date et les données de la caméra sont retirés avant l'envoi (un WebM est gardé tel quel).
 - **Fond de la page** : rien de choisi sur la page → panneau de droite, **Fond de cette page** : une
   couleur, et / ou une image ou une vidéo, son ajustement et son opacité. Chaque page a le sien.
 - Les fichiers sont gardés **sur ce PC** (dossier des données de Corde, `dash-assets`). Ajouter ou retirer

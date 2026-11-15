@@ -1621,7 +1621,7 @@ export const en: Record<TranslationKey, string> = {
   "studio.media.hintImage":
     "PNG, JPEG, WebP or GIF (animated is fine), 4 MiB at most. Before it is sent, the photo is saved again: the GPS position and the other camera details are removed.",
   "studio.media.hintVideo":
-    "MP4 or WebM, 30 MiB at most. Played in a loop, without sound, only on the page shown. The details of an MP4 (position, date, camera) are wiped before it is sent.",
+    "MP4 or WebM, 30 MiB at most. Played in a loop, without sound, only on the page shown. Of an MP4, Corde keeps the pictures only: the sound, the position, the date and the camera's data are removed before it is sent.",
   "studio.media.err.type":
     "This file is neither a picture (PNG, JPEG, WebP, GIF) nor a video (MP4, WebM).",
   "studio.media.err.wrongImage": "Choose a picture here (a video goes in the “Video” element).",

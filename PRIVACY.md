@@ -170,8 +170,11 @@ n'a ni compte, ni statistiques d'usage, ni publicité, ni service à nous.
   - **Photos** : avant l'envoi, Corde réenregistre la photo dans l'application : **la position GPS,
     l'appareil photo, la date et les autres métadonnées (EXIF) sont retirées**, et elle est ramenée à
     2560 pixels au plus. Un **GIF** est gardé tel quel (son animation).
-  - **Vidéos** : les informations d'un **MP4 / MOV** (position, date, appareil, nom) sont effacées avant
-    l'envoi ; un **WebM** est gardé tel quel. La vidéo elle-même (ce qu'elle montre) est gardée telle quelle.
+  - **Vidéos** : d'un **MP4 / MOV**, Corde ne garde que **les images**. Avant l'envoi, il retire **le son**
+    (une vidéo de tableau de bord est toujours muette), la position, la date, l'appareil, le nom, et les
+    données qu'une caméra d'action enregistre en continu (sa trace GPS). Un **WebM** est gardé tel quel,
+    **son compris** : il n'est jamais joué, mais il reste dans le fichier. Ce que la vidéo montre est gardé
+    tel quel.
   - **Fichier partagé** (`<nom>.cordedash`, depuis la 1.3) : la définition comme ci-dessus **plus les images
     et vidéos qu'elle utilise**, telles qu'elles sont gardées sur ton PC (photos déjà nettoyées). Quand il
     contient une vidéo, Corde te prévient : **elle est partagée telle quelle** — regarde ce qu'elle montre

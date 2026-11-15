@@ -1673,7 +1673,7 @@ export const fr = {
   "studio.media.hintImage":
     "PNG, JPEG, WebP ou GIF (animé accepté), 4 Mio au plus. Avant l'envoi, la photo est réenregistrée : la position GPS et les autres informations de l'appareil photo sont retirées.",
   "studio.media.hintVideo":
-    "MP4 ou WebM, 30 Mio au plus. Lue en boucle, sans son, seulement sur la page affichée. Les informations d'un MP4 (position, date, appareil) sont effacées avant l'envoi.",
+    "MP4 ou WebM, 30 Mio au plus. Lue en boucle, sans son, seulement sur la page affichée. D'un MP4, Corde ne garde que les images : le son, la position, la date et les données de la caméra sont retirés avant l'envoi.",
   "studio.media.err.type":
     "Ce fichier n'est ni une image (PNG, JPEG, WebP, GIF) ni une vidéo (MP4, WebM).",
   "studio.media.err.wrongImage": "Choisis une image ici (une vidéo va dans l'élément « Vidéo »).",

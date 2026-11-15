@@ -275,9 +275,11 @@ que sur demande.
 - **Préparation dans le navigateur** (`dashdef/media.ts`), avant l'envoi : type lu dans les **octets de
   signature** ; une photo (PNG, JPEG, WebP) est **redessinée dans un canvas et encodée à nouveau** (plus
   aucune métadonnée : EXIF, position GPS, appareil, date ; orientation appliquée aux pixels ; 2560 px au
-  plus) ; un GIF est gardé tel quel (animation) ; un MP4 / MOV a ses boîtes `udta`, `meta` et XMP (`uuid`)
-  du premier niveau, de `moov` et de chaque `trak` **renommées `free` et remplies de zéros**, sans changer la
-  taille du fichier ni la place des échantillons ; un WebM est gardé tel quel.
+  plus) ; un GIF est gardé tel quel (animation) ; un MP4 / MOV ne garde que
+  ses **images** : ses boîtes de métadonnées (`udta`, `meta`, `uuid`, boîtes de fabricant) et ses autres
+  pistes (**son**, données en continu d'une caméra — trace GPS —, texte) sont **renommées `free` et remplies
+  de zéros**, leurs échantillons aussi, sans changer la taille du fichier ni la place des images ; un fichier
+  sans piste d'images (son, HEIC) est refusé ; un WebM est gardé tel quel, son compris.
 - **Stockage** (`corde-server/src/dash_assets.rs`) : `<données>/dash-assets/<sha256>.<ext>`, nom = empreinte
   SHA-256 du contenu + extension du type reconnu (jamais un nom choisi par l'appareil, donc jamais un nom de
   périphérique de Windows ni un chemin) ; écriture dans un fichier temporaire puis renommage. À

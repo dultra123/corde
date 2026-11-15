@@ -17,7 +17,8 @@ dans `docs/STATUS.md` et l'historique git.
 - **Images et vidéos** : un logo, une photo ou une courte vidéo en boucle (sans son), en élément ou en
   **fond de page**, choisis sur ton PC. Ajustement (toute l'image, remplir, étirer), opacité, coins arrondis.
   Avant l'envoi, Corde **retire de tes photos la position GPS** et les autres informations de l'appareil
-  photo. Une vidéo ne joue que sur la page affichée et s'arrête quand le téléphone se met en veille.
+  photo ; d'une vidéo MP4, il ne garde que les images (ni son, ni position). Une vidéo ne joue que sur la
+  page affichée et s'arrête quand le téléphone se met en veille.
 - **Couleur selon la valeur** : par exemple autonomie sous 3 tours en rouge, sous 6 en orange, sinon en vert
   (Valeur, Barre, Jauge circulaire).
 - **Afficher quand…** : un élément n'apparaît qu'avec le limiteur, dans les stands, sous drapeau jaune ou

@@ -11,8 +11,11 @@ import { useDashes } from "./store";
  * - a **picture** (PNG, JPEG, WebP) is drawn again in the browser (a canvas) and encoded anew:
  *   what the camera wrote in it (EXIF, the GPS position, the camera, the date) does not survive,
  *   and its larger side is brought to 2560 px at most. A GIF is kept as it is (its animation);
- * - a **video** MP4 / MOV has its metadata boxes (`udta`, `meta`, XMP) emptied in place, renamed
- *   `free`, same size: nothing else of the file moves, it still plays. A WebM is kept as it is.
+ * - a **video** MP4 / MOV keeps its pictures only: its metadata boxes (`udta`, `meta`, XMP, the
+ *   boxes of the camera maker) are emptied in place and renamed `free`, and every other track is
+ *   removed with its data — the sound (a dashboard video is always silent), the timed data of an
+ *   action camera (its GPS trace), text. Same size, nothing moves, it still plays. A WebM is kept
+ *   as it is, its sound included.
  * The type is read from the first bytes of the file, never from its name.
  */
 
@@ -81,15 +84,23 @@ export function maxBytes(ext: MediaExt): number {
 
 // ---------------------------------------------------------------- MP4 metadata
 
-/** XMP stored in a `uuid` box (Adobe): the same metadata as a photo's, a position included. */
-const XMP_UUID = [
-  0xbe, 0x7a, 0xcf, 0xcb, 0x97, 0xa9, 0x42, 0xe8, 0x9c, 0x71, 0x99, 0x94, 0x91, 0xe3, 0xaf, 0xac,
-];
-
-/** Boxes of metadata, wherever they are met (top level, `moov`, `trak`). */
-const META_BOXES = new Set(["udta", "meta"]);
-/** Boxes whose children are looked at. */
-const CONTAINERS = new Set(["moov", "trak"]);
+/** Top-level boxes a player needs. Anything else there (XMP, previews, camera maker boxes) is emptied. */
+const TOP_KEPT = new Set([
+  "ftyp",
+  "styp",
+  "moov",
+  "mdat",
+  "moof",
+  "mfra",
+  "sidx",
+  "ssix",
+  "prft",
+  "pdin",
+]);
+/** Free space: its content is emptied, its name kept. */
+const FREE_BOXES = new Set(["free", "skip", "wide"]);
+/** Boxes of metadata inside `moov` and inside a track. */
+const META_BOXES = new Set(["udta", "meta", "uuid"]);
 
 export class BadVideo extends Error {}
 
@@ -129,35 +140,304 @@ function boxesIn(b: Uint8Array, from: number, to: number): Box[] {
   return out;
 }
 
-function isXmp(b: Uint8Array, box: Box): boolean {
-  return box.type === "uuid" && startsWith(b, XMP_UUID, box.start + box.header);
+function childrenOf(b: Uint8Array, parent: Box): Box[] {
+  return boxesIn(b, parent.start + parent.header, parent.end);
+}
+
+function child(b: Uint8Array, parent: Box | undefined, type: string): Box | undefined {
+  return parent && childrenOf(b, parent).find((x) => x.type === type);
+}
+
+/** What a track holds (`vide`, `soun`, `meta`, `text`…), `null` when it cannot be read. */
+function handlerOf(b: Uint8Array, trak: Box): string | null {
+  const hdlr = child(b, child(b, trak, "mdia"), "hdlr");
+  if (!hdlr) return null;
+  // version and flags (4), a type the files do not agree on (4), then the handler.
+  const at = hdlr.start + hdlr.header + 8;
+  if (at + 4 > hdlr.end) return null;
+  return String.fromCharCode(b[at] ?? 0, b[at + 1] ?? 0, b[at + 2] ?? 0, b[at + 3] ?? 0);
+}
+
+type Range = [start: number, end: number];
+
+/** Where the samples of a track are in the file: one range per chunk (`stco`/`co64`, `stsc`, `stsz`). */
+function chunkRanges(b: Uint8Array, trak: Box, fragmented: boolean): Range[] {
+  const stbl = child(b, child(b, child(b, trak, "mdia"), "minf"), "stbl");
+  const stsz = child(b, stbl, "stsz");
+  const stsc = child(b, stbl, "stsc");
+  const offs = child(b, stbl, "stco") ?? child(b, stbl, "co64");
+  if (!stsz || !stsc || !offs) {
+    // A fragmented file may list no sample at all in `moov`.
+    if (fragmented) return [];
+    throw new BadVideo("no sample table");
+  }
+  const view = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  const body = (x: Box) => x.start + x.header;
+  const need = (x: Box, n: number) => {
+    if (body(x) + n > x.end) throw new BadVideo(`short ${x.type}`);
+  };
+  need(stsz, 12);
+  const fixed = view.getUint32(body(stsz) + 4);
+  const samples = view.getUint32(body(stsz) + 8);
+  if (fixed === 0) need(stsz, 12 + samples * 4);
+  need(stsc, 8);
+  const runs = view.getUint32(body(stsc) + 4);
+  need(stsc, 8 + runs * 12);
+  need(offs, 8);
+  const chunks = view.getUint32(body(offs) + 4);
+  const wide = offs.type === "co64";
+  need(offs, 8 + chunks * (wide ? 8 : 4));
+  const out: Range[] = [];
+  let sample = 0;
+  let run = 0;
+  for (let c = 0; c < chunks; c += 1) {
+    while (run + 1 < runs && view.getUint32(body(stsc) + 8 + (run + 1) * 12) <= c + 1) run += 1;
+    const per = runs === 0 ? 0 : view.getUint32(body(stsc) + 8 + run * 12 + 4);
+    const n = Math.min(per, samples - sample);
+    let size = 0;
+    if (fixed !== 0) size = n * fixed;
+    else for (let i = 0; i < n; i += 1) size += view.getUint32(body(stsz) + 12 + (sample + i) * 4);
+    sample += n;
+    const start = wide
+      ? Number(view.getBigUint64(body(offs) + 8 + c * 8))
+      : view.getUint32(body(offs) + 8 + c * 4);
+    if (size === 0) continue;
+    if (start + size > b.length) throw new BadVideo("samples out of the file");
+    out.push([start, start + size]);
+  }
+  return out;
+}
+
+/** The id of a track (`tkhd`), `null` when it cannot be read. */
+function trackId(b: Uint8Array, trak: Box): number | null {
+  const tkhd = child(b, trak, "tkhd");
+  if (!tkhd) return null;
+  const at = tkhd.start + tkhd.header;
+  if (at + 4 > tkhd.end) return null;
+  // version and flags, two dates of 4 bytes (8 in version 1), then the id.
+  const idAt = at + 4 + (b[at] === 1 ? 16 : 8);
+  if (idAt + 4 > tkhd.end) return null;
+  return new DataView(b.buffer, b.byteOffset, b.byteLength).getUint32(idAt);
+}
+
+interface Fragments {
+  /** The samples of the picture tracks. */
+  kept: Range[];
+  /** The fragments (`traf`) of the other tracks. */
+  dropped: Box[];
+  /**
+   * `false` when a fragment of pictures finds its samples "after those of the fragment before
+   * it" (an old layout): removing that fragment would move them, so the tracks are all kept.
+   */
+  removable: boolean;
 }
 
 /**
- * Empties the metadata boxes of an MP4 / MOV **in place** (a copy is returned): each `udta`,
- * `meta` and XMP `uuid` box of the top level, of `moov` and of each `trak` is renamed `free` and
- * its content is set to zero. The size of the file and the place of every other box do not
- * change (the offsets of the samples stay right): the video plays the same, without its
- * position, its camera or its date. Throws [`BadVideo`] when the boxes cannot be read.
+ * Where the samples of a fragmented file are (`moof` / `traf` / `tfhd` / `trun`), for the
+ * picture tracks; `defaults` gives the sample size `mvex/trex` sets for a track.
  */
-export function stripMp4Metadata(input: Uint8Array): { bytes: Uint8Array; cleared: number } {
+function fragmentRanges(
+  b: Uint8Array,
+  top: Box[],
+  pictures: Set<number>,
+  defaults: Map<number, number>,
+): Fragments {
+  const view = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  const out: Fragments = { kept: [], dropped: [], removable: true };
+  for (const moof of top) {
+    if (moof.type !== "moof") continue;
+    let previousEnd = moof.start;
+    let first = true;
+    for (const traf of childrenOf(b, moof)) {
+      if (traf.type !== "traf") continue;
+      const kids = childrenOf(b, traf);
+      const tfhd = kids.find((x) => x.type === "tfhd");
+      if (!tfhd) throw new BadVideo("no tfhd");
+      let at = tfhd.start + tfhd.header;
+      const need = (n: number) => {
+        if (at + n > tfhd.end) throw new BadVideo("short tfhd");
+      };
+      need(8);
+      const flags = view.getUint32(at) & 0xffffff;
+      const id = view.getUint32(at + 4);
+      at += 8;
+      const picture = pictures.has(id);
+      let base = first || (flags & 0x020000) !== 0 ? moof.start : previousEnd;
+      if (flags & 0x1) {
+        need(8);
+        base = Number(view.getBigUint64(at));
+        at += 8;
+      } else if (!first && (flags & 0x020000) === 0 && picture) {
+        out.removable = false;
+      }
+      if (flags & 0x2) at += 4;
+      if (flags & 0x8) at += 4;
+      let fixed = defaults.get(id);
+      if (flags & 0x10) {
+        need(4);
+        fixed = view.getUint32(at);
+      }
+      let cursor = base;
+      for (const trun of kids) {
+        if (trun.type !== "trun") continue;
+        let p = trun.start + trun.header;
+        if (p + 8 > trun.end) throw new BadVideo("short trun");
+        const f = view.getUint32(p) & 0xffffff;
+        const count = view.getUint32(p + 4);
+        p += 8;
+        if (f & 0x1) {
+          if (p + 4 > trun.end) throw new BadVideo("short trun");
+          cursor = base + view.getInt32(p);
+          p += 4;
+        }
+        if (f & 0x4) p += 4;
+        // Per sample: its duration, its size, its flags, its time offset, each when said.
+        const per =
+          (f & 0x100 ? 4 : 0) + (f & 0x200 ? 4 : 0) + (f & 0x400 ? 4 : 0) + (f & 0x800 ? 4 : 0);
+        if (p + count * per > trun.end) throw new BadVideo("short trun");
+        let size = 0;
+        if (f & 0x200) {
+          const sizeAt = f & 0x100 ? 4 : 0;
+          for (let i = 0; i < count; i += 1) size += view.getUint32(p + i * per + sizeAt);
+        } else {
+          if (fixed === undefined) throw new BadVideo("no sample size");
+          size = count * fixed;
+        }
+        if (cursor < 0 || cursor + size > b.length) throw new BadVideo("samples out of the file");
+        if (picture && size > 0) out.kept.push([cursor, cursor + size]);
+        cursor += size;
+      }
+      previousEnd = cursor;
+      first = false;
+      if (!picture) out.dropped.push(traf);
+    }
+  }
+  return out;
+}
+
+/** Sets to zero what is in `from..to` and in none of the ranges (sorted by their start). */
+function zeroOutside(b: Uint8Array, from: number, to: number, kept: Range[]): void {
+  let at = from;
+  for (const [s, e] of kept) {
+    if (e <= at) continue;
+    if (s >= to) break;
+    if (s > at) b.fill(0, at, s);
+    at = e;
+    if (at >= to) return;
+  }
+  b.fill(0, at, to);
+}
+
+export interface StrippedVideo {
+  bytes: Uint8Array;
+  /** Boxes of metadata emptied. */
+  cleared: number;
+  /** Tracks removed: the sound, timed data (the GPS trace of an action camera), text. */
+  tracks: number;
+}
+
+/**
+ * Keeps the pictures of an MP4 / MOV and nothing else, **in place** (a copy is returned):
+ * - each box of metadata (`udta`, `meta`, `uuid`: the position, the date, the camera, XMP) of
+ *   the file, of `moov` and of each track, and each top-level box a player does not need, is
+ *   renamed `free` and set to zero;
+ * - each track that is not a picture track — the sound, the timed data of an action camera (its
+ *   GPS trace), text, timecode — is removed the same way (in a fragmented file, its fragments
+ *   too), and in the media data every byte that is not a sample of a picture track is set to
+ *   zero (their samples, and anything left there).
+ * The size of the file and the place of every sample kept do not change: the video plays the
+ * same, silent as a dashboard shows it. Throws [`BadVideo`] when the boxes cannot be read, or
+ * when the file has no picture track (a sound file, a HEIC photo).
+ */
+export function stripMp4Metadata(input: Uint8Array): StrippedVideo {
   const b = new Uint8Array(input);
+  const view = new DataView(b.buffer, b.byteOffset, b.byteLength);
   let cleared = 0;
   const free = ascii("free");
+  const empty = (box: Box) => b.fill(0, box.start + box.header, box.end);
   const blank = (box: Box) => {
     b.set(free, box.start + 4);
-    b.fill(0, box.start + box.header, box.end);
-    cleared += 1;
+    empty(box);
   };
-  const walk = (from: number, to: number, depth: number) => {
-    for (const box of boxesIn(b, from, to)) {
-      if (META_BOXES.has(box.type) || isXmp(b, box)) blank(box);
-      else if (CONTAINERS.has(box.type) && depth < 2)
-        walk(box.start + box.header, box.end, depth + 1);
+  const clean = (boxes: Box[]) => {
+    for (const box of boxes) {
+      if (FREE_BOXES.has(box.type)) empty(box);
+      else if (META_BOXES.has(box.type)) {
+        blank(box);
+        cleared += 1;
+      }
     }
   };
-  walk(0, b.length, 0);
-  return { bytes: b, cleared };
+
+  const top = boxesIn(b, 0, b.length);
+  const moov = top.find((x) => x.type === "moov");
+  if (!moov) throw new BadVideo("no moov");
+  const inMoov = childrenOf(b, moov);
+  const traks = inMoov.filter((x) => x.type === "trak");
+  const video = traks.filter((t) => handlerOf(b, t) === "vide");
+  if (video.length === 0) throw new BadVideo("no picture track");
+  const others = traks.filter((t) => !video.includes(t));
+  const mvex = inMoov.find((x) => x.type === "mvex");
+  const fragmented = mvex !== undefined || top.some((x) => x.type === "moof");
+
+  // What the picture tracks point at: never touched, wherever it is.
+  const kept = video.flatMap((t) => chunkRanges(b, t, fragmented));
+  let fragments: Fragments = { kept: [], dropped: [], removable: true };
+  const pictures = new Set(video.map((t) => trackId(b, t)).filter((id) => id !== null));
+  const trexes = mvex ? childrenOf(b, mvex).filter((x) => x.type === "trex") : [];
+  // In a `trex` and a `tfra`: version and flags, then the id of the track.
+  const idIn = (box: Box) =>
+    box.start + box.header + 8 <= box.end ? view.getUint32(box.start + box.header + 4) : null;
+  if (fragmented) {
+    const defaults = new Map<number, number>();
+    for (const x of trexes) {
+      const at = x.start + x.header;
+      if (at + 24 <= x.end) defaults.set(view.getUint32(at + 4), view.getUint32(at + 16));
+    }
+    fragments = fragmentRanges(b, top, pictures, defaults);
+    kept.push(...fragments.kept);
+  }
+  kept.sort((x, y) => x[0] - y[0]);
+  const holdsSamples = (box: Box) => kept.some(([s, e]) => s < box.end && e > box.start);
+
+  for (const box of top) {
+    if (TOP_KEPT.has(box.type)) continue;
+    if (FREE_BOXES.has(box.type)) {
+      if (!holdsSamples(box)) empty(box);
+    } else if (!holdsSamples(box)) {
+      blank(box);
+      cleared += 1;
+    }
+  }
+  clean(inMoov);
+  for (const t of traks) clean(childrenOf(b, t));
+
+  let tracks = 0;
+  if (fragments.removable) {
+    for (const m of top) if (m.type === "mdat") zeroOutside(b, m.start + m.header, m.end, kept);
+    for (const t of others) {
+      blank(t);
+      tracks += 1;
+    }
+    // A picture track no longer points at a track that is gone (timecode, chapters).
+    for (const t of video) {
+      const tref = child(b, t, "tref");
+      if (tref && others.length > 0) blank(tref);
+    }
+    // In a fragmented file: their fragments, what `mvex` says of them, their indexes.
+    for (const traf of fragments.dropped) blank(traf);
+    const gone = (box: Box) => {
+      const id = idIn(box);
+      return id === null || !pictures.has(id);
+    };
+    for (const x of trexes) if (gone(x)) blank(x);
+    for (const box of top) {
+      if (box.type === "sidx" && gone(box)) blank(box);
+      if (box.type === "mfra")
+        for (const x of childrenOf(b, box)) if (x.type === "tfra" && gone(x)) blank(x);
+    }
+  }
+  return { bytes: b, cleared, tracks };
 }
 
 // ---------------------------------------------------------------- pictures
