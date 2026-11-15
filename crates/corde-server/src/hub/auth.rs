@@ -141,14 +141,27 @@ impl PairError {
                 "Trop d'essais depuis cet appareil : réessaie dans {} min.",
                 retry_after_s.div_ceil(60).max(1)
             ),
-            Self::NoCode => "Aucun code d'appairage en cours : sur le serveur, lance « sudo corde-server pair » pour en obtenir un.".into(),
-            Self::Expired => "Ce code a expiré (10 minutes) : demandes-en un nouveau sur le serveur (« sudo corde-server pair »).".into(),
+            Self::NoCode => format!(
+                "Aucun code d'appairage en cours : pour en obtenir un, lance {}.",
+                crate::net::pair_hint()
+            ),
+            Self::Expired => format!(
+                "Ce code a expiré (10 minutes) : demandes-en un nouveau ({}).",
+                crate::net::pair_hint()
+            ),
             Self::Wrong { attempts_left } => format!(
                 "Code incorrect. Encore {attempts_left} essai(s) avant que ce code ne soit annulé."
             ),
-            Self::TooManyFailures => "Trois codes incorrects : ce code est annulé. Demandes-en un nouveau sur le serveur (« sudo corde-server pair »).".into(),
-            Self::TooManyDevices => format!("Déjà {MAX_DEVICES} appareils appairés : révoques-en un d'abord."),
-            Self::Io(_) => "Le serveur n'a pas pu enregistrer l'appareil (détails dans son journal).".into(),
+            Self::TooManyFailures => format!(
+                "Trois codes incorrects : ce code est annulé. Demandes-en un nouveau ({}).",
+                crate::net::pair_hint()
+            ),
+            Self::TooManyDevices => {
+                format!("Déjà {MAX_DEVICES} appareils appairés : révoques-en un d'abord.")
+            }
+            Self::Io(_) => {
+                "Le serveur n'a pas pu enregistrer l'appareil (détails dans son journal).".into()
+            }
         }
     }
 }

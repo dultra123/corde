@@ -619,9 +619,15 @@ L'accès réseau reste désactivé par défaut, et le serveur Corde exige toujou
 
 ### 8.2 Ce que fait l'application
 
-- **Serveurs** : n'accepte une adresse en `http://` que vers le réseau privé ou local (IPv4 10/8, 172.16/12,
-  192.168/16, 127/8, 169.254/16 ; IPv6 de boucle locale, fc00::/7, fe80::/10 ; `localhost`, `.local`, nom
-  sans point) ; ailleurs `https://` est exigé (`mobile/addresses.ts`). Au plus 10 serveurs.
+- **Serveurs** : n'accepte une adresse en `http://` que vers une adresse qui n'est pas routée sur Internet
+  (IPv4 10/8, 172.16/12, 192.168/16, 127/8, 169.254/16, 100.64/10 ; IPv6 de boucle locale, fc00::/7,
+  fe80::/10 ; `localhost`, `.local`, nom sans point) ; ailleurs `https://` est exigé (`mobile/addresses.ts`).
+  Au plus 10 serveurs. **100.64/10** (RFC 6598) est accepté depuis la 1.4.2 : c'est la plage où les VPN
+  maillés numérotent leurs appareils (voie C d'[ACCES-EXTERIEUR.md](ACCES-EXTERIEUR.md)), et aucun serveur
+  public ne peut porter une telle adresse. Limite, la même que pour les autres plages : VPN coupé, une
+  requête vers cette adresse part sur le réseau où se trouve le téléphone (celui de l'opérateur pour
+  100.64/10, le Wi-Fi d'un tiers pour 192.168/16), avec le jeton de l'appareil, en clair ; une machine qui
+  y tiendrait cette adresse et ce port le recevrait. D'où la révocation côté serveur (§7).
 - **Jeton** : gardé sous sa propre clé dans le stockage de l'application (Capacitor Preferences =
   `UserDefaults`, bac à sable de l'application), jamais dans la liste des serveurs, jamais affiché, jamais
   dans un journal ni un message d'erreur (testé). Envoyé seulement au serveur auquel il appartient. Un 401
@@ -634,8 +640,8 @@ L'accès réseau reste désactivé par défaut, et le serveur Corde exige toujou
   20 s, 3 Mio, en-têtes du serveur (§4). `URLSession` garde les cookies qu'un site envoie : l'application
   les efface après chaque page (`CapacitorCookies.clearCookies`).
 - **App Transport Security** (`Info.plist`) : `NSAllowsLocalNetworking` (noms sans point et `.local` en
-  HTTP) et des exceptions `NSExceptionAllowsInsecureHTTPLoads` pour 10.0.0.0/8, 172.16.0.0/12 et
-  192.168.0.0/16. D'après Apple (Quinn, DTS, forum « ATS and local IP addresses ») les adresses IP littérales
+  HTTP) et des exceptions `NSExceptionAllowsInsecureHTTPLoads` pour 10.0.0.0/8, 100.64.0.0/10 (1.4.2),
+  172.16.0.0/12 et 192.168.0.0/16. D'après Apple (Quinn, DTS, forum « ATS and local IP addresses ») les adresses IP littérales
   échappent à ATS depuis iOS 10 ; la documentation d'iOS 17 parle d'exceptions en notation CIDR : les
   exceptions sont là pour le cas où ATS s'appliquerait aux adresses IP. Une adresse publique en HTTP reste
   bloquée par ATS (et refusée par l'application avant).

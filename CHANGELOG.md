@@ -8,6 +8,31 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [1.4.2] — 2026-11-15
+
+**Pour ouvrir Corde serveur depuis l'extérieur avec l'application du téléphone.**
+
+### Nouveautés
+
+- **L'application du téléphone accepte l'adresse que donne un VPN maillé** (une adresse en `100.x.y.z`,
+  par exemple `100.101.102.103:8471`). Jusqu'ici, « Mes serveurs » → « Ajouter un serveur » la refusait
+  (« seules les adresses du réseau de la maison… »), ce qui empêchait d'ouvrir Corde serveur dehors par ce
+  genre de VPN, pourtant décrit dans le guide d'accès extérieur. Le serveur, lui, n'est toujours **jamais**
+  ouvert sur Internet : on entre chez soi par le VPN, puis on appaire le téléphone pour cette adresse.
+
+### Corrections
+
+- **Sur un NAS, Corde serveur n'indique plus « sudo corde-server pair »** : dans un conteneur, la commande
+  est `corde-server pair`, dans le terminal du conteneur. Le texte affiché avec le code dit aussi où le
+  taper dans l'application du téléphone (Accueil → Mes serveurs → Ajouter un serveur).
+
+### À savoir
+
+- **Guide Synology** : les vrais noms des boutons pour obtenir un code d'appairage dans le terminal du
+  conteneur (Créer → Lancer avec une commande), et les étapes de l'application du téléphone.
+- Le PC n'a rien à faire d'autre que la mise à jour. Le serveur (Raspberry Pi ou NAS) n'a pas besoin d'être
+  mis à jour pour utiliser un VPN.
+
 ## [1.4.1] — 2026-11-15
 
 **Mise à jour à installer avant de relier un PC à Corde serveur.**

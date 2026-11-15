@@ -273,6 +273,37 @@ pub fn in_container() -> bool {
         .any(|p| std::path::Path::new(p).exists())
 }
 
+/// The command that prints a pairing code, as its owner types it where the server runs: with
+/// `sudo` on a machine set up by the installer (the data belong to the `corde` account),
+/// without it in a container (its terminal is root already, and has no `sudo`).
+pub fn pair_command() -> &'static str {
+    pair_command_for(in_container())
+}
+
+pub(crate) fn pair_command_for(container: bool) -> &'static str {
+    if container {
+        "corde-server pair"
+    } else {
+        "sudo corde-server pair"
+    }
+}
+
+/// Where and how to get a pairing code, for a message shown to the person pairing a device:
+/// « sudo corde-server pair » sur le serveur, or « corde-server pair » dans le terminal du
+/// conteneur.
+pub fn pair_hint() -> String {
+    pair_hint_for(in_container())
+}
+
+pub(crate) fn pair_hint_for(container: bool) -> String {
+    let command = pair_command_for(container);
+    if container {
+        format!("« {command} » dans le terminal du conteneur")
+    } else {
+        format!("« {command} » sur le serveur")
+    }
+}
+
 /// Lines of the start-up banner of the home server (`--role hub`).
 pub fn hub_banner_lines(
     bound: SocketAddr,
@@ -299,10 +330,10 @@ pub fn hub_banner_lines(
                 .to_string(),
         );
     }
-    lines.push(
-        "  Accès   : appareils appairés seulement. Code d'appairage : sudo corde-server pair"
-            .to_string(),
-    );
+    lines.push(format!(
+        "  Accès   : appareils appairés seulement. Code d'appairage : {}",
+        pair_command()
+    ));
     lines.push(
         "            Ne redirige jamais ce port depuis ta box : l'accès extérieur passe par un VPN."
             .to_string(),
@@ -320,6 +351,22 @@ mod tests {
     use super::*;
 
     #[test]
+    fn the_pairing_command_fits_where_the_server_runs() {
+        // A machine set up by the installer: the data belong to the `corde` account.
+        assert_eq!(pair_command_for(false), "sudo corde-server pair");
+        assert_eq!(
+            pair_hint_for(false),
+            "« sudo corde-server pair » sur le serveur"
+        );
+        // A container: its terminal is root and has no `sudo`.
+        assert_eq!(pair_command_for(true), "corde-server pair");
+        assert_eq!(
+            pair_hint_for(true),
+            "« corde-server pair » dans le terminal du conteneur"
+        );
+    }
+
+    #[test]
     fn the_hub_banner_names_the_pairing_command() {
         let lines = hub_banner_lines(
             "0.0.0.0:8471".parse().unwrap(),
@@ -327,7 +374,7 @@ mod tests {
             std::path::Path::new("/var/lib/corde"),
         );
         assert!(lines[0].contains("hub"));
-        assert!(lines.iter().any(|l| l.contains("sudo corde-server pair")));
+        assert!(lines.iter().any(|l| l.contains("corde-server pair")));
         assert!(lines.iter().any(|l| l.contains("VPN")));
     }
 

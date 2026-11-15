@@ -15,7 +15,7 @@ members = [
 exclude = ["apps/desktop/src-tauri"]
 
 [workspace.package]
-version = "1.4.1"
+version = "1.4.2"
 edition = "2021"
 repository = "https://github.com/dultra123/corde"
 authors = ["dultra__"]

@@ -1457,7 +1457,7 @@ export const fr = {
   "servers.err.invalid": "Ce n'est pas une adresse : par exemple 192.168.1.20:8471.",
   "servers.err.scheme": "Seules les adresses http:// et https:// sont possibles.",
   "servers.err.public_http":
-    "En http://, seules les adresses du réseau de la maison (ou de ton VPN) sont acceptées : 192.168.…, 10.…, 172.16–31.…, nom en .local. Ailleurs, https:// est obligatoire.",
+    "En http://, seules les adresses du réseau de la maison (ou de ton VPN) sont acceptées : 192.168.…, 10.…, 172.16–31.…, 100.64–127.…, nom en .local. Ailleurs, https:// est obligatoire.",
   "servers.err.credentials": "Pas d'identifiant ni de mot de passe dans l'adresse.",
   "servers.err.duplicate": "Ce serveur est déjà dans la liste.",
   "servers.err.full": "10 serveurs au plus : retires-en un d'abord.",

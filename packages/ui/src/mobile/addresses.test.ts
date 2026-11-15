@@ -16,6 +16,8 @@ describe("addresses of Corde servers", () => {
     expect(base("HTTP://PC-Jeu:8472")).toBe("http://pc-jeu:8472");
     expect(base("pc-jeu.local")).toBe("http://pc-jeu.local:8471");
     expect(base("10.8.0.1")).toBe("http://10.8.0.1:8471");
+    // The address a mesh VPN gives to the home server.
+    expect(base("100.101.102.103")).toBe("http://100.101.102.103:8471");
     expect(base("172.20.3.4:9000")).toBe("http://172.20.3.4:9000");
     expect(base("localhost")).toBe("http://localhost:8471");
     expect(base("[fd00::12]:8471")).toBe("http://[fd00::12]:8471");
@@ -29,7 +31,9 @@ describe("addresses of Corde servers", () => {
       "http://corde.example.org",
       "example.org",
       "172.32.0.1",
-      "100.64.1.2",
+      // Either side of the shared range 100.64/10.
+      "100.63.255.255",
+      "100.128.0.1",
       "[2001:db8::1]:8471",
       "192.169.1.1",
     ]) {
@@ -62,12 +66,16 @@ describe("addresses of Corde servers", () => {
     expect(isPrivateIpv4("192.168.0.1")).toBe(true);
     expect(isPrivateIpv4("127.0.0.1")).toBe(true);
     expect(isPrivateIpv4("169.254.1.1")).toBe(true);
+    expect(isPrivateIpv4("100.64.0.1")).toBe(true);
+    expect(isPrivateIpv4("100.127.255.254")).toBe(true);
+    expect(isPrivateIpv4("100.1.2.3")).toBe(false);
     expect(isPrivateIpv4("172.15.0.1")).toBe(false);
     expect(isPrivateIpv4("1.1.1.1")).toBe(false);
     expect(isPrivateIpv6("::1")).toBe(true);
     expect(isPrivateIpv6("fd12:3456::1")).toBe(true);
     expect(isPrivateIpv6("fe80::1")).toBe(true);
     expect(isPrivateIpv6("::ffff:192.168.1.2")).toBe(true);
+    expect(isPrivateIpv6("::ffff:100.64.0.1")).toBe(true);
     expect(isPrivateIpv6("::ffff:8.8.8.8")).toBe(false);
     expect(isPrivateIpv6("2001:db8::1")).toBe(false);
   });

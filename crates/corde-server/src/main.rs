@@ -109,15 +109,22 @@ fn run_command(cmd: Command) -> anyhow::Result<()> {
                 }
             );
             println!("  Sur le PC : Corde → Réglages → Serveur Corde → Appairer.");
-            println!("  Sur le téléphone : ouvre l'adresse du serveur et tape ce code.");
-            println!("  Trois codes faux l'annulent : relance alors « sudo corde-server pair ».");
+            println!("  Sur le téléphone : application Corde → Accueil → Mes serveurs → Ajouter un serveur");
+            println!("  (ou l'adresse du serveur dans le navigateur du téléphone).");
+            println!(
+                "  Trois codes faux l'annulent : relance alors « {} ».",
+                corde_server::net::pair_command()
+            );
             println!();
         }
         Command::Devices { data_dir } => {
             let dir = cli::resolve_data_dir(data_dir);
             let list = cli::devices(&dir)?;
             if list.is_empty() {
-                println!("Aucun appareil appairé. Code : sudo corde-server pair");
+                println!(
+                    "Aucun appareil appairé. Code : {}",
+                    corde_server::net::pair_command()
+                );
             }
             for d in list {
                 println!(

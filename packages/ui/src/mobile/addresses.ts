@@ -4,13 +4,17 @@ import { DEFAULT_PORT } from "@corde/protocol";
  * Addresses of Corde servers typed (or scanned) in the application.
  *
  * Corde speaks plain HTTP on the home network (docs/SECURITY-MODEL.md), so `http://` is
- * accepted **only toward a private or local address**: an IPv4 of 10/8, 172.16/12,
- * 192.168/16, the loopback 127/8 or the link-local 169.254/16; an IPv6 loopback, unique local
- * (fc00::/7) or link-local (fe80::/10) address; `localhost`, a `.local` name, or a name without
- * a dot (`pc-jeu`, resolved by the home network). Anything else needs `https://` (a server
- * the driver put behind TLS himself). A VPN address of the home server (`10.8.0.1`, see
- * docs/ACCES-EXTERIEUR.md) is a private address. The carrier-grade range 100.64/10 (used by
- * some mesh VPNs) is not accepted over HTTP: it is not a private range.
+ * accepted **only toward an address that is not routed on the Internet**: an IPv4 of 10/8,
+ * 172.16/12, 192.168/16, the loopback 127/8, the link-local 169.254/16 or the shared range
+ * 100.64/10; an IPv6 loopback, unique local (fc00::/7) or link-local (fe80::/10) address;
+ * `localhost`, a `.local` name, or a name without a dot (`pc-jeu`, resolved by the home
+ * network). Anything else needs `https://` (a server the driver put behind TLS himself).
+ *
+ * A VPN address of the home server is one of these: `10.8.0.1` for the WireGuard set-up of
+ * docs/ACCES-EXTERIEUR.md, `100.x.y.z` for a mesh VPN. Mesh VPNs number their devices in
+ * 100.64/10 (RFC 6598, the range carriers use behind their own NAT): no public server can hold
+ * such an address, and reaching one without the VPN is no more exposed than reaching a
+ * `192.168.…` address from somebody else's Wi-Fi.
  */
 export interface ServerAddress {
   /** `http://192.168.1.20:8471` — no trailing slash; the API is `${base}/api/…`. */
@@ -45,7 +49,10 @@ function ipv4(host: string): number[] | null {
   return parts.every((n) => n <= 255) ? parts : null;
 }
 
-/** `true` for an IPv4 of a private, loopback or link-local range. */
+/**
+ * `true` for an IPv4 of a private, loopback or link-local range, or of the shared range
+ * 100.64/10 (the addresses a mesh VPN gives to its devices).
+ */
 export function isPrivateIpv4(host: string): boolean {
   const p = ipv4(host);
   if (!p) return false;
@@ -54,6 +61,7 @@ export function isPrivateIpv4(host: string): boolean {
     a === 10 ||
     (a === 172 && b >= 16 && b <= 31) ||
     (a === 192 && b === 168) ||
+    (a === 100 && b >= 64 && b <= 127) ||
     a === 127 ||
     (a === 169 && b === 254)
   );

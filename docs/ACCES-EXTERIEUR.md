@@ -212,7 +212,8 @@ Ce que cela implique :
 - L'adresse du Pi dans ce réseau (souvent en `100.x.y.z`) ou son nom dans ce réseau s'ouvre comme d'habitude
   (`http://100.x.y.z:8471`). Une adresse IP est acceptée telle quelle par Corde ; pour un **nom** (par
   exemple `corde.ton-reseau.example`), ajoute-le au service avec `--allow-host` ([SERVEUR.md §9](SERVEUR.md#9-commandes-utiles)).
-  Appaire le téléphone pour cette adresse.
+  Appaire le téléphone pour cette adresse. L'**application Corde** du téléphone accepte ces adresses
+  `100.x.y.z` depuis la **1.4.2** (« Mes serveurs » → « Ajouter un serveur ») ; avant, elle les refusait.
 - Certains de ces services permettent d'héberger soi-même le serveur de coordination (par exemple
   Headscale pour Tailscale), mais il faut alors… un serveur joignable depuis Internet.
 - En cas de perte : retire l'appareil de ton réseau dans leur console **et** révoque-le dans Corde.

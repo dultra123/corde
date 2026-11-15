@@ -1408,7 +1408,7 @@ export const en: Record<TranslationKey, string> = {
   "servers.err.invalid": "This is not an address: for example 192.168.1.20:8471.",
   "servers.err.scheme": "Only http:// and https:// addresses are possible.",
   "servers.err.public_http":
-    "Over http://, only addresses of the home network (or of your VPN) are accepted: 192.168.…, 10.…, 172.16–31.…, a .local name. Elsewhere https:// is required.",
+    "Over http://, only addresses of the home network (or of your VPN) are accepted: 192.168.…, 10.…, 172.16–31.…, 100.64–127.…, a .local name. Elsewhere https:// is required.",
   "servers.err.credentials": "No user name or password in the address.",
   "servers.err.duplicate": "This server is already in the list.",
   "servers.err.full": "10 servers at most: remove one first.",
