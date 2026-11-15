@@ -53,6 +53,9 @@ pub async fn pairing_state(
             "version": SERVER_VERSION,
             "paired": device.is_some(),
             "device": device,
+            // The page names the command to type on the server: not the same one in a
+            // container (its terminal, no `sudo`).
+            "container": crate::net::in_container(),
         }))
         .into_response(),
     ))

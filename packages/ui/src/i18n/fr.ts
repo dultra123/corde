@@ -1216,6 +1216,8 @@ export const fr = {
   "hub.pair.lead":
     "Ce serveur garde tes sessions, ton profil et tes courses. Pour l'ouvrir sur cet appareil, appaire-le une fois avec un code.",
   "hub.pair.step1": "Sur le serveur, lance :",
+  "hub.pair.step1Container":
+    "Sur le NAS, dans le terminal du conteneur (Container Manager → Conteneur → corde → Action → Ouvrir le terminal → Créer → Lancer avec une commande), lance :",
   "hub.pair.step2": "Tape ici le code à 8 chiffres qu'il affiche.",
   "hub.pair.code": "Code d'appairage",
   "hub.pair.name": "Nom de cet appareil",
@@ -1224,6 +1226,8 @@ export const fr = {
   "hub.pair.busy": "Vérification…",
   "hub.pair.hint":
     "Le code est valable 10 minutes et ne sert qu'une fois ; trois codes faux l'annulent. Cet appareil garde ensuite une clé dans un cookie protégé : tu peux la révoquer à tout moment (page Appareils, ou « sudo corde-server revoke » sur le serveur).",
+  "hub.pair.hintContainer":
+    "Le code est valable 10 minutes et ne sert qu'une fois ; trois codes faux l'annulent. Cet appareil garde ensuite une clé dans un cookie protégé : tu peux la révoquer à tout moment (page Appareils, ou « corde-server revoke » dans le terminal du conteneur).",
   "hub.home.title": "Serveur Corde",
   "hub.home.subtitle": "Version {version} · toujours allumé, ouvert à tes appareils appairés",
   "hub.home.error": "Le serveur n'a pas répondu",
@@ -1278,6 +1282,7 @@ export const fr = {
   "hub.devices.confirm": "Confirmer",
   "hub.devices.add": "Ajouter un appareil",
   "hub.devices.add1": "Sur le serveur :",
+  "hub.devices.add1Container": "Sur le NAS, dans le terminal du conteneur :",
   "hub.devices.add2":
     "Ouvre l'adresse du serveur sur l'appareil et tape le code (sur le PC : Réglages → Serveur Corde).",
   "hub.devices.lost":

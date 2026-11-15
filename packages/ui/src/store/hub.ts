@@ -17,6 +17,8 @@ interface HubState {
   paired: boolean;
   device: HubDeviceRef | null;
   version: string | null;
+  /** The home server runs in a container (a NAS): commands go in its terminal, without sudo. */
+  container: boolean;
   /** The first answer came (or failed). */
   checked: boolean;
   check(): Promise<void>;
@@ -27,6 +29,7 @@ export const useHub = create<HubState>((set) => ({
   paired: false,
   device: null,
   version: null,
+  container: false,
   checked: false,
   async check() {
     try {
@@ -36,6 +39,7 @@ export const useHub = create<HubState>((set) => ({
         paired: p.paired,
         device: p.device,
         version: p.version,
+        container: p.container === true,
         checked: true,
       });
     } catch (e) {

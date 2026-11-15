@@ -1169,6 +1169,8 @@ export const en: Record<TranslationKey, string> = {
   "hub.pair.lead":
     "This server keeps your sessions, your profile and your races. To open it on this device, pair it once with a code.",
   "hub.pair.step1": "On the server, run:",
+  "hub.pair.step1Container":
+    "On the NAS, in the terminal of the container (Container Manager → Container → corde → Action → Open terminal → Create → Launch with command), run:",
   "hub.pair.step2": "Type here the 8-digit code it shows.",
   "hub.pair.code": "Pairing code",
   "hub.pair.name": "Name of this device",
@@ -1177,6 +1179,8 @@ export const en: Record<TranslationKey, string> = {
   "hub.pair.busy": "Checking…",
   "hub.pair.hint":
     'The code is valid for 10 minutes and works once; three wrong codes cancel it. This device then keeps a key in a protected cookie: you can revoke it at any time (Devices page, or "sudo corde-server revoke" on the server).',
+  "hub.pair.hintContainer":
+    'The code is valid for 10 minutes and works once; three wrong codes cancel it. This device then keeps a key in a protected cookie: you can revoke it at any time (Devices page, or "corde-server revoke" in the terminal of the container).',
   "hub.home.title": "Corde server",
   "hub.home.subtitle": "Version {version} · always on, open to your paired devices",
   "hub.home.error": "The server did not answer",
@@ -1230,6 +1234,7 @@ export const en: Record<TranslationKey, string> = {
   "hub.devices.confirm": "Confirm",
   "hub.devices.add": "Add a device",
   "hub.devices.add1": "On the server:",
+  "hub.devices.add1Container": "On the NAS, in the terminal of the container:",
   "hub.devices.add2":
     "Open the server's address on the device and type the code (on the PC: Settings → Corde server).",
   "hub.devices.lost":
