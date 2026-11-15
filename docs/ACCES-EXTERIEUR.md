@@ -217,6 +217,9 @@ Ce que cela implique :
 - Certains de ces services permettent d'héberger soi-même le serveur de coordination (par exemple
   Headscale pour Tailscale), mais il faut alors… un serveur joignable depuis Internet.
 - En cas de perte : retire l'appareil de ton réseau dans leur console **et** révoque-le dans Corde.
+- **Sur un NAS Synology**, cette voie a été suivie de bout en bout (paquet du Centre de paquets, essai en
+  5G, appairage de l'application) : les étapes et les vrais libellés sont dans
+  [SYNOLOGY.md §17.1](SYNOLOGY.md#17-depuis-lextérieur-de-la-maison).
 
 ## Ce qu'il ne faut jamais faire
 

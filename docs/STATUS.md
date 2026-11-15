@@ -72,11 +72,19 @@
     (`sent 55 session(s), 0 file(s) (658 KiB), 59 result(s)`, toutes les 90 s environ) : les empreintes des
     données réelles ne correspondent jamais au manifeste du serveur (les essais, sur des données simulées,
     ne le montrent pas). Sans conséquence pour les données, mais inutile.
-  - **Accès extérieur (1.4.2, en cours chez le propriétaire)** : le paquet Tailscale du Centre de paquets
-    de DSM existe (1.58.2, que son éditeur dit ne plus maintenir : à mettre à jour après installation).
-    L'application du téléphone refusait `100.x.y.z` en HTTP (plage 100.64/10 exclue par `addresses.ts` et
-    absente des exceptions ATS) alors que la voie C du guide la demande : acceptée en 1.4.2. À vérifier sur
-    l'iPhone du propriétaire : ATS laisse bien passer `http://100.x.y.z:8471`.
+  - **Accès extérieur, vérifié de bout en bout le 15 nov. au soir (1.4.2)** : VPN maillé, paquet Tailscale
+    du Centre de paquets de DSM (1.58.2, que son éditeur dit ne plus maintenir) sur le NAS, application sur
+    l'iPhone. iPhone en 5G, Wi-Fi coupé : la page « Serveur Corde » s'ouvre à `http://100.x.y.z:8471` dans
+    le navigateur ; l'application Corde 1.4.2 (TestFlight, build 31) accepte l'adresse, s'appaire et montre
+    les sessions (« ça fonctionne super »). **ATS laisse donc passer `http://100.x.y.z`** avec l'exception
+    `100.64.0.0/10`. Aucun port ouvert sur la box, aucun réglage de DSM touché. Avant la 1.4.2,
+    l'application refusait ces adresses (`addresses.ts`, exceptions ATS) alors que la voie C du guide les
+    demande. Relevé pour le guide (SYNOLOGY §17.1, fait). **Reste chez le propriétaire, en attente de sa
+    réponse** : désactiver l'expiration de la clé du NAS (180 jours par défaut), mettre le paquet à jour.
+    Non vérifié : Android, règles d'accès du VPN.
+  - **À corriger** : la page d'appairage servie par le serveur (`hub/PairingScreen.tsx`,
+    `hub/HubPages.tsx`) affiche toujours « sudo corde-server pair », même dans un conteneur (texte fixe de
+    l'interface ; les messages du serveur, eux, sont corrigés en 1.4.2).
   - **À examiner** : un VPN maillé en mode « réseau en espace utilisateur » (sans interface TUN) présente
     ses connexions entrantes depuis `127.0.0.1`. Dans un conteneur, sans effet (le serveur voit la
     passerelle du pont). Sur un serveur installé sans conteneur, un appareil du VPN serait vu comme
