@@ -1637,8 +1637,8 @@ export const fr = {
   "studio.format.title": "Format du tableau de bord",
   "studio.format.change": "Changer le format…",
   "studio.format.presets": "Formats prêts",
-  "studio.format.anySize": "Toute taille, toute forme",
-  "studio.format.free": "Suit l'écran qui l'affiche",
+  "studio.format.anySize": "S'adapte à tous les écrans",
+  "studio.format.free": "Taille et forme libres",
   "studio.format.size": "Taille (pixels)",
   "studio.format.swap": "Inverser largeur et hauteur",
   "studio.format.sizeHint":

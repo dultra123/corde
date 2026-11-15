@@ -100,7 +100,7 @@ function NewDashDialog({
         >
           <div className="sheet-head">{t("studio.newTitle")}</div>
           <div className="sheet-body">
-            <fieldset className="fmt-set studio-new-models">
+            <fieldset className="fmt-group studio-new-models">
               <legend className="ins-sub">{t("studio.newModel")}</legend>
               {TEMPLATE_IDS.map((tid) => (
                 <label key={tid} className="studio-new-model">

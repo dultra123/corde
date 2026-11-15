@@ -1585,8 +1585,8 @@ export const en: Record<TranslationKey, string> = {
   "studio.format.title": "Format of the dashboard",
   "studio.format.change": "Change the format…",
   "studio.format.presets": "Ready-made formats",
-  "studio.format.anySize": "Any size, any shape",
-  "studio.format.free": "Follows the screen that shows it",
+  "studio.format.anySize": "Adapts to every screen",
+  "studio.format.free": "Free size and shape",
   "studio.format.size": "Size (pixels)",
   "studio.format.swap": "Swap width and height",
   "studio.format.sizeHint":

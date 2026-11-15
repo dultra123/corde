@@ -13,6 +13,7 @@
  * like the Studio does. Writes, at 1440 × 900 and twice the pixels:
  *
  *   screenshots/studio-onglet.png   the library under the top bar, the « Studio » tab current
+ *   screenshots/studio-nouveau.png  the « Nouveau tableau de bord » dialog (model and format)
  *   screenshots/studio-format.png   the editor with the « Format » panel open (rounded corners)
  *   screenshots/studio-rond.png     a round dashboard in the editor, the outside hatched
  *
@@ -279,6 +280,14 @@ async function studioShots(browser) {
   const tab = await s.page.locator(".navtab.is-current").textContent();
   if (tab !== "Studio") fail(`the current tab is « ${tab} », not « Studio »`);
   await shoot(s.page, "studio-onglet");
+  // « Nouveau » : the model and the format, before anything is created.
+  await s.page.getByRole("button", { name: "Nouveau", exact: true }).click();
+  await s.page.locator("dialog.studio-new form").waitFor();
+  await s.page.locator('dialog.studio-new [data-preset="wheel-round"]').click();
+  await s.page.waitForTimeout(300);
+  const create = await s.page.locator('dialog.studio-new button[type="submit"]').textContent();
+  if (create !== "Créer · Rond 480 × 480") fail(`the create button reads « ${create} »`);
+  await shoot(s.page, "studio-nouveau");
   await s.context.close();
 
   // The « Format » panel, on a page with rounded corners.

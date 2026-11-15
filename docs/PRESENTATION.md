@@ -115,7 +115,8 @@ Depuis la 1.3.0 :
 - Les images et vidéos viennent uniquement de fichiers choisis sur le PC : jamais d'un lien internet.
 - Pas encore dans le Studio : formules, sons.
 
-Images : `studio-onglet.png` (l'onglet Studio dans la barre du haut, et la bibliothèque), `studio-format.png`
+Images : `studio-onglet.png` (l'onglet Studio dans la barre du haut, et la bibliothèque), `studio-nouveau.png`
+(le dialogue « Nouveau tableau de bord » : modèle de départ et format), `studio-format.png`
 (le panneau « Format » ouvert : formats courants, taille, forme), `studio-rond.png` (un tableau de bord rond
 dans l'éditeur, l'extérieur du cercle hachuré), `studio-edition.png` (l'éditeur : éléments à gauche, page au
 centre, propriétés à droite — capture d'avant l'onglet), `studio-image.png` (un logo ajouté à une page, ses
