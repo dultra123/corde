@@ -379,6 +379,50 @@
   color: var(--d-text);
   border-color: var(--line-strong);
 }
+/* A dashboard of the Studio has no title row to hold the ☰ button (the pages of Corde keep
+   room for it, `--d-menu-room`): with a mouse, the button (and the full-screen one) shows only
+   while the pointer is over the dashboard, as the page arrows; on a touch screen the page keeps
+   its room, beside the drawing in landscape, above it in portrait, and the button is fainter. */
+@media (hover: hover) and (pointer: fine) {
+  .dash.is-custom .dash-menu,
+  .dash.is-custom .dash-full {
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .dash.is-custom:hover .dash-menu,
+  .dash.is-custom:hover .dash-full,
+  .dash.is-custom .dash-menu:focus-visible,
+  .dash.is-custom .dash-full:focus-visible {
+    opacity: 1;
+  }
+}
+@media (hover: none), (pointer: coarse) {
+  .dash.is-custom .dash-menu svg {
+    background: rgba(13, 17, 22, 0.55);
+    color: var(--text-faint);
+  }
+  .dash.is-custom .dash-page {
+    padding-right: calc(max(var(--safe-right), 0px) + 48px);
+  }
+  .dash.is-custom:has(.dash-full) .dash-page {
+    padding-right: calc(max(var(--safe-right), 0px) + 92px);
+  }
+}
+@media (hover: none) and (orientation: portrait), (pointer: coarse) and (orientation: portrait) {
+  .dash.is-custom .dash-page {
+    padding-right: max(var(--safe-right), 14px);
+    padding-top: calc(max(var(--safe-top), 0px) + 44px);
+  }
+  .dash.is-custom:has(.dash-full) .dash-page {
+    padding-right: max(var(--safe-right), 14px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dash.is-custom .dash-menu,
+  .dash.is-custom .dash-full {
+    transition: none;
+  }
+}
 .dash-foot {
   position: absolute;
   z-index: 2;

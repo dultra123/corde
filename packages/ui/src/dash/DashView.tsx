@@ -235,7 +235,7 @@ export function DashView({ embedded = false }: { embedded?: boolean }) {
   const idle = snap.idle ? t(snap.idle) : null;
   return (
     <div
-      className={`dash${embedded ? " is-embedded" : ""}`}
+      className={`dash${embedded ? " is-embedded" : ""}${isBuiltin(def) ? "" : " is-custom"}`}
       data-flag={tone ?? "none"}
       style={isBuiltin(def) ? undefined : (themeStyle(def) as CSSProperties)}
     >
