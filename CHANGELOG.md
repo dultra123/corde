@@ -8,6 +8,37 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [1.7.0] — 2026-11-17
+
+**Corde ne lit plus un seul jeu : elle trouve toute seule celui qui tourne. Premier nouveau venu, en
+version expérimentale : Assetto Corsa Competizione.**
+
+### Nouveautés
+
+- **Détection automatique du jeu.** Corde regarde toutes les deux secondes si un jeu qu'elle connaît est en
+  piste, s'y branche, et recommence à chercher quand tu le quittes. Rien à choisir, rien à régler : tu
+  passes d'un jeu à l'autre et chaque session est enregistrée sous le nom de son jeu.
+- **Assetto Corsa Competizione (expérimental).** Direct (widgets, tableau de bord de course, téléphone,
+  OBS), enregistrement des sessions, chronos officiels des tours, comparaison de tours. Rien à installer
+  ni à activer dans le jeu.
+- L'accueil nomme le jeu détecté ; dans la liste des sessions, celles d'un autre jeu que Le Mans Ultimate
+  portent son nom.
+- Un outil de diagnostic, `acc-probe.exe`, dans l'archive portable Windows.
+
+### À savoir
+
+- **Assetto Corsa Competizione n'a pas encore été vérifié face au jeu** : l'adaptateur est écrit d'après la
+  documentation du jeu et essayé sur des données fabriquées. Des valeurs peuvent manquer ou être fausses.
+  Si tu as le jeu, le guide « Les jeux que Corde sait lire » (`docs/JEUX.md`) explique comment aider à le
+  vérifier en deux minutes.
+- Avec ce jeu, pas encore de temps par secteur ni de classement complet (seulement l'écart avec la voiture
+  devant et derrière) ; pas d'usure des pneus (le jeu ne la publie pas).
+- **L'ingénieur de réglages, l'import des résultats et le planning des courses restent ceux de Le Mans
+  Ultimate.** Pour une session d'un autre jeu, la page Ingénieur le rappelle.
+- Corde ne voit Assetto Corsa Competizione que pendant une session, pas dans ses menus.
+- Les autres jeux (le premier Assetto Corsa, iRacing, rFactor 2, Automobilista 2, RaceRoom…) sont prévus,
+  sans date : le même guide dit où en est chacun.
+
 ## [1.6.0] — 2026-11-16
 
 **« Mes courses » te suivent : une course choisie sur le PC est dans l'application du téléphone, et

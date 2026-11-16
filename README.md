@@ -13,6 +13,11 @@ iPhone et Android, où le direct devient un tableau de bord de course.
 Le nom vient du **point de corde** : l'endroit où la trajectoire idéale touche l'intérieur du virage, celui
 que l'on vise à chaque tour. Corde s'appelait anciennement Muret (nom de travail).
 
+**Plusieurs jeux, sans rien choisir** (depuis la 1.7.0) : Corde trouve toute seule le jeu qui tourne. Le
+Mans Ultimate est le jeu de référence, complet et vérifié ; **Assetto Corsa Competizione** est lu en version
+expérimentale (direct, enregistrement, chronos des tours — pas encore vérifié face au jeu). D'autres sont
+prévus : voir [Les jeux que Corde sait lire](docs/JEUX.md).
+
 ![Écran d'accueil de Corde](docs/images/accueil.png)
 
 > **Version 1.4 (novembre 2026).** Nouveau : **Corde serveur s'installe sur un NAS Synology** (ou toute
@@ -368,8 +373,9 @@ corde/
 ├─ Cargo.toml                 # workspace Rust
 ├─ crates/
 │  ├─ corde-protocol/         # types partagés (serde + ts-rs) — LE contrat
-│  ├─ corde-core/             # trait TelemetrySource, LapTracker, derive::*
+│  ├─ corde-core/             # trait TelemetrySource, AutoSource (le jeu qui tourne), LapTracker, derive::*
 │  ├─ corde-lmu/              # adaptateur Le Mans Ultimate (+ outils lmu-probe, lmu-shm-fake)
+│  ├─ corde-acc/              # adaptateur Assetto Corsa Competizione, expérimental (+ outil acc-probe)
 │  ├─ corde-sim/              # simulateur LMU_Data pour développer sans le jeu
 │  ├─ corde-store/            # enregistrement des sessions : SQLite + Parquet (+ CLI corde-store)
 │  ├─ corde-engineer/         # ingénieur de course : analyse d'une session → rapport + 3 orientations

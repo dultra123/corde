@@ -183,7 +183,9 @@ PC seulement.
 | GET | `/ws` | L (télémétrie en direct ; le client n'envoie que `SetRate` et `Ping`) | aucune | ouverte, avec contrôle d'`Origin` | tableaux de bord, OBS |
 | GET | `/*` | L (fichiers de l'interface, repli sur `index.html`) | aucune | ouverte, contrôle `Host` seulement | |
 
-Tâches de fond (pas de route) : lecture de la mémoire partagée du jeu ; `GET` vers l'API locale du jeu
+Tâches de fond (pas de route) : lecture de la mémoire partagée du jeu qui tourne — Le Mans Ultimate, ou
+Assetto Corsa Competizione depuis la 1.7 (`corde-acc` : trois zones nommées ouvertes **en lecture seule**,
+rien d'écrit, aucun réseau ; ADR 0020) ; `GET` vers l'API locale du jeu
 (`http://127.0.0.1:6397`, liste fermée de chemins en lecture seule, `lmu_api.rs`, `lmu_garage.rs`) avec
 copie dans `diagnostics/lmu-api/` du dossier de données ; lecture des fichiers de résultats toutes les 60 s ;
 rappels des courses choisies toutes les 5 s (`races/mod.rs` : message `race_reminder` diffusé sur `/ws`,

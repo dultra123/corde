@@ -1,6 +1,6 @@
 # Corde — fiche de présentation
 
-> À jour pour la **version 1.6.0** (16 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
+> À jour pour la **version 1.7.0** (17 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
 > faut pour présenter Corde (site, page de présentation, annonce) : ce qu'elle fait, où elle tourne, ce qui
 > est nouveau, ce qui arrive, les images et les liens. Elle ne dit que ce qui existe ; le détail et l'état
 > exact de chaque partie sont dans le [README](../README.md) et dans [STATUS.md](STATUS.md).
@@ -8,6 +8,10 @@
 ## En une phrase
 
 **Corde — télémétrie en direct, analyse des tours et ingénieur de course pour Le Mans Ultimate.**
+
+Depuis la 1.7.0, Corde trouve toute seule le jeu qui tourne et lit aussi **Assetto Corsa Competizione**, en
+version expérimentale (pas encore vérifiée face au jeu). Le Mans Ultimate reste le jeu de référence : c'est
+le seul pour lequel tout est disponible et vérifié.
 
 Version plus longue : Corde tourne à côté du jeu. Elle lit la télémétrie de Le Mans Ultimate, l'affiche en
 direct (widgets ou tableau de bord de course, sur le PC comme sur le téléphone), enregistre chaque session, analyse ta
@@ -20,10 +24,10 @@ Le nom vient du **point de corde** : l'endroit où la trajectoire idéale touche
 
 | | |
 |---|---|
-| Version actuelle | **1.6.0** (16 novembre 2026) |
+| Version actuelle | **1.7.0** (17 novembre 2026) |
 | Prix | Gratuit |
 | Licence | Logiciel libre, GPL-3.0-or-later ; code source public |
-| Jeu | Le Mans Ultimate |
+| Jeux | Le Mans Ultimate (complet, vérifié) ; Assetto Corsa Competizione (expérimental, depuis la 1.7.0). Détection automatique. Détail : [JEUX.md](JEUX.md) |
 | PC | Windows (64 bits), installeur `Corde_<version>_x64-setup.exe` |
 | Téléphone | Navigateur du téléphone, application iPhone (iOS 17 ou plus récent), application Android (Android 8 ou plus récent) |
 | Serveur maison (facultatif) | Corde serveur, pour Raspberry Pi 5 (Linux arm64), Linux x64, ou un NAS avec Docker (Synology : Container Manager) |
@@ -36,6 +40,24 @@ Le nom vient du **point de corde** : l'endroit où la trajectoire idéale touche
 
 Chaque bloc ci-dessous peut devenir une section de page. Les images sont dans [`docs/images/`](images/) ;
 elles viennent du simulateur intégré et de la course de démonstration (aucune donnée réelle de pilote).
+
+### 0. Plusieurs jeux, sans rien choisir (nouveau en 1.7.0)
+
+Corde ne demande pas à quel jeu tu joues : elle regarde toutes les deux secondes si un jeu qu'elle connaît
+est en piste, s'y branche, et recommence à chercher quand tu le quittes. Chaque session est enregistrée
+sous le nom de son jeu.
+
+- **Le Mans Ultimate** : tout ce que décrit cette fiche, vérifié en jeu.
+- **Assetto Corsa Competizione** — **expérimental** : direct, enregistrement, chronos officiels des tours,
+  comparaison de tours ; rien à installer ni à activer dans le jeu. Pas encore vérifié face au jeu (à dire
+  tel quel). Pas de temps par secteur ni de classement complet pour l'instant ; l'ingénieur de réglages,
+  l'import des résultats et le planning des courses restent ceux de Le Mans Ultimate.
+- **Prévus, sans date** : le premier Assetto Corsa, iRacing, rFactor 2, Automobilista 2, RaceRoom, Assetto
+  Corsa EVO. L'état de chacun est tenu à jour dans [JEUX.md](JEUX.md).
+
+Corde ne fait que lire ce que le jeu publie : elle n'écrit rien dans le jeu.
+
+Image : aucune pour l'instant (l'accueil affiche « Jeu détecté — » suivi du nom du jeu).
 
 ### 1. Le tableau de bord en direct (PC)
 
@@ -227,6 +249,8 @@ redémarrer. Chaque version est signée et vérifiée avant l'installation ; rie
 
 ## Nouveautés
 
+- **1.7.0 (17 novembre 2026)** — Corde trouve toute seule le jeu qui tourne ; premier nouveau jeu, en
+  version expérimentale : Assetto Corsa Competizione (direct, enregistrement, chronos des tours).
 - **1.6.0 (16 novembre 2026)** — « Mes courses » partagées entre le PC, le serveur Corde et l'application
   du téléphone, à la maison comme en 5G : une course choisie ou retirée sur l'un l'est sur les autres.
 - **1.5.0 (16 novembre 2026)** — le Studio a son onglet dans la barre du haut ; un tableau de bord prend le
@@ -264,7 +288,8 @@ Le détail de chaque version est dans le [journal des versions](../CHANGELOG.md)
 - Widgets sur Android.
 - Publication sur l'App Store et le Play Store : pas décidée.
 - Signature de l'installeur Windows (aujourd'hui, Windows affiche un avertissement à l'installation).
-- D'autres simulateurs.
+- D'autres simulateurs (le premier Assetto Corsa, iRacing, rFactor 2, Automobilista 2, RaceRoom…), et la
+  suite pour Assetto Corsa Competizione : temps par secteur, classement complet.
 
 ## Engagements
 

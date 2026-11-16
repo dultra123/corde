@@ -71,7 +71,7 @@ Chaque parcours décrit l'expérience cible ; la phase où il devient possible e
 1. Dans LMU : `Settings > Gameplay > Enable Plugins` activé, puis redémarrage complet du jeu (c'est le jeu
    lui-même qui publie alors sa télémétrie ; aucun fichier à copier dans le jeu — brief 01 §1.2).
 2. Télécharger Corde (archive `.zip` en phase 0, installeur Windows en phase 1), le lancer.
-3. Au premier lancement, Corde affiche : « En attente de Le Mans Ultimate » puis « Jeu détecté ».
+3. Au premier lancement, Corde affiche : « En attente d'un jeu… » puis « Jeu détecté », avec le nom du jeu.
 4. Le pare-feu Windows demande une autorisation (réseau privé) : nécessaire pour le téléphone.
 
 Guide pas à pas pour le client : [TESTING-ON-PC.md](TESTING-ON-PC.md).
