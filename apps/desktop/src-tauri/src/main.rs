@@ -50,6 +50,7 @@ fn source_from_env() -> SourceKind {
     match corde_store::migrate::env_var(SOURCE_ENV).ok().as_deref() {
         Some("sim") => SourceKind::Sim,
         Some("lmu") => SourceKind::Lmu,
+        Some("acc") => SourceKind::Acc,
         _ => SourceKind::Auto,
     }
 }

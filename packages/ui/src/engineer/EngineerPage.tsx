@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { IconRefresh } from "../dashboard/icons";
 import { type TranslationKey, useT } from "../i18n";
 import { fmtDateTime } from "../lib/format";
+import { gameName, hasSetupEngineer } from "../lib/games";
 import {
   fetchAnalysis,
   fetchIterations,
@@ -140,6 +141,11 @@ function Header({
           {vehicle && <span className="is-strong"> {vehicle}</span>}
           {session?.class_name && <span> · {session.class_name}</span>}
           {session && <span> · {fmtDateTime(session.started_wall_ms, lang)}</span>}
+          {session && !hasSetupEngineer(session.game) && (
+            <span className="eng-othergame" role="note">
+              {t("eng.otherGame", { game: gameName(session.game) || session.game })}
+            </span>
+          )}
         </>
       }
       actions={

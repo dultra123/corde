@@ -12,7 +12,11 @@ use corde_protocol::{
 use std::time::Duration;
 
 fn at(conv: &mut Converter, fake: &FakeSession, t: f64) -> TelemetryFrame {
-    conv.frame(&fake.at(t).pages(), Duration::from_secs_f64(t), "test")
+    conv.frame(
+        &fake.at(t).pages().unwrap(),
+        Duration::from_secs_f64(t),
+        "test",
+    )
 }
 
 /// Drives `seconds` at 100 Hz through the converter and the lap tracker.
@@ -195,17 +199,46 @@ fn an_unknown_circuit_gets_its_length_measured() {
 #[test]
 fn the_first_assetto_corsa_is_not_taken_for_competizione() {
     let acc = FakeSession::default();
-    assert!(is_competizione(&acc.at(0.0).pages().statics));
+    assert!(is_competizione(&acc.at(0.0).pages().unwrap().statics));
     let ac1 = FakeSession {
         sm_version: "1.7".into(),
         ..FakeSession::default()
     };
-    assert!(!is_competizione(&ac1.at(0.0).pages().statics));
+    assert!(!is_competizione(&ac1.at(0.0).pages().unwrap().statics));
     let empty = FakeSession {
         sm_version: String::new(),
         ..FakeSession::default()
     };
-    assert!(!is_competizione(&empty.at(0.0).pages().statics));
+    assert!(!is_competizione(&empty.at(0.0).pages().unwrap().statics));
+}
+
+#[test]
+fn a_diagnostic_copy_keeps_everything_but_the_players_name() {
+    let raw = FakeSession::default().at(12.0);
+    assert_eq!(raw.pages().unwrap().statics.player_name[0], 'A' as u16);
+    let copy = raw.clone().without_names();
+    let (before, after) = (raw.pages().unwrap(), copy.pages().unwrap());
+    let s = after.statics;
+    let (name, surname, nick) = (s.player_name, s.player_surname, s.player_nick);
+    assert!(name.iter().chain(&surname).chain(&nick).all(|u| *u == 0));
+    // The rest is untouched: the circuit, the car, what follows the names, the other pages.
+    let (track, car) = (s.track, s.car_model);
+    assert_eq!(corde_acc::layout::text(&track), "monza");
+    assert_eq!(corde_acc::layout::text(&car), "bmw_m4_gt3");
+    assert_eq!({ s.sector_count }, 3);
+    assert_eq!({ s.max_rpm }, { before.statics.max_rpm });
+    assert_eq!(copy.physics, raw.physics);
+    assert_eq!(copy.graphics, raw.graphics);
+    // Written and read back like the game's pages.
+    let dir = temp_dir("dump");
+    copy.write_dir(&dir).unwrap();
+    let mut conv = Converter::new();
+    let mut reader = corde_acc::reader::DirPages::open(&dir).unwrap();
+    use corde_acc::PageReader;
+    let f = conv.frame(&reader.read().unwrap(), Duration::ZERO, "test");
+    assert_eq!(f.session.track_name, "Monza");
+    assert_eq!(f.session.player_name, "");
+    let _ = std::fs::remove_dir_all(&dir);
 }
 
 fn temp_dir(tag: &str) -> std::path::PathBuf {

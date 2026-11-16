@@ -3,6 +3,7 @@ import { useDashes } from "../dashdef/store";
 import { useT } from "../i18n";
 import { appVersion, getAutostart, isDesktop, restartApp, setAutostart } from "../lib/desktop";
 import { fmtNum } from "../lib/format";
+import { gameName } from "../lib/games";
 import { appSlots } from "../mobile/slots";
 import { isAutoNavDisabled } from "../nav/auto";
 import { routeHash } from "../nav/routes";
@@ -353,7 +354,9 @@ export function SettingsDialog({ open, onClose }: Props) {
             <span>{t("settings.serverVersion")}</span>
             <b>
               {hello ? `${hello.serverVersion} (v${hello.protocolVersion})` : "—"}
-              {status?.game_version ? ` · ${status.game} ${status.game_version}` : ""}
+              {status?.game_version
+                ? ` · ${gameName(status.game) || status.game} ${status.game_version}`
+                : ""}
             </b>
             <span>{t("settings.ping")}</span>
             <b className="num">{rttMs === null ? "—" : `${fmtNum(rttMs, 0)} ms`}</b>

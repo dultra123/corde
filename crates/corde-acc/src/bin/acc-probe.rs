@@ -2,13 +2,15 @@
 //! reads them. The first thing to run with the game: start a session, then
 //!
 //! ```text
-//! acc-probe            (Windows: the game's shared memory)
-//! acc-probe --dir DIR  (three files written by a test)
+//! acc-probe             (Windows: the game's shared memory)
+//! acc-probe --dump DIR  (also writes a copy of the three pages into DIR)
+//! acc-probe --dir DIR   (reads three files instead: a copy made with --dump)
 //! ```
 //!
 //! It prints the versions, the session, the car, the timing and a few live values, ten
-//! times, one second apart. Nothing is written to the game. The player's name is not
-//! printed.
+//! times, one second apart. Nothing is written to the game. The player's name is neither
+//! printed nor kept in a copy (`--dump` blanks it): the copy is the most useful thing to
+//! send when a value looks wrong.
 
 use corde_acc::convert::{is_competizione, session_type};
 use corde_acc::layout::text;
@@ -20,11 +22,13 @@ use std::time::{Duration, Instant};
 fn main() {
     let mut args = std::env::args().skip(1);
     let mut dir: Option<PathBuf> = None;
+    let mut dump: Option<PathBuf> = None;
     while let Some(a) = args.next() {
         match a.as_str() {
             "--dir" => dir = args.next().map(PathBuf::from),
+            "--dump" => dump = args.next().map(PathBuf::from),
             _ => {
-                eprintln!("usage : acc-probe [--dir DOSSIER]");
+                eprintln!("usage : acc-probe [--dump DOSSIER] [--dir DOSSIER]");
                 std::process::exit(2);
             }
         }
@@ -40,7 +44,18 @@ fn main() {
     let origin = Instant::now();
     let mut conv = Converter::new();
     for i in 0..10 {
-        let pages = match reader.read() {
+        let pages = match reader.read_raw().and_then(|raw| {
+            if let (0, Some(to)) = (i, dump.as_deref()) {
+                match raw.clone().without_names().write_dir(to) {
+                    Ok(()) => println!(
+                        "Copie des trois pages écrite dans {} (sans le nom du joueur)",
+                        to.display()
+                    ),
+                    Err(e) => eprintln!("Copie impossible dans {} : {e}", to.display()),
+                }
+            }
+            raw.pages()
+        }) {
             Ok(p) => p,
             Err(e) => {
                 eprintln!("Lecture impossible : {e}");

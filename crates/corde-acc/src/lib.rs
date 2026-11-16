@@ -28,5 +28,5 @@ pub mod tracks;
 
 pub use convert::Converter;
 pub use layout::{Graphics, Physics, Static};
-pub use reader::{PageReader, Pages};
+pub use reader::{PageReader, Pages, RawPages};
 pub use source::{AccSource, AccSourceConfig};

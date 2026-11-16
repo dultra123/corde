@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { IconEngineer, IconTrash } from "../dashboard/icons";
 import { useT } from "../i18n";
 import { fmtBytes, fmtDateTime, fmtDuration, fmtLapTime } from "../lib/format";
+import { gameName, gameShort } from "../lib/games";
 import { navigate, routeHash } from "../nav/routes";
 import {
   deleteSession,
@@ -203,7 +204,15 @@ export function SessionsPage() {
                     </a>
                     {live && <span className="livetag">{t("sessions.inProgress")}</span>}
                   </td>
-                  <td className="is-strong">{s.track_name}</td>
+                  <td className="is-strong">
+                    {s.track_name}
+                    {s.game !== "lmu" && gameShort(s.game) && (
+                      <span className="dim session-game" title={gameName(s.game)}>
+                        {" "}
+                        · {gameShort(s.game)}
+                      </span>
+                    )}
+                  </td>
                   <td>
                     <SessionTypeTag type={s.session_type} />
                   </td>

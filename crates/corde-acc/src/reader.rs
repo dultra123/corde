@@ -27,10 +27,60 @@ pub struct Pages {
     pub statics: Static,
 }
 
+/// The three pages as the bytes the game maps.
+#[derive(Debug, Clone)]
+pub struct RawPages {
+    pub physics: Vec<u8>,
+    pub graphics: Vec<u8>,
+    pub statics: Vec<u8>,
+}
+
+impl RawPages {
+    /// The pages, decoded. Fails when one is shorter than its structure.
+    pub fn pages(&self) -> Result<Pages, SourceError> {
+        Ok(Pages {
+            physics: page(&self.physics, PHYSICS_NAME)?,
+            graphics: page(&self.graphics, GRAPHICS_NAME)?,
+            statics: page(&self.statics, STATIC_NAME)?,
+        })
+    }
+
+    /// The same pages without the player's first name, surname and nickname (the static
+    /// page holds them): what a diagnostic copy must be.
+    pub fn without_names(mut self) -> Self {
+        let from = std::mem::offset_of!(Static, player_name);
+        let to = std::mem::offset_of!(Static, sector_count);
+        if let Some(names) = self.statics.get_mut(from..to) {
+            names.fill(0);
+        }
+        self
+    }
+
+    /// Written as the three files a [`DirPages`] reads (whole files, replaced one after
+    /// the other).
+    pub fn write_dir(&self, dir: &Path) -> std::io::Result<()> {
+        std::fs::create_dir_all(dir)?;
+        for (name, bytes) in [
+            (STATIC_NAME, &self.statics),
+            (PHYSICS_NAME, &self.physics),
+            (GRAPHICS_NAME, &self.graphics),
+        ] {
+            let tmp = dir.join(format!("{name}.tmp"));
+            std::fs::write(&tmp, bytes)?;
+            std::fs::rename(&tmp, dir.join(name))?;
+        }
+        Ok(())
+    }
+}
+
 pub trait PageReader: Send {
-    /// Copies the three pages. [`SourceError::NotAvailable`] when the game is not there
-    /// (any more).
-    fn read(&mut self) -> Result<Pages, SourceError>;
+    /// Copies the three pages as bytes. [`SourceError::NotAvailable`] when the game is not
+    /// there (any more).
+    fn read_raw(&mut self) -> Result<RawPages, SourceError>;
+    /// Copies and decodes the three pages.
+    fn read(&mut self) -> Result<Pages, SourceError> {
+        self.read_raw()?.pages()
+    }
     /// One line for the logs: where the pages come from.
     fn describe(&self) -> String;
 }
@@ -76,11 +126,11 @@ impl DirPages {
 }
 
 impl PageReader for DirPages {
-    fn read(&mut self) -> Result<Pages, SourceError> {
-        Ok(Pages {
-            physics: page(&self.file(PHYSICS_NAME)?, PHYSICS_NAME)?,
-            graphics: page(&self.file(GRAPHICS_NAME)?, GRAPHICS_NAME)?,
-            statics: page(&self.file(STATIC_NAME)?, STATIC_NAME)?,
+    fn read_raw(&mut self) -> Result<RawPages, SourceError> {
+        Ok(RawPages {
+            physics: self.file(PHYSICS_NAME)?,
+            graphics: self.file(GRAPHICS_NAME)?,
+            statics: self.file(STATIC_NAME)?,
         })
     }
 
@@ -234,11 +284,11 @@ mod windows_impl {
     }
 
     impl PageReader for WindowsPages {
-        fn read(&mut self) -> Result<Pages, SourceError> {
-            Ok(Pages {
-                physics: page(&self.physics.copy(), PHYSICS_NAME)?,
-                graphics: page(&self.graphics.copy(), GRAPHICS_NAME)?,
-                statics: page(&self.statics.copy(), STATIC_NAME)?,
+        fn read_raw(&mut self) -> Result<RawPages, SourceError> {
+            Ok(RawPages {
+                physics: self.physics.copy(),
+                graphics: self.graphics.copy(),
+                statics: self.statics.copy(),
             })
         }
 

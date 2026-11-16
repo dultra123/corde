@@ -7,17 +7,8 @@
 use crate::layout::{
     status, Graphics, Physics, Static, GRAPHICS_SIZE, NO_TIME_MS, PHYSICS_SIZE, STATIC_SIZE,
 };
-use crate::reader::{Pages, GRAPHICS_NAME, PHYSICS_NAME, STATIC_NAME};
+use crate::reader::RawPages;
 use std::mem::offset_of;
-use std::path::Path;
-
-/// The three pages as the bytes the game maps.
-#[derive(Debug, Clone)]
-pub struct PageBytes {
-    pub physics: Vec<u8>,
-    pub graphics: Vec<u8>,
-    pub statics: Vec<u8>,
-}
 
 fn put_i32(page: &mut [u8], at: usize, v: i32) {
     page[at..at + 4].copy_from_slice(&v.to_le_bytes());
@@ -30,33 +21,6 @@ fn put_f32(page: &mut [u8], at: usize, v: f32) {
 fn put_text(page: &mut [u8], at: usize, units: usize, s: &str) {
     for (i, u) in s.encode_utf16().take(units - 1).enumerate() {
         page[at + 2 * i..at + 2 * i + 2].copy_from_slice(&u.to_le_bytes());
-    }
-}
-
-impl PageBytes {
-    /// Read back the way a reader does.
-    pub fn pages(&self) -> Pages {
-        Pages {
-            physics: bytemuck::pod_read_unaligned(&self.physics[..PHYSICS_SIZE]),
-            graphics: bytemuck::pod_read_unaligned(&self.graphics[..GRAPHICS_SIZE]),
-            statics: bytemuck::pod_read_unaligned(&self.statics[..STATIC_SIZE]),
-        }
-    }
-
-    /// Written as the three files a [`crate::reader::DirPages`] reads (whole files,
-    /// replaced one after the other).
-    pub fn write_dir(&self, dir: &Path) -> std::io::Result<()> {
-        std::fs::create_dir_all(dir)?;
-        for (name, bytes) in [
-            (STATIC_NAME, &self.statics),
-            (PHYSICS_NAME, &self.physics),
-            (GRAPHICS_NAME, &self.graphics),
-        ] {
-            let tmp = dir.join(format!("{name}.tmp"));
-            std::fs::write(&tmp, bytes)?;
-            std::fs::rename(&tmp, dir.join(name))?;
-        }
-        Ok(())
     }
 }
 
@@ -99,7 +63,7 @@ impl Default for FakeSession {
 
 impl FakeSession {
     /// The pages `t_s` seconds after the car crossed the line for the first time.
-    pub fn at(&self, t_s: f64) -> PageBytes {
+    pub fn at(&self, t_s: f64) -> RawPages {
         let t = t_s.max(0.0);
         let laps = (t / self.lap_time_s).floor();
         let into = t - laps * self.lap_time_s;
@@ -264,7 +228,7 @@ impl FakeSession {
         for i in 0..4 {
             put_f32(&mut statics, offset_of!(Static, tyre_radius) + 4 * i, 0.34);
         }
-        PageBytes {
+        RawPages {
             physics,
             graphics,
             statics,

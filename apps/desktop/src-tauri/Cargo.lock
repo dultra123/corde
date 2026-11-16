@@ -854,6 +854,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "corde-acc"
+version = "1.6.0"
+dependencies = [
+ "bytemuck",
+ "corde-core",
+ "corde-protocol",
+ "thiserror 2.0.21",
+ "tracing",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
 name = "corde-core"
 version = "1.6.0"
 dependencies = [
@@ -938,6 +950,7 @@ dependencies = [
  "axum",
  "chrono",
  "clap",
+ "corde-acc",
  "corde-core",
  "corde-engineer",
  "corde-lmu",

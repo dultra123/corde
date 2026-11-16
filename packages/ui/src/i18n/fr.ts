@@ -529,6 +529,8 @@ export const fr = {
   // Engineer (post-session analysis)
   "eng.open": "Ingénieur",
   "eng.openHint": "Analyse de la session et réglages proposés",
+  "eng.otherGame":
+    "Session de {game}. L'ingénieur connaît les réglages de Le Mans Ultimate : pour ce jeu, l'analyse est indicative et les réglages proposés ne s'appliquent pas.",
   "eng.title": "Ingénieur de course",
   "eng.backToSession": "Session",
   "eng.loading.title": "L'ingénieur relit la session…",
@@ -787,7 +789,7 @@ export const fr = {
   "home.title": "Accueil",
   "home.state.connecting": "Connexion à Corde…",
   "home.state.offline": "Corde ne répond pas",
-  "home.state.waiting": "En attente de Le Mans Ultimate…",
+  "home.state.waiting": "En attente d'un jeu…",
   "home.state.game": "Jeu détecté",
   "home.state.garage": "au garage",
   "home.state.track": "En piste",
@@ -797,8 +799,11 @@ export const fr = {
     "Vérifie que Corde est lancée sur le PC. Depuis un autre appareil, vérifie aussi l'adresse du serveur dans les réglages.",
   "home.hint.offlineDesktop": "Le moteur de Corde ne répond plus : redémarre l'application.",
   "home.hint.waiting":
-    "Lance le jeu : Corde le détecte toute seule et ouvre le dashboard dès que tu prends la piste.",
-  "home.hint.waitingManual": "Lance le jeu : Corde le détecte toute seule.",
+    "Lance ton jeu (Le Mans Ultimate, Assetto Corsa Competizione) : Corde le détecte toute seule et ouvre le dashboard dès que tu prends la piste.",
+  "home.hint.waitingManual":
+    "Lance ton jeu (Le Mans Ultimate, Assetto Corsa Competizione) : Corde le détecte toute seule.",
+  "home.hint.experimental":
+    "{game} : prise en charge nouvelle, pas encore vérifiée en jeu. Des valeurs peuvent manquer ou être fausses.",
   "home.hint.menu": "Charge une session dans le jeu pour commencer.",
   "home.hint.demo": "Une course fictive alimente le dashboard. Rien n'est enregistré.",
   "home.openDashboard": "Ouvrir le dashboard",
@@ -828,8 +833,8 @@ export const fr = {
   "home.last.dnf": "Abandon",
   "home.last.dq": "Disqualifié",
   "home.last.empty.title": "Pas encore de session",
-  "home.last.empty.hint": "Lance LMU et prends la piste : l'enregistrement démarre tout seul.",
-  "home.last.empty.step1": "Lance Le Mans Ultimate",
+  "home.last.empty.hint": "Lance ton jeu et prends la piste : l'enregistrement démarre tout seul.",
+  "home.last.empty.step1": "Lance ton jeu",
   "home.last.empty.step1Hint": "Corde détecte le jeu toute seule.",
   "home.last.empty.step2": "Prends la piste",
   "home.last.empty.step2Hint": "Le dashboard s'ouvre et l'enregistrement démarre.",
@@ -878,12 +883,13 @@ export const fr = {
   // Quick-start guide (home page)
   "guide.title": "Guide de démarrage",
   "guide.intro":
-    "Corde lit ce que Le Mans Ultimate publie. Elle ne modifie ni le jeu ni tes réglages.",
-  "guide.step1.title": "Active les plugins dans le jeu, une seule fois",
+    "Corde lit ce que le jeu publie. Elle ne modifie ni le jeu ni tes réglages. Elle reconnaît toute seule Le Mans Ultimate et Assetto Corsa Competizione.",
+  "guide.step1.title": "Le Mans Ultimate : active les plugins, une seule fois",
   "guide.step1.body":
-    "Dans LMU : Settings → Gameplay → Enable Plugins sur ON. Puis quitte complètement le jeu et relance-le.",
+    "Dans LMU : Settings → Gameplay → Enable Plugins sur ON. Puis quitte complètement le jeu et relance-le. Assetto Corsa Competizione : rien à régler.",
   "guide.step2.title": "Lance Corde, puis le jeu",
-  "guide.step2.body": "L'accueil passe de « En attente de Le Mans Ultimate… » à « Jeu détecté ».",
+  "guide.step2.body":
+    "L'accueil passe de « En attente d'un jeu… » à « Jeu détecté », avec le nom du jeu.",
   "guide.step3.title": "Prends la piste",
   "guide.step3.body": "Le dashboard s'ouvre et l'enregistrement démarre tout seul.",
   "guide.step4.title": "Rentre au garage",

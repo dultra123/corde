@@ -525,6 +525,7 @@ dependencies = [
  "axum",
  "chrono",
  "clap",
+ "corde-acc",
  "corde-core",
  "corde-engineer",
  "corde-lmu",

@@ -9,7 +9,8 @@
 use crate::config::{ServerConfig, SourceKind};
 use crate::events::EventDetector;
 use crate::state::AppState;
-use corde_core::{LapTracker, SourceError, TelemetrySource};
+use corde_acc::{AccSource, AccSourceConfig};
+use corde_core::{AutoSource, LapTracker, SourceError, TelemetrySource};
 use corde_lmu::{LmuSource, LmuSourceConfig};
 use corde_protocol::{GameEvent, GameId, TelemetryFrame};
 use corde_sim::{SimConfig, SimSource};
@@ -29,6 +30,12 @@ pub enum SourceSpec {
     Lmu {
         shm_path: Option<PathBuf>,
     },
+    /// Assetto Corsa Competizione shared memory; `dir` reads three files instead (tests).
+    Acc {
+        dir: Option<PathBuf>,
+    },
+    /// Whichever of these games is running, the first of the list first.
+    Auto(Vec<SourceSpec>),
 }
 
 impl SourceSpec {
@@ -36,12 +43,11 @@ impl SourceSpec {
         match self {
             SourceSpec::Sim(_) => "sim",
             SourceSpec::Lmu { .. } => "lmu",
+            SourceSpec::Acc { .. } => "acc",
+            SourceSpec::Auto(_) => "auto",
         }
     }
 }
-
-/// Whether the LMU adapter is compiled into this binary.
-pub const LMU_AVAILABLE: bool = true;
 
 /// Instantiate a source from its spec (nothing is opened before `connect`).
 pub fn make_source(spec: &SourceSpec) -> anyhow::Result<Box<dyn TelemetrySource>> {
@@ -51,6 +57,13 @@ pub fn make_source(spec: &SourceSpec) -> anyhow::Result<Box<dyn TelemetrySource>
             shm_path: shm_path.clone(),
             ..LmuSourceConfig::default()
         }))),
+        SourceSpec::Acc { dir } => Ok(Box::new(AccSource::with_config(AccSourceConfig {
+            dir: dir.clone(),
+            ..AccSourceConfig::default()
+        }))),
+        SourceSpec::Auto(games) => Ok(Box::new(AutoSource::new(
+            games.iter().map(make_source).collect::<Result<_, _>>()?,
+        ))),
     }
 }
 
@@ -71,6 +84,9 @@ impl SourcePlan {
         let lmu = SourceSpec::Lmu {
             shm_path: cfg.lmu_shm.clone(),
         };
+        let acc = SourceSpec::Acc {
+            dir: cfg.acc_shm.clone(),
+        };
         let (primary, fallback, retry_max) = match cfg.source {
             SourceKind::Sim => (sim, None, Duration::from_secs(5)),
             SourceKind::Lmu => (
@@ -78,16 +94,18 @@ impl SourcePlan {
                 cfg.fallback_sim.then(|| sim.clone()),
                 Duration::from_secs(5),
             ),
-            // auto: LMU, retried every 2 s while the game is not running.
-            SourceKind::Auto if LMU_AVAILABLE => (
-                lmu,
+            SourceKind::Acc => (
+                acc,
+                cfg.fallback_sim.then(|| sim.clone()),
+                Duration::from_secs(5),
+            ),
+            // auto: every game, looked for every 2 s while none is running. Le Mans
+            // Ultimate first (the game Corde was written for), see ADR 0020.
+            SourceKind::Auto => (
+                SourceSpec::Auto(vec![lmu, acc]),
                 cfg.fallback_sim.then(|| sim.clone()),
                 Duration::from_secs(2),
             ),
-            SourceKind::Auto => {
-                tracing::warn!("--source auto : adaptateur LMU non intégré → simulateur");
-                (sim, None, Duration::from_secs(5))
-            }
         };
         Self {
             primary,
@@ -493,10 +511,24 @@ mod tests {
                 && matches!(plan.fallback, Some(SourceSpec::Sim(_)))
         );
         assert_eq!(plan.retry_max, Duration::from_secs(5));
+        cfg.source = SourceKind::Acc;
+        let plan = SourcePlan::from_config(&cfg);
+        assert!(matches!(plan.primary, SourceSpec::Acc { .. }));
+        // auto: every game, Le Mans Ultimate first.
         cfg.source = SourceKind::Auto;
         let plan = SourcePlan::from_config(&cfg);
-        assert!(matches!(plan.primary, SourceSpec::Lmu { .. }));
+        let SourceSpec::Auto(games) = &plan.primary else {
+            panic!("auto expected, got {:?}", plan.primary);
+        };
+        assert_eq!(
+            games.iter().map(SourceSpec::name).collect::<Vec<_>>(),
+            ["lmu", "acc"]
+        );
         assert_eq!(plan.retry_max, Duration::from_secs(2));
+        // Building it opens nothing: it succeeds without any game, and names none.
+        let auto = make_source(&plan.primary).unwrap();
+        assert_eq!(auto.info().game, corde_protocol::GameId::Unknown);
+        assert_eq!(auto.info().id, "auto");
         // Building the LMU source opens nothing: it succeeds without the game.
         let src = make_source(&SourceSpec::Lmu { shm_path: None }).unwrap();
         assert_eq!(src.info().game, corde_protocol::GameId::Lmu);

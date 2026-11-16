@@ -3,6 +3,7 @@ import { IconEngineer } from "../dashboard/icons";
 import { type TranslationKey, useT } from "../i18n";
 import { isDesktop, isLocalPage, restartApp } from "../lib/desktop";
 import { fmtBytes, fmtDuration, fmtLapTime, fmtRelativeDay } from "../lib/format";
+import { gameName, isExperimentalGame } from "../lib/games";
 import { lapNo } from "../lib/laps";
 import { hasUpdate } from "../lib/updates";
 import { appSlots, useAppServerOnline } from "../mobile/slots";
@@ -243,9 +244,14 @@ function StatusCard({ onSettings }: { onSettings: () => void }) {
   const phase = homePhase(connPhase, track !== "");
   const lamps = homeLamps(phase, rec);
   const linked = phase !== "connecting" && phase !== "offline" && phase !== "demo";
+  // Which game Corde found (it looks for all of them by itself, ADR 0020).
+  const gameId = useTelemetry((s) => s.status?.game ?? null);
+  const game = phase === "menu" || phase === "garage" || phase === "track" ? gameId : null;
 
   let detail: string | null = null;
-  if (phase === "garage") detail = t("home.state.garage");
+  if (phase === "garage")
+    detail = [gameName(game), t("home.state.garage")].filter(Boolean).join(", ");
+  else if (phase === "menu") detail = gameName(game) || null;
   else if (phase === "track")
     detail = type ? `${track}, ${t(sessionTypeKey(type))}` : track || null;
   else if (phase === "demo") detail = t("home.state.demoDetail");
@@ -256,6 +262,8 @@ function StatusCard({ onSettings }: { onSettings: () => void }) {
     hint = t(autoDashboard ? "home.hint.waiting" : "home.hint.waitingManual");
   else if (phase === "menu") hint = t("home.hint.menu");
   else if (phase === "demo") hint = t("home.hint.demo");
+  if (game && isExperimentalGame(game) && phase !== "menu")
+    hint = t("home.hint.experimental", { game: gameName(game) });
 
   const dashboard = routeHash({ page: "dashboard" });
   let actions: ReactNode = null;

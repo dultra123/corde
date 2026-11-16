@@ -4,6 +4,17 @@
    the driver's own feedback. Colour is only used where it encodes data: tyre and brake
    temperatures, balance (blue oversteer → red understeer), finding severity, plan orientation. */
 
+/* A session of a game whose setups the engineer does not know (ADR 0020). */
+.eng-othergame {
+  display: block;
+  margin-top: 6px;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 6px;
+  color: var(--text);
+  font-weight: 400;
+}
+
 .eng-kicker {
   font-size: 12px;
   font-weight: 600;
