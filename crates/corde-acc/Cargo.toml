@@ -1,0 +1,22 @@
+[package]
+name = "corde-acc"
+description = "Adaptateur Assetto Corsa Competizione : mémoire partagée du jeu (pages physics, graphics, static), en lecture seule."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "acc-probe"
+path = "src/bin/acc-probe.rs"
+
+[dependencies]
+corde-protocol = { workspace = true }
+corde-core = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+# `min_const_generics` : AnyBitPattern pour les tableaux de taille quelconque ([[f32; 3]; 60]…).
+bytemuck = { workspace = true, features = ["min_const_generics"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_Memory"] }

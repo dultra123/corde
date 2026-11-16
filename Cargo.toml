@@ -4,6 +4,7 @@ members = [
     "crates/corde-protocol",
     "crates/corde-core",
     "crates/corde-lmu",
+    "crates/corde-acc",
     "crates/corde-sim",
     "crates/corde-store",
     "crates/corde-engineer",
@@ -26,6 +27,7 @@ rust-version = "1.85"
 corde-protocol = { path = "crates/corde-protocol" }
 corde-core = { path = "crates/corde-core" }
 corde-lmu = { path = "crates/corde-lmu" }
+corde-acc = { path = "crates/corde-acc" }
 corde-store = { path = "crates/corde-store" }
 corde-engineer = { path = "crates/corde-engineer" }
 

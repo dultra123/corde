@@ -1,0 +1,32 @@
+//! # corde-acc
+//!
+//! Assetto Corsa Competizione adapter for Corde. The game publishes three shared memory
+//! pages (physics, graphics, static); this crate reads them **read-only** and turns them
+//! into `corde_protocol::TelemetryFrame`s. Nothing is ever written to the game, and nothing
+//! has to be installed or switched on in it.
+//!
+//! * [`layout`] — byte-exact mirror of the three pages, with size and offset tests.
+//! * [`reader`] — the game's named mappings on Windows; three files of a directory for the
+//!   tests.
+//! * [`convert`] — the pages → a frame, and what the game does not publish (session clock,
+//!   lap distance).
+//! * [`tracks`] — lengths of the circuits of the game.
+//! * [`source`] — [`AccSource`], the `corde_core::TelemetrySource` implementation.
+//! * [`fake`] — plausible pages for the tests and the development tools.
+//!
+//! Binary: `acc-probe` (shows what the pages hold; first thing to run with the game).
+//!
+//! **Not verified against the running game yet** (written from the documentation of the
+//! game and two independent open-source readers): see `docs/JEUX.md`.
+
+pub mod convert;
+pub mod fake;
+pub mod layout;
+pub mod reader;
+pub mod source;
+pub mod tracks;
+
+pub use convert::Converter;
+pub use layout::{Graphics, Physics, Static};
+pub use reader::{PageReader, Pages};
+pub use source::{AccSource, AccSourceConfig};
