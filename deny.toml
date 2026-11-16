@@ -47,6 +47,7 @@ allow = [
 ]
 # Les crates de Corde elles-mêmes.
 exceptions = [
+  { allow = ["GPL-3.0-or-later"], crate = "corde-acc" },
   { allow = ["GPL-3.0-or-later"], crate = "corde-core" },
   { allow = ["GPL-3.0-or-later"], crate = "corde-engineer" },
   { allow = ["GPL-3.0-or-later"], crate = "corde-lmu" },
