@@ -135,8 +135,12 @@
     en 1.6.0 (il est en 1.4.0, qui répond 405 : l'application affichera « Corde à mettre à jour »).
     Limite : l'application ne fait rien en arrière-plan (une course choisie sur le PC arrive à sa
     prochaine ouverture). Les réglages de la page Courses ne sont pas partagés.
-  - **À refaire** : les captures de `docs/images/` autres que celles du Studio montrent encore l'ancien
-    logo dans la barre du haut.
+  - **Captures refaites avec le nouveau logo (16 nov.)** : `accueil`, `courses`, `serveur`, `obs-page`,
+    `obs-overlay`, `dashboard`, `dashboard-edition`, `mobile`, `iphone` (par les scripts de
+    `packages/ui/scripts/`, qui rejouent aussi leurs vérifications de bout en bout : toutes passées en
+    1.6.0). **Restent avec l'ancien logo** dans la barre du haut : `ingenieur-reglage-fichiers`,
+    `tableau-de-bord-menu`, `tableau-de-bord-photo`, `tableau-de-bord-pc.jpg`, `studio-edition`,
+    `studio-image`, `studio-couleurs` (ces trois-là montrent aussi l'éditeur d'avant l'onglet Studio).
   - **À examiner** : un VPN maillé en mode « réseau en espace utilisateur » (sans interface TUN) présente
     ses connexions entrantes depuis `127.0.0.1`. Dans un conteneur, sans effet (le serveur voit la
     passerelle du pont). Sur un serveur installé sans conteneur, un appareil du VPN serait vu comme
