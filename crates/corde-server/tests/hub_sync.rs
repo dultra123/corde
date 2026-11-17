@@ -427,6 +427,18 @@ async fn a_pc_session_reaches_the_home_server_once_and_identical() {
     )
     .await;
     assert_eq!(samples, pc_samples);
+    // A channel named again and again is read once: asking for it a thousand times costs
+    // the server what asking once does.
+    let again = vec!["speed_kmh"; 2000].join(",");
+    let (code, repeated) = http(
+        "GET",
+        format!("{pc_base}/api/sessions/{id}/laps/{lap}/samples?channels={again}&points=100"),
+        None,
+        None,
+    )
+    .await;
+    assert_eq!(code, 200, "{repeated}");
+    assert_eq!(repeated, pc_samples);
     let (_, fb) = http(
         "GET",
         format!("{hub_url}/api/sessions/{id}/feedback"),

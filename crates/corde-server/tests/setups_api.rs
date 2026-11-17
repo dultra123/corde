@@ -73,8 +73,9 @@ async fn http(
     method: &'static str,
     url: String,
     body: Option<Value>,
-    origin: Option<&'static str>,
+    origin: Option<&str>,
 ) -> (u16, Value) {
+    let origin = origin.map(str::to_string);
     tokio::task::spawn_blocking(move || {
         let agent: ureq::Agent = ureq::config::Config::builder()
             .http_status_as_error(false)
@@ -358,7 +359,19 @@ async fn library_preview_and_files() {
     )
     .await;
     assert_eq!(code, 403, "{body}");
+    // The page of another program of this PC is not this PC either.
+    let (code, body) = http(
+        "POST",
+        url.clone(),
+        Some(good.clone()),
+        Some("http://127.0.0.1:8888"),
+    )
+    .await;
+    assert_eq!(code, 403, "{body}");
     for bad in [
+        // A device of Windows is never a file (`COM1.svm` is the serial port).
+        json!({"base": "Paulricard/COM1.svm", "plans": ["safe"]}),
+        json!({"base": "Paulricard/nul.svm", "plans": ["safe"]}),
         json!({"base": "../../../etc/passwd.svm", "plans": ["safe"]}),
         json!({"base": "Paulricard/../Longbeach/../../x.svm", "plans": ["safe"]}),
         json!({"base": "/tmp/x.svm", "plans": ["safe"]}),
@@ -374,7 +387,8 @@ async fn library_preview_and_files() {
         "POST",
         url.clone(),
         Some(good.clone()),
-        Some("http://127.0.0.1:8471"),
+        // The interface this server gave, opened on this PC.
+        Some(base.as_str()),
     )
     .await;
     assert_eq!(code, 201, "{body}");

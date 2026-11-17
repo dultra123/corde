@@ -332,22 +332,24 @@ pub fn router_with(state: Arc<AppState>, ui_dir: Option<PathBuf>, allow_host: &[
     // request before CORS answers a preflight. See `guard` and
     // docs/SECURITY-MODEL.md.
     // On the home server, the paired-device check runs right after the guard.
-    let policy = Arc::new(crate::guard::HostPolicy::for_server(
-        state.listen,
-        allow_host,
-        state.is_hub(),
-    ));
+    let dev_origins = state.dev_origins();
+    let policy = Arc::new(
+        crate::guard::HostPolicy::for_server(state.listen, allow_host, state.is_hub())
+            .with_dev_origins(dev_origins),
+    );
     app.layer(axum::middleware::from_fn(static_cache_policy))
         .layer(DefaultBodyLimit::max(crate::guard::MAX_BODY_BYTES))
         .layer(axum::middleware::from_fn_with_state(
             Arc::clone(&state),
             crate::hub::hub_guard,
         ))
-        .layer(crate::guard::cors_layer())
+        .layer(crate::guard::cors_layer(dev_origins))
         .layer(axum::middleware::from_fn_with_state(
             policy,
             crate::guard::guard,
         ))
+        // Outside the guard: its refusals carry the browser protections too.
+        .layer(axum::middleware::from_fn(crate::guard::security_headers))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }
@@ -773,14 +775,23 @@ async fn lap_samples(
     Query(q): Query<SamplesQuery>,
 ) -> AppResult {
     let store = store_of(&state)?;
-    let names: Vec<String> = q
+    // Each channel once: a name repeated a thousand times would be read a thousand times.
+    let mut names: Vec<String> = Vec::new();
+    for name in q
         .channels
         .as_deref()
         .unwrap_or("speed_kmh,throttle,brake")
         .split(',')
-        .map(|s| s.trim().to_string())
+        .map(str::trim)
         .filter(|s| !s.is_empty())
-        .collect();
+    {
+        if !names.iter().any(|n| n == name) {
+            names.push(name.to_string());
+        }
+        if names.len() > corde_store::CHANNELS.len() {
+            return Err(ApiError::bad_request("too many channels"));
+        }
+    }
     let points = q.points.unwrap_or(corde_store::query::DEFAULT_MAX_POINTS);
     let samples = tokio::task::spawn_blocking(move || {
         let refs: Vec<&str> = names.iter().map(String::as_str).collect();
@@ -794,6 +805,17 @@ async fn lap_samples(
 
 /// Cached report of a session, or a fresh one (cached unless the session is
 /// still being recorded). `force` ignores the cache.
+/// The analysis of the session being recorded cannot be cached in the database (it grows):
+/// it is kept this long in memory, so that a page that asks again and again — or a device
+/// that does it on purpose — does not make the PC analyse the session over and over while
+/// the driver is on track.
+const LIVE_ANALYSIS_TTL: std::time::Duration = std::time::Duration::from_secs(15);
+
+/// One analysis at a time (each reads every lap of a session), and the last one of a live
+/// session: `(session id, when, report)`.
+static ANALYSIS_GATE: std::sync::Mutex<Option<(String, std::time::Instant, AnalysisReport)>> =
+    std::sync::Mutex::new(None);
+
 pub(crate) fn session_analysis(
     store: &Store,
     id: &str,
@@ -801,6 +823,19 @@ pub(crate) fn session_analysis(
 ) -> Result<AnalysisReport, ApiError> {
     if !corde_store::valid_id(id) {
         return Err(ApiError::bad_request(format!("invalid session id {id:?}")));
+    }
+    // Requests wait for each other here: the second of two identical ones finds the answer
+    // of the first in the cache below.
+    let mut live = match ANALYSIS_GATE.lock() {
+        Ok(g) => g,
+        Err(p) => p.into_inner(),
+    };
+    if !force {
+        if let Some((live_id, at, report)) = live.as_ref() {
+            if live_id == id && at.elapsed() < LIVE_ANALYSIS_TTL && store.is_active(id) {
+                return Ok(report.clone());
+            }
+        }
     }
     if !force {
         if let Some(row) = store.db().get_analysis(id)? {
@@ -821,7 +856,9 @@ pub(crate) fn session_analysis(
         corde_engineer::analyse_session(store, id, &corde_engineer::AnalyseOptions::default())?;
     if store.is_active(id) {
         tracing::debug!("session {id} en cours d'enregistrement : analyse non mise en cache");
+        *live = Some((id.to_string(), std::time::Instant::now(), report.clone()));
     } else {
+        *live = None;
         let json = serde_json::to_string(&report)
             .map_err(|e| ApiError(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
         store
@@ -1226,12 +1263,8 @@ async fn put_settings(
     headers: HeaderMap,
     body: Bytes,
 ) -> AppResult {
-    let origin = match headers.get(header::ORIGIN) {
-        Some(v) => Some(v.to_str().unwrap_or("")),
-        None => None,
-    };
     // On the home server the hub guard already required an administrator device.
-    if !state.is_hub() && !crate::net::may_change_settings(peer.ip(), origin) {
+    if !state.is_hub() && !state.is_this_pc(peer.ip(), &headers) {
         return Err(ApiError(
             StatusCode::FORBIDDEN,
             "les réglages ne se changent que depuis le PC qui fait tourner Corde".into(),

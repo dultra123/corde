@@ -15,6 +15,8 @@ sections, derrière des routes `#/…` (pas de bibliothèque de routing) :
 ```sh
 pnpm install                       # à la racine du monorepo
 pnpm --filter @corde/ui dev        # http://localhost:5173 — /ws et /api sont proxifiés vers 127.0.0.1:8471
+                                   # (serveur lancé avec --dev-origins : sans elle, il refuse les
+                                   # écritures venues d'une page d'un autre port)
 pnpm --filter @corde/ui build      # typecheck + bundle dans dist/ (servi par corde-server)
 pnpm --filter @corde/ui preview    # sert dist/ en local
 ```

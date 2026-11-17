@@ -334,7 +334,7 @@ web en React / TypeScript, emballés en application de bureau avec Tauri 2.
 
 ### Prérequis
 
-- **Rust** stable ≥ 1.85 (`rustup`, composants `rustfmt` et `clippy` via `rust-toolchain.toml`)
+- **Rust** stable ≥ 1.89 (`rustup`, composants `rustfmt` et `clippy` via `rust-toolchain.toml`)
 - **Node 22** et **pnpm 10** (`corepack enable` suffit : `packageManager` est déclaré dans `package.json`)
 - Pour tester avec le vrai jeu : Le Mans Ultimate ≥ 1.2 avec `Settings > Gameplay > Enable Plugins` activé
   (Windows) ; sous Linux, un pont Proton tel que [winecarte](https://github.com/srounce/winecarte)
@@ -347,7 +347,10 @@ web en React / TypeScript, emballés en application de bureau avec Tauri 2.
 cargo test -p corde-protocol          # alias : pnpm protocol:gen
 
 # 2. Serveur local alimenté par le simulateur intégré (pas besoin du jeu)
-cargo run -p corde-server -- --source sim
+#    --dev-origins : accepte l'interface servie par `vite dev` sur un autre port (étape 3).
+#    Développement seulement : sans cette option, seule l'interface que le serveur sert
+#    lui-même peut l'appeler depuis un navigateur (docs/SECURITY-MODEL.md §3).
+cargo run -p corde-server -- --source sim --dev-origins
 #    → http://127.0.0.1:8471  (WebSocket sur /ws)
 
 # 3. Dashboard en mode développement (rechargement à chaud, proxy /ws et /api vers le serveur)

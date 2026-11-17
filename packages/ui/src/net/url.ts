@@ -1,4 +1,5 @@
 import { DEFAULT_PORT, WS_PATH } from "@corde/protocol";
+import { parseServerAddress } from "../mobile/addresses";
 
 export interface ServerEndpoint {
   /** `ws://host:port/ws` */
@@ -47,8 +48,23 @@ export function endpointFromHost(
 }
 
 /**
+ * `?server=` comes with the address of the page: anybody can write it in a link. It is only
+ * followed toward an address of the home network (a private or loopback address, a `.local`
+ * name, a name without a dot — the rule of the application, `mobile/addresses.ts`): a link
+ * received from somebody can never make this page talk to their server on the Internet.
+ * The address the driver types himself in the settings is not restricted.
+ */
+export function hostFromQuery(value: string | null): string | null {
+  if (!value) return null;
+  const host = normaliseHost(value);
+  if (!host) return null;
+  const parsed = parseServerAddress(host);
+  return parsed.ok && !parsed.address.secure ? host : null;
+}
+
+/**
  * Resolution order:
- * 1. `?server=host:port` in the URL (phone typing the PC's IP),
+ * 1. `?server=host:port` in the URL (phone typing the PC's IP), home network only,
  * 2. the address saved in settings,
  * 3. the page's own host when served by corde-server (production build),
  * 4. `localhost:8471` in `vite dev` (also reachable through the dev proxy).
@@ -58,11 +74,8 @@ export function resolveEndpoint(
   loc: Pick<Location, "host" | "protocol" | "search"> = window.location,
 ): ServerEndpoint {
   const params = new URLSearchParams(loc.search);
-  const fromQuery = params.get("server");
-  if (fromQuery) {
-    const host = normaliseHost(fromQuery);
-    if (host) return endpointFromHost(host, "query");
-  }
+  const fromQuery = hostFromQuery(params.get("server"));
+  if (fromQuery) return endpointFromHost(fromQuery, "query");
   const fromSetting = normaliseHost(settingServer);
   if (fromSetting) return endpointFromHost(fromSetting, "setting");
   const secure = loc.protocol === "https:";

@@ -69,7 +69,22 @@ pub async fn ws_handler(
     let rate = q.rate.map(clamp_rate).unwrap_or(state.default_rate);
     // Home server: the socket closes as soon as its device is revoked.
     let revocation = match (&state.hub, device) {
-        (Some(hub), Some(axum::Extension(d))) => Some((d.id, hub.auth.subscribe_revocations())),
+        (Some(hub), Some(axum::Extension(d))) => {
+            let revocations = hub.auth.subscribe_revocations();
+            // Revoked between the guard's check and this subscription: its revocation
+            // would never be heard.
+            if hub.auth.get(&d.id).is_none() {
+                return (
+                    StatusCode::UNAUTHORIZED,
+                    Json(serde_json::json!({
+                        "error": crate::hub::UNPAIRED_MSG,
+                        "code": "unpaired",
+                    })),
+                )
+                    .into_response();
+            }
+            Some((d.id, revocations))
+        }
         _ => None,
     };
     // The iPhone application asks for `corde.v1` (plus, on the home server, its device token

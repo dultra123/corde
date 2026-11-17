@@ -32,7 +32,7 @@ pub fn median(it: impl IntoIterator<Item = f64>) -> Option<f64> {
     }
     v.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     let m = v.len() / 2;
-    Some(if v.len() % 2 == 0 {
+    Some(if v.len().is_multiple_of(2) {
         (v[m - 1] + v[m]) / 2.0
     } else {
         v[m]
@@ -485,7 +485,7 @@ pub fn wheelspins(lap: &LapSeries, wheel: usize) -> Vec<Event> {
 /// Inner / middle / outer temperatures from the game's left / centre / right
 /// order: left wheels (FL, RL) have their inner shoulder on the right.
 pub fn inner_middle_outer(wheel: usize, left: f64, centre: f64, right: f64) -> (f64, f64, f64) {
-    if wheel % 2 == 0 {
+    if wheel.is_multiple_of(2) {
         (right, centre, left)
     } else {
         (left, centre, right)
@@ -495,7 +495,7 @@ pub fn inner_middle_outer(wheel: usize, left: f64, centre: f64, right: f64) -> (
 /// `true` when `wheel` is on the outside of the turn for this lateral g
 /// (positive g = turning right = left wheels outside).
 pub fn is_outer(wheel: usize, g_lat: f64) -> bool {
-    let left = wheel % 2 == 0;
+    let left = wheel.is_multiple_of(2);
     (g_lat > 0.0) == left
 }
 

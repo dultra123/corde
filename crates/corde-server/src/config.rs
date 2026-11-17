@@ -81,6 +81,12 @@ pub struct ServerConfig {
     /// device is paired.
     #[arg(long)]
     pub first_pairing_code: bool,
+    /// Development only: accept the pages of other programs of this PC (other loopback
+    /// ports: a `vite dev` server, a capture script) as pages of this PC. Never needed to use
+    /// Corde: without it, only the interface this server gives — and the desktop window —
+    /// may call it from a browser (docs/SECURITY-MODEL.md §3).
+    #[arg(long, hide = true)]
+    pub dev_origins: bool,
     /// PC paired with a home server: seconds between two rounds of sending (0 = only after
     /// a recording stops and when asked). Start-up and the end of every recording send too.
     #[arg(long, default_value_t = DEFAULT_SYNC_INTERVAL_S, hide = true)]
@@ -194,6 +200,7 @@ impl Default for ServerConfig {
             role: Role::Desktop,
             allow_host: Vec::new(),
             first_pairing_code: false,
+            dev_origins: false,
             sync_interval_s: DEFAULT_SYNC_INTERVAL_S,
             port: DEFAULT_PORT,
             bind: None,

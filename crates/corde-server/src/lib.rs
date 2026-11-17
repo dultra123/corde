@@ -42,6 +42,7 @@ pub mod net;
 pub mod races;
 pub mod results_import;
 pub mod runner;
+pub mod serve;
 pub mod settings;
 pub mod setups;
 pub mod state;
@@ -190,6 +191,12 @@ impl Server {
         );
         if let Some(dir) = cfg.game_user_data.clone().filter(|_| !hub_role) {
             state.pin_game_user_data(dir);
+        }
+        if cfg.dev_origins {
+            tracing::warn!(
+                "--dev-origins : les pages d'autres programmes de ce PC (autres ports de la boucle locale) sont acceptées — développement seulement"
+            );
+            state.set_dev_origins(true);
         }
 
         let mut plan = SourcePlan::from_config(&cfg);
@@ -363,12 +370,7 @@ impl Server {
                 let _ = state.shutdown.send(true);
             }
         };
-        let result = axum::serve(
-            listener,
-            app.into_make_service_with_connect_info::<SocketAddr>(),
-        )
-        .with_graceful_shutdown(graceful)
-        .await;
+        let result = serve::serve(listener, app, serve::Limits::default(), graceful).await;
         // Joins the source thread, which closes the recording (flush guaranteed).
         if let Some(r) = runner.as_mut() {
             r.stop();

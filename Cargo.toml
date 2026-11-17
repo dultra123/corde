@@ -16,12 +16,12 @@ members = [
 exclude = ["apps/desktop/src-tauri"]
 
 [workspace.package]
-version = "1.8.0"
+version = "1.8.1"
 edition = "2021"
 repository = "https://github.com/dultra123/corde"
 authors = ["dultra__"]
 license = "GPL-3.0-or-later"
-rust-version = "1.85"
+rust-version = "1.89"
 
 [workspace.dependencies]
 corde-protocol = { path = "crates/corde-protocol" }

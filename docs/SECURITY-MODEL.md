@@ -6,7 +6,8 @@
 > Signaler une faille : [SECURITY.md](../SECURITY.md). Vie privée : [PRIVACY.md](../PRIVACY.md).
 > Le **serveur Corde de la maison** (`--role hub`, 0.7, appairage obligatoire) a ses propres règles :
 > [§7](#7-le-serveur-corde-mode-hub). L'**application iPhone** (0.8) : [§8](#8-lapplication-iphone).
-> L'**application Android** (1.0) : [§9](#9-lapplication-android).
+> L'**application Android** (1.0) : [§9](#9-lapplication-android). La **revue complète de novembre 2026**
+> (1.8.1) — ce qui a été trouvé, ce qui a été corrigé, ce qui reste — : [§10](#10-revue-de-novembre-2026-181).
 
 ## 1. Ce qui tourne
 
@@ -27,9 +28,9 @@ autrement :
 | Navigateur du PC | `http://127.0.0.1:8471` | même origine |
 | Téléphone du réseau local | `http://<ip-du-pc>:8471` | même origine (`http://<ip-du-pc>:8471`) |
 | OBS (source navigateur, mode overlay de 0.5) | `http://127.0.0.1:8471/#/overlay/…` ; second PC de stream : `http://<ip-du-pc>:8471/#/overlay/…` (accès réseau activé) | même origine |
-| Développement, scripts de capture | `http://127.0.0.1:<autre port>/?server=127.0.0.1:8471`, `vite dev` sur `localhost:5173` | origine locale (autre port de la boucle locale) |
+| Développement, scripts de capture | `http://127.0.0.1:<autre port>/?server=127.0.0.1:8471`, `vite dev` sur `localhost:5173` | autre port de la boucle locale : **refusée**, sauf serveur lancé avec `--dev-origins` (§3, règle 2) |
 | Application iPhone (0.8, `apps/mobile`, Capacitor) | `capacitor://localhost/index.html` (l'interface est **dans** l'application) ; elle appelle `http://<ip-du-pc>:8471` ou le serveur Corde | `capacitor://localhost` (§8) |
-| Application Android (1.0, `apps/mobile/android`, Capacitor) | `http://localhost/index.html` (servie par l'application elle-même, pas par le réseau) ; elle appelle `http://<ip-du-pc>:8471` ou le serveur Corde | `http://localhost` : une origine locale, sans droit « ce PC » depuis un téléphone (§9) |
+| Application Android (1.0, `apps/mobile/android`, Capacitor) | `http://localhost/index.html` (servie par l'application elle-même, pas par le réseau) ; elle appelle `http://<ip-du-pc>:8471` ou le serveur Corde | `http://localhost` : acceptée **depuis un téléphone**, jamais « ce PC » (§9) |
 
 Les pages propres à la coquille (écran de démarrage, `apps/desktop/dist` : `tauri://localhost` sous
 macOS/Linux, `http://tauri.localhost` sous Windows) n'appellent pas l'API HTTP — elles passent par l'IPC de
@@ -58,6 +59,15 @@ vérifier ni installer une mise à jour (§5 bis).
 4. **Un appareil du réseau local, pour les actions lourdes de conséquences** : même accès réseau activé, les
    suppressions, les traitements lourds, l'écriture dans les dossiers du jeu et le changement des réglages ne
    sont possibles que depuis le PC lui-même (§4).
+5. **La page d'un autre logiciel du PC** (1.8.1). Beaucoup de logiciels servent une page web sur la boucle
+   locale (`http://127.0.0.1:<port>`) : outils de tableau de bord, greffons, serveurs de développement. Une
+   telle page — et tout contenu qu'elle affiche, y compris par une faille de ce logiciel — était traitée
+   comme une page de Corde, avec tous les droits de « ce PC ». Elle est maintenant refusée comme n'importe
+   quel site (§3, règle 2).
+6. **Le détournement de clic** (1.8.1) : un site ne peut plus afficher l'interface de Corde dans un cadre
+   invisible pour faire cliquer le pilote sur « Activer l'accès réseau » ou « Supprimer » (§3, règle 7).
+7. **L'épuisement des connexions** (1.8.1) : une machine qui ouvre des centaines de connexions sans rien
+   envoyer n'empêche plus les autres d'entrer (§3, règle 8).
 
 **Corde ne protège pas contre :**
 
@@ -85,32 +95,68 @@ Ordre d'application (`guard::guard`, après le routage) :
      `COMPUTERNAME` sous Windows, nom d'hôte du noyau sous Linux) et `<nom>.local` ;
    - sinon **403** « hôte non autorisé ». Une requête sans `Host` (HTTP/1.0, outil) est acceptée.
 2. **En-tête `Origin`** (`/api/*` et ouverture du WebSocket `/ws` — les navigateurs n'appliquent pas CORS aux
-   WebSockets) : une requête qui en porte un n'est acceptée que si l'origine est
-   - la **même que l'hôte demandé** : schéma `http`, même hôte et même port que `Host` (cas du téléphone et
-     de la fenêtre de bureau) ;
-   - une **origine locale** : `http://127.0.0.1:*`, `http://localhost:*`, `http://[::1]:*` (autres ports :
-     serveur de développement, scripts de capture ; sans port, c'est aussi l'origine de l'application
-     Android, §9) ;
+   WebSockets) : une requête qui en porte un n'est acceptée que si l'origine est (`net::origin_kind`,
+   `net::origin_may_call`)
+   - la **même que l'hôte demandé** : schéma `http`, même hôte et même port que `Host` — la page que ce
+     serveur a donnée (fenêtre de bureau, navigateur du PC, OBS, téléphone) ;
    - une **origine de la coquille Tauri** : `tauri://localhost`, `http://tauri.localhost`,
      `https://tauri.localhost` ;
-   - l'**origine de l'application iPhone** : `capacitor://localhost` exactement (0.8, §8) — acceptée
-     pour l'`Origin` et CORS, **jamais** comme une page de ce PC (règle 4) ;
+   - l'**origine de l'application iPhone** : `capacitor://localhost` exactement (0.8, §8) ;
+   - l'**origine de l'application Android** : `http://localhost` exactement, sans port (1.0, §9) —
+     **seulement quand la connexion ne vient pas de ce PC** : depuis le PC lui-même, cette origine est celle
+     d'un serveur web du PC sur le port 80, c'est-à-dire la page d'un autre logiciel ;
    - sinon **403** « origine non autorisée », **y compris pour un GET**. Une requête **sans `Origin`**
      (navigation directe, `curl`) est acceptée.
+
+   **Changement de la 1.8.1** : `http://127.0.0.1:<autre port>`, `http://localhost:<autre port>` et
+   `http://[::1]:<autre port>` — la page d'un **autre programme** du PC — ne sont plus acceptées (elles
+   l'étaient, avec les droits de « ce PC »). L'option cachée `--dev-origins` les accepte de nouveau : elle
+   sert au développement (`vite dev`) et à deux scripts de capture, jamais à utiliser Corde ; le serveur
+   l'écrit dans son journal au démarrage.
 3. **CORS** : `Access-Control-Allow-Origin` ne reflète que les origines acceptées ci-dessus, pré-requêtes
    `OPTIONS` comprises (méthodes GET, POST, PUT, PATCH, DELETE ; en-têtes `Content-Type`, `Accept` et,
    depuis 0.8, `Authorization` : le jeton d'appareil de l'application iPhone, §8). Une pré-requête d'une
    autre origine reçoit 403. Aucune réponse n'autorise les cookies d'une autre origine
    (`Access-Control-Allow-Credentials` absent).
 4. **Routes réservées au PC** (tableau du §4) : 403 « cette action n'est possible que depuis le PC qui fait
-   tourner Corde » si la connexion ne vient pas de la boucle locale, ou si la page qui l'envoie n'est pas une
-   origine locale (`net::may_change_settings`, la garde qui protégeait déjà les réglages). Un navigateur du
-   PC qui ouvre Corde par l'adresse réseau du PC (`http://192.168.x.x:8471`) est vu comme un autre appareil :
-   sur le PC, ouvrir `http://127.0.0.1:8471`.
+   tourner Corde » si la connexion ne vient pas de la boucle locale, ou si la page qui l'envoie n'est ni
+   celle de ce serveur (même hôte, même port), ni celle de la coquille (`net::may_change_settings`, la garde
+   qui protégeait déjà les réglages). Un navigateur du PC qui ouvre Corde par l'adresse réseau du PC
+   (`http://192.168.x.x:8471`) est vu comme un autre appareil : sur le PC, ouvrir `http://127.0.0.1:8471`.
+   **Fermé par défaut** (1.8.1, `guard::route_access`) : toute route qui change quelque chose (`POST`,
+   `PUT`, `PATCH`, `DELETE`) est réservée au PC **sauf** si elle figure dans la liste des écritures ouvertes
+   (dispositions, tableau de bord du Studio, ressenti, enregistrement, courses). Une route ajoutée plus tard
+   et oubliée dans cette liste est donc fermée, pas ouverte.
 5. **Taille** : corps de requête limité à **1 Mio** (413 au-delà), message WebSocket du client à **16 Kio**.
 6. **Erreurs** : une erreur 5xx renvoyée à un autre appareil du réseau perd son détail (qui peut nommer un
    dossier du PC) : « erreur interne du serveur (détails dans le journal du PC) ». Le détail reste dans le
    journal. Le PC lui-même voit le message complet.
+7. **Protections du navigateur** (1.8.1, `guard::security_headers`), sur **toutes** les réponses, refus
+   compris :
+
+   | En-tête | Valeur | Ce qu'il empêche |
+   |---|---|---|
+   | `X-Frame-Options` | `SAMEORIGIN` | un autre site qui affiche l'interface dans un cadre (détournement de clic) |
+   | `Content-Security-Policy` (interface) | `default-src 'self'; script-src 'self'; … object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'` (`guard::UI_CSP`) | tout script autre que les fichiers de l'interface : ni script écrit dans la page, ni `eval`, ni script d'un autre site, ni greffon. Si un texte venu d'ailleurs (nom d'un pilote, titre d'une course) arrivait un jour dans la page comme du HTML, il ne pourrait rien exécuter |
+   | `Content-Security-Policy` (API) | `default-src 'none'; frame-ancestors 'none'` | une réponse JSON affichée comme une page ne peut rien charger ni exécuter (un média garde sa propre règle, `sandbox`) |
+   | `X-Content-Type-Options` | `nosniff` | une réponse interprétée comme un autre type que celui annoncé |
+   | `Cross-Origin-Resource-Policy` | `same-origin` (sauf `GET /api/dash-assets/{id}`, que les applications affichent depuis leur origine) | un autre site qui inclut un fichier ou une réponse de Corde (`<script src>`, `<img>`), par exemple pour savoir si Corde tourne |
+   | `Referrer-Policy` | `no-referrer` | un lien vers un autre site qui dit d'où il a été cliqué |
+   | `Permissions-Policy` | caméra, micro, position, paiement, USB refusés | l'usage de fonctions dont aucune page de Corde ne se sert |
+   | `Cache-Control` (API sans règle propre) | `no-store` | sessions et noms gardés dans le cache d'un navigateur |
+
+   Ce que la règle de l'interface laisse ouvert, et pourquoi : `style-src 'unsafe-inline'` (styles posés par
+   l'interface et ses bibliothèques ; un style n'exécute rien) ; images et vidéos en `data:`, `blob:`,
+   `http(s):` (photos que le planning cite, médias lus avec le jeton, page pointée vers un autre Corde) ;
+   connexions `http(s):` et `ws(s):` (réglage « adresse du serveur », échanges de la fenêtre de bureau avec
+   sa coquille). La protection porte sur les **scripts**, pas sur les destinations.
+8. **Connexions** (1.8.1, `serve.rs`, qui remplace `axum::serve`) : une connexion qui n'envoie pas l'en-tête
+   complet d'une requête en **30 s** est fermée (la première requête et chacune des suivantes : une
+   connexion gardée ouverte sans rien demander se ferme de même, le navigateur en rouvre une) ; au plus
+   **512 connexions** à la fois, et **128 par adresse** du réseau (le PC lui-même n'est pas compté par
+   adresse : fenêtre, navigateur, sources OBS ; la limite est large parce que, derrière la redirection de
+   port d'un conteneur, tous les appareils de la maison peuvent se présenter sous la même adresse) ; au-delà, la connexion est fermée aussitôt. Un WebSocket
+   compte tant qu'il est ouvert. À l'arrêt, les requêtes en cours ont 5 s pour finir.
 
 Limites connues de ces règles : en `vite dev` ouvert depuis un téléphone (`http://<ip>:5173`), le proxy de
 développement réécrit `Host` en `127.0.0.1:8471` mais garde l'`Origin` du téléphone : l'API répond 403. Ce cas
@@ -242,6 +288,11 @@ que sur demande.
 | Paramètre `base` (`Dossier/Fichier.svm`) | `svm_library::resolve_relative` : exactement deux composants, ni `..`, ni `:`, ni caractère de contrôle, extension `.svm` ; reste dans `Settings`. Noms de fichiers écrits nettoyés (`file_name_for`), jamais d'écrasement. |
 | Taille des corps | 1 Mio par requête (avant : 2 Mio, défaut d'axum) ; 16 Kio par message WebSocket (avant : 64 Mio). Texte du ressenti ≤ 2000 caractères, ≤ 8 plans par demande de fichiers. |
 | Clé de l'extracteur LLM | lue dans la variable d'environnement `CORDE_ANTHROPIC_API_KEY`, envoyée seulement dans l'en-tête `x-api-key` vers `api.anthropic.com` ; jamais journalisée (le `Debug` de l'extracteur ne l'affiche pas, les erreurs ne citent que le statut HTTP) ; `/api/health` dit seulement `anthropic` ou `dictionary`. |
+| Noms de périphériques de Windows (1.8.1) | Sous Windows, un fichier nommé `con`, `nul`, `com1`… — **avec n'importe quelle extension** — n'est pas un fichier mais le périphérique : y écrire part vers un port série, le lire peut attendre sans fin. Tout nom venu d'un autre appareil et qui finit dans un chemin est contrôlé (`corde_core::fsname`) : identifiant d'une disposition (`layouts::valid_id` ; les tableaux de bord l'étaient déjà), fichier `base` d'un réglage (`svm_library::resolve_relative`, refuse aussi un nom qui finit par un point). Avant : `PUT /api/layouts/com1` écrivait sur le port série, et `?base=Circuit/COM1.svm` pouvait bloquer un fil du serveur à chaque appel. |
+| Dispositions bornées (1.8.1) | Tout appareil autorisé peut enregistrer une disposition : au plus 100 dispositions, 256 Kio chacune, 200 widgets, nom ≤ 120 caractères sans caractère de contrôle (`layouts::check`), à l'écriture et à la relecture du disque. Avant : nombre illimité, 1 Mio chacune (disque et mémoire du PC). |
+| Traitements lourds (1.8.1) | Une analyse à la fois (`api::session_analysis`) ; celle de la session **en cours d'enregistrement**, qui ne peut pas être mise en cache dans la base, est gardée 15 s en mémoire : une page qui la redemande sans cesse ne fait plus analyser la session en boucle pendant que le pilote roule. Courbes d'un tour : chaque canal est lu une fois, même nommé mille fois. |
+| Extracteur LLM (1.8.1) | Au plus 30 appels par heure au modèle (chaque appel est facturé au pilote, et tout appareil autorisé peut envoyer un ressenti) ; au-delà, le dictionnaire répond, avec une note. |
+| Dépendances (1.8.1) | `cargo audit` et `pnpm audit` passés sur les deux verrous : SQLite embarqué mis à jour (3.54.1, `rusqlite` 0.41 ; avis RUSTSEC-2026-0459 : mémoire non initialisée lue à l'ouverture d'une base accompagnée d'un fichier `-wal` forgé — il fallait pouvoir écrire dans le dossier de données). Aucun avis sur les dépendances JavaScript. Restent des avertissements « non maintenu » sans faille connue : `chrono`, `serde_yaml` / `unsafe-libyaml` (ne lit que la base de connaissances compilée dans le programme), et des bibliothèques de Tauri pour Linux qui ne sont pas dans l'installeur Windows. |
 | Chemins dans les erreurs | 5xx : détail masqué aux autres appareils (§3). 4xx : messages sans chemin absolu (noms relatifs `Dossier/Fichier.svm`, identifiants). **Reste visible au réseau quand l'accès est activé** : le chemin du dossier de données (`/api/storage`), du dossier de résultats (`/api/profile`) et du dossier `Settings` du jeu (`/api/setups`), affichés par l'interface ; ils peuvent contenir le nom du compte Windows. Accepté : réseau de confiance (§2). |
 
 ## 5 bis-2. Tableaux de bord du Studio (1.2.0, ADR 0015)
@@ -382,6 +433,20 @@ aucune route de mise à jour. Vie privée : [PRIVACY.md](../PRIVACY.md#mises-à-
 
 ## 6. Tests
 
+- Revue de la 1.8.1 : `net.rs` (genres d'origine, page d'un autre programme du PC refusée, application
+  Android refusée depuis la machine elle-même), `guard.rs` (routes fermées par défaut, mode
+  développement), `serve.rs` (connexion muette ou à l'en-tête interminable fermée, connexion gardée ouverte
+  sans rien demander fermée, limite du nombre de connexions, place rendue), `layouts.rs` (noms de
+  périphériques de Windows, bornes), `corde-core/fsname.rs`, `corde-lmu/svm_library.rs` (fichier `base`),
+  `hub/auth.rs` (dernier administrateur), `corde-engineer/feedback.rs` (appels au modèle bornés),
+  `tests/access_policy.rs` → `every_answer_carries_the_browser_protections` (interface, API, refus) et
+  `development_accepts_the_pages_of_other_local_ports`, `tests/hub_hardening.rs` (plus de question « ce
+  fichier existe-t-il ? », position qui déborde, salle d'attente bornée et vidée, protections sur un 401),
+  `tests/hub_sync.rs` (canal nommé deux mille fois), `packages/ui/src/net/url.test.ts` (`?server=` limité
+  au réseau de la maison). Dans un vrai navigateur (Chromium, scripts de capture, qui échouent sur toute
+  erreur de console, donc sur tout blocage par la politique de contenu) : accueil, fenêtre de bureau
+  simulée, pages OBS et leur aperçu en cadre, Studio, serveur Corde, sessions, ingénieur, courses, aperçu
+  de l'application.
 - `crates/corde-server/src/guard.rs` (unitaires) : `Host` réseau coupé / activé, origines acceptées et
   refusées, classes des routes, intergiciel sur un petit routeur (403 GET compris, pré-requêtes, WebSocket,
   routes PC depuis un « téléphone » simulé, masquage des 5xx).
@@ -499,7 +564,7 @@ rester allumé sans surveillance, et pour être joint à travers un VPN.
 | Stockage côté serveur | `hub/devices.json` (0600, dossier `hub/` en 0700) : identifiant, nom, **SHA-256 du jeton**, dates, administrateur ; le jeton lui-même n'est jamais écrit. Un fichier illisible est mis de côté et le serveur démarre **sans aucun appareil** (fermé, jamais ouvert) |
 | Vérification | SHA-256 du jeton présenté comparé à **chaque** empreinte en temps constant (`subtle`), sans sortie anticipée |
 | Révocation | immédiate : l'appareil disparaît de la liste, ses requêtes suivantes reçoivent 401, ses WebSockets ouverts sont fermés (code 4401) |
-| Administrateur | le premier appareil appairé ; ensuite, un administrateur en désigne d'autres ; le dernier administrateur ne peut pas retirer ses droits (409) ; s'il n'en reste aucun, le prochain appairé l'est (`sudo corde-server pair --admin` force ce rôle) |
+| Administrateur | le premier appareil appairé ; ensuite, un administrateur en désigne d'autres ; le dernier administrateur ne peut pas retirer ses droits (409 ; vérifié là où le changement est fait, sous le même verrou : deux demandes simultanées ne peuvent plus retirer les deux derniers) ; s'il n'en reste aucun, le prochain appairé l'est (`sudo corde-server pair --admin` force ce rôle) |
 | Journal | appairages (adresse, identifiant, nom), refus (adresse, motif), révocations ; jamais un jeton ni une empreinte ; jamais un code, **sauf** le premier code de `--first-pairing-code` (§7.6), sur la sortie standard |
 
 ### 7.3 Routes du serveur
@@ -528,6 +593,17 @@ Sur le PC, aucune de ces routes n'existe (404) : c'est ainsi que l'interface rec
 | PUT | `/api/sync/sessions/{id}` | D (remplace les lignes de la session ; garde ses ressentis) | corps zstd borné comme plus haut ; session fermée ; tous ses fichiers présents (sinon 409) ; pierre tombale → 410 |
 | GET / POST | `/api/sync/sessions/{id}/feedback` | L / D (ajoute les ressentis et itérations manquants, ne supprime rien) | identifiants hexadécimaux, texte ≤ 4000 caractères |
 
+Durcissements de la 1.8.1 (`hub/receive.rs`, `tests/hub_hardening.rs`) :
+
+- les **noms des fichiers d'échantillons** d'un paquet de session sont validés **avant** tout regard sur le
+  disque. Avant, le serveur répondait différemment selon que le chemin nommé existait ou non : un appareil
+  appairé pouvait demander si n'importe quel fichier du serveur existait ;
+- la position d'un morceau ne peut plus **déborder** (`offset + taille` vérifié sans dépassement) ;
+- la **salle d'attente** des fichiers incomplets est bornée : 64 fichiers et 8 Gio au plus (507 au-delà) ;
+  un fichier que personne ne termine est supprimé après 7 jours (au démarrage, puis chaque heure) ;
+- les paquets sont **décodés un par un** (chacun peut prendre 256 Mio une fois décompressé) ;
+- le texte de version annoncé par le PC est borné et sans caractère de contrôle avant d'aller au journal.
+
 Chaque requête porte `corde-sync-version` et `corde-schema-version` : un PC plus récent que le serveur est
 refusé (409 `server_outdated`, « mets à jour le serveur »), et le PC refuse de même un serveur plus ancien.
 
@@ -535,8 +611,10 @@ refusé (409 `server_outdated`, « mets à jour le serveur »), et le PC refuse 
 
 - `hub-link.json` (dossier de données du PC) garde l'adresse et le jeton ; `GET /api/hub-link` ne renvoie
   jamais le jeton ; aucune ligne du journal ne le contient.
-- Le PC ne parle qu'à l'adresse enregistrée, en HTTP, **sans proxy**, avec des délais (5 s pour se
-  connecter, 120 s par requête) ; il n'envoie que des sessions **fermées**.
+- Le PC ne parle qu'à l'adresse enregistrée, en HTTP, **sans proxy** et **sans suivre de redirection**
+  (1.8.1 : un serveur Corde ne redirige jamais ; ce qui est envoyé — sessions, code d'appairage — ne part
+  qu'à l'adresse tapée), avec des délais (5 s pour se connecter, 120 s par requête) ; il n'envoie que des
+  sessions **fermées**.
 - Toutes les routes `/api/hub-link` qui changent quelque chose sont réservées au PC (§4).
 
 ### 7.6 Corde serveur en conteneur (NAS) et premier code dans le journal
@@ -616,7 +694,7 @@ Décision : [ADR 0011](adr/0011-application-mobile-capacitor.md). Guide : [IOS.m
 | Élément | Règle |
 |---|---|
 | Origine | `capacitor://localhost` exactement (schéma `capacitor`, hôte `localhost`, sans port) : l'origine par défaut de Capacitor sur iOS (`server.iosScheme` = `capacitor`, `server.hostname` = `localhost` ; vérifié dans `@capacitor/ios` 8.6.0, `CAPInstanceDescriptor.swift` / `.m`, et `@capacitor/cli`, `declarations.d.ts`), laissée telle quelle dans `apps/mobile/capacitor.config.json`. `capacitor://autre-chose`, `ionic://localhost`, un port ou des identifiants : refusés |
-| « Ce PC » | jamais : `net::origin_is_local` ne la connaît pas, donc `may_change_settings` la refuse. Les routes réservées au PC (§4) répondent 403 à l'application, même si la connexion venait de la boucle locale |
+| « Ce PC » | jamais : `may_change_settings` ne reconnaît comme page de ce PC que celle du serveur lui-même et celles de la coquille. Les routes réservées au PC (§4) répondent 403 à l'application, même si la connexion venait de la boucle locale |
 | `Host` | inchangé : l'application tape l'adresse IP du PC (ou son nom `.local`), qui n'est acceptée que si l'accès réseau est activé (§3, règle 1). Accès réseau coupé : 403 |
 | CORS | l'origine est reflétée, `Authorization` est un en-tête autorisé ; pas de cookie entre origines |
 | WebSocket | origine acceptée ; si l'application demande le sous-protocole `corde.v1`, le serveur le choisit (`WebSocketUpgrade::protocols`), sinon il n'en choisit aucun (navigateur : inchangé) |
@@ -757,17 +835,20 @@ que l'iPhone (`packages/ui/src/mobile/`, choix par plateforme dans `device.ts`, 
 | Élément | Règle |
 |---|---|
 | Origine des pages | `http://localhost` (sans port) : `server.androidScheme` = `http` dans `apps/mobile/capacitor.config.json` ; la webview sert l'interface embarquée à cette adresse, sans passer par le réseau. Choisie parce que la valeur par défaut de Capacitor (`https://localhost`) ferait de chaque appel au PC (`http://192.168.…`) du « contenu mixte », bloqué par la webview sauf à l'autoriser pour tout (`allowMixedContent`, laissé à `false`) |
-| Côté serveur | **rien à changer** : `http://localhost` est une origine locale (`net::origin_is_local`, §3 règle 2), déjà acceptée pour l'`Origin`, CORS (avec `Authorization`) et le WebSocket, sur le PC comme sur le serveur Corde. Fonctionne avec un Corde 0.8 ou plus |
-| « Ce PC » | jamais depuis un téléphone : les routes réservées (§4) exigent **aussi** que la connexion TCP vienne de la boucle locale (`may_change_settings` : `peer_is_local` **et** origine locale). Un téléphone se connecte depuis son adresse du Wi-Fi ou du VPN, jamais `127.0.0.1` (essai `guard.rs`, `the_android_application_is_allowed_but_never_counts_as_this_pc`) |
+| Côté serveur | `http://localhost` exactement (sans port) est l'origine de l'application (`net::origin_is_android_app`, §3 règle 2) : acceptée pour l'`Origin`, CORS (avec `Authorization`) et le WebSocket, sur le PC comme sur le serveur Corde, **quand la connexion vient d'un autre appareil**. Fonctionne avec un Corde 0.8 ou plus |
+| « Ce PC » | jamais : les routes réservées (§4) exigent que la connexion TCP vienne de la boucle locale **et** que la page soit celle du serveur ou de la coquille (`may_change_settings`). Un téléphone se connecte depuis son adresse du Wi-Fi ou du VPN, jamais `127.0.0.1` (essai `guard.rs`, `the_android_application_is_allowed_but_never_counts_as_this_pc`) |
 | Serveur Corde | comme l'iPhone (§8.1) : appairage `kind: "app"`, `Authorization: Bearer`, jeton en sous-protocole WebSocket ; sans jeton, 401 (essai `tests/mobile_app.rs`, `the_android_application_pairs_with_the_home_server_from_its_origin`) |
 
 **Pourquoi c'est sans risque nouveau** : une page web ouverte dans un navigateur n'a l'origine
-`http://localhost` que si elle est servie **par la machine même du navigateur**, sur le port 80. Sur le PC,
-c'était déjà le cas avant l'application Android (§3), et une telle page n'a de toute façon pas plus de droits
-qu'un programme du PC ; sur le téléphone, seule l'application Corde sert des pages à cette adresse dans sa
-webview. Différence avec l'iPhone, à connaître : `capacitor://localhost` n'est **jamais** une page du PC,
-`http://localhost` **l'est** pour le contrôle d'origine ; c'est la règle de la boucle locale qui garde les
-routes du PC.
+`http://localhost` que si elle est servie **par la machine même du navigateur**, sur le port 80. Sur un
+téléphone, seule l'application Corde sert des pages à cette adresse dans sa webview. Sur le PC (ou sur la
+machine du serveur Corde), ce serait la page d'un serveur web local — un autre logiciel : depuis la 1.8.1,
+cette origine y est **refusée** quand la connexion vient de la machine elle-même (un téléphone ne se
+connecte jamais depuis la boucle locale). Différence avec l'iPhone : `capacitor://localhost` ne peut être
+l'origine d'aucune page web, où que ce soit. Limite à connaître : un serveur Corde lancé dans un conteneur
+dont la redirection de ports présente **toutes** les connexions comme locales (`127.0.0.1` ; certains
+modes « sans privilèges ») refuserait donc l'application Android ; l'image du guide Synology et un Pi ne
+sont pas dans ce cas (les appareils y arrivent avec leur adresse, ou celle du pont du conteneur).
 
 ### 9.2 Ce que fait l'application
 
@@ -834,3 +915,41 @@ Workflow `.github/workflows/android.yml`, script `apps/mobile/scripts/android-si
   dans le journal comme un secret ; rien n'est publié.
 - **Publication** : `contents: write` seulement pour ce job ; il remplace l'APK de la pré-release
   `continuous` et n'ajoute un APK à une release numérotée que si elle n'en a pas (jamais remplacé).
+
+## 10. Revue de novembre 2026 (1.8.1)
+
+Relecture de tout le code avec les yeux d'un attaquant : serveur (routes, garde, appairage, fichiers,
+requêtes sortantes), fenêtre de bureau, interface, applications, chaîne de publication, dépendances. Le
+modèle des sections précédentes a tenu : aucune faille qui donne à un site web ou à une machine d'Internet
+la lecture des données, l'écriture sur le PC ou l'exécution de code n'a été trouvée. Ce qui a été trouvé
+relève du durcissement — des portes qui n'auraient dû être qu'entrouvertes. Tout est corrigé dans la 1.8.1.
+
+| # | Constat | Qui pouvait s'en servir | Gravité | Correction |
+|---|---|---|---|---|
+| 1 | L'interface pouvait être affichée dans un cadre par un autre site (détournement de clic) ; aucune politique de contenu ; `nosniff` seulement sur les médias | un site ouvert dans le navigateur du PC pendant que Corde tourne | moyenne | §3 règle 7 |
+| 2 | La page d'un autre logiciel du PC (autre port de la boucle locale) avait tous les droits de « ce PC » : lire, supprimer, ouvrir l'accès réseau, lier Corde à un serveur de son choix | une page servie par un autre logiciel du PC, ou une faille de ce logiciel | moyenne | §3 règle 2, `--dev-origins` |
+| 3 | Aucune limite de connexions ni de délai : quelques centaines de connexions muettes bloquaient le serveur | toute machine qui atteint le port (réseau local ; serveur Corde : avant tout appairage) | moyenne (déni de service) | §3 règle 8 |
+| 4 | Noms de périphériques de Windows acceptés comme identifiant de disposition et comme fichier `base` | un appareil du réseau local, accès réseau activé | faible à moyenne (blocage de fils du serveur, écriture vers un port série) | §5 |
+| 5 | Dispositions sans limite de nombre ni de taille | un appareil du réseau local, accès réseau activé | faible (disque, mémoire) | §5 |
+| 6 | Une route qui change quelque chose était ouverte au réseau par défaut si on oubliait de la lister | personne aujourd'hui (aucune route oubliée) ; risque pour la suite | préventif | §3 règle 4 |
+| 7 | Serveur Corde : on pouvait lui demander si un fichier quelconque existait ; position d'un morceau qui déborde ; fichiers incomplets jamais nettoyés ni bornés ; paquets décodés tous à la fois | un appareil **appairé** | faible | §7.4 |
+| 8 | Serveur Corde : deux demandes simultanées pouvaient retirer les deux derniers administrateurs ; un appareil révoqué à l'instant exact de l'ouverture de son WebSocket le gardait | un appareil administrateur ; course de quelques millisecondes | très faible | §7.2, `ws.rs` |
+| 9 | Le PC suivait les redirections du serveur auquel il est lié | qui contrôle ce serveur ou le réseau entre les deux | faible | §7.5 |
+| 10 | Analyse de la session en cours recalculée à chaque demande ; un canal nommé mille fois lu mille fois ; appels au modèle de langage sans plafond | un appareil du réseau local (ou appairé) | faible (charge du PC pendant une course, facture) | §5 |
+| 11 | `?server=` dans l'adresse de la page pointait l'interface vers n'importe quel serveur | qui fait ouvrir un lien au pilote | faible (affichage de fausses données) | l'interface ne suit `?server=` que vers une adresse du réseau de la maison (`net/url.ts`) ; l'adresse tapée dans les réglages n'est pas limitée |
+| 12 | SQLite embarqué concerné par un avis de sécurité | qui peut écrire dans le dossier de données | faible | §5, `rusqlite` 0.41 |
+| 13 | Actions GitHub désignées par une étiquette (qui peut être déplacée) dans les tâches qui signent les mises à jour | qui compromet le dépôt d'une de ces actions | chaîne de publication | toutes épinglées sur un commit (`.github/workflows/`) |
+
+**Ce qui reste, par choix** (inchangé, décrit plus haut) : pas de compte ni de mot de passe sur le PC ; HTTP
+en clair sur le réseau de la maison (§2, §7.1) ; une machine hostile du Wi-Fi lit ce que l'interface montre
+quand l'accès réseau est activé, y compris des chemins du PC (§5) ; le cookie du serveur Corde n'est pas
+isolé par port (un autre service web de la même machine, sur un autre port, le reçoit dans ses requêtes :
+ne pas faire tourner sur la machine du serveur Corde un service web auquel on ne fait pas confiance) ; la
+fenêtre de bureau n'a pas de garde de navigation propre (ses commandes — démarrage avec Windows,
+redémarrage, mises à jour signées — ne sont accordées qu'aux pages de la boucle locale, et l'interface
+n'ouvre aucun lien vers une autre page locale).
+
+**À faire par le propriétaire du dépôt** (réglages de GitHub, hors du code) : activer le signalement privé
+des failles (c'est la voie qu'indique [SECURITY.md](../SECURITY.md)), l'analyse des secrets avec blocage à
+la poussée, les alertes Dependabot ; interdire la suppression et la réécriture de la branche `main` ;
+protéger le compte par une double authentification.

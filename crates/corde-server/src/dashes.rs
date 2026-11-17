@@ -73,10 +73,7 @@ pub const BUILTIN_ID: &str = "corde";
 /// Device names of Windows: a file called `con.json` or `nul.json` there is the device, not a
 /// file, so such an id can never be stored (the Studio never makes one, `freshId`).
 pub fn windows_device_name(id: &str) -> bool {
-    matches!(id, "con" | "prn" | "aux" | "nul")
-        || (id.len() == 4
-            && (id.starts_with("com") || id.starts_with("lpt"))
-            && id.as_bytes()[3].is_ascii_digit())
+    corde_core::fsname::is_windows_device_name(id)
 }
 
 /// Ids of definitions, pages and elements: `[a-z0-9-]{1,40}` (also a file name on the PC).

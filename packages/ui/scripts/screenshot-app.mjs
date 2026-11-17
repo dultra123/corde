@@ -80,6 +80,9 @@ const child = spawn(
     "--no-record",
     "--no-game-api",
     "--no-import",
+    // The preview of the application is a page served on another local port: accepted by a
+    // server started for development only (the real application has its own origin).
+    "--dev-origins",
   ],
   { stdio: ["ignore", "ignore", "inherit"] },
 );

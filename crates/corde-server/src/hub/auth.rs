@@ -536,6 +536,8 @@ impl HubAuth {
     }
 
     /// Change a device's name and / or administrator flag. `Ok(None)`: unknown id.
+    /// `Err` of kind `PermissionDenied`: it would leave no administrator at all (checked
+    /// and changed under the same lock: two requests cannot both take the last ones away).
     pub fn update(
         &self,
         id: &str,
@@ -546,6 +548,15 @@ impl HubAuth {
         let Some(i) = devices.iter().position(|d| d.id == id) else {
             return Ok(None);
         };
+        if admin == Some(false)
+            && devices[i].admin
+            && devices.iter().filter(|d| d.admin).count() <= 1
+        {
+            return Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "the last administrator",
+            ));
+        }
         let before = devices[i].clone();
         if let Some(n) = name {
             devices[i].name = clean_name(n, &before.name);
@@ -727,13 +738,29 @@ mod tests {
         assert!(!auth.revoke(&pc.id).unwrap());
         assert_eq!(rx.try_recv().unwrap(), pc.id);
         assert!(auth.authenticate(&pc_token).is_none());
-        // Rename, admin flag.
+        // Rename.
         let up = auth
-            .update(&dev.id, Some("Tablette"), Some(false))
+            .update(&dev.id, Some("Tablette"), None)
             .unwrap()
             .unwrap();
         assert_eq!(up.name, "Tablette");
-        assert!(!up.admin && !auth.has_admin());
+        assert!(up.admin);
+        // The last administrator keeps its rights: refused where the change is made, so
+        // that two requests cannot each take one of the last two away.
+        let e = auth.update(&dev.id, None, Some(false)).unwrap_err();
+        assert_eq!(e.kind(), io::ErrorKind::PermissionDenied);
+        assert!(auth.has_admin());
+        // With a second administrator, the first one may step down — once.
+        let c4 = auth.issue_code(true);
+        let (second, _) = auth
+            .pair(PHONE, &c4.code, "Second", DeviceKind::Browser)
+            .unwrap();
+        assert!(second.admin);
+        let up = auth.update(&dev.id, None, Some(false)).unwrap().unwrap();
+        assert!(!up.admin);
+        let e = auth.update(&second.id, None, Some(false)).unwrap_err();
+        assert_eq!(e.kind(), io::ErrorKind::PermissionDenied);
+        assert!(auth.has_admin());
         assert!(auth.update("nope", Some("x"), None).unwrap().is_none());
         let _ = std::fs::remove_dir_all(&d);
     }

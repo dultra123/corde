@@ -93,55 +93,165 @@ pub fn peer_is_local(peer: IpAddr) -> bool {
     }
 }
 
-/// Who may change the settings (and call the other "this PC only" routes,
-/// see [`crate::guard::route_access`]): a program of this PC only. The peer
-/// must be the loopback, and when a browser sent the request (it adds
-/// `Origin` to every cross-origin one, and to every `PUT`), the page must
-/// itself come from this PC — the Corde UI, the desktop shell or a dev
-/// server. A phone of the LAN, even through the UI this server gave it, is
-/// refused.
-pub fn may_change_settings(peer: IpAddr, origin: Option<&str>) -> bool {
-    peer_is_local(peer) && origin.is_none_or(origin_is_local)
+/// What the `Origin` header of a request says about the page that sent it. A browser adds it
+/// to every cross-origin request and to every `POST` / `PUT` / `DELETE`; a program (curl, the
+/// desktop shell's own code, a script) usually sends none.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OriginKind {
+    /// No `Origin`: a program, or a plain visit.
+    None,
+    /// A page this very server gave: `http://<Host>` (same host and port as the request).
+    ThisServer,
+    /// The desktop shell's own pages: `tauri://localhost`, `http(s)://tauri.localhost`.
+    Shell,
+    /// The iPhone application ([`IOS_APP_ORIGIN`]).
+    IosApp,
+    /// The Android application ([`ANDROID_APP_ORIGIN`]).
+    AndroidApp,
+    /// A page served by **another** program of the machine that runs the browser, on another
+    /// loopback port (`http://127.0.0.1:<port>`, `http://localhost:<port>`, `http://[::1]:<port>`):
+    /// a development server, a capture script — or any other software's local web page.
+    OtherLocal,
+    /// Any other page: refused.
+    Foreign,
 }
 
-/// Origins of pages that run on this PC: `http://127.0.0.1:<port>`,
-/// `http://localhost:<port>`, `http://[::1]:<port>` (any port: the UI served
-/// by this server, a dev server, a capture script), and the Tauri shell's own
-/// pages (`tauri://localhost`, `http(s)://tauri.localhost`).
-pub fn origin_is_local(origin: &str) -> bool {
+/// The kind of page behind `origin`, for a request sent to `host` (its `Host` header).
+pub fn origin_kind(origin: Option<&str>, host: Option<&str>) -> OriginKind {
+    let Some(origin) = origin else {
+        return OriginKind::None;
+    };
+    if origin_is_shell(origin) {
+        OriginKind::Shell
+    } else if host.is_some_and(|h| same_origin(origin, h)) {
+        OriginKind::ThisServer
+    } else if origin_is_ios_app(origin) {
+        OriginKind::IosApp
+    } else if origin_is_android_app(origin) {
+        OriginKind::AndroidApp
+    } else if origin_is_loopback(origin) {
+        OriginKind::OtherLocal
+    } else {
+        OriginKind::Foreign
+    }
+}
+
+/// May a page of this kind call the API at all (`/api/*`, `/ws`)?
+///
+/// * the server's own pages, the desktop shell, the two applications, a program: yes;
+/// * the Android application's origin is `http://localhost`. From a phone that is the
+///   application; from this very machine (`peer_local`) it is a web server of this PC on
+///   port 80 — another program's pages — and is treated as such;
+/// * **another program's local pages are refused**: every piece of software that serves a web
+///   page on the loopback (and whatever content it shows there) would otherwise hold all the
+///   rights of this PC on Corde. `dev_origins` (`--dev-origins`, development and capture
+///   scripts only) accepts them again;
+/// * anything else: no.
+pub fn origin_may_call(kind: OriginKind, peer_local: bool, dev_origins: bool) -> bool {
+    match kind {
+        OriginKind::None | OriginKind::ThisServer | OriginKind::Shell | OriginKind::IosApp => true,
+        OriginKind::AndroidApp => !peer_local || dev_origins,
+        OriginKind::OtherLocal => dev_origins,
+        OriginKind::Foreign => false,
+    }
+}
+
+/// Who may change the settings (and call the other "this PC only" routes, see
+/// [`crate::guard::route_access`]): a program of this PC only. The peer must be the loopback,
+/// and when a browser sent the request, the page must be this server's own (`http://<Host>`:
+/// the Corde UI opened on this PC) or the desktop shell's. A phone of the LAN, even through
+/// the UI this server gave it, is refused; so is the page of another program of this PC
+/// (unless `dev_origins`), and so are the applications, wherever they seem to connect from.
+pub fn may_change_settings(
+    peer: IpAddr,
+    origin: Option<&str>,
+    host: Option<&str>,
+    dev_origins: bool,
+) -> bool {
+    peer_is_local(peer)
+        && match origin_kind(origin, host) {
+            OriginKind::None | OriginKind::ThisServer | OriginKind::Shell => true,
+            OriginKind::OtherLocal | OriginKind::AndroidApp => dev_origins,
+            OriginKind::IosApp | OriginKind::Foreign => false,
+        }
+}
+
+/// The page comes from this very server: `http://<Host>`, same host and same port.
+pub fn same_origin(origin: &str, host: &str) -> bool {
+    let Some((scheme, authority)) = split_origin(origin) else {
+        return false;
+    };
+    if scheme != "http" {
+        return false;
+    }
+    match (split_host_port(&authority), split_host_port(host)) {
+        (Some((oh, op)), Some((hh, hp))) => oh == hh && op.unwrap_or(80) == hp.unwrap_or(80),
+        _ => false,
+    }
+}
+
+/// The desktop shell's own pages (`apps/desktop/dist`): `tauri://localhost` on macOS and
+/// Linux, `http(s)://tauri.localhost` on Windows. No web page can carry these origins.
+pub fn origin_is_shell(origin: &str) -> bool {
+    let Some((scheme, authority)) = split_origin(origin) else {
+        return false;
+    };
+    matches!(
+        (scheme.as_str(), authority.as_str()),
+        ("tauri", "localhost") | ("http" | "https", "tauri.localhost")
+    )
+}
+
+/// A page served on the loopback of the machine that runs the browser:
+/// `http://127.0.0.1:<port>`, `http://localhost:<port>`, `http://[::1]:<port>`, any port.
+pub fn origin_is_loopback(origin: &str) -> bool {
     let Some((scheme, authority)) = split_origin(origin) else {
         return false;
     };
     let Some((host, _)) = split_host_port(&authority) else {
         return false;
     };
-    match (scheme.as_str(), host.as_str()) {
-        ("tauri", "localhost") => true,
-        ("http" | "https", "tauri.localhost") => true,
-        ("http", "localhost") => true,
-        ("http", other) => parse_ip_host(other).is_some_and(|ip| ip.is_loopback()),
-        _ => false,
-    }
+    scheme == "http"
+        && (host == "localhost" || parse_ip_host(&host).is_some_and(|ip| ip.is_loopback()))
 }
 
 /// Origin of the pages of the Corde iPhone application (`apps/mobile`, Capacitor): the
 /// webview serves the bundled interface from `capacitor://localhost` (Capacitor's default
 /// `server.iosScheme` and `server.hostname`, left unchanged in `capacitor.config.json`).
 ///
-/// Accepted by the `Origin` check and by CORS ([`crate::guard::origin_allowed`]), **never**
-/// as a page of this PC: the application runs on a phone, so the "this PC only" routes stay
-/// closed to it ([`may_change_settings`] only trusts [`origin_is_local`]). Accepting it adds
-/// nothing a native program could not already do — a program is not a browser, it can send
-/// any `Origin`, or none, which is accepted — while a web page opened in a browser can never
-/// carry it.
-pub const MOBILE_APP_ORIGIN: &str = "capacitor://localhost";
+/// Accepted by the `Origin` check and by CORS ([`origin_may_call`]), **never** as a page of
+/// this PC: the application runs on a phone, so the "this PC only" routes stay closed to it
+/// ([`may_change_settings`]). Accepting it adds nothing a native program could not already
+/// do — a program is not a browser, it can send any `Origin`, or none, which is accepted —
+/// while a web page opened in a browser can never carry it.
+pub const IOS_APP_ORIGIN: &str = "capacitor://localhost";
+/// The former name of [`IOS_APP_ORIGIN`].
+pub const MOBILE_APP_ORIGIN: &str = IOS_APP_ORIGIN;
 
-/// `true` for the origin of the Corde iPhone application ([`MOBILE_APP_ORIGIN`]).
-pub fn origin_is_mobile_app(origin: &str) -> bool {
+/// Origin of the pages of the Corde Android application: `http://localhost`, without a port
+/// (Capacitor's `server.androidScheme` set to `http` in `capacitor.config.json`, ADR 0013).
+pub const ANDROID_APP_ORIGIN: &str = "http://localhost";
+
+/// `true` for the origin of the Corde iPhone application ([`IOS_APP_ORIGIN`]).
+pub fn origin_is_ios_app(origin: &str) -> bool {
     match split_origin(origin) {
         Some((scheme, authority)) => scheme == "capacitor" && authority == "localhost",
         None => false,
     }
+}
+
+/// `true` for the origin of the Corde Android application ([`ANDROID_APP_ORIGIN`]): exactly
+/// `http://localhost`, no port.
+pub fn origin_is_android_app(origin: &str) -> bool {
+    match split_origin(origin) {
+        Some((scheme, authority)) => scheme == "http" && authority == "localhost",
+        None => false,
+    }
+}
+
+/// `true` for the origin of one of the two Corde applications.
+pub fn origin_is_mobile_app(origin: &str) -> bool {
+    origin_is_ios_app(origin) || origin_is_android_app(origin)
 }
 
 /// `("http", "pc-jeu:8471")` from `http://PC-Jeu:8471`, lower case. `None`
@@ -461,30 +571,43 @@ mod tests {
     fn only_this_pc_may_change_the_settings() {
         let local: IpAddr = "127.0.0.1".parse().unwrap();
         let phone: IpAddr = "192.168.1.42".parse().unwrap();
+        let host = Some("127.0.0.1:8471");
         // No Origin: curl, the desktop shell, a script on this PC.
-        assert!(may_change_settings(local, None));
-        assert!(may_change_settings("::1".parse().unwrap(), None));
+        assert!(may_change_settings(local, None, host, false));
+        assert!(may_change_settings(
+            "::1".parse().unwrap(),
+            None,
+            host,
+            false
+        ));
         assert!(may_change_settings(
             "::ffff:127.0.0.1".parse().unwrap(),
-            None
+            None,
+            host,
+            false
         ));
-        // The UI served by this server, a dev server, the Tauri webview.
-        for origin in [
-            "http://127.0.0.1:8471",
-            "http://localhost:5173",
-            "http://LOCALHOST:5173",
-            "http://[::1]:8471",
-            "tauri://localhost",
-            "https://tauri.localhost",
-            "http://tauri.localhost",
+        // The UI served by this server (same host, same port), the Tauri webview.
+        for (origin, host) in [
+            ("http://127.0.0.1:8471", "127.0.0.1:8471"),
+            ("http://localhost:8471", "localhost:8471"),
+            ("http://LOCALHOST:8471", "localhost:8471"),
+            ("http://[::1]:8471", "[::1]:8471"),
+            ("tauri://localhost", "127.0.0.1:8471"),
+            ("https://tauri.localhost", "127.0.0.1:8471"),
+            ("http://tauri.localhost", "127.0.0.1:8471"),
         ] {
-            assert!(may_change_settings(local, Some(origin)), "{origin}");
+            assert!(
+                may_change_settings(local, Some(origin), Some(host), false),
+                "{origin}"
+            );
         }
         // Another device, even through the UI this server gave it.
-        assert!(!may_change_settings(phone, None));
+        assert!(!may_change_settings(phone, None, host, false));
         assert!(!may_change_settings(
             phone,
-            Some("http://192.168.1.20:8471")
+            Some("http://192.168.1.20:8471"),
+            Some("192.168.1.20:8471"),
+            false
         ));
         // A web page opened on this PC (plain cross-site, or DNS rebinding).
         for origin in [
@@ -497,7 +620,94 @@ mod tests {
             "null",
             "",
         ] {
-            assert!(!may_change_settings(local, Some(origin)), "{origin:?}");
+            for dev in [false, true] {
+                assert!(
+                    !may_change_settings(local, Some(origin), host, dev),
+                    "{origin:?}"
+                );
+            }
         }
+    }
+
+    /// The page of another program of this PC — any software that serves a web page on the
+    /// loopback, and whatever content it shows there — is not Corde's: no right at all,
+    /// unless the server was started for development.
+    #[test]
+    fn another_program_of_this_pc_is_not_this_server() {
+        let local: IpAddr = "127.0.0.1".parse().unwrap();
+        let host = Some("127.0.0.1:8471");
+        for origin in [
+            "http://127.0.0.1:8888",
+            "http://localhost:5173",
+            "http://[::1]:4173",
+            "http://127.0.0.1",
+            // Port 80 of this PC: also the origin of the Android application.
+            "http://localhost",
+            // Another name of the loopback than the one the request was sent to.
+            "http://localhost:8471",
+        ] {
+            let kind = origin_kind(Some(origin), host);
+            assert!(
+                matches!(kind, OriginKind::OtherLocal | OriginKind::AndroidApp),
+                "{origin}: {kind:?}"
+            );
+            assert!(!origin_may_call(kind, true, false), "{origin}");
+            assert!(
+                !may_change_settings(local, Some(origin), host, false),
+                "{origin}"
+            );
+            // Development (`--dev-origins`): as before.
+            assert!(origin_may_call(kind, true, true), "{origin}");
+            assert!(
+                may_change_settings(local, Some(origin), host, true),
+                "{origin}"
+            );
+        }
+        // The same server reached by the same name is itself.
+        assert_eq!(
+            origin_kind(Some("http://localhost:8471"), Some("localhost:8471")),
+            OriginKind::ThisServer
+        );
+    }
+
+    #[test]
+    fn kinds_of_origin() {
+        use OriginKind as K;
+        let host = Some("192.168.1.20:8471");
+        for (origin, kind) in [
+            (None, K::None),
+            (Some("http://192.168.1.20:8471"), K::ThisServer),
+            (Some("http://192.168.1.20:8471/"), K::ThisServer),
+            (Some("tauri://localhost"), K::Shell),
+            (Some("https://tauri.localhost"), K::Shell),
+            (Some("capacitor://localhost"), K::IosApp),
+            (Some("Capacitor://LOCALHOST/"), K::IosApp),
+            (Some("http://localhost"), K::AndroidApp),
+            (Some("http://localhost:80"), K::OtherLocal),
+            (Some("http://127.0.0.1:5173"), K::OtherLocal),
+            (Some("https://192.168.1.20:8471"), K::Foreign),
+            (Some("http://192.168.1.20:9999"), K::Foreign),
+            (Some("https://localhost"), K::Foreign),
+            (Some("capacitor://localhost:8080"), K::Foreign),
+            (Some("tauri://evil.example"), K::Foreign),
+            (Some("https://evil.example"), K::Foreign),
+            (Some("null"), K::Foreign),
+            (Some(""), K::Foreign),
+        ] {
+            assert_eq!(origin_kind(origin, host), kind, "{origin:?}");
+        }
+        // Who may call the API.
+        for peer_local in [false, true] {
+            assert!(origin_may_call(K::None, peer_local, false));
+            assert!(origin_may_call(K::ThisServer, peer_local, false));
+            assert!(origin_may_call(K::Shell, peer_local, false));
+            assert!(origin_may_call(K::IosApp, peer_local, false));
+            assert!(!origin_may_call(K::Foreign, peer_local, false));
+            assert!(!origin_may_call(K::Foreign, peer_local, true));
+            assert!(!origin_may_call(K::OtherLocal, peer_local, false));
+        }
+        // The Android application: from a phone, never from this very machine.
+        assert!(origin_may_call(K::AndroidApp, false, false));
+        assert!(!origin_may_call(K::AndroidApp, true, false));
     }
 }

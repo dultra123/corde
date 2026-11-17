@@ -416,6 +416,9 @@ fn agent(timeout: Duration) -> ureq::Agent {
         .http_status_as_error(false)
         // The server is on the home network or the VPN: never through a web proxy.
         .proxy(None)
+        // A Corde server never redirects: what is sent (sessions, the pairing code) goes to
+        // the address the driver typed, nowhere else.
+        .max_redirects(0)
         .timeout_connect(Some(Duration::from_secs(5)))
         .timeout_global(Some(timeout))
         .build()

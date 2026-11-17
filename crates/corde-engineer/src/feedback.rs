@@ -1826,6 +1826,11 @@ pub const ANTHROPIC_DEFAULT_MODEL: &str = "claude-haiku-5-5";
 pub const ANTHROPIC_ENDPOINT: &str = "https://api.anthropic.com/v1/messages";
 pub const ANTHROPIC_VERSION: &str = "2023-06-01";
 pub const ANTHROPIC_TIMEOUT: Duration = Duration::from_secs(8);
+/// Calls to the language model per [`ANTHROPIC_CALLS_WINDOW`], at most: each one is billed
+/// to the driver, and any device allowed to reach Corde may send a feeling. Beyond, the
+/// dictionary answers (a driver types a few feelings per session, not dozens).
+pub const ANTHROPIC_MAX_CALLS: usize = 30;
+pub const ANTHROPIC_CALLS_WINDOW: Duration = Duration::from_secs(3600);
 
 /// Calls the Anthropic Messages API with a strict JSON schema; falls back to
 /// the dictionary (with a note) on any error or empty answer.
@@ -1836,6 +1841,8 @@ pub struct AnthropicExtractor {
     timeout: Duration,
     fallback: DictionaryExtractor,
     allowed: Vec<String>,
+    /// When the last calls were made ([`ANTHROPIC_MAX_CALLS`]).
+    calls: std::sync::Mutex<std::collections::VecDeque<std::time::Instant>>,
 }
 
 impl std::fmt::Debug for AnthropicExtractor {
@@ -1933,7 +1940,28 @@ impl AnthropicExtractor {
             timeout: ANTHROPIC_TIMEOUT,
             fallback: DictionaryExtractor::embedded()?,
             allowed: allowed_symptom_ids(rule_symptoms),
+            calls: std::sync::Mutex::new(std::collections::VecDeque::new()),
         })
+    }
+
+    /// Counts one call to the model; `false` when [`ANTHROPIC_MAX_CALLS`] were already made
+    /// within [`ANTHROPIC_CALLS_WINDOW`].
+    fn may_call(&self, now: std::time::Instant) -> bool {
+        let mut calls = match self.calls.lock() {
+            Ok(g) => g,
+            Err(p) => p.into_inner(),
+        };
+        while calls
+            .front()
+            .is_some_and(|t| now.duration_since(*t) >= ANTHROPIC_CALLS_WINDOW)
+        {
+            calls.pop_front();
+        }
+        if calls.len() >= ANTHROPIC_MAX_CALLS {
+            return false;
+        }
+        calls.push_back(now);
+        true
     }
 
     /// Another endpoint / model / timeout (tests, proxies).
@@ -2150,6 +2178,16 @@ impl SymptomExtractor for AnthropicExtractor {
     }
 
     fn extract(&self, text: &str, lang_hint: Option<&str>) -> FeedbackInterpretation {
+        if !self.may_call(std::time::Instant::now()) {
+            tracing::warn!(
+                "extracteur LLM : plus de {ANTHROPIC_MAX_CALLS} appels en une heure, repli sur le dictionnaire"
+            );
+            let mut d = self.fallback.extract(text, lang_hint);
+            d.notes_fr.push(
+                "Trop de ressentis envoyés au modèle de langage en une heure : interprétation par le dictionnaire.".into(),
+            );
+            return d;
+        }
         match self.call(text, lang_hint) {
             Ok(i) if !i.symptoms.is_empty() => i,
             Ok(_) => {
@@ -2879,6 +2917,41 @@ mod tests {
         assert!(
             AnthropicExtractor::from_env(&[]).unwrap().is_none()
                 || corde_store::migrate::env_var(ANTHROPIC_KEY_ENV).is_ok()
+        );
+    }
+
+    /// Each call to the model is billed to the driver, and any device allowed to reach
+    /// Corde may send a feeling: beyond a few dozen an hour, the dictionary answers.
+    #[test]
+    fn calls_to_the_model_are_bounded_per_hour() {
+        let e = llm();
+        let t0 = std::time::Instant::now();
+        for i in 0..ANTHROPIC_MAX_CALLS {
+            assert!(e.may_call(t0 + Duration::from_secs(i as u64)), "{i}");
+        }
+        assert!(!e.may_call(t0 + Duration::from_secs(600)));
+        assert!(!e.may_call(t0 + ANTHROPIC_CALLS_WINDOW - Duration::from_secs(1)));
+        // The oldest call leaves the window: one more is allowed, not two.
+        assert!(e.may_call(t0 + ANTHROPIC_CALLS_WINDOW));
+        assert!(!e.may_call(t0 + ANTHROPIC_CALLS_WINDOW));
+        // Over the limit, the model is not called at all (no endpoint is reachable here
+        // anyway: the note tells which of the two happened).
+        let e = llm().with_endpoint(
+            "http://127.0.0.1:9/v1/messages",
+            None,
+            Duration::from_millis(1500),
+        );
+        let now = std::time::Instant::now();
+        for _ in 0..ANTHROPIC_MAX_CALLS {
+            assert!(e.may_call(now));
+        }
+        let i = e.extract("l'avant ne tourne pas en entrée des virages lents", None);
+        assert_eq!(i.extractor, ExtractorKind::Dictionary);
+        assert_eq!(i.symptoms[0].symptom_id, "US_ENTRY_SLOW");
+        assert!(
+            i.notes_fr.iter().any(|n| n.contains("Trop de ressentis")),
+            "{:?}",
+            i.notes_fr
         );
     }
 }

@@ -423,22 +423,43 @@ async fn the_application_pairs_with_the_home_server_and_uses_its_token() {
 }
 
 /// The Android application (ADR 0013): its pages come from `http://localhost`
-/// (`server.androidScheme: "http"`), an origin every server already accepts. On the home
-/// server it pairs and uses its token like the iPhone application; without a token it gets
-/// nothing, even though that origin is also the one of a page of the machine itself.
+/// (`server.androidScheme: "http"`). From a phone, the home server accepts that origin: the
+/// application pairs and uses its token like the iPhone application; without a token it gets
+/// nothing. From the machine of the server itself, the same origin is whatever serves port
+/// 80 there — another program's pages: refused like any other site.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn the_android_application_pairs_with_the_home_server_from_its_origin() {
     const ANDROID: &str = "http://localhost";
+    // A phone is another device: the requests must come from an address of this machine
+    // other than the loopback. Without one (a machine with no network), the server is
+    // started for development, where the loopback is accepted too.
+    let lan = corde_server::net::lan_ipv4().first().map(|(_, ip)| *ip);
     let data = temp_dir("hub-android");
     let server = Running::start(ServerConfig {
         role: Role::Hub,
         port: 0,
-        bind: Some([127, 0, 0, 1].into()),
+        bind: Some([0, 0, 0, 0].into()),
         data_dir: Some(data.clone()),
+        dev_origins: lan.is_none(),
         ..Default::default()
     })
     .await;
-    let to = server.to();
+    let port = server.bound.port();
+    if lan.is_some() {
+        // On the server's own machine, `http://localhost` is not the application.
+        let local = server.to();
+        let host = local.to_string();
+        let h = [("Host", host.as_str()), ("Origin", ANDROID)];
+        let r = raw(local, "GET", "/api/hub/pairing", &h, "").await;
+        assert_eq!(r.status, 403, "{}", r.body);
+        assert!(r.header("access-control-allow-origin").is_none());
+    } else {
+        eprintln!("no LAN address on this machine: the phone is played from the loopback");
+    }
+    let to = match lan {
+        Some(ip) => SocketAddr::from((ip, port)),
+        None => server.to(),
+    };
     let host = to.to_string();
     let h = [("Host", host.as_str()), ("Origin", ANDROID)];
 

@@ -172,6 +172,8 @@ pub struct AppState {
     pub hub: Option<Arc<crate::hub::Hub>>,
     /// PC only: the link to the home server and what it still lacks.
     pub link: Option<Arc<crate::hub_link::HubLink>>,
+    /// `--dev-origins`: the pages of other programs of this PC are accepted (development).
+    dev_origins: std::sync::atomic::AtomicBool,
 }
 
 /// What differs between the PC and the home server, for [`AppState::new`].
@@ -229,9 +231,36 @@ impl AppState {
             role: role.role,
             hub: role.hub,
             link: role.link,
+            dev_origins: std::sync::atomic::AtomicBool::new(false),
         });
         state.prune_dash_assets();
         state
+    }
+
+    /// Accept the pages of other programs of this PC (`--dev-origins`; set before the
+    /// router is built).
+    pub fn set_dev_origins(&self, on: bool) {
+        self.dev_origins.store(on, Ordering::Relaxed);
+    }
+
+    pub fn dev_origins(&self) -> bool {
+        self.dev_origins.load(Ordering::Relaxed)
+    }
+
+    /// `true` when a request comes from this PC itself — a program, or a page this server
+    /// gave ([`crate::net::may_change_settings`]).
+    pub fn is_this_pc(&self, peer: std::net::IpAddr, headers: &axum::http::HeaderMap) -> bool {
+        let text = |name| {
+            headers
+                .get(name)
+                .map(|v: &axum::http::HeaderValue| v.to_str().unwrap_or(""))
+        };
+        crate::net::may_change_settings(
+            peer,
+            text(axum::http::header::ORIGIN),
+            text(axum::http::header::HOST),
+            self.dev_origins(),
+        )
     }
 
     /// Removes the dashboard media no definition cites any more (ADR 0016): at start-up and

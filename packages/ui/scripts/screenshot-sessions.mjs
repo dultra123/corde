@@ -13,8 +13,9 @@
  *   node scripts/screenshot-sessions.mjs --spawn
  *
  * Serves `dist/` on a local port, reaches the server through `?server=host:port` (REST + WS go
- * straight to it: the page's origin, another port of 127.0.0.1, is a local origin the server
- * accepts), waits until the latest session holds `MIN_LAPS` laps, then writes screenshots/sessions.png, session.png, lap-compare.png (1920×1080) and
+ * straight to it: the page's origin is another port of 127.0.0.1, which a server accepts only
+ * when started with `--dev-origins` — `--spawn` passes it; a server you start yourself needs
+ * it too), waits until the latest session holds `MIN_LAPS` laps, then writes screenshots/sessions.png, session.png, lap-compare.png (1920×1080) and
  * lap-mobile.png (390×844). When the server has imported results files (`--spawn` passes
  * `--lmu-results-dir reference/samples`), it also writes profile.png, result.png (1920×1080)
  * and profile-mobile.png (390×844). `--profile-only` skips the session shots (no wait for
@@ -146,6 +147,8 @@ if (SPAWN) {
   child = spawn(
     bin,
     [
+      // The pages come from another local port (`?server=`): development only.
+      "--dev-origins",
       "--source",
       "sim",
       "--sim-track-length",

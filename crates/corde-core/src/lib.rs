@@ -9,11 +9,13 @@
 //! * [`LapTracker`] — turns the stream of frames into completed [`LapRecord`]s
 //!   and lap-boundary events.
 //! * [`derive`] — physics helpers shared by adapters (slip ratio, slip angle, g's).
+//! * [`fsname`] — names that must never become a file name on the PC (Windows devices).
 //!
 //! Nothing here knows about LMU specifics; those live in `corde-lmu`.
 
 pub mod auto;
 pub mod derive;
+pub mod fsname;
 pub mod lap_tracker;
 pub mod source;
 

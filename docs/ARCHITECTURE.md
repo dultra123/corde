@@ -62,7 +62,7 @@ corde/
 └─ .github/workflows/         # CI Linux + Windows : tests, binaires, installeur, pré-release « continuous »
 ```
 
-Outils : Rust stable (≥ 1.85 ; ≥ 1.90 pour `apps/desktop`), `pnpm` 10, Node 22, Biome pour le TS, `cargo fmt` +
+Outils : Rust stable (≥ 1.89 ; ≥ 1.90 pour `apps/desktop`), `pnpm` 10, Node 22, Biome pour le TS, `cargo fmt` +
 `clippy` pour le Rust.
 
 **Application de bureau.** `apps/desktop/src-tauri` est exclu du workspace Cargo racine (`exclude`) : Tauri

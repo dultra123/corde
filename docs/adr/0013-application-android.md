@@ -83,6 +83,9 @@ seulement « (ios) » à « application started ». Essais Vitest : `mobile/andr
   pages de « ce PC », mais les routes « ce PC seulement » exigent en plus que la connexion vienne de la
   boucle locale (`may_change_settings`), ce qu'un téléphone n'est jamais (essai Rust ajouté). Aucun
   changement du serveur, aucune nouvelle version du PC nécessaire.
+  *Mise à jour 1.8.1* : `http://localhost` reste l'origine de l'application, acceptée depuis un téléphone ;
+  elle n'est plus acceptée quand la connexion vient de la machine du serveur elle-même (là, c'est la page
+  d'un serveur web local, un autre logiciel) — docs/SECURITY-MODEL.md §9.1.
 - **Trafic en clair** : `network_security_config.xml` l'autorise pour toutes les adresses — Android ne sait
   pas le limiter à des plages d'adresses privées (un `domain-config` prend des noms d'hôtes) — et le
   **refuse** explicitement vers `racecontrol.gg` et `lmu.tools`. La règle « `http://` seulement vers le

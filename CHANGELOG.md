@@ -8,6 +8,40 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [1.8.1] — 2026-11-17
+
+**Revue de sécurité de tout le code. Rien de grave trouvé : aucune faille qui laisse un site web ou une
+machine d'Internet lire tes données ou toucher à ton PC. Plusieurs verrous ajoutés.**
+
+### Sécurité
+
+- **Un site web ne peut plus afficher Corde dans un cadre caché** pour te faire cliquer à ton insu sur
+  « Activer l'accès réseau » ou « Supprimer ». L'interface n'exécute plus aucun script autre que ses
+  propres fichiers.
+- **La page d'un autre logiciel de ton PC n'a plus aucun droit sur Corde.** Beaucoup d'outils servent une
+  page web sur ton PC ; une telle page pouvait, comme la fenêtre de Corde, lire tes sessions ou changer tes
+  réglages. Seules la fenêtre de Corde et l'interface que Corde sert elle-même le peuvent maintenant.
+- **Corde ne se laisse plus bloquer** par une machine qui ouvre des centaines de connexions sans rien
+  envoyer : elles sont fermées, et leur nombre est limité.
+- Depuis un téléphone du Wi-Fi : une disposition ne peut plus porter un nom réservé de Windows (`con`,
+  `com1`…) ni dépasser une taille raisonnable ; même contrôle pour le fichier de réglage choisi.
+- **Corde serveur** (NAS, Raspberry Pi) : un appareil appairé ne peut plus lui demander si un fichier
+  existe, ni le remplir de fichiers jamais terminés (nettoyés après 7 jours) ; le dernier administrateur ne
+  peut plus être retiré par deux demandes simultanées.
+- Le PC n'envoie ses sessions qu'à l'adresse du serveur que tu as tapée, sans suivre de redirection.
+- Base de données embarquée (SQLite) mise à jour après un avis de sécurité.
+- Publication : les outils qui construisent et signent Corde sont figés sur une version précise.
+
+### À savoir
+
+- **Rien ne change dans l'utilisation** : PC, téléphone, OBS, applications.
+- Corde serveur profite aussi de ces corrections : mets-le à jour quand tu peux
+  (`docs/SYNOLOGY.md` ou `docs/SERVEUR.md`, « Mettre à jour »).
+- Le détail — ce qui a été trouvé, par qui c'était exploitable, ce qui reste par choix — :
+  `docs/SECURITY-MODEL.md`, §10.
+- Pour qui développe : le serveur de développement de l'interface demande maintenant
+  `corde-server --dev-origins`.
+
 ## [1.8.0] — 2026-11-17
 
 **Un troisième jeu : le premier Assetto Corsa, en version expérimentale.**

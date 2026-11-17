@@ -855,7 +855,7 @@ dependencies = [
 
 [[package]]
 name = "corde-acc"
-version = "1.8.0"
+version = "1.8.1"
 dependencies = [
  "bytemuck",
  "corde-core",
@@ -867,7 +867,7 @@ dependencies = [
 
 [[package]]
 name = "corde-core"
-version = "1.8.0"
+version = "1.8.1"
 dependencies = [
  "anyhow",
  "corde-protocol",
@@ -879,7 +879,7 @@ dependencies = [
 
 [[package]]
 name = "corde-desktop"
-version = "1.8.0"
+version = "1.8.1"
 dependencies = [
  "corde-server",
  "corde-store",
@@ -900,7 +900,7 @@ dependencies = [
 
 [[package]]
 name = "corde-engineer"
-version = "1.8.0"
+version = "1.8.1"
 dependencies = [
  "corde-lmu",
  "corde-protocol",
@@ -916,7 +916,7 @@ dependencies = [
 
 [[package]]
 name = "corde-lmu"
-version = "1.8.0"
+version = "1.8.1"
 dependencies = [
  "anyhow",
  "bytemuck",
@@ -935,7 +935,7 @@ dependencies = [
 
 [[package]]
 name = "corde-protocol"
-version = "1.8.0"
+version = "1.8.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -944,7 +944,7 @@ dependencies = [
 
 [[package]]
 name = "corde-server"
-version = "1.8.0"
+version = "1.8.1"
 dependencies = [
  "anyhow",
  "axum",
@@ -957,12 +957,15 @@ dependencies = [
  "corde-protocol",
  "corde-sim",
  "corde-store",
+ "hyper",
+ "hyper-util",
  "local-ip-address",
  "ring",
  "serde",
  "serde_json",
  "subtle",
  "tokio",
+ "tower",
  "tower-http",
  "tracing",
  "tracing-subscriber",
@@ -972,7 +975,7 @@ dependencies = [
 
 [[package]]
 name = "corde-sim"
-version = "1.8.0"
+version = "1.8.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -983,7 +986,7 @@ dependencies = [
 
 [[package]]
 name = "corde-store"
-version = "1.8.0"
+version = "1.8.1"
 dependencies = [
  "arrow-array",
  "arrow-buffer",
@@ -2749,9 +2752,9 @@ dependencies = [
 
 [[package]]
 name = "libsqlite3-sys"
-version = "0.38.2"
+version = "0.39.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1d20bef17f513b9b3004532233187769cd072d790971f4e4da0e346eb6401e8"
+checksum = "14a5f01b87b92705d07b433c06f96cbc764637d81a0bffb5734ce17cf0f9a2b3"
 dependencies = [
  "cc",
  "pkg-config",
@@ -4000,9 +4003,9 @@ dependencies = [
 
 [[package]]
 name = "rusqlite"
-version = "0.40.2"
+version = "0.41.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23f2a97da3e3873c73cb2a2e71b35c40ff95e0b1eefa8d72d8499a6928c3b5b3"
+checksum = "da9bba6f3506135e120a6586df05be18b48d18896600646a4bec8f993d91a594"
 dependencies = [
  "bitflags 2.13.2",
  "fallible-iterator",

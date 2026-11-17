@@ -141,7 +141,9 @@ impl std::error::Error for PathError {}
 /// `Folder/File.svm` (or `Folder\File.svm`) → `<settings_dir>/Folder/File.svm`,
 /// refusing anything that could leave `settings_dir`: absolute paths, drive
 /// letters, `..`, `.`, empty parts, more or fewer than two parts, another
-/// extension.
+/// extension — and anything that is not a plain file on Windows: a device name
+/// (`COM1.svm` is the serial port, reading it can wait for ever) or a name
+/// ending with a dot (Windows drops it: another file than the one named).
 pub fn resolve_relative(settings_dir: &Path, rel: &str) -> Result<PathBuf, PathError> {
     let norm = rel.replace('\\', "/");
     let parts: Vec<&str> = norm.split('/').collect();
@@ -156,6 +158,8 @@ pub fn resolve_relative(settings_dir: &Path, rel: &str) -> Result<PathBuf, PathE
             || part.contains(':')
             || part.trim() != *part
             || part.chars().any(|c| c.is_control())
+            || corde_core::fsname::is_windows_device_name(part)
+            || corde_core::fsname::has_trailing_dot_or_space(part)
         {
             return Err(bad());
         }
@@ -538,6 +542,15 @@ mod tests {
             "Longbeach/",
             " Longbeach/x.svm",
             "",
+            // Devices of Windows, whatever their dress: never a file.
+            "Longbeach/COM1.svm",
+            "Longbeach/con.svm",
+            "Longbeach/NUL.svm",
+            "Longbeach/aux.backup.svm",
+            "AUX/x.svm",
+            "lpt1/x.svm",
+            // Windows drops the dot at the end of a name.
+            "Longbeach./x.svm",
         ] {
             assert!(
                 matches!(

@@ -23,7 +23,7 @@ use crate::lmu_garage::load_bounds;
 use crate::state::AppState;
 use axum::body::Bytes;
 use axum::extract::{ConnectInfo, Path, Query, State};
-use axum::http::{header, HeaderMap, StatusCode};
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use corde_engineer::setup::{
@@ -750,10 +750,7 @@ pub async fn create_setup_files(
     headers: HeaderMap,
     body: Bytes,
 ) -> AppResult {
-    let origin = headers
-        .get(header::ORIGIN)
-        .map(|v| v.to_str().unwrap_or(""));
-    if !crate::net::may_change_settings(peer.ip(), origin) {
+    if !state.is_this_pc(peer.ip(), &headers) {
         return Err(ApiError::new(
             StatusCode::FORBIDDEN,
             "les fichiers de réglage ne se créent que depuis le PC qui fait tourner Corde",

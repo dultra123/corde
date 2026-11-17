@@ -1,6 +1,6 @@
 # Corde — fiche de présentation
 
-> À jour pour la **version 1.8.0** (17 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
+> À jour pour la **version 1.8.1** (17 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
 > faut pour présenter Corde (site, page de présentation, annonce) : ce qu'elle fait, où elle tourne, ce qui
 > est nouveau, ce qui arrive, les images et les liens. Elle ne dit que ce qui existe ; le détail et l'état
 > exact de chaque partie sont dans le [README](../README.md) et dans [STATUS.md](STATUS.md).
@@ -25,7 +25,7 @@ Le nom vient du **point de corde** : l'endroit où la trajectoire idéale touche
 
 | | |
 |---|---|
-| Version actuelle | **1.8.0** (17 novembre 2026) |
+| Version actuelle | **1.8.1** (17 novembre 2026) |
 | Prix | Gratuit |
 | Licence | Logiciel libre, GPL-3.0-or-later ; code source public |
 | Jeux | Le Mans Ultimate (complet, vérifié) ; Assetto Corsa Competizione (expérimental, depuis la 1.7.0) ; Assetto Corsa (expérimental, depuis la 1.8.0). Détection automatique. Détail : [JEUX.md](JEUX.md) |
@@ -253,6 +253,9 @@ redémarrer. Chaque version est signée et vérifiée avant l'installation ; rie
 
 ## Nouveautés
 
+- **1.8.1 (17 novembre 2026)** — revue de sécurité de tout le code : rien de grave trouvé, plusieurs
+  verrous ajoutés (un site web ne peut plus afficher Corde dans un cadre caché ni la page d'un autre
+  logiciel du PC agir sur Corde ; connexions limitées ; Corde serveur durci). Rien ne change à l'usage.
 - **1.8.0 (17 novembre 2026)** — un troisième jeu, en version expérimentale : le premier Assetto Corsa.
 - **1.7.0 (17 novembre 2026)** — Corde trouve toute seule le jeu qui tourne ; premier nouveau jeu, en
   version expérimentale : Assetto Corsa Competizione (direct, enregistrement, chronos des tours).
@@ -302,6 +305,8 @@ Le détail de chaque version est dans le [journal des versions](../CHANGELOG.md)
 - Corde ne contacte Internet que pour ce que tu actives (planning des courses, extracteur LLM optionnel) et
   pour chercher une mise à jour (désactivable).
 - L'accès depuis le téléphone est fermé par défaut ; le port de Corde ne s'ouvre jamais sur Internet.
+- Le code est relu pour la sécurité : dernière revue complète en novembre 2026 (version 1.8.1), compte
+  rendu public dans [SECURITY-MODEL.md](SECURITY-MODEL.md), §10.
 - Corde n'écrit dans le dossier du jeu que sur demande explicite, et n'écrase jamais un fichier.
 - Code source public, sous licence libre.
 

@@ -29,6 +29,11 @@ tracing-subscriber = { workspace = true }
 tokio = { workspace = true }
 axum = { version = "0.8", features = ["ws", "json", "query"] }
 tower-http = { version = "0.6", features = ["fs", "cors", "trace"] }
+# The accept loop (serve.rs): a deadline on request heads and a bound on connections, which
+# `axum::serve` does not offer. All three are already in the tree (axum is built on them).
+hyper = { version = "1", features = ["server", "http1"] }
+hyper-util = { version = "0.1", features = ["tokio"] }
+tower = { version = "0.5", features = ["util"] }
 clap = { version = "4", features = ["derive"] }
 local-ip-address = "0.6"
 # Reads the two public pages of the race schedule (races::sources). No `cookies` feature.
@@ -43,7 +48,6 @@ zstd = "0.13"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 
 [dev-dependencies]
-tower = { version = "0.5", features = ["util"] }
 tokio-tungstenite = "0.30"
 futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
 ureq = { version = "3", default-features = false, features = ["json"] }

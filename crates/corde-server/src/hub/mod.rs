@@ -41,6 +41,61 @@ pub const LAST_PC_FILE: &str = "last-pc.json";
 /// Where partial sample files wait for their last chunk, under the data folder.
 pub const INCOMING_DIR: &str = "sync-incoming";
 
+/// Most partial files waiting for their end (a PC sends one at a time).
+pub const INCOMING_MAX_FILES: usize = 64;
+/// Most bytes of partial files, those announced by the file that starts included.
+pub const INCOMING_MAX_BYTES: u64 = 8 * 1024 * 1024 * 1024;
+/// A partial file nobody completed is removed after this long.
+pub const INCOMING_MAX_AGE: Duration = Duration::from_secs(7 * 24 * 3600);
+
+/// Partial files of the waiting room: how many, and their bytes.
+pub fn incoming_usage(incoming: &Path) -> (usize, u64) {
+    let mut files = 0;
+    let mut bytes = 0u64;
+    for dir in std::fs::read_dir(incoming).into_iter().flatten().flatten() {
+        for f in std::fs::read_dir(dir.path())
+            .into_iter()
+            .flatten()
+            .flatten()
+        {
+            if let Ok(m) = f.metadata() {
+                if m.is_file() {
+                    files += 1;
+                    bytes = bytes.saturating_add(m.len());
+                }
+            }
+        }
+    }
+    (files, bytes)
+}
+
+/// Removes the partial files older than `max_age` (a PC that gave up, a device that sent
+/// files it never completed) and the folders left empty; returns how many files went.
+pub fn prune_incoming(incoming: &Path, max_age: Duration) -> usize {
+    let now = std::time::SystemTime::now();
+    let mut removed = 0;
+    for dir in std::fs::read_dir(incoming).into_iter().flatten().flatten() {
+        let path = dir.path();
+        for f in std::fs::read_dir(&path).into_iter().flatten().flatten() {
+            let old = f
+                .metadata()
+                .and_then(|m| m.modified())
+                .ok()
+                .and_then(|t| now.duration_since(t).ok())
+                .is_some_and(|age| age >= max_age);
+            if old && std::fs::remove_file(f.path()).is_ok() {
+                removed += 1;
+            }
+        }
+        // Only succeeds on an empty folder.
+        let _ = std::fs::remove_dir(&path);
+    }
+    if removed > 0 {
+        tracing::info!("sync: {removed} partial file(s) never completed, removed");
+    }
+    removed
+}
+
 /// The last PC that synchronised (shown on the server's « Direct » tab).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LastPc {
@@ -60,6 +115,8 @@ pub struct Hub {
     last_pc: Mutex<Option<LastPc>>,
     /// Serialises the writes of partial sample files.
     pub uploads: tokio::sync::Mutex<()>,
+    /// One bundle decoded at a time (each may take hundreds of megabytes once decompressed).
+    pub decoding: Arc<tokio::sync::Semaphore>,
 }
 
 impl std::fmt::Debug for Hub {
@@ -81,6 +138,7 @@ impl Hub {
             data_dir: data_dir.to_path_buf(),
             last_pc: Mutex::new(last_pc),
             uploads: tokio::sync::Mutex::new(()),
+            decoding: Arc::new(tokio::sync::Semaphore::new(1)),
         })
     }
 
@@ -201,9 +259,21 @@ pub async fn run_periodic(state: Arc<AppState>, mut shutdown: tokio::sync::watch
     };
     let mut tick = tokio::time::interval(Duration::from_secs(60));
     tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+    // Partial files nobody completed: looked at when the server starts, then every hour.
+    let mut minutes = 0u32;
     loop {
         tokio::select! {
-            _ = tick.tick() => hub.auth.flush(),
+            _ = tick.tick() => {
+                hub.auth.flush();
+                if minutes.is_multiple_of(60) {
+                    let incoming = hub.incoming_dir();
+                    let _ = tokio::task::spawn_blocking(move || {
+                        prune_incoming(&incoming, INCOMING_MAX_AGE)
+                    })
+                    .await;
+                }
+                minutes = minutes.wrapping_add(1);
+            }
             _ = shutdown.changed() => {
                 hub.auth.flush();
                 break;

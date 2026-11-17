@@ -85,6 +85,12 @@ fn valid_file(name: &str) -> Result<(), ApiError> {
     }
 }
 
+/// A text received from a device, as it may be written to the log: no control character (a
+/// line break would forge a log line), bounded.
+fn log_text(s: &str, max: usize) -> String {
+    s.chars().filter(|c| !c.is_control()).take(max).collect()
+}
+
 /// Addresses the PC says it serves the live view at: `http://host[:port]` only, few, short.
 fn clean_urls(urls: &[String]) -> Vec<String> {
     urls.iter()
@@ -116,7 +122,7 @@ pub async fn hello(
     hub.set_last_pc(LastPc {
         device_id: dev.id.clone(),
         device_name: dev.name.clone(),
-        version: hello.version.chars().take(32).collect(),
+        version: log_text(&hello.version, 32),
         urls: clean_urls(&hello.urls),
         synced_ms: corde_store::db::now_ms(),
     });
@@ -157,7 +163,7 @@ pub async fn hello(
         "sync: hello from {} ({}), Corde {}",
         dev.id,
         dev.name,
-        hello.version
+        log_text(&hello.version, 32)
     );
     Ok(Json(manifest).into_response())
 }
@@ -169,6 +175,7 @@ pub async fn put_result(
 ) -> Result<Response, Response> {
     check_versions(&headers)?;
     let store = store_of(&state).map_err(IntoResponse::into_response)?;
+    let _one_at_a_time = decode_permit(&state).await?;
     let r = tokio::task::spawn_blocking(move || -> Result<String, ApiError> {
         let (bundle, fp): (ResultBundle, String) =
             sync_wire::decompress_json(&body).map_err(|e| {
@@ -194,6 +201,19 @@ pub struct ChunkQuery {
     pub reset: Option<String>,
 }
 
+/// A bundle may take [`sync_wire::BUNDLE_MAX_UNCOMPRESSED`] bytes once decompressed: they are
+/// decoded one at a time, so that several sent at once cannot take the server's memory.
+async fn decode_permit(state: &AppState) -> Result<tokio::sync::OwnedSemaphorePermit, Response> {
+    let hub = state
+        .hub
+        .clone()
+        .ok_or_else(|| StatusCode::NOT_FOUND.into_response())?;
+    Arc::clone(&hub.decoding)
+        .acquire_owned()
+        .await
+        .map_err(|_| StatusCode::SERVICE_UNAVAILABLE.into_response())
+}
+
 fn part_path(state: &AppState, id: &str, name: &str) -> Result<std::path::PathBuf, ApiError> {
     let hub = state
         .hub
@@ -212,7 +232,8 @@ pub async fn put_chunk(
     check_versions(&headers)?;
     valid_session_id(&id).map_err(IntoResponse::into_response)?;
     valid_file(&name).map_err(IntoResponse::into_response)?;
-    if body.len() > CHUNK_MAX || q.total > FILE_MAX || q.offset + body.len() as u64 > q.total {
+    let end = q.offset.checked_add(body.len() as u64);
+    if body.len() > CHUNK_MAX || q.total > FILE_MAX || end.is_none_or(|e| e > q.total) {
         return Err(
             ApiError::new(StatusCode::BAD_REQUEST, "morceau de fichier invalide").into_response(),
         );
@@ -224,16 +245,29 @@ pub async fn put_chunk(
     let part = part_path(&state, &id, &name).map_err(IntoResponse::into_response)?;
     let _lock = hub.uploads.lock().await;
     let reset = matches!(q.reset.as_deref(), Some("1" | "true"));
+    let incoming = hub.incoming_dir();
     let written = tokio::task::spawn_blocking(move || -> Result<Result<u64, u64>, ApiError> {
-        if let Some(dir) = part.parent() {
-            std::fs::create_dir_all(dir)?;
-        }
         if reset {
             let _ = std::fs::remove_file(&part);
         }
         let have = std::fs::metadata(&part).map(|m| m.len()).unwrap_or(0);
         if q.offset != have {
             return Ok(Err(have));
+        }
+        // Is there room left in the waiting room? (A PC sends one file at a time; what it
+        // gives up is removed after a few days, `prune_incoming`.)
+        let (files, bytes) = super::incoming_usage(&incoming);
+        let starts = have == 0;
+        if (starts && files >= super::INCOMING_MAX_FILES)
+            || bytes.saturating_add(body.len() as u64) > super::INCOMING_MAX_BYTES
+        {
+            return Err(ApiError::new(
+                StatusCode::INSUFFICIENT_STORAGE,
+                "trop de fichiers en cours d'envoi sur le serveur : réessaie plus tard",
+            ));
+        }
+        if let Some(dir) = part.parent() {
+            std::fs::create_dir_all(dir)?;
         }
         let mut f = std::fs::OpenOptions::new()
             .create(true)
@@ -326,6 +360,7 @@ pub async fn put_session(
     check_versions(&headers)?;
     valid_session_id(&id).map_err(IntoResponse::into_response)?;
     let store = store_of(&state).map_err(IntoResponse::into_response)?;
+    let _one_at_a_time = decode_permit(&state).await?;
     enum Outcome {
         Stored(String),
         Missing(Vec<String>),
@@ -341,6 +376,11 @@ pub async fn put_session(
                 StatusCode::BAD_REQUEST,
                 "identifiant de session différent",
             ));
+        }
+        // Before any look at the disk: a name that is not a sample file's would turn the
+        // check below into a way to ask whether any file of the server exists.
+        for f in &bundle.sample_files {
+            valid_file(&f.name)?;
         }
         if store.db().is_tombstoned(&id)? {
             return Ok(Outcome::Deleted);

@@ -230,20 +230,18 @@ pub async fn patch_device(
             "seul un appareil administrateur peut changer les droits",
         ));
     }
-    if patch.admin == Some(false) {
-        let admins = hub.auth.list().iter().filter(|d| d.admin).count();
-        let target_is_admin = hub.auth.get(&id).is_some_and(|d| d.admin);
-        if target_is_admin && admins <= 1 {
-            return Err(ApiError::new(
-                StatusCode::CONFLICT,
-                "il faut garder au moins un appareil administrateur",
-            ));
-        }
-    }
     let updated = tokio::task::spawn_blocking(move || {
         hub.auth.update(&id, patch.name.as_deref(), patch.admin)
     })
-    .await??;
+    .await?
+    .map_err(|e| match e.kind() {
+        // Checked where the change is made, under the same lock.
+        std::io::ErrorKind::PermissionDenied => ApiError::new(
+            StatusCode::CONFLICT,
+            "il faut garder au moins un appareil administrateur",
+        ),
+        _ => ApiError::from(e),
+    })?;
     match updated {
         Some(d) => Ok(Json(d).into_response()),
         None => Err(ApiError::new(StatusCode::NOT_FOUND, "appareil inconnu")),

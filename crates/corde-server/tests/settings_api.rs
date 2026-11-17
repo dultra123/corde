@@ -27,8 +27,9 @@ async fn call(
     method: &'static str,
     url: String,
     body: Option<&'static str>,
-    origin: Option<&'static str>,
+    origin: Option<&str>,
 ) -> (u16, Value) {
+    let origin = origin.map(str::to_string);
     tokio::task::spawn_blocking(move || {
         let agent: ureq::Agent = ureq::config::Config::builder()
             .http_status_as_error(false)
@@ -171,8 +172,15 @@ async fn lan_access_is_off_by_default_saved_by_put_and_applied_at_the_next_start
     );
 
     // A web page from somewhere else cannot flip the setting (the origin
-    // check refuses it before the route does).
-    for origin in ["https://evil.example", "http://192.168.1.20:8471"] {
+    // check refuses it before the route does) — the page of another program of
+    // this PC included (another local port).
+    for origin in [
+        "https://evil.example",
+        "http://192.168.1.20:8471",
+        "http://127.0.0.1:8888",
+        "http://localhost:5173",
+        "http://localhost",
+    ] {
         let (code, body) = call(
             "PUT",
             format!("{base}/api/settings"),
@@ -197,7 +205,8 @@ async fn lan_access_is_off_by_default_saved_by_put_and_applied_at_the_next_start
         "PUT",
         format!("{base}/api/settings"),
         Some(r#"{"lan_access": true}"#),
-        Some("http://127.0.0.1:8471"),
+        // The interface this server gave, opened on this PC.
+        Some(base.as_str()),
     )
     .await;
     assert_eq!(code, 200, "{body}");

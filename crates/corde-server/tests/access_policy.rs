@@ -159,16 +159,8 @@ async fn host_and_origin_are_checked_on_this_pc() {
     assert_eq!(ws_open(to, "evil.example", None).await, Err(403));
 
     // --- Origin -----------------------------------------------------------------
-    // The UI of this server (desktop shell, browser, OBS), a dev server or a
-    // capture script on another local port, the shell's own pages.
-    for origin in [
-        page.as_str(),
-        "http://127.0.0.1:5173",
-        "http://localhost:4173",
-        "http://[::1]:5173",
-        "tauri://localhost",
-        "http://tauri.localhost",
-    ] {
+    // The UI of this server (desktop shell, browser, OBS), the shell's own pages.
+    for origin in [page.as_str(), "tauri://localhost", "http://tauri.localhost"] {
         let r = raw(
             to,
             "GET",
@@ -186,12 +178,22 @@ async fn host_and_origin_are_checked_on_this_pc() {
         );
         assert_eq!(ws_open(to, &host, Some(origin)).await, Ok(()), "{origin}");
     }
-    // Any other web site: refused, reads included, and no CORS header.
+    // Any other web site: refused, reads included, and no CORS header. The page of another
+    // program of this PC (another loopback port — any software's local web page) is one of
+    // them; so is whatever serves port 80 of this PC (`http://localhost`, also the origin
+    // of the Android application: from a phone only).
+    let same_port_other_name = format!("http://localhost:{port}");
     for origin in [
         "https://evil.example",
         "http://192.168.1.20:8471",
         "null",
         "https://localhost:8471",
+        "http://127.0.0.1:5173",
+        "http://localhost:4173",
+        "http://[::1]:5173",
+        "http://127.0.0.1:8888",
+        "http://localhost",
+        same_port_other_name.as_str(),
     ] {
         let r = raw(
             to,
@@ -238,7 +240,7 @@ async fn host_and_origin_are_checked_on_this_pc() {
         "/api/layouts",
         &[
             ("Host", &host),
-            ("Origin", "http://127.0.0.1:5173"),
+            ("Origin", &page),
             ("Access-Control-Request-Method", "PUT"),
             ("Access-Control-Request-Headers", "content-type"),
         ],
@@ -248,7 +250,19 @@ async fn host_and_origin_are_checked_on_this_pc() {
     assert_eq!(pre.status, 200, "{}", pre.head);
     assert!(pre
         .head
-        .contains("access-control-allow-origin: http://127.0.0.1:5173"));
+        .contains(&format!("access-control-allow-origin: {page}")));
+    // A page of another program of this PC has none of the rights of this PC either.
+    let r = raw(
+        to,
+        "PUT",
+        "/api/settings",
+        &[("Host", &host), ("Origin", "http://127.0.0.1:8888")],
+        br#"{"lan_access":true}"#,
+    )
+    .await;
+    assert_eq!(r.status, 403, "{}", r.body);
+    let r = raw(to, "GET", "/api/settings", &[("Host", &host)], b"").await;
+    assert!(r.body.contains("\"lan_access\":false"), "{}", r.body);
     // No Origin (curl, a direct visit): accepted.
     let r = raw(to, "GET", "/api/health", &[("Host", &host)], b"").await;
     assert_eq!(r.status, 200);
@@ -371,10 +385,10 @@ async fn the_interface_is_revalidated_and_only_hashed_bundles_are_cached() {
     assert_eq!(cache_control(&r.head).as_deref(), Some("no-store"));
     assert!(!r.body.contains("corde-index"));
 
-    // The API keeps its own headers.
+    // The API's answers are not kept by a browser (sessions, names…).
     let r = raw(server.bound, "GET", "/api/health", &[("Host", &host)], b"").await;
     assert_eq!(r.status, 200);
-    assert_eq!(cache_control(&r.head), None);
+    assert_eq!(cache_control(&r.head).as_deref(), Some("no-store"));
 
     server.stop().await;
     let _ = std::fs::remove_dir_all(&root);
@@ -546,4 +560,168 @@ async fn an_obs_browser_source_loads_the_overlay_from_the_server() {
         eprintln!("no LAN address on this machine: second-PC case skipped");
     }
     let _ = std::fs::remove_dir_all(&root);
+}
+
+fn header_of(head: &str, name: &str) -> Option<String> {
+    let name = format!("{name}:");
+    head.lines()
+        .find(|l| l.starts_with(&name))
+        .map(|l| l[name.len()..].trim().to_string())
+}
+
+/// Every answer — the interface, the API, a refusal — tells the browser what it must not
+/// do with it: no page of another site may frame the interface (clickjacking), nothing is
+/// interpreted as another type than announced, the interface runs no script but its own
+/// files, and another site cannot embed a file of this server.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn every_answer_carries_the_browser_protections() {
+    let root = temp_dir("headers");
+    let ui = root.join("ui");
+    std::fs::create_dir_all(ui.join("assets")).unwrap();
+    std::fs::write(
+        ui.join("index.html"),
+        "<!doctype html><title>corde-index</title>",
+    )
+    .unwrap();
+    std::fs::write(ui.join("assets/index-AbC123.js"), "console.log(1)").unwrap();
+    let server = Running::start(&root.join("data"), |c| c.ui_dir = Some(ui.clone())).await;
+    let to = server.bound;
+    let host = to.to_string();
+    let h = [("Host", host.as_str())];
+
+    let common = |r: &Reply, what: &str| {
+        assert_eq!(
+            header_of(&r.head, "x-content-type-options").as_deref(),
+            Some("nosniff"),
+            "{what}"
+        );
+        assert_eq!(
+            header_of(&r.head, "x-frame-options").as_deref(),
+            Some("sameorigin"),
+            "{what}"
+        );
+        assert_eq!(
+            header_of(&r.head, "referrer-policy").as_deref(),
+            Some("no-referrer"),
+            "{what}"
+        );
+        assert_eq!(
+            header_of(&r.head, "cross-origin-resource-policy").as_deref(),
+            Some("same-origin"),
+            "{what}"
+        );
+        assert!(
+            header_of(&r.head, "permissions-policy").is_some_and(|v| v.contains("camera=()")),
+            "{what}"
+        );
+    };
+
+    // The interface: its page, the page under any address (SPA fallback), a bundle.
+    for path in ["/", "/index.html", "/some/page", "/assets/index-AbC123.js"] {
+        let r = raw(to, "GET", path, &h, b"").await;
+        assert_eq!(r.status, 200, "{path}");
+        common(&r, path);
+        let csp = header_of(&r.head, "content-security-policy").unwrap_or_default();
+        for part in [
+            "default-src 'self'",
+            "script-src 'self'",
+            "object-src 'none'",
+            "base-uri 'self'",
+            "form-action 'self'",
+            "frame-ancestors 'self'",
+        ] {
+            assert!(csp.contains(part), "{path}: {part} missing in {csp}");
+        }
+        // No script from anywhere else, none written in the page, no eval.
+        let scripts = csp
+            .split(';')
+            .map(str::trim)
+            .find(|d| d.starts_with("script-src"))
+            .unwrap();
+        assert_eq!(scripts, "script-src 'self'", "{path}");
+    }
+
+    // The API: nothing in a JSON answer can load, run or be framed.
+    for path in ["/api/health", "/api/sessions", "/api/does-not-exist"] {
+        let r = raw(to, "GET", path, &h, b"").await;
+        common(&r, path);
+        assert_eq!(
+            header_of(&r.head, "content-security-policy").as_deref(),
+            Some("default-src 'none'; frame-ancestors 'none'"),
+            "{path}"
+        );
+    }
+
+    // A refusal of the guard too (another site, a rebinding name).
+    let r = raw(
+        to,
+        "GET",
+        "/api/health",
+        &[("Host", host.as_str()), ("Origin", "https://evil.example")],
+        b"",
+    )
+    .await;
+    assert_eq!(r.status, 403);
+    common(&r, "refused origin");
+    let r = raw(to, "GET", "/", &[("Host", "evil.example")], b"").await;
+    assert_eq!(r.status, 403);
+    common(&r, "refused host");
+    assert!(header_of(&r.head, "content-security-policy").is_some());
+
+    server.stop().await;
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// `--dev-origins` (development, capture scripts): the pages of other local ports are
+/// accepted again, as pages of this PC. Never the default.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn development_accepts_the_pages_of_other_local_ports() {
+    let data = temp_dir("dev");
+    let server = Running::start(&data, |c| c.dev_origins = true).await;
+    let to = server.bound;
+    let host = to.to_string();
+    for origin in [
+        "http://127.0.0.1:5173",
+        "http://localhost:4173",
+        "http://[::1]:5173",
+    ] {
+        let r = raw(
+            to,
+            "GET",
+            "/api/sessions",
+            &[("Host", &host), ("Origin", origin)],
+            b"",
+        )
+        .await;
+        assert_eq!(r.status, 200, "{origin}: {}", r.body);
+        assert!(
+            r.head
+                .contains(&format!("access-control-allow-origin: {origin}")),
+            "{origin}: {}",
+            r.head
+        );
+        assert_eq!(ws_open(to, &host, Some(origin)).await, Ok(()), "{origin}");
+        // A route of this PC.
+        let r = raw(
+            to,
+            "DELETE",
+            "/api/sessions/20260101-000000-nowhere",
+            &[("Host", &host), ("Origin", origin)],
+            b"",
+        )
+        .await;
+        assert_eq!(r.status, 404, "{origin}: {}", r.body);
+    }
+    // Another site stays another site.
+    let r = raw(
+        to,
+        "GET",
+        "/api/sessions",
+        &[("Host", &host), ("Origin", "https://evil.example")],
+        b"",
+    )
+    .await;
+    assert_eq!(r.status, 403);
+    server.stop().await;
+    let _ = std::fs::remove_dir_all(&data);
 }

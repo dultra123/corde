@@ -679,9 +679,13 @@ mod tests {
         p.lap.lap_number = (i / 100) as i32;
         p.motion.speed_kmh = (i % 300) as f32;
         p.engine.gear = (i % 7) as i8 - 1;
-        p.energy.virtual_energy = if i % 2 == 0 { Some(i as f32) } else { None };
+        p.energy.virtual_energy = if i.is_multiple_of(2) {
+            Some(i as f32)
+        } else {
+            None
+        };
         p.wheels[2].brake_temp_c = 400.0 + i as f32;
-        p.electronics.tc_active = i % 3 == 0;
+        p.electronics.tc_active = i.is_multiple_of(3);
         f.player = Some(p);
         f
     }
