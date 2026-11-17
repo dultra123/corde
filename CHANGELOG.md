@@ -8,6 +8,29 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [1.8.0] — 2026-11-17
+
+**Un troisième jeu : le premier Assetto Corsa, en version expérimentale.**
+
+### Nouveautés
+
+- **Assetto Corsa (expérimental).** Corde le reconnaît toute seule, comme les autres : direct (widgets,
+  tableau de bord de course, téléphone, OBS), enregistrement des sessions, chronos officiels des tours,
+  comparaison de tours. Rien à installer ni à activer dans le jeu ; les voitures et circuits ajoutés sont
+  lus comme les autres.
+- Avec ce jeu : trois températures par pneu, usure, hauteurs de caisse, et la longueur du circuit donnée
+  par le jeu.
+- `acc-probe.exe` reconnaît les deux jeux de la famille et le dit.
+
+### À savoir
+
+- **Pas encore vérifié face au jeu**, comme Assetto Corsa Competizione : des valeurs peuvent manquer ou
+  être fausses. Le guide « Les jeux que Corde sait lire » (`docs/JEUX.md`) dit comment aider à vérifier.
+- Le premier Assetto Corsa ne publie que ta voiture : pas de classement ni d'écarts, pas de niveaux
+  d'antipatinage ou d'ABS, pas de tour annulé. Pas encore de temps par secteur.
+- L'ingénieur de réglages, l'import des résultats et le planning des courses restent ceux de Le Mans
+  Ultimate.
+
 ## [1.7.0] — 2026-11-17
 
 **Corde ne lit plus un seul jeu : elle trouve toute seule celui qui tourne. Premier nouveau venu, en

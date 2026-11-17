@@ -1,7 +1,8 @@
 //! Corde finds the game by itself (ADR 0020): a server started with `--source auto` and no
 //! game waits; when a (fake) Assetto Corsa Competizione session starts, it is detected,
 //! shown, recorded and its laps are timed like any other; when the session is left, the
-//! recording is closed and Corde looks for a game again.
+//! recording is closed and Corde looks for a game again — and finds the first Assetto Corsa
+//! when that one is started instead, although it publishes pages of the same names.
 //!
 //! The game is played by `corde_acc::fake`, which writes the three pages as files — the
 //! adapter reads them the way it reads the game's shared memory on Windows.
@@ -13,7 +14,7 @@ use serde_json::Value;
 use std::net::{IpAddr, SocketAddr};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tokio::sync::oneshot;
 
@@ -102,17 +103,19 @@ async fn a_game_is_found_recorded_and_left_without_being_named() {
     };
     let running = Arc::new(AtomicBool::new(true));
     let quit = Arc::new(AtomicBool::new(false));
+    // The game being played (changed further down).
+    let playing = Arc::new(Mutex::new(fake.clone()));
     let writer = {
-        let (running, quit, dir, fake) = (
+        let (running, quit, dir, playing) = (
             Arc::clone(&running),
             Arc::clone(&quit),
             game_dir.clone(),
-            fake.clone(),
+            Arc::clone(&playing),
         );
         std::thread::spawn(move || {
             let start = Instant::now();
             while !quit.load(Ordering::Relaxed) {
-                let mut session = fake.clone();
+                let mut session = playing.lock().unwrap().clone();
                 if !running.load(Ordering::Relaxed) {
                     // Back to the menus.
                     session.status = status::OFF;
@@ -191,6 +194,65 @@ async fn a_game_is_found_recorded_and_left_without_being_named() {
         },
     )
     .await;
+
+    // Another evening, another game: the first Assetto Corsa, whose pages have the same
+    // names. Competizione is left first.
+    running.store(false, Ordering::Relaxed);
+    wait_for(
+        "Competizione to be left",
+        Duration::from_secs(15),
+        async || {
+            let (_, v) = get(format!("{base}/api/status")).await;
+            (v["connected"] == false && v["recording"] == false).then_some(v)
+        },
+    )
+    .await;
+    *playing.lock().unwrap() = FakeSession {
+        lap_time_s: 11.0,
+        ..FakeSession::assetto_corsa()
+    };
+    running.store(true, Ordering::Relaxed);
+    let st = wait_for(
+        "Assetto Corsa to be detected",
+        Duration::from_secs(15),
+        async || {
+            let (_, v) = get(format!("{base}/api/status")).await;
+            (v["connected"] == true).then_some(v)
+        },
+    )
+    .await;
+    assert_eq!(st["game"], "ac", "{st}");
+    assert_eq!(st["source"], "ac-shm", "{st}");
+    let rec = wait_for(
+        "its recording to start",
+        Duration::from_secs(15),
+        async || {
+            let (_, v) = get(format!("{base}/api/recording")).await;
+            (v["recording"] == true && v["session_id"].is_string()).then_some(v)
+        },
+    )
+    .await;
+    let ac_id = rec["session_id"].as_str().unwrap().to_string();
+    let detail = wait_for(
+        "two laps of Assetto Corsa",
+        Duration::from_secs(45),
+        async || {
+            let (_, v) = get(format!("{base}/api/sessions/{ac_id}")).await;
+            (v["laps"].as_array().map(|l| l.len()).unwrap_or(0) >= 2).then_some(v)
+        },
+    )
+    .await;
+    assert_eq!(detail["game"], "ac", "{detail}");
+    assert_eq!(detail["track_name"], "Nurburgring — Layout Gp A");
+    assert_eq!(detail["vehicle_model"], "ks_ferrari_488_gt3");
+    // The first lap was joined on the way (the game was already lapping): only a lap seen
+    // from the line to the line is checked against the game's time.
+    let lap = &detail["laps"][1];
+    assert_eq!(lap["timed_by_game"], true, "{lap}");
+    assert!(
+        (lap["lap_time_s"].as_f64().unwrap() - 11.0).abs() < 0.05,
+        "{lap}"
+    );
 
     quit.store(true, Ordering::Relaxed);
     writer.join().unwrap();

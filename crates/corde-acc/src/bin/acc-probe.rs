@@ -1,5 +1,6 @@
-//! `acc-probe` — what the pages of Assetto Corsa Competizione hold, read the way Corde
-//! reads them. The first thing to run with the game: start a session, then
+//! `acc-probe` — what the pages of Assetto Corsa Competizione, or of the first Assetto
+//! Corsa, hold, read the way Corde reads them (the game is recognised by the version of
+//! its interface). The first thing to run with the game: start a session, then
 //!
 //! ```text
 //! acc-probe             (Windows: the game's shared memory)
@@ -12,7 +13,7 @@
 //! printed nor kept in a copy (`--dump` blanks it): the copy is the most useful thing to
 //! send when a value looks wrong.
 
-use corde_acc::convert::{is_competizione, session_type};
+use corde_acc::convert::session_type;
 use corde_acc::layout::text;
 use corde_acc::reader::open_default_reader;
 use corde_acc::Converter;
@@ -42,7 +43,20 @@ fn main() {
     };
     println!("Source : {}", reader.describe());
     let origin = Instant::now();
-    let mut conv = Converter::new();
+    // Which of the two games: said by the pages themselves.
+    let game = match reader.read_raw().and_then(|raw| raw.game()) {
+        Ok(Some(game)) => game,
+        Ok(None) => {
+            eprintln!("Pages sans numéro d'interface : le jeu est-il en piste ?");
+            std::process::exit(1);
+        }
+        Err(e) => {
+            eprintln!("Lecture impossible : {e}");
+            std::process::exit(1);
+        }
+    };
+    println!("Jeu reconnu : {}", game.label());
+    let mut conv = Converter::for_game(game);
     for i in 0..10 {
         let pages = match reader.read_raw().and_then(|raw| {
             if let (0, Some(to)) = (i, dump.as_deref()) {
@@ -54,7 +68,7 @@ fn main() {
                     Err(e) => eprintln!("Copie impossible dans {} : {e}", to.display()),
                 }
             }
-            raw.pages()
+            raw.pages_of(game)
         }) {
             Ok(p) => p,
             Err(e) => {
@@ -65,12 +79,7 @@ fn main() {
         let (g, s) = (&pages.graphics, &pages.statics);
         if i == 0 {
             let (sm, ac, car, track) = (s.sm_version, s.ac_version, s.car_model, s.track);
-            println!(
-                "Interface {} · jeu {} · Competizione : {}",
-                text(&sm),
-                text(&ac),
-                if is_competizione(s) { "oui" } else { "non" }
-            );
+            println!("Interface {} · version du jeu {}", text(&sm), text(&ac));
             println!(
                 "Circuit « {} » · voiture « {} » · réservoir {} L · régime max {}",
                 text(&track),

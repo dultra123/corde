@@ -51,6 +51,7 @@ fn source_from_env() -> SourceKind {
         Some("sim") => SourceKind::Sim,
         Some("lmu") => SourceKind::Lmu,
         Some("acc") => SourceKind::Acc,
+        Some("ac") => SourceKind::Ac,
         _ => SourceKind::Auto,
     }
 }

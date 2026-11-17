@@ -1,8 +1,9 @@
 //! [`AccSource`] — the `corde_core::TelemetrySource` implementation for Assetto Corsa
-//! Competizione.
+//! Competizione, and for the first Assetto Corsa ([`AccSource::assetto_corsa`]): the two
+//! games publish pages of the same names, told apart by the version of their interface.
 //!
-//! * `connect` opens the pages, checks that they are Competizione's (the first Assetto
-//!   Corsa uses the same names) and that a session is running: at the menus the game is
+//! * `connect` opens the pages, checks that they are those of the game this source is for
+//!   and that a session is running: at the menus the game is
 //!   there but has nothing to say, and the source reports itself not available — which
 //!   lets Corde look at the other games meanwhile.
 //! * `poll` copies the pages; a new frame is made when one of the two step counters moved,
@@ -12,21 +13,25 @@
 //!   [`AccSourceConfig::stall_timeout`] while a session was live): not available, and the
 //!   mappings are closed — a handle left open would keep the pages of a dead game alive.
 
-use crate::convert::{is_competizione, Converter};
-use crate::layout::status;
+use crate::convert::Converter;
+use crate::layout::{status, Game};
 use crate::reader::{open_default_reader, PageReader};
 use corde_core::{SourceError, SourceInfo, TelemetrySource};
-use corde_protocol::{GameId, TelemetryFrame};
+use corde_protocol::TelemetryFrame;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 /// Rate of the frames Corde makes from the game (Hz).
 pub const NATIVE_RATE_HZ: f32 = 100.0;
-/// Identifier put in `TelemetryFrame::source`.
+/// Identifier put in `TelemetryFrame::source` for Competizione.
 pub const SOURCE_ID: &str = "acc-shm";
+/// The same for the first Assetto Corsa.
+pub const SOURCE_ID_AC: &str = "ac-shm";
 
 #[derive(Debug, Clone)]
 pub struct AccSourceConfig {
+    /// Which of the two games this source reads. Default: Competizione.
+    pub game: Game,
     /// Read three files of this directory instead of the game's mappings (tests,
     /// development).
     pub dir: Option<PathBuf>,
@@ -40,6 +45,7 @@ pub struct AccSourceConfig {
 impl Default for AccSourceConfig {
     fn default() -> Self {
         Self {
+            game: Game::Competizione,
             dir: None,
             stall_timeout: Duration::from_secs(5),
             paused_timeout: Duration::from_secs(30 * 60),
@@ -58,8 +64,24 @@ pub struct AccSource {
 }
 
 impl AccSource {
+    /// For Assetto Corsa Competizione.
     pub fn new() -> Self {
         Self::with_config(AccSourceConfig::default())
+    }
+
+    /// For the first Assetto Corsa.
+    pub fn assetto_corsa() -> Self {
+        Self::with_config(AccSourceConfig {
+            game: Game::AssettoCorsa,
+            ..AccSourceConfig::default()
+        })
+    }
+
+    fn source_id(&self) -> &'static str {
+        match self.cfg.game {
+            Game::Competizione => SOURCE_ID,
+            Game::AssettoCorsa => SOURCE_ID_AC,
+        }
     }
 
     pub fn with_config(cfg: AccSourceConfig) -> Self {
@@ -90,9 +112,9 @@ impl Default for AccSource {
 impl TelemetrySource for AccSource {
     fn info(&self) -> SourceInfo {
         SourceInfo {
-            game: GameId::Acc,
-            id: SOURCE_ID,
-            label: "Assetto Corsa Competizione".into(),
+            game: self.cfg.game.id(),
+            id: self.source_id(),
+            label: self.cfg.game.label().into(),
             native_rate_hz: NATIVE_RATE_HZ,
         }
     }
@@ -100,22 +122,34 @@ impl TelemetrySource for AccSource {
     fn connect(&mut self) -> Result<(), SourceError> {
         self.reader = None;
         let mut reader = open_default_reader(self.cfg.dir.as_deref())?;
-        let pages = reader.read()?;
-        if !is_competizione(&pages.statics) {
-            let v = pages.statics.sm_version;
+        let raw = reader.read_raw()?;
+        let game = self.cfg.game;
+        match raw.game()? {
+            Some(found) if found == game => {}
+            Some(found) => {
+                return Err(SourceError::NotAvailable(format!(
+                    "ces pages sont celles de {}, pas de {}",
+                    found.label(),
+                    game.label()
+                )))
+            }
+            None => {
+                return Err(SourceError::NotAvailable(format!(
+                    "{} : pages sans numéro d'interface (le jeu démarre ?)",
+                    game.label()
+                )))
+            }
+        }
+        let pages = raw.pages_of(game)?;
+        if pages.graphics.status == status::OFF {
             return Err(SourceError::NotAvailable(format!(
-                "ces pages ne sont pas celles d'Assetto Corsa Competizione (interface « {} »)",
-                crate::layout::text(&v)
+                "{} est lancé, sans session en cours",
+                game.label()
             )));
         }
-        if pages.graphics.status == status::OFF {
-            return Err(SourceError::NotAvailable(
-                "Assetto Corsa Competizione est lancé, sans session en cours".into(),
-            ));
-        }
-        tracing::info!("ACC : {}", reader.describe());
+        tracing::info!("{} : {}", game.label(), reader.describe());
         self.reader = Some(reader);
-        self.conv = Converter::new();
+        self.conv = Converter::for_game(game);
         self.last_ids = None;
         self.last_change = Instant::now();
         self.last_frame = None;
@@ -126,7 +160,8 @@ impl TelemetrySource for AccSource {
         let Some(reader) = self.reader.as_mut() else {
             return Err(SourceError::NotAvailable("non connecté".into()));
         };
-        let pages = match reader.read() {
+        let game = self.cfg.game;
+        let pages = match reader.read_raw().and_then(|raw| raw.pages_of(game)) {
             Ok(p) => p,
             Err(SourceError::NotAvailable(why)) => return Err(self.lost(why)),
             Err(e) => return Err(e),
@@ -157,10 +192,11 @@ impl TelemetrySource for AccSource {
             return Ok(None);
         }
         self.last_frame = Some(now);
+        let id = self.source_id();
         Ok(Some(self.conv.frame(
             &pages,
             now.duration_since(self.origin),
-            SOURCE_ID,
+            id,
         )))
     }
 

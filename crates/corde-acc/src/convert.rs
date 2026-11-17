@@ -24,7 +24,9 @@
 //! Everything marked `TODO(verify-in-game)` is an assumption taken from the documentation
 //! that still has to be confirmed against the running game.
 
-use crate::layout::{flag, session, status, text, Graphics, Physics, Static, MAX_CARS, NO_TIME_MS};
+use crate::layout::{
+    flag, session, status, text, Game, Graphics, Physics, Static, MAX_CARS, NO_TIME_MS,
+};
 use crate::reader::Pages;
 use crate::tracks;
 use corde_protocol::{
@@ -66,12 +68,31 @@ fn time_s(ms: i32) -> Option<f32> {
 /// Is this the interface of Competizione? The first Assetto Corsa uses the same mapping
 /// names with a shorter layout and stops at version « 1.7 ».
 pub fn is_competizione(statics: &Static) -> bool {
-    let sm_version = statics.sm_version;
-    let v = text(&sm_version);
-    let mut parts = v.split('.').map(|p| p.trim().parse::<u32>().ok());
-    match (parts.next().flatten(), parts.next().flatten()) {
-        (Some(major), Some(minor)) => major > 1 || (major == 1 && minor >= 8),
-        _ => false,
+    Game::of(statics) == Some(Game::Competizione)
+}
+
+impl Game {
+    pub fn id(self) -> GameId {
+        match self {
+            Game::Competizione => GameId::Acc,
+            Game::AssettoCorsa => GameId::Ac,
+        }
+    }
+}
+
+/// The compound of the first Assetto Corsa, from its name (« Soft (S) », « Medium (M) »…).
+fn compound_of(name: &str) -> CompoundType {
+    let n = name.to_ascii_lowercase();
+    if n.contains("wet") || n.contains("rain") {
+        CompoundType::Wet
+    } else if n.contains("soft") {
+        CompoundType::Soft
+    } else if n.contains("medium") {
+        CompoundType::Medium
+    } else if n.contains("hard") {
+        CompoundType::Hard
+    } else {
+        CompoundType::Unknown
     }
 }
 
@@ -134,6 +155,7 @@ struct SessionKey {
 /// documentation). One per connection to the game.
 #[derive(Debug, Default)]
 pub struct Converter {
+    game: Game,
     seq: u64,
     key: Option<SessionKey>,
     /// Monotonic time of the previous frame.
@@ -157,8 +179,17 @@ pub struct Converter {
 }
 
 impl Converter {
+    /// For the pages of Competizione.
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// For the pages of `game` (already decoded by [`crate::RawPages::pages_of`]).
+    pub fn for_game(game: Game) -> Self {
+        Self {
+            game,
+            ..Self::default()
+        }
     }
 
     /// The session clock, seconds.
@@ -179,6 +210,7 @@ impl Converter {
         if self.key.as_ref() != Some(&key) {
             let seq = self.seq;
             *self = Self {
+                game: self.game,
                 seq,
                 key: Some(key),
                 counter: g.completed_laps.max(0),
@@ -234,7 +266,13 @@ impl Converter {
             }
         }
         self.prev_fraction = Some(fraction);
-        let known_length = tracks::length_m(&track_id).or(self.measured_length_m);
+        // The first Assetto Corsa publishes the length; Competizione leaves it at zero.
+        let published = finite(s.track_spline_length);
+        let known_length = if published > 100.0 {
+            Some(published)
+        } else {
+            tracks::length_m(&track_id).or(self.measured_length_m)
+        };
         let track_length_m = known_length.unwrap_or(0.0);
         let lap_dist_m = match known_length {
             Some(len) => fraction * len,
@@ -274,8 +312,15 @@ impl Converter {
         let wind = finite(g.wind_speed);
         let dir = finite(g.wind_direction);
         SessionInfo {
-            game: GameId::Acc,
-            track_name: tracks::pretty(track_id),
+            game: self.game.id(),
+            track_name: {
+                // The layout, when the circuit has several (the first Assetto Corsa).
+                let field = s.track_configuration;
+                match text(&field).as_str() {
+                    "" => tracks::pretty(track_id),
+                    layout => format!("{} — {}", tracks::pretty(track_id), tracks::pretty(layout)),
+                }
+            },
             track_length_m,
             session_type: session_type(g.session),
             session_index: g.session_index,
@@ -427,18 +472,30 @@ impl Converter {
             ..Electronics::default()
         };
 
+        let ac = self.game == Game::AssettoCorsa;
         let wet = g.rain_tyres != 0;
         let compound_field = g.tyre_compound;
-        let compound_name = match text(&compound_field).as_str() {
-            "" => String::new(),
-            _ if wet => "Wet".to_string(),
-            _ => "Dry".to_string(),
-        };
-        let compound_type = if wet {
-            CompoundType::Wet
+        let raw_compound = text(&compound_field);
+        let (compound_name, compound_type) = if ac {
+            // The first Assetto Corsa names its compounds.
+            (raw_compound.clone(), compound_of(&raw_compound))
+        } else if raw_compound.is_empty() {
+            (String::new(), CompoundType::Unknown)
+        } else if wet {
+            ("Wet".to_string(), CompoundType::Wet)
         } else {
-            CompoundType::Unknown
+            ("Dry".to_string(), CompoundType::Unknown)
         };
+        // What the first Assetto Corsa publishes and Competizione does not.
+        let (temp_i, temp_m, temp_o, wear, load, camber, ride) = (
+            p.tyre_temp_i,
+            p.tyre_temp_m,
+            p.tyre_temp_o,
+            p.tyre_wear,
+            p.wheel_load,
+            p.camber_rad,
+            p.ride_height,
+        );
         let (pressure, core, brake, travel, spin, ratio, angle, radius, press) = (
             p.wheels_pressure,
             p.tyre_core_temperature,
@@ -458,12 +515,32 @@ impl Converter {
                 brake_pressure: finite(press[i]),
                 rotation_rads: finite(spin[i]),
                 pressure_kpa: finite(pressure[i]) * PSI_TO_KPA,
-                // One temperature per tyre: the core.
-                temp_c: [t; 3],
+                // Competizione: one temperature per tyre, the core. The first Assetto
+                // Corsa: inside / middle / outside, put in the frame's order (left /
+                // centre / right of the tyre: the inside of a left wheel is its right).
+                temp_c: if !ac {
+                    [t; 3]
+                } else if i % 2 == 0 {
+                    [finite(temp_o[i]), finite(temp_m[i]), finite(temp_i[i])]
+                } else {
+                    [finite(temp_i[i]), finite(temp_m[i]), finite(temp_o[i])]
+                },
                 temp_inner_c: [t; 3],
                 carcass_c: t,
-                // Not sent by the game: full, rather than « worn out ».
-                wear_remaining: 1.0,
+                // Competizione does not send the wear: full, rather than « worn out ».
+                // TODO(verify-in-game): the first Assetto Corsa counts from 100 down.
+                wear_remaining: if ac && finite(wear[i]) > 0.0 {
+                    (finite(wear[i]) / 100.0).clamp(0.0, 1.0)
+                } else {
+                    1.0
+                },
+                load_n: if ac { finite(load[i]) } else { 0.0 },
+                camber_deg: if ac {
+                    finite(camber[i]).to_degrees()
+                } else {
+                    0.0
+                },
+                ride_height_m: if ac { finite(ride[i / 2]) } else { 0.0 },
                 compound_type,
                 radius_m: finite(radius[i]),
                 slip_ratio: finite(ratio[i]),
@@ -500,7 +577,13 @@ impl Converter {
                 ..TyreSet::default()
             },
             in_pits: g.is_in_pit != 0 || g.is_in_pit_lane != 0,
-            in_garage: g.is_setup_menu_visible != 0,
+            // Competizione says when the setup screen is shown; the first Assetto Corsa
+            // only that the car is in its box.
+            in_garage: if ac {
+                g.is_in_pit != 0
+            } else {
+                g.is_setup_menu_visible != 0
+            },
             ..PlayerTelemetry::default()
         }
     }

@@ -5,7 +5,8 @@
 //! way the game writes them — then read back like the real ones.
 
 use crate::layout::{
-    status, Graphics, Physics, Static, GRAPHICS_SIZE, NO_TIME_MS, PHYSICS_SIZE, STATIC_SIZE,
+    status, Game, Graphics, GraphicsAc, Physics, Static, GRAPHICS_SIZE, NO_TIME_MS, PHYSICS_SIZE,
+    STATIC_SIZE,
 };
 use crate::reader::RawPages;
 use std::mem::offset_of;
@@ -27,8 +28,12 @@ fn put_text(page: &mut [u8], at: usize, units: usize, s: &str) {
 /// A car lapping a circuit.
 #[derive(Debug, Clone)]
 pub struct FakeSession {
+    /// Which game writes the pages: its graphics page has its own layout.
+    pub game: Game,
     /// Identifier of the circuit, as the game writes it (« monza »).
     pub track: String,
+    /// Layout of the circuit, for the first Assetto Corsa (« layout_gp_a »), else empty.
+    pub track_configuration: String,
     /// Identifier of the car (« bmw_m4_gt3 »).
     pub car: String,
     /// `Static::sm_version`: « 1.9 » for Competizione, « 1.7 » for the first Assetto Corsa.
@@ -48,6 +53,8 @@ pub struct FakeSession {
 impl Default for FakeSession {
     fn default() -> Self {
         Self {
+            game: Game::Competizione,
+            track_configuration: String::new(),
             track: "monza".into(),
             car: "bmw_m4_gt3".into(),
             sm_version: "1.9".into(),
@@ -62,6 +69,21 @@ impl Default for FakeSession {
 }
 
 impl FakeSession {
+    /// A session of the first Assetto Corsa: its interface, its identifiers, a circuit
+    /// whose length the game publishes.
+    pub fn assetto_corsa() -> Self {
+        Self {
+            game: Game::AssettoCorsa,
+            sm_version: "1.7".into(),
+            track: "ks_nurburgring".into(),
+            track_configuration: "layout_gp_a".into(),
+            car: "ks_ferrari_488_gt3".into(),
+            lap_time_s: 118.0,
+            length_m: 5137.0,
+            ..Self::default()
+        }
+    }
+
     /// The pages `t_s` seconds after the car crossed the line for the first time.
     pub fn at(&self, t_s: f64) -> RawPages {
         let t = t_s.max(0.0);
@@ -126,6 +148,35 @@ impl FakeSession {
             speed_ms,
         );
 
+        let ac = self.game == Game::AssettoCorsa;
+        if ac {
+            // What this game publishes and Competizione does not.
+            for i in 0..4 {
+                let (inner, outer) = (90.0 + i as f32, 70.0 + i as f32);
+                put_f32(
+                    &mut physics,
+                    offset_of!(Physics, tyre_temp_i) + 4 * i,
+                    inner,
+                );
+                put_f32(&mut physics, offset_of!(Physics, tyre_temp_m) + 4 * i, 80.0);
+                put_f32(
+                    &mut physics,
+                    offset_of!(Physics, tyre_temp_o) + 4 * i,
+                    outer,
+                );
+                put_f32(&mut physics, offset_of!(Physics, tyre_wear) + 4 * i, 97.5);
+                put_f32(
+                    &mut physics,
+                    offset_of!(Physics, wheel_load) + 4 * i,
+                    3200.0,
+                );
+                put_f32(&mut physics, offset_of!(Physics, camber_rad) + 4 * i, -0.05);
+            }
+            put_f32(&mut physics, offset_of!(Physics, ride_height), 0.055);
+            put_f32(&mut physics, offset_of!(Physics, ride_height) + 4, 0.072);
+        }
+
+        // As mapped: the size of Competizione's page, zeros after what the game writes.
         let mut graphics = vec![0u8; GRAPHICS_SIZE];
         put_i32(
             &mut graphics,
@@ -134,11 +185,13 @@ impl FakeSession {
         );
         put_i32(&mut graphics, offset_of!(Graphics, status), self.status);
         put_i32(&mut graphics, offset_of!(Graphics, session), self.session);
-        put_i32(
-            &mut graphics,
-            offset_of!(Graphics, session_index),
-            self.session_index,
-        );
+        if !ac {
+            put_i32(
+                &mut graphics,
+                offset_of!(Graphics, session_index),
+                self.session_index,
+            );
+        }
         put_i32(
             &mut graphics,
             offset_of!(Graphics, completed_laps),
@@ -166,16 +219,27 @@ impl FakeSession {
             &mut graphics,
             offset_of!(Graphics, tyre_compound),
             33,
-            "dry_compound",
+            if ac { "Soft (S)" } else { "dry_compound" },
         );
         put_f32(
             &mut graphics,
             offset_of!(Graphics, normalized_car_position),
             fraction,
         );
-        put_i32(&mut graphics, offset_of!(Graphics, active_cars), 3);
         let radius = (self.length_m / std::f64::consts::TAU) as f32;
         let angle = fraction * std::f32::consts::TAU;
+        if ac {
+            // The first Assetto Corsa: the page is the same up to here, then holds the
+            // player's coordinates alone and stops after a few fields.
+            let at = offset_of!(GraphicsAc, car_coordinates);
+            put_f32(&mut graphics, at, radius * angle.cos());
+            put_f32(&mut graphics, at + 8, radius * angle.sin());
+            put_i32(&mut graphics, offset_of!(GraphicsAc, is_in_pit_lane), 0);
+            put_f32(&mut graphics, offset_of!(GraphicsAc, surface_grip), 0.98);
+            put_f32(&mut graphics, offset_of!(GraphicsAc, wind_speed), 3.0);
+            return self.finish(physics, graphics);
+        }
+        put_i32(&mut graphics, offset_of!(Graphics, active_cars), 3);
         for (slot, (id, lead)) in [(3, 0.4f32), (7, 0.0), (9, -0.7)].into_iter().enumerate() {
             let a = angle + lead;
             let at = offset_of!(Graphics, car_coordinates) + 12 * slot;
@@ -202,7 +266,11 @@ impl FakeSession {
         put_i32(&mut graphics, offset_of!(Graphics, track_grip_status), 2);
         put_i32(&mut graphics, offset_of!(Graphics, gap_ahead), 1850);
         put_i32(&mut graphics, offset_of!(Graphics, gap_behind), 640);
+        self.finish(physics, graphics)
+    }
 
+    /// The static page, and the three together.
+    fn finish(&self, physics: Vec<u8>, graphics: Vec<u8>) -> RawPages {
         let mut statics = vec![0u8; STATIC_SIZE];
         put_text(
             &mut statics,
@@ -227,6 +295,20 @@ impl FakeSession {
         put_f32(&mut statics, offset_of!(Static, max_fuel), 120.0);
         for i in 0..4 {
             put_f32(&mut statics, offset_of!(Static, tyre_radius) + 4 * i, 0.34);
+        }
+        if self.game == Game::AssettoCorsa {
+            // This game publishes the length of the lap and the layout of the circuit.
+            put_f32(
+                &mut statics,
+                offset_of!(Static, track_spline_length),
+                self.length_m as f32,
+            );
+            put_text(
+                &mut statics,
+                offset_of!(Static, track_configuration),
+                33,
+                &self.track_configuration,
+            );
         }
         RawPages {
             physics,

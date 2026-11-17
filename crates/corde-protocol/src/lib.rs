@@ -33,7 +33,10 @@ pub enum GameId {
     /// Le Mans Ultimate (Studio 397). First supported game.
     Lmu,
     Rfactor2,
+    /// Assetto Corsa Competizione.
     Acc,
+    /// The first Assetto Corsa.
+    Ac,
     AcEvo,
     Iracing,
     Ams2,

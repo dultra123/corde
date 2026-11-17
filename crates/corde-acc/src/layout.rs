@@ -17,8 +17,22 @@
 //! `unsafe`.
 //!
 //! Many fields are documented « not used in ACC » (inherited from the first Assetto
-//! Corsa, which uses the same mapping names with a shorter layout): they are kept to
-//! hold the offsets and never read.
+//! Corsa): they are kept to hold the offsets and are only read for that game.
+//!
+//! ## The first Assetto Corsa
+//!
+//! It publishes pages of the same names, in an older and shorter layout (interface « 1.7 »
+//! at most). Source: the `sim_info.py` the game ships for its Python applications.
+//!
+//! * physics: the **beginning** of [`Physics`], up to `local_velocity`;
+//! * static: the **beginning** of [`Static`], up to `pit_window_end`;
+//! * graphics: the same as [`Graphics`] up to `normalized_car_position`, then **different**
+//!   — the player's coordinates alone, no list of cars: [`GraphicsAc`].
+//!
+//! A mapping is at least one memory page (4096 bytes) filled with zeros after what the
+//! game writes: reading it with the longer structures gives zeros in the fields this game
+//! does not have. [`GraphicsAc::upgrade`] turns its graphics page into a [`Graphics`], so
+//! that one conversion serves both games.
 
 use bytemuck::{AnyBitPattern, Zeroable};
 
@@ -55,6 +69,38 @@ pub mod flag {
     pub const PENALTY: i32 = 6;
     pub const GREEN: i32 = 7;
     pub const ORANGE: i32 = 8;
+}
+
+/// Which of the two games publishes the pages (they share the names of the mappings).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Game {
+    /// Assetto Corsa Competizione: interface « 1.8 » and later.
+    #[default]
+    Competizione,
+    /// The first Assetto Corsa: interface « 1.7 » at most.
+    AssettoCorsa,
+}
+
+impl Game {
+    /// The game a static page belongs to, from the version of its interface; `None` when
+    /// the page holds no version (the game is starting, or these are not its pages).
+    pub fn of(statics: &Static) -> Option<Self> {
+        let field = statics.sm_version;
+        let v = text(&field);
+        let mut parts = v.split('.').map(|p| p.trim().parse::<u32>().ok());
+        match (parts.next().flatten(), parts.next().flatten()) {
+            (Some(1), Some(minor)) if minor <= 7 => Some(Game::AssettoCorsa),
+            (Some(major), Some(_)) if major >= 1 => Some(Game::Competizione),
+            _ => None,
+        }
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Game::Competizione => "Assetto Corsa Competizione",
+            Game::AssettoCorsa => "Assetto Corsa",
+        }
+    }
 }
 
 /// A lap time the game does not have (`i_last_time`, `i_best_time`…).
@@ -369,7 +415,97 @@ pub struct Static {
     pub wet_tyres_name: [u16; 33],
 }
 
+/// `Local\acpmf_graphics` of the **first Assetto Corsa** (see the module documentation).
+#[repr(C, packed(4))]
+#[derive(Clone, Copy, AnyBitPattern)]
+pub struct GraphicsAc {
+    pub packet_id: i32,
+    pub status: i32,
+    pub session: i32,
+    pub current_time: [u16; 15],
+    pub last_time: [u16; 15],
+    pub best_time: [u16; 15],
+    pub split: [u16; 15],
+    pub completed_laps: i32,
+    pub position: i32,
+    pub i_current_time: i32,
+    pub i_last_time: i32,
+    pub i_best_time: i32,
+    pub session_time_left: f32,
+    pub distance_traveled: f32,
+    pub is_in_pit: i32,
+    pub current_sector_index: i32,
+    pub last_sector_time: i32,
+    pub number_of_laps: i32,
+    pub tyre_compound: [u16; 33],
+    pub replay_time_multiplier: f32,
+    pub normalized_car_position: f32,
+    /// The player's car, world frame.
+    pub car_coordinates: [f32; 3],
+    pub penalty_time: f32,
+    pub flag: i32,
+    pub ideal_line_on: i32,
+    pub is_in_pit_lane: i32,
+    pub surface_grip: f32,
+    pub mandatory_pit_done: i32,
+    /// Added by later versions of the game (zeros before).
+    pub wind_speed: f32,
+    pub wind_direction: f32,
+}
+
+/// Identifier given to the player's car when the game names none (the first Assetto Corsa).
+pub const LONE_CAR_ID: i32 = 0;
+
+impl GraphicsAc {
+    /// The same page as a [`Graphics`]: what both games publish is copied, the player's
+    /// car becomes the only car of the list, and what this game does not publish stays at
+    /// zero — except the validity of the lap, which it never reports: every lap is valid.
+    pub fn upgrade(&self) -> Graphics {
+        let mut g = Graphics::zeroed();
+        g.packet_id = self.packet_id;
+        g.status = self.status;
+        g.session = self.session;
+        g.current_time = self.current_time;
+        g.last_time = self.last_time;
+        g.best_time = self.best_time;
+        g.split = self.split;
+        g.completed_laps = self.completed_laps;
+        g.position = self.position;
+        g.i_current_time = self.i_current_time;
+        g.i_last_time = self.i_last_time;
+        g.i_best_time = self.i_best_time;
+        g.session_time_left = self.session_time_left;
+        g.distance_traveled = self.distance_traveled;
+        g.is_in_pit = self.is_in_pit;
+        g.current_sector_index = self.current_sector_index;
+        g.last_sector_time = self.last_sector_time;
+        g.number_of_laps = self.number_of_laps;
+        g.tyre_compound = self.tyre_compound;
+        g.replay_time_multiplier = self.replay_time_multiplier;
+        g.normalized_car_position = self.normalized_car_position;
+        g.active_cars = 1;
+        let mut cars = [[0.0f32; 3]; MAX_CARS];
+        cars[0] = self.car_coordinates;
+        g.car_coordinates = cars;
+        let mut ids = [0i32; MAX_CARS];
+        ids[0] = LONE_CAR_ID;
+        g.car_id = ids;
+        g.player_car_id = LONE_CAR_ID;
+        g.penalty_time = self.penalty_time;
+        g.flag = self.flag;
+        g.ideal_line_on = self.ideal_line_on;
+        g.is_in_pit_lane = self.is_in_pit_lane;
+        g.surface_grip = self.surface_grip;
+        g.mandatory_pit_done = self.mandatory_pit_done;
+        g.wind_speed = self.wind_speed;
+        g.wind_direction = self.wind_direction;
+        g.is_valid_lap = 1;
+        g
+    }
+}
+
 pub const PHYSICS_SIZE: usize = std::mem::size_of::<Physics>();
+pub const GRAPHICS_AC_SIZE: usize = std::mem::size_of::<GraphicsAc>();
 pub const GRAPHICS_SIZE: usize = std::mem::size_of::<Graphics>();
 pub const STATIC_SIZE: usize = std::mem::size_of::<Static>();
 
@@ -451,6 +587,69 @@ mod tests {
         assert_eq!(offset_of!(Static, is_online), 684);
         assert_eq!(offset_of!(Static, dry_tyres_name), 688);
         assert_eq!(offset_of!(Static, wet_tyres_name), 754);
+    }
+
+    /// The first Assetto Corsa: the sizes of the structures of its `sim_info.py`, worked
+    /// out by hand (4-byte packing), and where its pages stop inside ours.
+    #[test]
+    fn the_first_assetto_corsa_fits_where_its_reference_says() {
+        // graphics: identical up to the position on the lap, then 3 + 1 floats, 3 ints,
+        // 1 float, 1 int (296 bytes), and the two wind floats of later versions.
+        assert_eq!(offset_of!(GraphicsAc, normalized_car_position), 248);
+        assert_eq!(
+            offset_of!(GraphicsAc, normalized_car_position),
+            offset_of!(Graphics, normalized_car_position)
+        );
+        assert_eq!(offset_of!(GraphicsAc, car_coordinates), 252);
+        assert_eq!(offset_of!(GraphicsAc, penalty_time), 264);
+        assert_eq!(offset_of!(GraphicsAc, mandatory_pit_done), 284);
+        assert_eq!(GRAPHICS_AC_SIZE, 296);
+        // physics: its 60 fields end with the local velocity, 580 bytes into ours.
+        assert_eq!(offset_of!(Physics, local_velocity) + 12, 580);
+        assert_eq!(offset_of!(Physics, p2p_activations), 580);
+        // static: its 42 fields end with the pit window, 684 bytes into ours.
+        assert_eq!(offset_of!(Static, pit_window_end) + 4, 684);
+    }
+
+    #[test]
+    fn a_page_of_the_first_assetto_corsa_becomes_one_of_ours() {
+        let mut ac = <GraphicsAc as Zeroable>::zeroed();
+        ac.packet_id = 12;
+        ac.status = status::LIVE;
+        ac.session = session::RACE;
+        ac.completed_laps = 3;
+        ac.position = 2;
+        ac.i_current_time = 41_500;
+        ac.i_last_time = 95_210;
+        ac.i_best_time = 94_870;
+        ac.current_sector_index = 1;
+        ac.normalized_car_position = 0.43;
+        ac.car_coordinates = [10.0, 2.0, -30.0];
+        ac.is_in_pit_lane = 1;
+        ac.wind_speed = 4.0;
+        let g = ac.upgrade();
+        assert_eq!({ g.packet_id }, 12);
+        assert_eq!({ g.status }, status::LIVE);
+        assert_eq!({ g.session }, session::RACE);
+        assert_eq!({ g.completed_laps }, 3);
+        assert_eq!({ g.position }, 2);
+        assert_eq!({ g.i_current_time }, 41_500);
+        assert_eq!({ g.i_last_time }, 95_210);
+        assert_eq!({ g.i_best_time }, 94_870);
+        assert_eq!({ g.current_sector_index }, 1);
+        assert_eq!({ g.normalized_car_position }, 0.43);
+        // The player's car is the only one of the list.
+        assert_eq!({ g.active_cars }, 1);
+        assert_eq!({ g.player_car_id }, LONE_CAR_ID);
+        let cars = g.car_coordinates;
+        assert_eq!(cars[0], [10.0, 2.0, -30.0]);
+        assert_eq!({ g.is_in_pit_lane }, 1);
+        assert_eq!({ g.wind_speed }, 4.0);
+        // Not published by this game.
+        assert_eq!({ g.is_valid_lap }, 1);
+        assert_eq!({ g.session_index }, 0);
+        assert_eq!({ g.gap_ahead }, 0);
+        assert_eq!({ g.is_setup_menu_visible }, 0);
     }
 
     #[test]

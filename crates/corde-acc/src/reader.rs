@@ -9,7 +9,7 @@
 //! the step counter of the page (its first field): if the counter moved during the copy,
 //! the copy is taken again.
 
-use crate::layout::{Graphics, Physics, Static};
+use crate::layout::{Game, Graphics, GraphicsAc, Physics, Static};
 use corde_core::SourceError;
 use std::path::{Path, PathBuf};
 
@@ -36,13 +36,28 @@ pub struct RawPages {
 }
 
 impl RawPages {
-    /// The pages, decoded. Fails when one is shorter than its structure.
+    /// The pages of Competizione, decoded. Fails when one is shorter than its structure.
     pub fn pages(&self) -> Result<Pages, SourceError> {
+        self.pages_of(Game::Competizione)
+    }
+
+    /// The pages of `game`, decoded. Those of the first Assetto Corsa are read as mapped
+    /// (padded with zeros to the sizes of Competizione's) and its graphics page is turned
+    /// into ours ([`GraphicsAc::upgrade`]).
+    pub fn pages_of(&self, game: Game) -> Result<Pages, SourceError> {
         Ok(Pages {
             physics: page(&self.physics, PHYSICS_NAME)?,
-            graphics: page(&self.graphics, GRAPHICS_NAME)?,
+            graphics: match game {
+                Game::Competizione => page(&self.graphics, GRAPHICS_NAME)?,
+                Game::AssettoCorsa => page::<GraphicsAc>(&self.graphics, GRAPHICS_NAME)?.upgrade(),
+            },
             statics: page(&self.statics, STATIC_NAME)?,
         })
+    }
+
+    /// Which game these pages come from (see [`Game::of`]).
+    pub fn game(&self) -> Result<Option<Game>, SourceError> {
+        Ok(Game::of(&page::<Static>(&self.statics, STATIC_NAME)?))
     }
 
     /// The same pages without the player's first name, surname and nickname (the static

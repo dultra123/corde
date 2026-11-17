@@ -8,6 +8,7 @@ import type { GameId } from "@corde/protocol";
 const NAMES: Partial<Record<GameId, { name: string; short: string }>> = {
   lmu: { name: "Le Mans Ultimate", short: "LMU" },
   acc: { name: "Assetto Corsa Competizione", short: "ACC" },
+  ac: { name: "Assetto Corsa", short: "AC" },
 };
 
 /** The full name of a game, « » for the simulator and what is not known. */
@@ -22,7 +23,7 @@ export function gameShort(id: GameId | null | undefined): string {
 
 /** Read by Corde, but not checked against the running game yet: said wherever it shows. */
 export function isExperimentalGame(id: GameId | null | undefined): boolean {
-  return id === "acc";
+  return id === "acc" || id === "ac";
 }
 
 /**

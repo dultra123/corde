@@ -59,6 +59,25 @@ Le reste de Corde ne doit pas apprendre les particularités d'un jeu. Pour Asset
 - Le premier Assetto Corsa publie des pages du même nom, dans un format plus court : l'adaptateur les
   reconnaît à leur numéro d'interface (« 1.7 » au plus) et les refuse.
 
+### C bis. Le premier Assetto Corsa (1.8.0) : le même module, deux dialectes
+
+Ses pages « physics » et « static » sont le **début** de celles de Competizione ; sa page « graphics » est la
+même jusqu'à la position sur le tour, puis **différente** (les coordonnées du joueur seul, pas de liste de
+voitures) et bien plus courte. Source retenue : `sim_info.py`, le fichier que le jeu fournit à ses
+applications Python — un lecteur libre multi-jeux la décrit à tort comme celle de Competizione, ce qui
+rappelle qu'un recoupement n'est pas une vérification.
+
+- `GraphicsAc` décrit cette page ; `GraphicsAc::upgrade` en fait une page de Competizione (la voiture du
+  joueur devient la seule de la liste, ce que le jeu ne publie pas reste à zéro, tout tour est valide). Une
+  seule conversion sert donc les deux jeux, avec un drapeau pour ce que seul le premier Assetto Corsa
+  publie : longueur du circuit, tracé, trois températures par pneu (remises dans l'ordre gauche / centre /
+  droite de la trame), usure, charge, carrossage, hauteurs de caisse, nom de la gomme.
+- Une zone de mémoire partagée fait au moins une page mémoire remplie de zéros après ce que le jeu écrit :
+  la lire avec les structures plus longues de Competizione donne des zéros dans les champs absents.
+- Deux sources (`AccSource::new`, `AccSource::assetto_corsa`), chacune ne répondant qu'à son jeu : la
+  détection automatique les essaie l'une après l'autre (`lmu`, `acc`, `ac`).
+- `GameId::Ac` (« ac ») est ajouté au protocole.
+
 ### D. Un jeu non vérifié est dit expérimental, partout
 
 L'adaptateur ACC est écrit d'après la documentation de la mémoire partagée du jeu, recoupé avec deux
@@ -75,7 +94,8 @@ l'analyse est indicative et que les réglages proposés ne s'appliquent pas.
 
 ## Ordre des jeux suivants
 
-Selon ce qu'on peut essayer, et le coût : le premier Assetto Corsa (mêmes pages), iRacing (mémoire partagée
+Le propriétaire a dit (17 nov.) posséder tous les jeux de la liste : chacun pourra être vérifié chez lui.
+Fait : le premier Assetto Corsa (1.8.0). Ensuite, par coût croissant : iRacing (mémoire partagée
 qui se décrit elle-même), rFactor 2 (plugin tiers, structures proches de celles de Le Mans Ultimate),
 Automobilista 2, RaceRoom, Assetto Corsa EVO (format encore mouvant), puis les jeux à télémétrie UDP (une
 option à activer dans le jeu, et un port à écouter : à étudier avec le modèle de sécurité). Les consoles ne
@@ -103,5 +123,9 @@ sont pas prévues.
 - `corde-server/tests/games_auto.rs` : un serveur en `--source auto` sans jeu attend ; une session ACC
   (fausse) est détectée, enregistrée sous `game: acc`, ses tours chronométrés ; la session quittée,
   l'enregistrement est clos ; elle est retrouvée à la suivante.
-- **Non vérifié** : face au jeu réel (le lecteur Windows n'est compilé que par l'intégration continue) ; les
-  hypothèses listées dans `docs/JEUX.md`.
+- Premier Assetto Corsa : taille de sa page « graphics » (296 octets) et fin de ses pages dans les nôtres
+  (580 et 684 octets) calculées à la main ; page convertie champ par champ ; trame, pneus et tours depuis
+  un faux jeu qui écrit son format ; chaque source ne répond qu'à son jeu ; dans `games_auto.rs`, après
+  Competizione, une session du premier Assetto Corsa est reconnue et enregistrée sous `game: ac`.
+- **Non vérifié** : face aux jeux réels (le lecteur Windows compile et ses essais passent dans
+  l'intégration continue, sans jeu) ; les hypothèses listées dans `docs/JEUX.md`.

@@ -764,9 +764,8 @@ export const en: Record<TranslationKey, string> = {
     "Check that Corde is running on the PC. From another device, also check the server address in the settings.",
   "home.hint.offlineDesktop": "Corde's engine stopped answering: restart the application.",
   "home.hint.waiting":
-    "Start your game (Le Mans Ultimate, Assetto Corsa Competizione): Corde detects it by itself and opens the dashboard as soon as you take the track.",
-  "home.hint.waitingManual":
-    "Start your game (Le Mans Ultimate, Assetto Corsa Competizione): Corde detects it by itself.",
+    "Start your game: Corde detects it by itself and opens the dashboard as soon as you take the track.",
+  "home.hint.waitingManual": "Start your game: Corde detects it by itself.",
   "home.hint.experimental":
     "{game}: new support, not checked against the running game yet. Some values may be missing or wrong.",
   "home.hint.menu": "Load a session in the game to get started.",
@@ -848,10 +847,10 @@ export const en: Record<TranslationKey, string> = {
   // Quick-start guide (home page)
   "guide.title": "Getting started",
   "guide.intro":
-    "Corde reads what the game publishes. It changes neither the game nor your setups. It recognises Le Mans Ultimate and Assetto Corsa Competizione by itself.",
+    "Corde reads what the game publishes. It changes neither the game nor your setups. It recognises Le Mans Ultimate, Assetto Corsa Competizione and Assetto Corsa by itself.",
   "guide.step1.title": "Le Mans Ultimate: enable plugins, once",
   "guide.step1.body":
-    "In LMU: Settings → Gameplay → Enable Plugins set to ON. Then quit the game completely and start it again. Assetto Corsa Competizione: nothing to set.",
+    "In LMU: Settings → Gameplay → Enable Plugins set to ON. Then quit the game completely and start it again. Assetto Corsa Competizione and Assetto Corsa: nothing to set.",
   "guide.step2.title": "Start Corde, then the game",
   "guide.step2.body":
     "The home page goes from “Waiting for a game…” to “Game detected”, with the name of the game.",

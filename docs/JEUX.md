@@ -13,7 +13,7 @@ jeu, et n'utilise aucun compte.
 |---|---|---|---|
 | **Le Mans Ultimate** | **Vérifié en jeu** | Settings → Gameplay → **Enable Plugins** sur ON, une fois | mémoire partagée du jeu |
 | **Assetto Corsa Competizione** | **Expérimental** depuis la 1.7.0 : écrit d'après la documentation du jeu, **pas encore vérifié face au jeu** | rien | mémoire partagée du jeu |
-| Assetto Corsa (le premier) | Prévu | rien | les mêmes pages qu'ACC, dans une version plus courte |
+| **Assetto Corsa** (le premier) | **Expérimental** depuis la 1.8.0 : écrit d'après le fichier de référence fourni avec le jeu, **pas encore vérifié face au jeu** | rien | mémoire partagée du jeu (les mêmes pages qu'ACC, dans une version plus ancienne) |
 | Assetto Corsa EVO | Prévu (jeu en accès anticipé : son format bouge encore) | rien | mémoire partagée du jeu |
 | iRacing | Prévu | rien | mémoire partagée du jeu |
 | rFactor 2 | Prévu | installer un plugin tiers de mémoire partagée | mémoire partagée du plugin |
@@ -27,19 +27,20 @@ encore écrit. L'ordre dépendra des jeux qu'on pourra essayer.
 
 ## Ce qui marche avec chaque jeu
 
-| | Le Mans Ultimate | Assetto Corsa Competizione |
-|---|---|---|
-| Direct : widgets et tableau de bord de course (PC, téléphone, OBS) | oui | oui |
-| Enregistrement des sessions, chronos des tours | oui | oui (chronos officiels du jeu) |
-| Temps par secteur | oui | pas encore |
-| Comparaison de tours, graphes | oui | oui |
-| Classement, écarts avec toutes les voitures | oui | écart avec la voiture devant et derrière seulement : le jeu ne donne les autres pilotes que par une autre interface, pas encore branchée |
-| Usure des pneus, températures intérieur / milieu / extérieur | oui | non : le jeu ne les publie pas (une température par pneu) |
-| Carte du circuit | oui | oui |
-| Ingénieur de course : analyse du pilotage | oui | indicative (sens de certaines mesures à vérifier) |
-| Ingénieur de course : réglages proposés, fichiers de setup | oui | non : il connaît les réglages de Le Mans Ultimate |
-| Import des résultats officiels, page Profil | oui | non |
-| Planning des courses en ligne, rappels | oui | non (c'est le planning de Le Mans Ultimate) |
+| | Le Mans Ultimate | Assetto Corsa Competizione | Assetto Corsa |
+|---|---|---|---|
+| Direct : widgets et tableau de bord de course (PC, téléphone, OBS) | oui | oui | oui |
+| Enregistrement des sessions, chronos des tours | oui | oui (chronos officiels du jeu) | oui (chronos officiels du jeu) |
+| Temps par secteur | oui | pas encore | pas encore |
+| Comparaison de tours, graphes | oui | oui | oui |
+| Classement, écarts avec les autres voitures | oui | écart avec la voiture devant et derrière seulement : le jeu ne donne les autres pilotes que par une autre interface, pas encore branchée | non : le jeu ne publie que ta voiture |
+| Températures des pneus intérieur / milieu / extérieur, usure | oui | non : le jeu publie une seule température par pneu, et pas l'usure | oui |
+| Niveaux d'antipatinage et d'ABS, tour annulé | oui | oui | non : le jeu ne les publie pas |
+| Carte du circuit | oui | oui | oui |
+| Ingénieur de course : analyse du pilotage | oui | indicative (sens de certaines mesures à vérifier) | indicative |
+| Ingénieur de course : réglages proposés, fichiers de setup | oui | non : il connaît les réglages de Le Mans Ultimate | non |
+| Import des résultats officiels, page Profil | oui | non | non |
+| Planning des courses en ligne, rappels | oui | non (c'est le planning de Le Mans Ultimate) | non |
 
 ## Assetto Corsa Competizione : ce qu'il faut savoir
 
@@ -55,15 +56,28 @@ encore écrit. L'ordre dépendra des jeux qu'on pourra essayer.
 - La longueur des circuits livrés avec le jeu est connue ; pour un autre circuit, elle est mesurée sur le
   premier tour complet.
 
-### Aider à le vérifier
+## Assetto Corsa (le premier) : ce qu'il faut savoir
+
+- **Rien à installer ni à activer**, comme pour Competizione. L'accueil passe à « Jeu détecté — Assetto
+  Corsa ». Corde ne voit le jeu que pendant une session.
+- Les deux jeux publient des pages du même nom ; Corde les distingue par le numéro de leur interface
+  (« 1.7 » au plus pour le premier Assetto Corsa). Sa page de session est plus ancienne et plus courte :
+  elle est décrite d'après `sim_info.py`, le fichier que le jeu fournit à ses applications Python.
+- **Pas encore vérifié face au jeu.** À confirmer en priorité : l'échelle de l'usure des pneus (supposée de
+  100 à 0), l'ordre intérieur / extérieur des températures, le sens des accélérations.
+- Le jeu donne la longueur du circuit : rien à mesurer. Les voitures et circuits ajoutés (mods) sont lus
+  comme les autres ; leur nom est celui de leur dossier.
+- `acc-probe.exe` (ci-dessous) reconnaît les deux jeux.
+
+### Aider à vérifier l'un ou l'autre
 
 Dans l'archive `corde-<version>-portable-windows.zip` de la page des versions, l'outil **`acc-probe.exe`**
 montre ce que Corde lit du jeu :
 
-1. Lance Assetto Corsa Competizione et entre en piste.
+1. Lance Assetto Corsa Competizione (ou Assetto Corsa) et entre en piste.
 2. Ouvre une invite de commandes dans le dossier de l'archive et lance `acc-probe.exe --dump copie-acc`.
-3. Compare les dix lignes affichées (circuit, voiture, tour, vitesse, rapport, carburant, chronos) avec ce
-   que montre le jeu.
+3. Compare les lignes affichées (jeu reconnu, circuit, voiture, tour, vitesse, rapport, carburant, chronos)
+   avec ce que montre le jeu.
 
 Le dossier `copie-acc` contient une copie de ce que le jeu publiait à cet instant, **sans ton prénom, ton nom
 ni ton pseudo** (l'outil les efface). C'est le plus utile à joindre à un signalement sur

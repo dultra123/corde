@@ -321,3 +321,124 @@ fn the_source_follows_the_game_from_the_menus_to_a_session_and_back() {
     assert!(matches!(source.poll(), Err(SourceError::NotAvailable(_))));
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+// --- the first Assetto Corsa ----------------------------------------------------------
+
+use corde_acc::Game;
+
+/// Drives a session of the first Assetto Corsa through its own decoding.
+fn drive_ac(fake: &FakeSession, seconds: f64) -> (Vec<LapRecord>, TelemetryFrame) {
+    let mut conv = Converter::for_game(Game::AssettoCorsa);
+    let mut tracker = LapTracker::new();
+    let mut laps = Vec::new();
+    let mut last = None;
+    for i in 0..=(seconds * 100.0) as u64 {
+        let t = i as f64 / 100.0;
+        let pages = fake.at(t).pages_of(Game::AssettoCorsa).unwrap();
+        let f = conv.frame(&pages, Duration::from_secs_f64(t), "test");
+        laps.extend(tracker.feed(&f));
+        last = Some(f);
+    }
+    (laps, last.unwrap())
+}
+
+#[test]
+fn the_first_assetto_corsa_is_read_through_its_own_graphics_page() {
+    let fake = FakeSession::assetto_corsa();
+    let raw = fake.at(0.0);
+    assert_eq!(raw.game().unwrap(), Some(Game::AssettoCorsa));
+    assert_eq!(
+        FakeSession::default().at(0.0).game().unwrap(),
+        Some(Game::Competizione)
+    );
+
+    let (laps, f) = drive_ac(&fake, 2.0 * 118.0 + 29.5);
+    let s = &f.session;
+    assert_eq!(s.game, GameId::Ac);
+    assert_eq!(s.track_name, "Nurburgring — Layout Gp A");
+    // The game publishes the length of the lap: no table, nothing to measure.
+    assert_eq!(s.track_length_m, 5137.0);
+    assert_eq!(s.session_type, SessionType::Practice);
+    assert!(s.in_realtime);
+    assert_eq!(s.num_vehicles, 1);
+
+    let p = f.player.as_ref().unwrap();
+    assert_eq!(p.vehicle_model, "ks_ferrari_488_gt3");
+    assert_eq!(p.vehicle_name, "Ferrari 488 Gt3");
+    assert_eq!(p.vehicle_class, VehicleClass::Gt3);
+    assert_eq!(p.engine.gear, 4);
+    assert!((p.lap.lap_fraction - 0.25).abs() < 1e-3);
+    assert!((p.lap.lap_dist_m - 0.25 * 5137.0).abs() < 2.0);
+    assert!(!p.lap.lap_invalidated, "the game reports no invalid lap");
+    // The player's coordinates: where the game writes them in its own page.
+    let radius = 5137.0 / std::f64::consts::TAU;
+    assert!(p.motion.pos[0].abs() < 2.0 && (p.motion.pos[2] - radius).abs() < 2.0);
+    // Three temperatures per tyre, in the frame's order (left / centre / right of the
+    // tyre): the inside of a left wheel is its right side.
+    assert_eq!(
+        p.wheels[0].temp_c,
+        [70.0, 80.0, 90.0],
+        "front left: outside first"
+    );
+    assert_eq!(
+        p.wheels[1].temp_c,
+        [91.0, 80.0, 71.0],
+        "front right: inside first"
+    );
+    assert!((p.wheels[0].wear_remaining - 0.975).abs() < 1e-6);
+    assert_eq!(p.wheels[0].load_n, 3200.0);
+    assert!((p.wheels[0].camber_deg + 2.865).abs() < 0.01);
+    assert_eq!(p.wheels[0].ride_height_m, 0.055);
+    assert_eq!(p.wheels[3].ride_height_m, 0.072);
+    assert_eq!(p.wheels[0].compound_type, CompoundType::Soft);
+    assert_eq!(p.tyres.front_compound, "Soft (S)");
+    // Not published by this game: no gaps, no electronics levels.
+    assert_eq!(p.gaps.car_ahead_s, None);
+    assert_eq!(p.electronics.tc, 0);
+
+    // Its laps are timed like the others.
+    assert_eq!(laps.len(), 2, "{laps:#?}");
+    assert!(laps
+        .iter()
+        .all(|l| l.timed_by_game && (l.lap_time_s - 118.0).abs() < 0.02));
+}
+
+#[test]
+fn each_game_only_answers_to_its_own_source() {
+    let dir = temp_dir("family");
+    let mut acc = AccSource::with_config(AccSourceConfig {
+        dir: Some(dir.clone()),
+        ..AccSourceConfig::default()
+    });
+    let mut ac = AccSource::with_config(AccSourceConfig {
+        game: Game::AssettoCorsa,
+        dir: Some(dir.clone()),
+        ..AccSourceConfig::default()
+    });
+    assert_eq!(acc.info().game, GameId::Acc);
+    assert_eq!(ac.info().game, GameId::Ac);
+    assert_eq!(ac.info().id, "ac-shm");
+    assert_eq!(ac.info().label, "Assetto Corsa");
+
+    // The first Assetto Corsa is running.
+    FakeSession::assetto_corsa()
+        .at(1.0)
+        .write_dir(&dir)
+        .unwrap();
+    assert!(matches!(acc.connect(), Err(SourceError::NotAvailable(_))));
+    ac.connect().unwrap();
+    let f = ac.poll().unwrap().expect("a frame");
+    assert_eq!(f.session.game, GameId::Ac);
+    assert_eq!(f.source, "ac-shm");
+    ac.disconnect();
+
+    // Competizione is running.
+    FakeSession::default().at(1.0).write_dir(&dir).unwrap();
+    assert!(matches!(ac.connect(), Err(SourceError::NotAvailable(_))));
+    acc.connect().unwrap();
+    assert_eq!(
+        acc.poll().unwrap().expect("a frame").session.game,
+        GameId::Acc
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}

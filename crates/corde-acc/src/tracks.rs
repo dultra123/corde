@@ -45,6 +45,9 @@ pub fn length_m(track: &str) -> Option<f32> {
 
 /// A readable name from an identifier of the game: « mount_panorama » → « Mount Panorama ».
 pub fn pretty(id: &str) -> String {
+    // « ks_ »: the prefix of the first Assetto Corsa's own content.
+    let id = id.trim();
+    let id = id.strip_prefix("ks_").unwrap_or(id);
     id.split(['_', ' '])
         .filter(|w| !w.is_empty())
         .map(|w| {
@@ -70,6 +73,7 @@ mod tests {
         assert_eq!(length_m("somewhere_new"), None);
         assert_eq!(pretty("mount_panorama"), "Mount Panorama");
         assert_eq!(pretty("bmw_m4_gt3"), "Bmw M4 Gt3");
+        assert_eq!(pretty("ks_nurburgring"), "Nurburgring");
         assert_eq!(pretty(""), "");
     }
 }

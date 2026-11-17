@@ -34,6 +34,10 @@ pub enum SourceSpec {
     Acc {
         dir: Option<PathBuf>,
     },
+    /// The first Assetto Corsa: the same pages, in their older layout.
+    Ac {
+        dir: Option<PathBuf>,
+    },
     /// Whichever of these games is running, the first of the list first.
     Auto(Vec<SourceSpec>),
 }
@@ -44,6 +48,7 @@ impl SourceSpec {
             SourceSpec::Sim(_) => "sim",
             SourceSpec::Lmu { .. } => "lmu",
             SourceSpec::Acc { .. } => "acc",
+            SourceSpec::Ac { .. } => "ac",
             SourceSpec::Auto(_) => "auto",
         }
     }
@@ -58,6 +63,11 @@ pub fn make_source(spec: &SourceSpec) -> anyhow::Result<Box<dyn TelemetrySource>
             ..LmuSourceConfig::default()
         }))),
         SourceSpec::Acc { dir } => Ok(Box::new(AccSource::with_config(AccSourceConfig {
+            dir: dir.clone(),
+            ..AccSourceConfig::default()
+        }))),
+        SourceSpec::Ac { dir } => Ok(Box::new(AccSource::with_config(AccSourceConfig {
+            game: corde_acc::Game::AssettoCorsa,
             dir: dir.clone(),
             ..AccSourceConfig::default()
         }))),
@@ -87,6 +97,9 @@ impl SourcePlan {
         let acc = SourceSpec::Acc {
             dir: cfg.acc_shm.clone(),
         };
+        let ac = SourceSpec::Ac {
+            dir: cfg.acc_shm.clone(),
+        };
         let (primary, fallback, retry_max) = match cfg.source {
             SourceKind::Sim => (sim, None, Duration::from_secs(5)),
             SourceKind::Lmu => (
@@ -99,10 +112,15 @@ impl SourcePlan {
                 cfg.fallback_sim.then(|| sim.clone()),
                 Duration::from_secs(5),
             ),
+            SourceKind::Ac => (
+                ac,
+                cfg.fallback_sim.then(|| sim.clone()),
+                Duration::from_secs(5),
+            ),
             // auto: every game, looked for every 2 s while none is running. Le Mans
             // Ultimate first (the game Corde was written for), see ADR 0020.
             SourceKind::Auto => (
-                SourceSpec::Auto(vec![lmu, acc]),
+                SourceSpec::Auto(vec![lmu, acc, ac]),
                 cfg.fallback_sim.then(|| sim.clone()),
                 Duration::from_secs(2),
             ),
@@ -522,7 +540,7 @@ mod tests {
         };
         assert_eq!(
             games.iter().map(SourceSpec::name).collect::<Vec<_>>(),
-            ["lmu", "acc"]
+            ["lmu", "acc", "ac"]
         );
         assert_eq!(plan.retry_max, Duration::from_secs(2));
         // Building it opens nothing: it succeeds without any game, and names none.

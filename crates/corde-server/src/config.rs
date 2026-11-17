@@ -21,7 +21,7 @@ pub const DEFAULT_SYNC_INTERVAL_S: u64 = 300;
 #[clap(rename_all = "lower")]
 pub enum SourceKind {
     /// Whichever supported game is running (Le Mans Ultimate, Assetto Corsa
-    /// Competizione), looked for every 2 s while none is
+    /// Competizione, Assetto Corsa), looked for every 2 s while none is
     /// (add `--fallback-sim` to get the simulator after 10 s).
     #[default]
     Auto,
@@ -31,6 +31,8 @@ pub enum SourceKind {
     Lmu,
     /// Assetto Corsa Competizione only.
     Acc,
+    /// The first Assetto Corsa only.
+    Ac,
 }
 
 /// What this process is (`--role`).
@@ -145,8 +147,8 @@ pub struct ServerConfig {
     /// LMU on Linux: path of the mirrored block (default /dev/shm/LMU_Data). Ignored on Windows.
     #[arg(long)]
     pub lmu_shm: Option<PathBuf>,
-    /// Assetto Corsa Competizione: read the three pages from files of this directory
-    /// instead of the game's shared memory (tests and development).
+    /// Assetto Corsa Competizione and Assetto Corsa: read the three pages from files of
+    /// this directory instead of the game's shared memory (tests and development).
     #[arg(long, hide = true)]
     pub acc_shm: Option<PathBuf>,
     /// Record sessions to <data-dir>/corde.db + Parquet (default). See --no-record.
