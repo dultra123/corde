@@ -19,6 +19,7 @@ corde-core = { workspace = true }
 corde-sim = { path = "../corde-sim" }
 corde-lmu = { workspace = true }
 corde-acc = { workspace = true }
+corde-iracing = { workspace = true }
 corde-store = { workspace = true }
 corde-engineer = { workspace = true }
 serde = { workspace = true }

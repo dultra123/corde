@@ -8,6 +8,37 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [1.9.0] — 2026-11-17
+
+**Un quatrième jeu, en version expérimentale : iRacing.**
+
+### Nouveau
+
+- **iRacing est reconnu tout seul**, comme les autres jeux : lance Corde, lance iRacing, monte dans la
+  voiture. Rien à installer ni à activer dans le jeu.
+- Ce qui marche : le direct (widgets, tableau de bord de course, téléphone, OBS), l'enregistrement des
+  sessions, les **chronos officiels du jeu**, la comparaison de tours, le **classement avec les autres
+  voitures** et les écarts, trois températures par pneu, la carte du circuit après un premier tour.
+- Corde ne fait que **lire** ce qu'iRacing publie : elle ne lui envoie aucune commande.
+
+### Corrigé
+
+- Assetto Corsa Competizione et Assetto Corsa : un tour dont le jeu ne publie pas le temps ne reçoit plus
+  le temps du tour précédent.
+
+### À savoir
+
+- **Expérimental : pas encore vérifié face au jeu.** Des valeurs peuvent manquer ou être fausses. Dis-moi
+  ce que tu vois ; l'outil `iracing-probe.exe` (archive `corde-<version>-portable-windows.zip`) fait une
+  copie de ce que le jeu publie, **sans aucun nom ni identifiant**, à joindre à un signalement.
+- Le jeu ne publie ni les temps par secteur ni les températures des freins ; l'usure et la pression des
+  pneus sont celles du dernier arrêt aux stands.
+- L'ingénieur de réglages, l'import des résultats et le planning des courses restent ceux de Le Mans
+  Ultimate.
+- Carte du circuit : une voiture dont le jeu ne donne pas la position est placée d'après son avancée sur le
+  tour.
+- Détail par jeu : `docs/JEUX.md`.
+
 ## [1.8.1] — 2026-11-17
 
 **Revue de sécurité de tout le code. Rien de grave trouvé : aucune faille qui laisse un site web ou une

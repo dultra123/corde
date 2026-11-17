@@ -14,9 +14,9 @@ Le nom vient du **point de corde** : l'endroit où la trajectoire idéale touche
 que l'on vise à chaque tour. Corde s'appelait anciennement Muret (nom de travail).
 
 **Plusieurs jeux, sans rien choisir** (depuis la 1.7.0) : Corde trouve toute seule le jeu qui tourne. Le
-Mans Ultimate est le jeu de référence, complet et vérifié ; **Assetto Corsa Competizione** et le premier
-**Assetto Corsa** sont lus en version expérimentale (direct, enregistrement, chronos des tours — pas encore
-vérifiés face au jeu). D'autres sont prévus : voir [Les jeux que Corde sait lire](docs/JEUX.md).
+Mans Ultimate est le jeu de référence, complet et vérifié ; **Assetto Corsa Competizione**, le premier
+**Assetto Corsa** et **iRacing** sont lus en version expérimentale (direct, enregistrement, chronos des
+tours — pas encore vérifiés face au jeu). D'autres sont prévus : voir [Les jeux que Corde sait lire](docs/JEUX.md).
 
 ![Écran d'accueil de Corde](docs/images/accueil.png)
 
@@ -323,7 +323,7 @@ Pas à pas pour un non-informaticien : [docs/SERVEUR.md](docs/SERVEUR.md) · acc
 | Application Android (Capacitor) : courses sans PC avec rappels en notifications, connexion au PC et au serveur Corde, sans services Google | fait (lot 1, sans widgets) ; compilée et essayée sur un émulateur Android 15 sans services Google par la CI (démarrage, lien, rappel reçu application tuée et téléphone en veille) ; **jamais vue sur un vrai téléphone** ; APK signé publié quand la clé de signature est fournie |
 | Tableau de bord du téléphone (Direct plein écran, quatre pages, écran allumé, démonstration dans l'application) | fait (1.1.0) ; vérifié avec la course de démonstration dans Chromium (cinq tailles d'écran) et sur le simulateur iOS / l'émulateur Android de la CI ; **pas encore vu avec le jeu ni sur un vrai téléphone** |
 | Linux (le jeu tourne sous Proton) | serveur compilé, non testé avec le jeu |
-| Autres simulateurs (ACC, Assetto Corsa EVO, iRacing, rFactor 2…) | à venir |
+| Autres simulateurs (Assetto Corsa EVO, rFactor 2, Automobilista 2, RaceRoom…) | à venir |
 
 Le détail, tenu à jour à chaque étape, est dans [docs/STATUS.md](docs/STATUS.md).
 
@@ -379,6 +379,7 @@ corde/
 │  ├─ corde-core/             # trait TelemetrySource, AutoSource (le jeu qui tourne), LapTracker, derive::*
 │  ├─ corde-lmu/              # adaptateur Le Mans Ultimate (+ outils lmu-probe, lmu-shm-fake)
 │  ├─ corde-acc/              # adaptateur Assetto Corsa Competizione et Assetto Corsa, expérimental (+ outil acc-probe)
+│  ├─ corde-iracing/          # adaptateur iRacing, expérimental, en lecture seule (+ outil iracing-probe)
 │  ├─ corde-sim/              # simulateur LMU_Data pour développer sans le jeu
 │  ├─ corde-store/            # enregistrement des sessions : SQLite + Parquet (+ CLI corde-store)
 │  ├─ corde-engineer/         # ingénieur de course : analyse d'une session → rapport + 3 orientations

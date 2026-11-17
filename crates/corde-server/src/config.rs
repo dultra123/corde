@@ -21,7 +21,7 @@ pub const DEFAULT_SYNC_INTERVAL_S: u64 = 300;
 #[clap(rename_all = "lower")]
 pub enum SourceKind {
     /// Whichever supported game is running (Le Mans Ultimate, Assetto Corsa
-    /// Competizione, Assetto Corsa), looked for every 2 s while none is
+    /// Competizione, Assetto Corsa, iRacing), looked for every 2 s while none is
     /// (add `--fallback-sim` to get the simulator after 10 s).
     #[default]
     Auto,
@@ -33,6 +33,8 @@ pub enum SourceKind {
     Acc,
     /// The first Assetto Corsa only.
     Ac,
+    /// iRacing only.
+    Iracing,
 }
 
 /// What this process is (`--role`).
@@ -157,6 +159,10 @@ pub struct ServerConfig {
     /// this directory instead of the game's shared memory (tests and development).
     #[arg(long, hide = true)]
     pub acc_shm: Option<PathBuf>,
+    /// iRacing: read an image of the game's mapping from this file instead of the
+    /// game's shared memory (tests and development).
+    #[arg(long, hide = true)]
+    pub iracing_shm: Option<PathBuf>,
     /// Record sessions to <data-dir>/corde.db + Parquet (default). See --no-record.
     #[arg(long, conflicts_with = "no_record")]
     pub record: bool,
@@ -221,6 +227,7 @@ impl Default for ServerConfig {
             sim_speed: None,
             lmu_shm: None,
             acc_shm: None,
+            iracing_shm: None,
             record: false,
             no_record: false,
             record_rate: DEFAULT_RECORD_RATE_HZ,

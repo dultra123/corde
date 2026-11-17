@@ -5,6 +5,7 @@ members = [
     "crates/corde-core",
     "crates/corde-lmu",
     "crates/corde-acc",
+    "crates/corde-iracing",
     "crates/corde-sim",
     "crates/corde-store",
     "crates/corde-engineer",
@@ -16,7 +17,7 @@ members = [
 exclude = ["apps/desktop/src-tauri"]
 
 [workspace.package]
-version = "1.8.1"
+version = "1.9.0"
 edition = "2021"
 repository = "https://github.com/dultra123/corde"
 authors = ["dultra__"]
@@ -28,6 +29,7 @@ corde-protocol = { path = "crates/corde-protocol" }
 corde-core = { path = "crates/corde-core" }
 corde-lmu = { path = "crates/corde-lmu" }
 corde-acc = { path = "crates/corde-acc" }
+corde-iracing = { path = "crates/corde-iracing" }
 corde-store = { path = "crates/corde-store" }
 corde-engineer = { path = "crates/corde-engineer" }
 

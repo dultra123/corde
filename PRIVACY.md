@@ -30,7 +30,7 @@ code ; s'il devient faux, c'est un bogue à signaler.
 
 | Source | Quoi |
 |---|---|
-| Mémoire partagée du jeu (`LMU_Data`) | la télémétrie en direct : ta voiture, la session, la météo, et le classement en direct (avec les noms des autres pilotes) |
+| Mémoire partagée du jeu qui tourne (Le Mans Ultimate : `LMU_Data` ; Assetto Corsa Competizione, Assetto Corsa et iRacing : celle que chacun publie) | la télémétrie en direct : ta voiture, la session, la météo, et le classement en direct (avec les noms des autres pilotes, pour Le Mans Ultimate et iRacing). Corde n'y écrit rien et n'envoie aucune commande au jeu |
 | API locale du jeu (`http://127.0.0.1:6397`, sur ton PC) | uniquement des requêtes de lecture (`GET`) d'une liste fermée : description de l'API, données du garage (limites des réglages de ta voiture). Jamais ton profil, jamais de ticket d'authentification, jamais une écriture |
 | Fichiers de résultats du jeu (`UserData\Log\Results\*.xml`) | tes résultats de course, de qualification et d'essais. **Ils contiennent les noms et les temps des autres pilotes de la session** |
 | Fichiers de réglages du jeu (`UserData\player\Settings\…\*.svm`) et `UserData\player\Settings.JSON` | tes réglages de voiture (pour proposer des modifications) et le port de l'API locale du jeu |

@@ -14,8 +14,8 @@ jeu, et n'utilise aucun compte.
 | **Le Mans Ultimate** | **Vérifié en jeu** | Settings → Gameplay → **Enable Plugins** sur ON, une fois | mémoire partagée du jeu |
 | **Assetto Corsa Competizione** | **Expérimental** depuis la 1.7.0 : écrit d'après la documentation du jeu, **pas encore vérifié face au jeu** | rien | mémoire partagée du jeu |
 | **Assetto Corsa** (le premier) | **Expérimental** depuis la 1.8.0 : écrit d'après le fichier de référence fourni avec le jeu, **pas encore vérifié face au jeu** | rien | mémoire partagée du jeu (les mêmes pages qu'ACC, dans une version plus ancienne) |
+| **iRacing** | **Expérimental** depuis la 1.9.0 : écrit d'après le kit de développement du jeu, **pas encore vérifié face au jeu** | rien | mémoire partagée du jeu |
 | Assetto Corsa EVO | Prévu (jeu en accès anticipé : son format bouge encore) | rien | mémoire partagée du jeu |
-| iRacing | Prévu | rien | mémoire partagée du jeu |
 | rFactor 2 | Prévu | installer un plugin tiers de mémoire partagée | mémoire partagée du plugin |
 | Automobilista 2, Project CARS 2 | Prévu | activer la mémoire partagée dans les options | mémoire partagée du jeu |
 | RaceRoom Racing Experience | Prévu | rien | mémoire partagée du jeu |
@@ -27,20 +27,21 @@ encore écrit. L'ordre dépendra des jeux qu'on pourra essayer.
 
 ## Ce qui marche avec chaque jeu
 
-| | Le Mans Ultimate | Assetto Corsa Competizione | Assetto Corsa |
-|---|---|---|---|
-| Direct : widgets et tableau de bord de course (PC, téléphone, OBS) | oui | oui | oui |
-| Enregistrement des sessions, chronos des tours | oui | oui (chronos officiels du jeu) | oui (chronos officiels du jeu) |
-| Temps par secteur | oui | pas encore | pas encore |
-| Comparaison de tours, graphes | oui | oui | oui |
-| Classement, écarts avec les autres voitures | oui | écart avec la voiture devant et derrière seulement : le jeu ne donne les autres pilotes que par une autre interface, pas encore branchée | non : le jeu ne publie que ta voiture |
-| Températures des pneus intérieur / milieu / extérieur, usure | oui | non : le jeu publie une seule température par pneu, et pas l'usure | oui |
-| Niveaux d'antipatinage et d'ABS, tour annulé | oui | oui | non : le jeu ne les publie pas |
-| Carte du circuit | oui | oui | oui |
-| Ingénieur de course : analyse du pilotage | oui | indicative (sens de certaines mesures à vérifier) | indicative |
-| Ingénieur de course : réglages proposés, fichiers de setup | oui | non : il connaît les réglages de Le Mans Ultimate | non |
-| Import des résultats officiels, page Profil | oui | non | non |
-| Planning des courses en ligne, rappels | oui | non (c'est le planning de Le Mans Ultimate) | non |
+| | Le Mans Ultimate | Assetto Corsa Competizione | Assetto Corsa | iRacing |
+|---|---|---|---|---|
+| Direct : widgets et tableau de bord de course (PC, téléphone, OBS) | oui | oui | oui | oui |
+| Enregistrement des sessions, chronos des tours | oui | oui (chronos officiels du jeu) | oui (chronos officiels du jeu) | oui (chronos officiels du jeu) |
+| Temps par secteur | oui | pas encore | pas encore | non : le jeu ne les publie pas (le secteur en cours est connu quand le circuit en a trois) |
+| Comparaison de tours, graphes | oui | oui | oui | oui |
+| Classement, écarts avec les autres voitures | oui | écart avec la voiture devant et derrière seulement : le jeu ne donne les autres pilotes que par une autre interface, pas encore branchée | non : le jeu ne publie que ta voiture | oui : places, tours, meilleur et dernier tour de chacun, écart sur la piste ; écart au premier en course |
+| Températures des pneus intérieur / milieu / extérieur, usure | oui | non : le jeu publie une seule température par pneu, et pas l'usure | oui | trois températures par pneu, en direct ; usure et pressions : celles du dernier arrêt (le jeu ne les mesure qu'aux stands) |
+| Températures des freins | oui | oui | oui | non : le jeu ne les publie pas |
+| Niveaux d'antipatinage et d'ABS, tour annulé | oui | oui | non : le jeu ne les publie pas | les réglages au volant que la voiture possède ; un tour est marqué quand le jeu y compte un incident |
+| Carte du circuit | oui | oui | oui | oui, après un premier tour (le jeu ne donne la position que de ta voiture : les autres sont placées d'après leur avancée sur le tour) |
+| Ingénieur de course : analyse du pilotage | oui | indicative (sens de certaines mesures à vérifier) | indicative | indicative |
+| Ingénieur de course : réglages proposés, fichiers de setup | oui | non : il connaît les réglages de Le Mans Ultimate | non | non |
+| Import des résultats officiels, page Profil | oui | non | non | non |
+| Planning des courses en ligne, rappels | oui | non (c'est le planning de Le Mans Ultimate) | non | non |
 
 ## Assetto Corsa Competizione : ce qu'il faut savoir
 
@@ -69,7 +70,41 @@ encore écrit. L'ordre dépendra des jeux qu'on pourra essayer.
   comme les autres ; leur nom est celui de leur dossier.
 - `acc-probe.exe` (ci-dessous) reconnaît les deux jeux.
 
-### Aider à vérifier l'un ou l'autre
+## iRacing : ce qu'il faut savoir
+
+- **Rien à installer ni à activer** : lance Corde, lance le jeu, monte dans la voiture. L'accueil passe à
+  « Jeu détecté — iRacing ». Corde ne voit le jeu que pendant une session.
+- **Corde ne fait que lire.** Le jeu accepte aussi des commandes venues d'autres programmes (caméras,
+  demandes d'arrêt aux stands, messages) : Corde n'en envoie aucune.
+- Le jeu décrit lui-même les mesures qu'il publie, voiture par voiture : une mesure que ta voiture n'a pas
+  (antipatinage, ABS, batterie…) reste simplement vide.
+- **Les chronos sont ceux du jeu.** Le jeu publie le temps d'un tour jusqu'à une seconde après la ligne :
+  Corde l'attend. Un tour que le jeu refuse de chronométrer est compté sans temps.
+- **Pas encore vérifié face au jeu.** L'adaptateur est écrit d'après le kit de développement du jeu et
+  recoupé avec des lecteurs libres ; il est essayé sur une mémoire fabriquée, pas sur le jeu. À confirmer en
+  priorité : la façon dont le jeu compte les tours à la sortie des stands, le sens des accélérations et du
+  volant, l'angle maximal du volant, l'orientation de la carte.
+- Les noms des autres pilotes s'affichent dans le classement, comme dans le jeu, et sont enregistrés avec
+  ta session sur ton PC. Ils ne sortent pas de chez toi.
+
+### Aider à vérifier iRacing
+
+Dans l'archive `corde-<version>-portable-windows.zip` de la page des versions, l'outil
+**`iracing-probe.exe`** montre ce que Corde lit du jeu :
+
+1. Lance iRacing et monte dans la voiture (une session d'essai suffit).
+2. Ouvre une invite de commandes dans le dossier de l'archive et lance
+   `iracing-probe.exe --dump copie-iracing.map`.
+3. Compare les lignes affichées (circuit, voiture, tour, vitesse, rapport, carburant, chronos) avec ce que
+   montre le jeu. Fais-le une fois juste après la sortie des stands, et une fois après un tour complet.
+
+Le fichier `copie-iracing.map` contient une copie de ce que le jeu publiait à cet instant, **sans aucun nom
+ni identifiant** : ni le tien, ni ceux des autres pilotes, ni les équipes, ni ton numéro de compte, ni le nom
+de ton réglage. Il ne garde que ce qui décrit le circuit, la session et les voitures. C'est le plus utile à
+joindre à un signalement sur [GitHub](https://github.com/dultra123/corde/issues) quand une valeur est
+fausse. `iracing-probe.exe --vars` liste en plus toutes les mesures que ta voiture publie.
+
+### Aider à vérifier Assetto Corsa Competizione ou Assetto Corsa
 
 Dans l'archive `corde-<version>-portable-windows.zip` de la page des versions, l'outil **`acc-probe.exe`**
 montre ce que Corde lit du jeu :
@@ -86,5 +121,5 @@ ni ton pseudo** (l'outil les efface). C'est le plus utile à joindre à un signa
 ## Pour les curieux
 
 La décision et ses raisons : [ADR 0020](adr/0020-plusieurs-jeux-detection-automatique.md). Le code : un
-module par jeu (`crates/corde-lmu`, `crates/corde-acc`), tous derrière la même interface
+module par jeu (`crates/corde-lmu`, `crates/corde-acc`, `crates/corde-iracing`), tous derrière la même interface
 (`corde_core::TelemetrySource`) ; `corde_core::AutoSource` choisit celui dont le jeu tourne.

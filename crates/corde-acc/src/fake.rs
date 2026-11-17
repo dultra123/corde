@@ -48,6 +48,9 @@ pub struct FakeSession {
     pub status: i32,
     /// The game publishes the time of a lap this long after its counter moved.
     pub last_time_delay_s: f64,
+    /// By how much the published times differ from lap to lap, ms (0: every lap gets
+    /// exactly the same time).
+    pub time_step_ms: i32,
 }
 
 impl Default for FakeSession {
@@ -64,6 +67,7 @@ impl Default for FakeSession {
             session_index: 0,
             status: status::LIVE,
             last_time_delay_s: 0.0,
+            time_step_ms: 0,
         }
     }
 }
@@ -84,6 +88,11 @@ impl FakeSession {
         }
     }
 
+    /// The time the game publishes for the `k`-th lap (1: the first), ms.
+    pub fn lap_ms(&self, k: i32) -> i32 {
+        (self.lap_time_s * 1000.0).round() as i32 + self.time_step_ms * (k % 5)
+    }
+
     /// The pages `t_s` seconds after the car crossed the line for the first time.
     pub fn at(&self, t_s: f64) -> RawPages {
         let t = t_s.max(0.0);
@@ -99,7 +108,7 @@ impl FakeSession {
             laps - 1.0
         };
         let last_ms = if timed_laps >= 1.0 {
-            lap_ms
+            self.lap_ms(timed_laps as i32)
         } else {
             NO_TIME_MS
         };

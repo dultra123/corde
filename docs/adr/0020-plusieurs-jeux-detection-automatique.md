@@ -95,11 +95,48 @@ l'analyse est indicative et que les réglages proposés ne s'appliquent pas.
 ## Ordre des jeux suivants
 
 Le propriétaire a dit (17 nov.) posséder tous les jeux de la liste : chacun pourra être vérifié chez lui.
-Fait : le premier Assetto Corsa (1.8.0). Ensuite, par coût croissant : iRacing (mémoire partagée
-qui se décrit elle-même), rFactor 2 (plugin tiers, structures proches de celles de Le Mans Ultimate),
+Fait : le premier Assetto Corsa (1.8.0), iRacing (1.9.0, § D ci-dessous). Ensuite, par coût croissant :
+rFactor 2 (plugin tiers, structures proches de celles de Le Mans Ultimate),
 Automobilista 2, RaceRoom, Assetto Corsa EVO (format encore mouvant), puis les jeux à télémétrie UDP (une
 option à activer dans le jeu, et un port à écouter : à étudier avec le modèle de sécurité). Les consoles ne
 sont pas prévues.
+
+## D. iRacing (1.9.0)
+
+Module `crates/corde-iracing`. Le jeu publie une seule zone de mémoire, `Local\IRSDKMemMapFileName`, qui
+se décrit elle-même : un en-tête, un texte de session (circuit, sessions, voitures, pilotes), une table des
+mesures que publie la voiture conduite (nom, type, position), et jusqu'à quatre lignes de valeurs écrites
+à tour de rôle 60 fois par seconde.
+
+- **Lecture seule, et rien d'autre.** La zone est ouverte en lecture. Le jeu accepte aussi des commandes par
+  messages Windows (caméras, arrêts aux stands, discussion, télémétrie sur disque) : le module n'en contient
+  aucune et n'en contiendra pas sans décision écrite ici.
+- **Rien n'est cru sur parole.** Chaque position et chaque taille de l'en-tête et de la table sont comparées
+  à la taille réelle de la zone avant toute lecture ; une ligne de table incohérente est ignorée ; une mesure
+  absente se lit « absente ». La ligne la plus récente est recopiée, puis l'en-tête relu : si le jeu est
+  revenu dessus entre-temps, la copie est refaite.
+- **Le texte de session n'est pas toujours du YAML valide** (un nom de pilote y est écrit tel que tapé) : il
+  est lu ligne à ligne par un lecteur qui ne refuse rien, plutôt que par une bibliothèque YAML qui
+  rejetterait toute la session pour un nom.
+- **Les chronos sont ceux du jeu.** Le compteur de tours bouge à la ligne ; le temps du tour arrive jusqu'à
+  une seconde plus tard. `lap_number` suit le compteur ; `laps_completed` suit quand le temps a changé, ou
+  après 2 s — le tour est alors sans temps officiel, et le temps encore affiché (celui d'un tour plus
+  ancien) est retiré plutôt qu'attribué. Hors de la piste (garage), les compteurs du jeu lisent 0 : ils
+  sont tenus, pas pris pour un redémarrage.
+- **Détection.** Le jeu laisse sa zone derrière lui en se fermant, avec le bit « en session » à zéro :
+  l'adaptateur se dit alors indisponible, et Corde regarde les autres jeux. Un jeu qui a planté peut
+  laisser ce bit à un, et un autre programme qui lit la même zone la garde en vie : avant de se brancher,
+  l'adaptateur attend donc jusqu'à 100 ms de voir le jeu écrire une nouvelle ligne. Ordre : `lmu`, `acc`,
+  `ac`, `iracing`.
+- **Carte du circuit.** Le jeu ne donne des coordonnées (GPS) que pour la voiture du pilote : elles sont
+  converties en mètres ; les autres voitures arrivent sans position et le widget les place d'après leur
+  avancée sur le tour, une fois le tracé appris.
+- **Copie de diagnostic** (`iracing-probe --dump`) : le texte de session n'y garde que les clés d'une liste
+  blanche (circuit, session, voitures) ; tout le reste — noms, équipes, identifiants, licence, nom du
+  réglage — est vidé, et les mesures de type texte sont effacées.
+- **Non vérifié face au jeu** : façon de compter les tours à la sortie des stands (l'adaptateur accepte les
+  deux façons possibles), sens des accélérations et du volant, angle maximal du volant, orientation de la
+  carte.
 
 ## Alternatives écartées
 

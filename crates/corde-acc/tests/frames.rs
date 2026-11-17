@@ -142,6 +142,48 @@ fn a_lap_time_published_late_is_still_the_official_one() {
 }
 
 #[test]
+fn a_time_that_never_comes_is_not_borrowed_from_the_lap_before() {
+    // The game takes 10 s to publish a time, and the times differ from lap to lap: Corde
+    // stops waiting after a second.
+    let fake = FakeSession {
+        last_time_delay_s: 10.0,
+        time_step_ms: 150,
+        ..FakeSession::default()
+    };
+    let mut conv = Converter::new();
+    let mut tracker = LapTracker::new();
+    let mut laps = Vec::new();
+    let mut seen = Vec::new();
+    for i in 0..=(3 * 108 + 20) * 100 {
+        let t = i as f64 / 100.0;
+        let f = at(&mut conv, &fake, t);
+        laps.extend(tracker.feed(&f));
+        let lap = &f.player.as_ref().unwrap().lap;
+        seen.push((lap.laps_completed, lap.last_lap_s));
+    }
+    let lap = |t: f64| seen[(t * 100.0).round() as usize];
+    let official = |k: i32| Some(fake.lap_ms(k) as f32 / 1000.0);
+    // Second crossing at 216 s: until 226 s the game still shows the time of the first
+    // lap. It is shown while waiting, then withdrawn — never given to the second lap.
+    assert_eq!(lap(216.5), (1, official(1)));
+    assert_eq!(lap(217.5), (2, None));
+    assert_eq!(lap(225.0), (2, None));
+    assert_eq!(lap(227.0), (2, official(2)));
+    assert_eq!(laps.len(), 3, "{laps:#?}");
+    assert!(laps.iter().all(|l| !l.timed_by_game), "{laps:#?}");
+
+    // Two laps of exactly the same time: the time does not change, and it is the right one.
+    let same = FakeSession {
+        last_time_delay_s: 0.3,
+        ..FakeSession::default()
+    };
+    let (laps, last) = drive(&same, 3.0 * 108.0 + 20.0);
+    assert_eq!(laps.len(), 3);
+    assert!(laps.iter().all(|l| l.timed_by_game && l.valid), "{laps:#?}");
+    assert_eq!(last.player.unwrap().lap.last_lap_s, Some(108.0));
+}
+
+#[test]
 fn the_clock_only_runs_while_the_session_is_live() {
     let mut fake = FakeSession::default();
     let mut conv = Converter::new();

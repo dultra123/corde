@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useT } from "../i18n";
 import { COLORS, classColor } from "../lib/color";
 import { useTelemetry } from "../store/telemetry";
-import { TrackLearner } from "./map/learner";
+import { carPoint, hasCoordinates, TrackLearner } from "./map/learner";
 import { registerWidget, type WidgetProps } from "./registry";
 import { Empty } from "./shared/Empty";
 import { fitCanvas, useElementSize, useFrameDraw } from "./shared/hooks";
@@ -61,7 +61,9 @@ function MapWidget(_props: WidgetProps) {
     }
     if (!learner.closed) {
       for (const s of frame.standings) {
-        if (s.is_player || s.in_garage || s.control === "nobody") continue;
+        // A car the game gives no coordinates for teaches nothing about the circuit.
+        if (s.is_player || s.in_garage || s.control === "nobody" || !hasCoordinates(s.pos))
+          continue;
         learner.observe(s.pos[0], s.pos[2], s.lap_fraction, s.in_pits);
       }
     }
@@ -74,7 +76,11 @@ function MapWidget(_props: WidgetProps) {
     const path = learner.path();
     const b: Bounds = { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity };
     for (const [x, z] of path) extend(b, x, z);
-    if (!learner.closed) for (const s of frame.standings) extend(b, s.pos[0], s.pos[2]);
+    if (!learner.closed) {
+      for (const s of frame.standings) if (hasCoordinates(s.pos)) extend(b, s.pos[0], s.pos[2]);
+      if (player && hasCoordinates(player.motion.pos))
+        extend(b, player.motion.pos[0], player.motion.pos[2]);
+    }
     if (!Number.isFinite(b.minX)) return;
     const prev = boundsRef.current;
     if (!prev || learner.closed) boundsRef.current = b;
@@ -178,8 +184,11 @@ function MapWidget(_props: WidgetProps) {
     const r = Math.max(3, Math.min(5.5, W / 70));
     for (const s of frame.standings) {
       if (s.is_player || s.in_garage) continue;
-      const x = px(s.pos[0]);
-      const y = py(s.pos[2]);
+      // Without coordinates of its own, a car is placed by where it is on the lap.
+      const at = carPoint(learner, s.pos, s.lap_fraction);
+      if (!at) continue;
+      const x = px(at[0]);
+      const y = py(at[1]);
       ctx.beginPath();
       ctx.arc(x, y, r, 0, Math.PI * 2);
       ctx.fillStyle = s.in_pits ? "rgba(147,160,174,0.5)" : classColor(s.vehicle_class);

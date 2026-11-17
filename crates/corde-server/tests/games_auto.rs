@@ -96,9 +96,11 @@ async fn a_game_is_found_recorded_and_left_without_being_named() {
     assert_eq!(st["source"], "auto", "{st}");
 
     // The game: a short lap (11 s), written 100 times a second.
+    // Each lap gets its own time (a few thousandths apart), as in a real session.
     let fake = FakeSession {
         lap_time_s: 11.0,
         length_m: 5793.0,
+        time_step_ms: 3,
         ..FakeSession::default()
     };
     let running = Arc::new(AtomicBool::new(true));
@@ -209,6 +211,7 @@ async fn a_game_is_found_recorded_and_left_without_being_named() {
     .await;
     *playing.lock().unwrap() = FakeSession {
         lap_time_s: 11.0,
+        time_step_ms: 3,
         ..FakeSession::assetto_corsa()
     };
     running.store(true, Ordering::Relaxed);

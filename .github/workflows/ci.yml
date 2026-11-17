@@ -1,7 +1,7 @@
 # CI Corde — Linux + Windows.
 #
 # web        : types TS générés depuis le protocole Rust, typecheck, tests, build du dashboard (artefact ui-dist)
-# rust       : fmt, clippy (toléré), tests, build release des binaires (corde-server, lmu-probe, acc-probe, corde-sim, corde-store),
+# rust       : fmt, clippy (toléré), tests, build release des binaires (corde-server, lmu-probe, acc-probe, iracing-probe, corde-sim, corde-store),
 #              artefacts corde-linux / corde-windows (binaires + ui/ + docs/TESTING-ON-PC.md)
 # server-linux : Corde serveur (rôle hub, Raspberry Pi) : corde-server pour Linux arm64 et x64 (zig, glibc
 #              2.28), essayé (x64 directement, arm64 sous qemu), archives corde-server-<version>-linux-<arch>.tar.gz
@@ -178,8 +178,8 @@ jobs:
           echo "::warning::tests en échec à la première tentative (runner chargé ?) : seconde tentative"
           cargo test --workspace --no-fail-fast
 
-      - name: Build release (corde-server, lmu-probe, acc-probe, corde-sim, corde-store)
-        run: cargo build --release -p corde-server -p corde-lmu -p corde-acc -p corde-sim -p corde-store --bins
+      - name: Build release (corde-server, lmu-probe, acc-probe, iracing-probe, corde-sim, corde-store)
+        run: cargo build --release -p corde-server -p corde-lmu -p corde-acc -p corde-iracing -p corde-sim -p corde-store --bins
 
       - name: Récupérer le dashboard construit
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
@@ -193,7 +193,7 @@ jobs:
           set -euo pipefail
           rm -rf dist
           mkdir -p dist/ui dist/docs
-          for bin in corde-server lmu-probe acc-probe corde-sim corde-store; do
+          for bin in corde-server lmu-probe acc-probe iracing-probe corde-sim corde-store; do
             cp "target/release/${bin}${{ matrix.ext }}" dist/
           done
           cp -r ui-dist/. dist/ui/
@@ -903,7 +903,7 @@ jobs:
         run: |
           set -euo pipefail
           (cd corde-windows && zip -r "../corde-${VERSION}-windows.zip" \
-            corde-server.exe lmu-probe.exe acc-probe.exe corde-sim.exe corde-store.exe ui docs/TESTING-ON-PC.md README.md)
+            corde-server.exe lmu-probe.exe acc-probe.exe iracing-probe.exe corde-sim.exe corde-store.exe ui docs/TESTING-ON-PC.md README.md)
           tar -C corde-linux -czf "corde-${VERSION}-linux.tar.gz" .
           ls -l corde-*.zip corde-*.tar.gz corde-setup
 

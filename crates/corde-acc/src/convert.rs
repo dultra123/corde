@@ -14,7 +14,9 @@
 //! * **Official lap count.** The counter of the game may move a frame before the time of
 //!   the lap that just ended is published. `lap_number` follows the counter at once (the
 //!   boundary); `laps_completed` follows once the last lap time changed, or after
-//!   [`LAP_TIME_WAIT_S`] (the lap then has no official time).
+//!   [`LAP_TIME_WAIT_S`] — the lap then has no official time, and `last_lap_s` stays empty
+//!   until the game publishes another one (the time still shown belongs to an older lap),
+//!   unless it is exactly what the lap lasted (two laps in a row with the same time).
 //! * **Other cars.** The pages only give their coordinates: no names, places or gaps. The
 //!   standings hold the player alone; the gaps to the cars ahead and behind come from the
 //!   player's own page.
@@ -39,6 +41,9 @@ use std::time::Duration;
 /// How long (session clock) the official time of a lap may take to appear after the lap
 /// counter moved.
 pub const LAP_TIME_WAIT_S: f64 = 1.0;
+/// Two laps in a row with the very same time: the time that did not change is taken for
+/// the new lap when it is this close to what the lap lasted on the session clock.
+const SAME_TIME_TOLERANCE_S: f64 = 0.05;
 /// The clock never jumps by more than this between two frames (a stalled reader, a
 /// machine that slept).
 const MAX_STEP_S: f64 = 0.5;
@@ -165,10 +170,15 @@ pub struct Converter {
     // --- lap count confirmation
     counter: i32,
     confirmed: i32,
-    /// `i_last_time` before the counter moved, and when it moved (session clock).
-    waiting: Option<(i32, f64)>,
+    /// `i_last_time` before the counter moved, when it moved (session clock), and what
+    /// the lap lasted on that clock when its start was seen too.
+    waiting: Option<(i32, f64, Option<f64>)>,
     /// `i_last_time` of the previous frame.
     last_time_seen: i32,
+    /// The published last lap time belongs to an older lap.
+    stale: Option<i32>,
+    /// Session clock of the last move of the counter.
+    boundary_s: Option<f64>,
     // --- lap length
     prev_fraction: Option<f32>,
     /// Metres covered since the last line crossing.
@@ -236,17 +246,35 @@ impl Converter {
             self.counter = laps;
             self.confirmed = laps;
             self.waiting = None;
+            self.stale = None;
+            self.boundary_s = None;
         } else if laps > self.counter {
             self.counter = laps;
+            let measured = self.boundary_s.map(|b| self.elapsed_s - b);
+            self.boundary_s = Some(self.elapsed_s);
             if self.waiting.is_none() {
-                self.waiting = Some((self.last_time_seen, self.elapsed_s));
+                self.waiting = Some((self.last_time_seen, self.elapsed_s, measured));
             }
         }
-        if let Some((before, since)) = self.waiting {
-            if g.i_last_time != before || self.elapsed_s - since >= LAP_TIME_WAIT_S {
+        if let Some((before, since, measured)) = self.waiting {
+            if g.i_last_time != before {
+                // The time of the lap landed.
                 self.confirmed = self.counter;
                 self.waiting = None;
+                self.stale = None;
+            } else if self.elapsed_s - since >= LAP_TIME_WAIT_S {
+                self.confirmed = self.counter;
+                self.waiting = None;
+                // Nothing new was published: the lap has no official time — unless it
+                // lasted exactly what the previous one did.
+                let same = time_s(before)
+                    .zip(measured)
+                    .is_some_and(|(t, m)| (m - f64::from(t)).abs() <= SAME_TIME_TOLERANCE_S);
+                self.stale = (!same).then_some(before);
             }
+        }
+        if self.stale.is_some_and(|s| s != g.i_last_time) {
+            self.stale = None;
         }
         self.last_time_seen = g.i_last_time;
 
@@ -386,7 +414,11 @@ impl Converter {
             in_pit_lane: g.is_in_pit_lane != 0,
             lap_invalidated: g.is_valid_lap == 0,
             delta_best_s: g.i_delta_lap_time as f32 / 1000.0,
-            last_lap_s: time_s(g.i_last_time),
+            last_lap_s: if self.stale.is_some() {
+                None
+            } else {
+                time_s(g.i_last_time)
+            },
             best_lap_s: time_s(g.i_best_time),
             estimated_lap_s: time_s(g.i_estimated_lap_time).unwrap_or(0.0),
             time_into_lap_s: current_lap_s,

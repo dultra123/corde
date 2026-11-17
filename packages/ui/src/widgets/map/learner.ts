@@ -148,3 +148,24 @@ export class TrackLearner {
     this.closed = true;
   }
 }
+
+/**
+ * Does the game give coordinates for this car? Some games only publish those of the player's
+ * car: the others then come with a position of zero.
+ */
+export function hasCoordinates(pos: readonly number[]): boolean {
+  return (pos[0] ?? 0) !== 0 || (pos[2] ?? 0) !== 0;
+}
+
+/**
+ * Where to draw a car: its own coordinates when the game gives them; otherwise the point of
+ * the learnt loop where it is on the lap — nowhere while the loop is not known yet.
+ */
+export function carPoint(
+  learner: TrackLearner,
+  pos: readonly number[],
+  fraction: number,
+): [number, number] | null {
+  if (hasCoordinates(pos)) return [pos[0] as number, pos[2] as number];
+  return Number.isFinite(fraction) ? learner.at(fraction) : null;
+}

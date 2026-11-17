@@ -11,6 +11,7 @@ use crate::events::EventDetector;
 use crate::state::AppState;
 use corde_acc::{AccSource, AccSourceConfig};
 use corde_core::{AutoSource, LapTracker, SourceError, TelemetrySource};
+use corde_iracing::{IracingSource, IracingSourceConfig};
 use corde_lmu::{LmuSource, LmuSourceConfig};
 use corde_protocol::{GameEvent, GameId, TelemetryFrame};
 use corde_sim::{SimConfig, SimSource};
@@ -38,6 +39,10 @@ pub enum SourceSpec {
     Ac {
         dir: Option<PathBuf>,
     },
+    /// iRacing shared memory; `file` reads an image of it instead (tests).
+    Iracing {
+        file: Option<PathBuf>,
+    },
     /// Whichever of these games is running, the first of the list first.
     Auto(Vec<SourceSpec>),
 }
@@ -49,6 +54,7 @@ impl SourceSpec {
             SourceSpec::Lmu { .. } => "lmu",
             SourceSpec::Acc { .. } => "acc",
             SourceSpec::Ac { .. } => "ac",
+            SourceSpec::Iracing { .. } => "iracing",
             SourceSpec::Auto(_) => "auto",
         }
     }
@@ -71,6 +77,12 @@ pub fn make_source(spec: &SourceSpec) -> anyhow::Result<Box<dyn TelemetrySource>
             dir: dir.clone(),
             ..AccSourceConfig::default()
         }))),
+        SourceSpec::Iracing { file } => {
+            Ok(Box::new(IracingSource::with_config(IracingSourceConfig {
+                file: file.clone(),
+                ..IracingSourceConfig::default()
+            })))
+        }
         SourceSpec::Auto(games) => Ok(Box::new(AutoSource::new(
             games.iter().map(make_source).collect::<Result<_, _>>()?,
         ))),
@@ -100,6 +112,9 @@ impl SourcePlan {
         let ac = SourceSpec::Ac {
             dir: cfg.acc_shm.clone(),
         };
+        let iracing = SourceSpec::Iracing {
+            file: cfg.iracing_shm.clone(),
+        };
         let (primary, fallback, retry_max) = match cfg.source {
             SourceKind::Sim => (sim, None, Duration::from_secs(5)),
             SourceKind::Lmu => (
@@ -117,10 +132,15 @@ impl SourcePlan {
                 cfg.fallback_sim.then(|| sim.clone()),
                 Duration::from_secs(5),
             ),
+            SourceKind::Iracing => (
+                iracing,
+                cfg.fallback_sim.then(|| sim.clone()),
+                Duration::from_secs(5),
+            ),
             // auto: every game, looked for every 2 s while none is running. Le Mans
             // Ultimate first (the game Corde was written for), see ADR 0020.
             SourceKind::Auto => (
-                SourceSpec::Auto(vec![lmu, acc, ac]),
+                SourceSpec::Auto(vec![lmu, acc, ac, iracing]),
                 cfg.fallback_sim.then(|| sim.clone()),
                 Duration::from_secs(2),
             ),
@@ -532,6 +552,9 @@ mod tests {
         cfg.source = SourceKind::Acc;
         let plan = SourcePlan::from_config(&cfg);
         assert!(matches!(plan.primary, SourceSpec::Acc { .. }));
+        cfg.source = SourceKind::Iracing;
+        let plan = SourcePlan::from_config(&cfg);
+        assert!(matches!(plan.primary, SourceSpec::Iracing { .. }));
         // auto: every game, Le Mans Ultimate first.
         cfg.source = SourceKind::Auto;
         let plan = SourcePlan::from_config(&cfg);
@@ -540,7 +563,7 @@ mod tests {
         };
         assert_eq!(
             games.iter().map(SourceSpec::name).collect::<Vec<_>>(),
-            ["lmu", "acc", "ac"]
+            ["lmu", "acc", "ac", "iracing"]
         );
         assert_eq!(plan.retry_max, Duration::from_secs(2));
         // Building it opens nothing: it succeeds without any game, and names none.
