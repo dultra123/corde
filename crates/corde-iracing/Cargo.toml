@@ -1,0 +1,20 @@
+[package]
+name = "corde-iracing"
+description = "Adaptateur iRacing : mémoire partagée du jeu (variables décrites par le jeu et texte de session), en lecture seule."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "iracing-probe"
+path = "src/bin/iracing-probe.rs"
+
+[dependencies]
+corde-protocol = { workspace = true }
+corde-core = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_Memory"] }
