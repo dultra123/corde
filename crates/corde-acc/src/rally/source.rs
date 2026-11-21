@@ -8,6 +8,9 @@
 //!   graphics page is all zeros) and that the physics page is this game's. A blank
 //!   physics page (a pause, a replay, the stop zone) does not say whose it is: not
 //!   available, and looked at again a moment later.
+//! * The game writes its static page — the name of the stage — a moment after the stage
+//!   loaded. `connect` waits for it up to [`RallySourceConfig::name_wait`], so that the
+//!   session is not recorded under no name; past that, it goes on without.
 //! * `poll` copies the pages; a new frame is made when one of the two step counters moved,
 //!   at most [`NATIVE_RATE_HZ`] times a second.
 //! * The game left (the pages are gone, the graphics page went back to zeros, or nothing
@@ -36,6 +39,9 @@ pub struct RallySourceConfig {
     /// How long nothing may move before the game is taken for gone. Default 5 s (the
     /// counter of the physics page keeps running through a pause).
     pub stall_timeout: Duration,
+    /// How long the name of the stage is waited for before connecting without it.
+    /// Default 10 s.
+    pub name_wait: Duration,
 }
 
 impl Default for RallySourceConfig {
@@ -43,6 +49,7 @@ impl Default for RallySourceConfig {
         Self {
             dir: None,
             stall_timeout: Duration::from_secs(5),
+            name_wait: Duration::from_secs(10),
         }
     }
 }
@@ -55,6 +62,8 @@ pub struct RallySource {
     last_ids: Option<(i32, i32)>,
     last_change: Instant,
     last_frame: Option<Instant>,
+    /// When a stage without a name was first seen.
+    unnamed_since: Option<Instant>,
 }
 
 impl RallySource {
@@ -72,6 +81,7 @@ impl RallySource {
             last_ids: None,
             last_change: now,
             last_frame: None,
+            unnamed_since: None,
         }
     }
 
@@ -100,8 +110,15 @@ impl TelemetrySource for RallySource {
     fn connect(&mut self) -> Result<(), SourceError> {
         self.reader = None;
         let mut reader = open_default_reader(self.cfg.dir.as_deref())?;
-        let pages = reader.read()?;
+        let pages = match reader.read() {
+            Ok(pages) => pages,
+            Err(e) => {
+                self.unnamed_since = None;
+                return Err(e);
+            }
+        };
         if pages.graphics.status == status::OFF {
+            self.unnamed_since = None;
             return Err(SourceError::NotAvailable(format!(
                 "{LABEL} : pas d'épreuve en cours"
             )));
@@ -119,6 +136,16 @@ impl TelemetrySource for RallySource {
                 )))
             }
         }
+        let track = pages.statics.track;
+        if crate::layout::text(&track).is_empty() {
+            let since = *self.unnamed_since.get_or_insert_with(Instant::now);
+            if since.elapsed() < self.cfg.name_wait {
+                return Err(SourceError::NotAvailable(format!(
+                    "{LABEL} : le nom de l'épreuve n'est pas encore publié"
+                )));
+            }
+        }
+        self.unnamed_since = None;
         tracing::info!("{LABEL} : {}", reader.describe());
         self.reader = Some(reader);
         self.conv = RallyConverter::new();

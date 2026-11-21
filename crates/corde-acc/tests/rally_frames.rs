@@ -127,6 +127,24 @@ fn each_run_is_a_lap_with_the_time_of_the_game() {
 }
 
 #[test]
+fn a_stage_restarted_right_after_its_finish_is_another_run() {
+    // Eight seconds between the finish line and the next start.
+    let fake = FakeRallyStage {
+        wait_s: 3.0,
+        roll_s: 2.0,
+        rest_s: 3.0,
+        ..FakeRallyStage::default()
+    };
+    let (laps, _) = drive(&fake, 3.0 * fake.cycle_s() + 10.0);
+    assert_eq!(laps.len(), 3, "{laps:#?}");
+    for lap in &laps {
+        assert!(lap.timed_by_game && lap.valid, "{lap:#?}");
+        assert!(!lap.in_lap && !lap.out_lap, "{lap:#?}");
+        assert_eq!(lap.lap_time_s, 95.0);
+    }
+}
+
+#[test]
 fn a_stage_whose_length_the_game_does_not_give_is_measured() {
     let fake = FakeRallyStage {
         publishes_length: false,
@@ -238,6 +256,7 @@ fn the_source_tells_this_game_from_the_two_others() {
     let mut source = RallySource::with_config(RallySourceConfig {
         dir: Some(dir.clone()),
         stall_timeout: Duration::from_millis(300),
+        name_wait: Duration::from_millis(150),
     });
     assert_eq!(source.info().game, GameId::AcRally);
     assert_eq!(source.info().label, "Assetto Corsa Rally");
@@ -267,12 +286,18 @@ fn the_source_tells_this_game_from_the_two_others() {
         Err(SourceError::NotAvailable(_))
     ));
 
-    // A stage, its static page still empty: this game's, and nobody else's.
+    // A stage, its static page still empty: this game's, and nobody else's. The name
+    // of the stage is waited for a moment, then the source goes on without it.
     fake.status = status::LIVE;
     fake.at(1.0).write_dir(&dir).unwrap();
     for mut other in others(&dir) {
         assert!(matches!(other.connect(), Err(SourceError::NotAvailable(_))));
     }
+    assert!(matches!(
+        source.connect(),
+        Err(SourceError::NotAvailable(_))
+    ));
+    std::thread::sleep(Duration::from_millis(200));
     source.connect().unwrap();
     let first = source.poll().unwrap().expect("a frame");
     assert_eq!(first.session.game, GameId::AcRally);
@@ -292,6 +317,7 @@ fn the_source_tells_this_game_from_the_two_others() {
     }
     let mut again = RallySource::with_config(RallySourceConfig {
         dir: Some(dir.clone()),
+        name_wait: Duration::ZERO,
         ..RallySourceConfig::default()
     });
     assert!(matches!(again.connect(), Err(SourceError::NotAvailable(_))));
@@ -315,7 +341,7 @@ fn the_source_tells_this_game_from_the_two_others() {
         ));
     }
     // … and another game taking the names while connected ends the session.
-    FakeRallyStage::default().at(1.0).write_dir(&dir).unwrap();
+    FakeRallyStage::default().at(3.0).write_dir(&dir).unwrap();
     source.connect().unwrap();
     FakeSession::default().at(1.0).write_dir(&dir).unwrap();
     assert!(matches!(source.poll(), Err(SourceError::NotAvailable(_))));

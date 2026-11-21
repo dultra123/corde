@@ -332,9 +332,11 @@ impl LapTracker {
                 let game_start = p.lap.lap_start_s;
                 let crossing_known = game_start > cur.start_s && game_start <= now + 0.5;
                 let end_s = if crossing_known { game_start } else { now };
-                if cur.awaiting_counter && now - cur.start_s < MIN_LAP_S {
+                if cur.awaiting_counter && now - cur.start_s < MIN_LAP_S && !cur.was_in_pits {
                     // The telemetry counter catches up with a lap already
                     // closed from the scoring block: same lap, new number.
+                    // (Not when the car went to the pits meanwhile: a rally
+                    // stage restarted right after its finish is another run.)
                     cur.lap_number = p.lap.lap_number;
                     cur.awaiting_counter = false;
                     if game_start > cur.start_s - 1.0 && game_start <= now + 0.5 {
