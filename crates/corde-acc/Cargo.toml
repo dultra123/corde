@@ -1,6 +1,6 @@
 [package]
 name = "corde-acc"
-description = "Adaptateur Assetto Corsa Competizione : mémoire partagée du jeu (pages physics, graphics, static), en lecture seule."
+description = "Adaptateur Assetto Corsa Competizione, Assetto Corsa et Assetto Corsa EVO : mémoire partagée du jeu (pages physics, graphics, static), en lecture seule."
 version.workspace = true
 edition.workspace = true
 license.workspace = true

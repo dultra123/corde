@@ -14,6 +14,8 @@
 //! * [`tracks`] — lengths of the circuits of the game.
 //! * [`source`] — [`AccSource`], the `corde_core::TelemetrySource` implementation.
 //! * [`fake`] — plausible pages for the tests and the development tools.
+//! * [`evo`] — Assetto Corsa EVO: pages of its own names, a physics page of the same
+//!   layout, new graphics and static pages.
 //!
 //! Binary: `acc-probe` (shows what the pages hold; first thing to run with the game).
 //!
@@ -21,6 +23,7 @@
 //! game and two independent open-source readers): see `docs/JEUX.md`.
 
 pub mod convert;
+pub mod evo;
 pub mod fake;
 pub mod layout;
 pub mod reader;
@@ -28,6 +31,7 @@ pub mod source;
 pub mod tracks;
 
 pub use convert::Converter;
+pub use evo::{EvoSource, EvoSourceConfig};
 pub use layout::{Game, Graphics, GraphicsAc, Physics, Static};
 pub use reader::{PageReader, Pages, RawPages};
 pub use source::{AccSource, AccSourceConfig};

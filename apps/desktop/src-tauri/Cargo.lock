@@ -855,7 +855,7 @@ dependencies = [
 
 [[package]]
 name = "corde-acc"
-version = "1.10.0"
+version = "1.11.0"
 dependencies = [
  "bytemuck",
  "corde-core",
@@ -867,7 +867,7 @@ dependencies = [
 
 [[package]]
 name = "corde-core"
-version = "1.10.0"
+version = "1.11.0"
 dependencies = [
  "anyhow",
  "corde-protocol",
@@ -879,7 +879,7 @@ dependencies = [
 
 [[package]]
 name = "corde-desktop"
-version = "1.10.0"
+version = "1.11.0"
 dependencies = [
  "corde-server",
  "corde-store",
@@ -900,7 +900,7 @@ dependencies = [
 
 [[package]]
 name = "corde-engineer"
-version = "1.10.0"
+version = "1.11.0"
 dependencies = [
  "corde-lmu",
  "corde-protocol",
@@ -916,7 +916,7 @@ dependencies = [
 
 [[package]]
 name = "corde-iracing"
-version = "1.10.0"
+version = "1.11.0"
 dependencies = [
  "corde-core",
  "corde-protocol",
@@ -927,7 +927,7 @@ dependencies = [
 
 [[package]]
 name = "corde-lmu"
-version = "1.10.0"
+version = "1.11.0"
 dependencies = [
  "anyhow",
  "bytemuck",
@@ -946,7 +946,7 @@ dependencies = [
 
 [[package]]
 name = "corde-protocol"
-version = "1.10.0"
+version = "1.11.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -955,7 +955,7 @@ dependencies = [
 
 [[package]]
 name = "corde-server"
-version = "1.10.0"
+version = "1.11.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -987,7 +987,7 @@ dependencies = [
 
 [[package]]
 name = "corde-sim"
-version = "1.10.0"
+version = "1.11.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -998,7 +998,7 @@ dependencies = [
 
 [[package]]
 name = "corde-store"
-version = "1.10.0"
+version = "1.11.0"
 dependencies = [
  "arrow-array",
  "arrow-buffer",

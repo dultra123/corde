@@ -15,8 +15,10 @@ que l'on vise à chaque tour. Corde s'appelait anciennement Muret (nom de travai
 
 **Plusieurs jeux, sans rien choisir** (depuis la 1.7.0) : Corde trouve toute seule le jeu qui tourne. Le
 Mans Ultimate est le jeu de référence, complet et vérifié ; **Assetto Corsa Competizione**, le premier
-**Assetto Corsa** et **iRacing** sont lus en version expérimentale (direct, enregistrement, chronos des
-tours — pas encore vérifiés face au jeu). D'autres sont prévus : voir [Les jeux que Corde sait lire](docs/JEUX.md).
+**Assetto Corsa**, **Assetto Corsa EVO** et **iRacing** sont lus en version expérimentale (direct,
+enregistrement, chronos des tours). Chaque jeu a son **profil** : sa disposition de widgets et son tableau
+de bord, que Corde remet quand elle le détecte. D'autres jeux sont prévus : voir
+[Les jeux que Corde sait lire](docs/JEUX.md).
 
 ![Écran d'accueil de Corde](docs/images/accueil.png)
 
@@ -378,7 +380,7 @@ corde/
 │  ├─ corde-protocol/         # types partagés (serde + ts-rs) — LE contrat
 │  ├─ corde-core/             # trait TelemetrySource, AutoSource (le jeu qui tourne), LapTracker, derive::*
 │  ├─ corde-lmu/              # adaptateur Le Mans Ultimate (+ outils lmu-probe, lmu-shm-fake)
-│  ├─ corde-acc/              # adaptateur Assetto Corsa Competizione et Assetto Corsa, expérimental (+ outil acc-probe)
+│  ├─ corde-acc/              # adaptateur Assetto Corsa Competizione, Assetto Corsa et Assetto Corsa EVO, expérimental (+ outil acc-probe)
 │  ├─ corde-iracing/          # adaptateur iRacing, expérimental, en lecture seule (+ outil iracing-probe)
 │  ├─ corde-sim/              # simulateur LMU_Data pour développer sans le jeu
 │  ├─ corde-store/            # enregistrement des sessions : SQLite + Parquet (+ CLI corde-store)

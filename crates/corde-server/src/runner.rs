@@ -9,7 +9,7 @@
 use crate::config::{ServerConfig, SourceKind};
 use crate::events::EventDetector;
 use crate::state::AppState;
-use corde_acc::{AccSource, AccSourceConfig};
+use corde_acc::{AccSource, AccSourceConfig, EvoSource, EvoSourceConfig};
 use corde_core::{AutoSource, LapTracker, SourceError, TelemetrySource};
 use corde_iracing::{IracingSource, IracingSourceConfig};
 use corde_lmu::{LmuSource, LmuSourceConfig};
@@ -39,6 +39,10 @@ pub enum SourceSpec {
     Ac {
         dir: Option<PathBuf>,
     },
+    /// Assetto Corsa EVO: pages of its own names; `dir` reads three files instead (tests).
+    AcEvo {
+        dir: Option<PathBuf>,
+    },
     /// iRacing shared memory; `file` reads an image of it instead (tests).
     Iracing {
         file: Option<PathBuf>,
@@ -54,6 +58,7 @@ impl SourceSpec {
             SourceSpec::Lmu { .. } => "lmu",
             SourceSpec::Acc { .. } => "acc",
             SourceSpec::Ac { .. } => "ac",
+            SourceSpec::AcEvo { .. } => "acevo",
             SourceSpec::Iracing { .. } => "iracing",
             SourceSpec::Auto(_) => "auto",
         }
@@ -76,6 +81,10 @@ pub fn make_source(spec: &SourceSpec) -> anyhow::Result<Box<dyn TelemetrySource>
             game: corde_acc::Game::AssettoCorsa,
             dir: dir.clone(),
             ..AccSourceConfig::default()
+        }))),
+        SourceSpec::AcEvo { dir } => Ok(Box::new(EvoSource::with_config(EvoSourceConfig {
+            dir: dir.clone(),
+            ..EvoSourceConfig::default()
         }))),
         SourceSpec::Iracing { file } => {
             Ok(Box::new(IracingSource::with_config(IracingSourceConfig {
@@ -112,6 +121,9 @@ impl SourcePlan {
         let ac = SourceSpec::Ac {
             dir: cfg.acc_shm.clone(),
         };
+        let acevo = SourceSpec::AcEvo {
+            dir: cfg.acc_shm.clone(),
+        };
         let iracing = SourceSpec::Iracing {
             file: cfg.iracing_shm.clone(),
         };
@@ -132,6 +144,11 @@ impl SourcePlan {
                 cfg.fallback_sim.then(|| sim.clone()),
                 Duration::from_secs(5),
             ),
+            SourceKind::AcEvo => (
+                acevo,
+                cfg.fallback_sim.then(|| sim.clone()),
+                Duration::from_secs(5),
+            ),
             SourceKind::Iracing => (
                 iracing,
                 cfg.fallback_sim.then(|| sim.clone()),
@@ -140,7 +157,7 @@ impl SourcePlan {
             // auto: every game, looked for every 2 s while none is running. Le Mans
             // Ultimate first (the game Corde was written for), see ADR 0020.
             SourceKind::Auto => (
-                SourceSpec::Auto(vec![lmu, acc, ac, iracing]),
+                SourceSpec::Auto(vec![lmu, acc, ac, acevo, iracing]),
                 cfg.fallback_sim.then(|| sim.clone()),
                 Duration::from_secs(2),
             ),
@@ -552,6 +569,9 @@ mod tests {
         cfg.source = SourceKind::Acc;
         let plan = SourcePlan::from_config(&cfg);
         assert!(matches!(plan.primary, SourceSpec::Acc { .. }));
+        cfg.source = SourceKind::AcEvo;
+        let plan = SourcePlan::from_config(&cfg);
+        assert!(matches!(plan.primary, SourceSpec::AcEvo { .. }));
         cfg.source = SourceKind::Iracing;
         let plan = SourcePlan::from_config(&cfg);
         assert!(matches!(plan.primary, SourceSpec::Iracing { .. }));
@@ -563,7 +583,7 @@ mod tests {
         };
         assert_eq!(
             games.iter().map(SourceSpec::name).collect::<Vec<_>>(),
-            ["lmu", "acc", "ac", "iracing"]
+            ["lmu", "acc", "ac", "acevo", "iracing"]
         );
         assert_eq!(plan.retry_max, Duration::from_secs(2));
         // Building it opens nothing: it succeeds without any game, and names none.

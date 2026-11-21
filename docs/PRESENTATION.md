@@ -1,6 +1,6 @@
 # Corde — fiche de présentation
 
-> À jour pour la **version 1.10.0** (21 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
+> À jour pour la **version 1.11.0** (21 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
 > faut pour présenter Corde (site, page de présentation, annonce) : ce qu'elle fait, où elle tourne, ce qui
 > est nouveau, ce qui arrive, les images et les liens. Elle ne dit que ce qui existe ; le détail et l'état
 > exact de chaque partie sont dans le [README](../README.md) et dans [STATUS.md](STATUS.md).
@@ -26,7 +26,7 @@ Le nom vient du **point de corde** : l'endroit où la trajectoire idéale touche
 
 | | |
 |---|---|
-| Version actuelle | **1.10.0** (21 novembre 2026) |
+| Version actuelle | **1.11.0** (21 novembre 2026) |
 | Prix | Gratuit |
 | Licence | Logiciel libre, GPL-3.0-or-later ; code source public |
 | Jeux | Le Mans Ultimate (complet, vérifié) ; Assetto Corsa Competizione (expérimental, depuis la 1.7.0) ; Assetto Corsa (expérimental, depuis la 1.8.0) ; iRacing (expérimental, depuis la 1.9.0). Détection automatique. Détail : [JEUX.md](JEUX.md) |
@@ -43,7 +43,7 @@ Le nom vient du **point de corde** : l'endroit où la trajectoire idéale touche
 Chaque bloc ci-dessous peut devenir une section de page. Les images sont dans [`docs/images/`](images/) ;
 elles viennent du simulateur intégré et de la course de démonstration (aucune donnée réelle de pilote).
 
-### 0. Plusieurs jeux, sans rien choisir (nouveau en 1.7.0, enrichi jusqu'à la 1.10.0)
+### 0. Plusieurs jeux, sans rien choisir (nouveau en 1.7.0, enrichi jusqu'à la 1.11.0)
 
 Corde ne demande pas à quel jeu tu joues : elle regarde toutes les deux secondes si un jeu qu'elle connaît
 est en piste, s'y branche, et recommence à chercher quand tu le quittes. Chaque session est enregistrée
@@ -63,13 +63,19 @@ sous le nom de son jeu.
   1.9.1) ; rien à activer dans le jeu. Corde ne fait que lire : elle n'envoie aucune commande au jeu. Le
   jeu ne publie pas, en roulant, les températures et pressions des pneus, les températures des freins ni
   les temps par secteur. Essayé en jeu le 21 novembre 2026 (seul en piste) ; reste « expérimental ».
-- **Prévus, sans date** : rFactor 2, Automobilista 2, RaceRoom, Assetto Corsa EVO. L'état de
-  chacun est tenu à jour dans [JEUX.md](JEUX.md).
+- **Assetto Corsa EVO** — **expérimental**, depuis la 1.11.0 : direct, enregistrement, chronos officiels,
+  trois températures et la pression de chaque pneu, freins, niveaux d'antipatinage, d'ABS et de
+  cartographie avec leur maximum, écarts devant et derrière, carte ; rien à activer dans le jeu. Pas de
+  classement (le jeu ne donne des autres voitures que leur position), pas de temps par secteur ni d'usure
+  des pneus. Pas encore vérifié face au jeu ; le jeu est en accès anticipé et son format peut changer.
+- **Prévus, sans date** : Assetto Corsa Rally (le prochain), rFactor 2, Automobilista 2, RaceRoom.
+  L'état de chacun est tenu à jour dans [JEUX.md](JEUX.md).
 
 **Un profil par jeu** (nouveau en 1.10.0) : Corde retient, pour chaque jeu, la disposition des widgets (PC
 et téléphone), le tableau de bord de course et l'affichage du Direct, et les remet dès qu'elle détecte ce
 jeu. La première fois qu'un jeu est vu, il reçoit une disposition à son nom, sans les widgets pour lesquels
-il ne publie rien (iRacing : pas de pneus ni de freins ; Assetto Corsa Competizione : pas de classement) ;
+il ne publie rien (iRacing : pas de pneus ni de freins ; Assetto Corsa Competizione et EVO : pas de
+classement) ;
 on peut les remettre. Tout se règle dans Réglages → Profils par jeu, et se coupe d'un interrupteur.
 
 Corde ne fait que lire ce que le jeu publie : elle n'écrit rien dans le jeu.
@@ -266,6 +272,8 @@ redémarrer. Chaque version est signée et vérifiée avant l'installation ; rie
 
 ## Nouveautés
 
+- **1.11.0 (21 novembre 2026)** — un cinquième jeu, en version expérimentale : Assetto Corsa EVO (direct,
+  enregistrement, chronos officiels, pneus, freins, niveaux des aides, carte).
 - **1.10.0 (21 novembre 2026)** — un profil par jeu : Corde retient pour chaque jeu la disposition des
   widgets, le tableau de bord de course et l'affichage du Direct, et les remet dès qu'elle détecte ce jeu ;
   chaque jeu reçoit une disposition de départ sans ce qu'il ne publie pas.

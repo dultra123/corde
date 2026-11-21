@@ -8,6 +8,26 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [1.11.0] — 2026-11-21
+
+**Un cinquième jeu, en version expérimentale : Assetto Corsa EVO.**
+
+- Corde reconnaît **Assetto Corsa EVO** toute seule, comme les autres jeux : rien à installer ni à activer
+  dans le jeu. Direct (widgets et tableau de bord de course), enregistrement des sessions, chronos officiels
+  des tours, comparaison de tours.
+- Ce que le jeu publie et que Corde montre : trois températures et la pression de chaque pneu, températures
+  des freins, carburant et réservoir, niveaux d'antipatinage, d'ABS et de cartographie moteur **avec leur
+  maximum**, répartition de freinage, écarts avec la voiture de devant et de derrière, carte du circuit.
+- Ce que le jeu ne publie pas : les autres pilotes (pas de classement), les temps par secteur, l'usure des
+  pneus.
+- Son **profil** : une disposition « Assetto Corsa EVO » sans le widget Classement, créée au premier
+  lancement du jeu.
+- **Expérimental, pas encore vérifié face au jeu** : écrit d'après la documentation publiée par le studio.
+  Le sens de certaines mesures reste à confirmer en piste (la carte pourrait être dessinée en miroir). Le
+  jeu est en accès anticipé : une de ses mises à jour peut changer ce qu'il publie.
+- L'outil `acc-probe.exe` (archive portable) reconnaît aussi ce jeu : `acc-probe.exe --dump copie-evo`
+  écrit une copie de diagnostic, sans ton nom ni les identifiants des voitures.
+
 ## [1.10.0] — 2026-11-21
 
 **Un profil par jeu, et une interface de départ adaptée à chaque jeu.**

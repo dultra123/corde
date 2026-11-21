@@ -58,6 +58,7 @@ describe("« Profils par jeu » in the settings", () => {
       "Le Mans Ultimate",
       "Assetto Corsa Competizione",
       "Assetto Corsa",
+      "Assetto Corsa EVO",
       "iRacing",
     ]);
     const layout = (game: string) =>

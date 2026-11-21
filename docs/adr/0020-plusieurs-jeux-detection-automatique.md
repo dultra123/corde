@@ -170,6 +170,25 @@ pas ce que le jeu ne publie pas.
 - **Écarté** : stocker les profils sur le serveur (un profil est un choix d'écran, pas une donnée
   partagée) ; masquer d'office un widget sans données (le pilote ne pourrait plus le remettre).
 
+## G. Assetto Corsa EVO (1.11.0)
+
+- **Dans le même module** que Competizione et le premier Assetto Corsa (`corde-acc`, module `evo`) : même
+  famille, même lecture de pages nommées, et la page physique a la même disposition. Les pages graphique et
+  statique sont nouvelles ; leurs noms aussi (`Local\acevo_pmf_*`), ce qui suffit à reconnaître le jeu.
+- **Source** : la documentation de la mémoire partagée publiée par le studio, lue à travers deux lecteurs
+  libres indépendants. Les structures sont réécrites d'après la liste des champs, et leurs tailles et
+  positions comparées à un calcul fait à part.
+- **Accès anticipé** : le format peut changer. La version de l'interface est journalisée à la connexion ;
+  sous Windows la copie de diagnostic contient toute la zone mappée, pour voir ce qu'une mise à jour du jeu
+  aurait ajouté. Un champ absent d'un ancien build se lit à zéro (la table des identifiants des voitures,
+  ajoutée en avril 2026 : sans elle, la première case est prise pour celle du joueur).
+- **Ce qui n'est pas repris** : les sous-structures dont le sens n'est pas établi (dégâts en unités
+  inconnues, états des stands) ; les textes de chronos déjà mis en forme (les mêmes temps existent en
+  millisecondes).
+- **Copie de diagnostic** : prénom et nom effacés ; les identifiants des voitures remplacés par de petits
+  numéros qui gardent les égalités (la case du joueur reste retrouvable).
+- **Hypothèses à confirmer en jeu** : marquées `TODO(verify-in-game)` dans `evo/convert.rs`.
+
 ## Alternatives écartées
 
 - **Demander le jeu dans les réglages** : c'est exactement ce que le propriétaire ne veut pas.

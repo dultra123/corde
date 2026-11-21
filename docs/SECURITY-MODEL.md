@@ -231,7 +231,8 @@ PC seulement.
 
 Tâches de fond (pas de route) : lecture de la mémoire partagée du jeu qui tourne — Le Mans Ultimate, ou
 Assetto Corsa Competizione depuis la 1.7 (`corde-acc` : trois zones nommées ouvertes **en lecture seule**,
-rien d'écrit, aucun réseau ; ADR 0020), iRacing depuis la 1.9 (`corde-iracing` : une zone nommée ouverte
+rien d'écrit, aucun réseau ; ADR 0020 ; les trois zones d'Assetto Corsa EVO depuis la 1.11, de la même
+façon), iRacing depuis la 1.9 (`corde-iracing` : une zone nommée ouverte
 **en lecture seule** ; chaque position et chaque taille qu'elle annonce est comparée à sa taille réelle
 avant toute lecture ; **aucune commande n'est envoyée au jeu**, bien qu'il en accepte ; ADR 0020, § D) ; `GET` vers l'API locale du jeu
 (`http://127.0.0.1:6397`, liste fermée de chemins en lecture seule, `lmu_api.rs`, `lmu_garage.rs`) avec

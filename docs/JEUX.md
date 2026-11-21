@@ -15,7 +15,8 @@ jeu, et n'utilise aucun compte.
 | **Assetto Corsa Competizione** | **Expérimental, essayé en jeu** le 21 novembre 2026 (une session de 7 tours) : détection, direct, enregistrement, chronos officiels, pneus, freins et carte fonctionnent ; les signes ont été recalés en 1.9.1 | rien | mémoire partagée du jeu |
 | **Assetto Corsa** (le premier) | **Expérimental** depuis la 1.8.0 : écrit d'après le fichier de référence fourni avec le jeu, **pas encore vérifié face au jeu** | rien | mémoire partagée du jeu (les mêmes pages qu'ACC, dans une version plus ancienne) |
 | **iRacing** | **Expérimental, essayé en jeu** le 21 novembre 2026 (sessions d'essai, seul en piste) : détection, direct, enregistrement, chronos officiels et carburant fonctionnent ; carte du circuit et signes corrigés en 1.9.1 ; classement avec d'autres voitures pas encore vu | rien | mémoire partagée du jeu |
-| Assetto Corsa EVO | Prévu (jeu en accès anticipé : son format bouge encore) | rien | mémoire partagée du jeu |
+| **Assetto Corsa EVO** | **Expérimental** depuis la 1.11.0 : écrit d'après la documentation de la mémoire partagée publiée par le studio, **pas encore vérifié face au jeu**. Le jeu est en accès anticipé : son format peut encore changer | rien | mémoire partagée du jeu (trois pages à son nom) |
+| Assetto Corsa Rally | Prévu, le prochain (des épreuves de rallye, sans tours : Corde doit apprendre à les chronométrer) | rien | mémoire partagée du jeu |
 | rFactor 2 | Prévu | installer un plugin tiers de mémoire partagée | mémoire partagée du plugin |
 | Automobilista 2, Project CARS 2 | Prévu | activer la mémoire partagée dans les options | mémoire partagée du jeu |
 | RaceRoom Racing Experience | Prévu | rien | mémoire partagée du jeu |
@@ -27,21 +28,21 @@ encore écrit. L'ordre dépendra des jeux qu'on pourra essayer.
 
 ## Ce qui marche avec chaque jeu
 
-| | Le Mans Ultimate | Assetto Corsa Competizione | Assetto Corsa | iRacing |
-|---|---|---|---|---|
-| Direct : widgets et tableau de bord de course (PC, téléphone, OBS) | oui | oui | oui | oui |
-| Enregistrement des sessions, chronos des tours | oui | oui (chronos officiels du jeu) | oui (chronos officiels du jeu) | oui (chronos officiels du jeu) |
-| Temps par secteur | oui | pas encore | pas encore | non : le jeu ne les publie pas. Le secteur en cours est connu (quand le jeu découpe le circuit en plus de trois parties, Corde les regroupe en trois) |
-| Comparaison de tours, graphes | oui | oui | oui | oui |
-| Classement, écarts avec les autres voitures | oui | écart avec la voiture devant et derrière seulement : le jeu ne donne les autres pilotes que par une autre interface, pas encore branchée | non : le jeu ne publie que ta voiture | oui : places, tours, meilleur et dernier tour de chacun, écart sur la piste ; écart au premier en course |
-| Températures des pneus intérieur / milieu / extérieur, usure | oui | non : le jeu publie une seule température par pneu, et pas l'usure | oui | **pas en roulant** : le jeu ne publie températures, pressions et usure des pneus qu'à l'arrêt aux stands. Entre deux arrêts, Corde montre celles du dernier arrêt |
-| Températures des freins | oui | oui | oui | non : le jeu ne les publie pas |
-| Niveaux d'antipatinage et d'ABS, tour annulé | oui | oui | non : le jeu ne les publie pas | les réglages au volant que la voiture possède ; un tour est marqué quand le jeu y compte un incident |
-| Carte du circuit | oui | oui | oui | oui, après un premier tour : le jeu ne donne aucune position, Corde reconstruit le tracé d'après ta vitesse et ton cap, et place les autres voitures d'après leur avancée sur le tour |
-| Ingénieur de course : analyse du pilotage | oui | indicative (sens de certaines mesures à vérifier) | indicative | indicative |
-| Ingénieur de course : réglages proposés, fichiers de setup | oui | non : il connaît les réglages de Le Mans Ultimate | non | non |
-| Import des résultats officiels, page Profil | oui | non | non | non |
-| Planning des courses en ligne, rappels | oui | non (c'est le planning de Le Mans Ultimate) | non | non |
+| | Le Mans Ultimate | Assetto Corsa Competizione | Assetto Corsa | Assetto Corsa EVO | iRacing |
+|---|---|---|---|---|---|
+| Direct : widgets et tableau de bord de course (PC, téléphone, OBS) | oui | oui | oui | oui | oui |
+| Enregistrement des sessions, chronos des tours | oui | oui (chronos officiels du jeu) | oui (chronos officiels du jeu) | oui (chronos officiels du jeu) | oui (chronos officiels du jeu) |
+| Temps par secteur | oui | pas encore | pas encore | non : le jeu ne les publie pas (le secteur affiché est un tiers du tour) | non : le jeu ne les publie pas. Le secteur en cours est connu (quand le jeu découpe le circuit en plus de trois parties, Corde les regroupe en trois) |
+| Comparaison de tours, graphes | oui | oui | oui | oui | oui |
+| Classement, écarts avec les autres voitures | oui | écart avec la voiture devant et derrière seulement : le jeu ne donne les autres pilotes que par une autre interface, pas encore branchée | non : le jeu ne publie que ta voiture | écart avec la voiture devant et derrière seulement : le jeu ne donne des autres voitures que leur position sur la carte | oui : places, tours, meilleur et dernier tour de chacun, écart sur la piste ; écart au premier en course |
+| Températures des pneus intérieur / milieu / extérieur, usure | oui | non : le jeu publie une seule température par pneu, et pas l'usure | oui | trois températures par pneu et la pression ; pas l'usure (le jeu la laisse à zéro) | **pas en roulant** : le jeu ne publie températures, pressions et usure des pneus qu'à l'arrêt aux stands. Entre deux arrêts, Corde montre celles du dernier arrêt |
+| Températures des freins | oui | oui | oui | oui | non : le jeu ne les publie pas |
+| Niveaux d'antipatinage et d'ABS, tour annulé | oui | oui | non : le jeu ne les publie pas | oui, chacun avec son maximum ; un tour est marqué quand le jeu l'invalide | les réglages au volant que la voiture possède ; un tour est marqué quand le jeu y compte un incident |
+| Carte du circuit | oui | oui | oui | oui | oui, après un premier tour : le jeu ne donne aucune position, Corde reconstruit le tracé d'après ta vitesse et ton cap, et place les autres voitures d'après leur avancée sur le tour |
+| Ingénieur de course : analyse du pilotage | oui | indicative (sens de certaines mesures à vérifier) | indicative | indicative (sens de certaines mesures à vérifier) | indicative |
+| Ingénieur de course : réglages proposés, fichiers de setup | oui | non : il connaît les réglages de Le Mans Ultimate | non | non | non |
+| Import des résultats officiels, page Profil | oui | non | non | non | non |
+| Planning des courses en ligne, rappels | oui | non (c'est le planning de Le Mans Ultimate) | non | non | non |
 
 ## Un profil par jeu (depuis la 1.10.0)
 
@@ -64,6 +65,7 @@ se partageant la place. Le Mans Ultimate garde simplement ce que tu utilisais.
 | Le Mans Ultimate | rien |
 | Assetto Corsa Competizione | le widget Classement (le jeu ne nomme pas les autres pilotes) |
 | Assetto Corsa | les widgets Classement, Écarts et Électronique (le jeu ne publie que ta voiture, et pas le niveau des aides) |
+| Assetto Corsa EVO | le widget Classement (le jeu ne donne des autres voitures que leur position) |
 | iRacing | les widgets Pneus et Freins ; la page « Pneus & freins » et la case « Pneus » du tableau de bord « Corde » (le jeu ne publie les pneus qu'à l'arrêt aux stands, et jamais les freins) |
 
 Rien n'est verrouillé : une disposition préparée par Corde se modifie comme les autres (**Modifier** →
@@ -111,6 +113,38 @@ elles, sont partagées entre les appareils comme avant.
 - Le jeu donne la longueur du circuit : rien à mesurer. Les voitures et circuits ajoutés (mods) sont lus
   comme les autres ; leur nom est celui de leur dossier.
 - `acc-probe.exe` (ci-dessous) reconnaît les deux jeux.
+
+## Assetto Corsa EVO : ce qu'il faut savoir
+
+- **Rien à installer ni à activer** : le jeu publie de lui-même trois pages de mémoire partagée, sous des
+  noms à lui. Corde les ouvre en lecture seule.
+- **Expérimental, pas encore vérifié face au jeu** : le module est écrit d'après la documentation que le
+  studio a publiée, et testé contre un faux jeu. Le premier essai en piste dira ce qui est juste.
+- **Le jeu est en accès anticipé** : le format de ses pages peut changer d'une mise à jour à l'autre. Si
+  Corde affiche soudain des valeurs absurdes après une mise à jour du jeu, c'est sans doute cela : une copie
+  de diagnostic (ci-dessous) permet de corriger.
+- **Ce que le jeu publie** : chronos officiels, position sur le tour, longueur du circuit, carburant et
+  réservoir, régime maximal, trois températures et la pression de chaque pneu, températures des freins,
+  niveaux d'antipatinage, d'ABS et de cartographie moteur avec leur maximum, répartition de freinage,
+  écarts avec la voiture de devant et de derrière, phares et essuie-glaces.
+- **Ce qu'il ne publie pas** : les autres pilotes (seulement la position de leur voiture : pas de
+  classement), les temps par secteur, l'usure des pneus (le champ existe et reste à zéro), la pluie.
+- **À confirmer en piste** : le sens de ce qui est latéral (la carte pourrait être dessinée en miroir,
+  comme elle l'était pour Assetto Corsa Competizione avant la 1.9.1), l'ordre des accélérations, l'embrayage.
+
+### Aider à vérifier Assetto Corsa EVO
+
+Dans l'archive `corde-<version>-portable-windows.zip` de la page des versions, l'outil **`acc-probe.exe`**
+reconnaît aussi ce jeu :
+
+1. Lance Assetto Corsa EVO et entre en piste.
+2. Ouvre une invite de commandes dans le dossier de l'archive et lance `acc-probe.exe --dump copie-evo`.
+3. Compare les lignes affichées (version de l'interface, circuit, voiture, tour, vitesse, rapport, carburant,
+   chronos) avec ce que montre le jeu. La ligne « brut » donne les valeurs telles que le jeu les écrit.
+
+Le dossier `copie-evo` contient une copie de ce que le jeu publiait à cet instant, **sans ton prénom ni ton
+nom**, et les identifiants des voitures y sont remplacés par de simples numéros. C'est le plus utile à
+joindre à un signalement sur [GitHub](https://github.com/dultra123/corde/issues) quand une valeur est fausse.
 
 ## iRacing : ce qu'il faut savoir
 
@@ -171,5 +205,5 @@ ni ton pseudo** (l'outil les efface). C'est le plus utile à joindre à un signa
 ## Pour les curieux
 
 La décision et ses raisons : [ADR 0020](adr/0020-plusieurs-jeux-detection-automatique.md). Le code : un
-module par jeu (`crates/corde-lmu`, `crates/corde-acc`, `crates/corde-iracing`), tous derrière la même interface
+module par jeu (`crates/corde-lmu`, `crates/corde-acc` pour les trois Assetto Corsa, `crates/corde-iracing`), tous derrière la même interface
 (`corde_core::TelemetrySource`) ; `corde_core::AutoSource` choisit celui dont le jeu tourne.

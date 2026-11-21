@@ -19,6 +19,49 @@ pub const PHYSICS_NAME: &str = "acpmf_physics";
 pub const GRAPHICS_NAME: &str = "acpmf_graphics";
 pub const STATIC_NAME: &str = "acpmf_static";
 
+/// The three pages of one family of games: their names, and the least each must hold.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PageSet {
+    pub physics: &'static str,
+    pub graphics: &'static str,
+    pub statics: &'static str,
+    /// Bytes of the physics, graphics and static structures.
+    pub sizes: [usize; 3],
+}
+
+/// Assetto Corsa Competizione, the first Assetto Corsa.
+pub const ACC_PAGES: PageSet = PageSet {
+    physics: PHYSICS_NAME,
+    graphics: GRAPHICS_NAME,
+    statics: STATIC_NAME,
+    sizes: [
+        crate::layout::PHYSICS_SIZE,
+        crate::layout::GRAPHICS_SIZE,
+        crate::layout::STATIC_SIZE,
+    ],
+};
+
+/// Assetto Corsa EVO. Its graphics page grew in April 2026 (the table of the cars'
+/// identifiers, at its end): the page of an older build is accepted without it.
+pub const EVO_PAGES: PageSet = PageSet {
+    physics: "acevo_pmf_physics",
+    graphics: "acevo_pmf_graphics",
+    statics: "acevo_pmf_static",
+    sizes: [
+        crate::layout::PHYSICS_SIZE,
+        crate::evo::layout::GRAPHICS_EVO_MIN_SIZE,
+        crate::evo::layout::STATIC_EVO_SIZE,
+    ],
+};
+
+/// The three pages of Assetto Corsa EVO, as copied at one instant.
+#[derive(Clone, Copy)]
+pub struct EvoPages {
+    pub physics: Physics,
+    pub graphics: crate::evo::layout::GraphicsEvo,
+    pub statics: crate::evo::layout::StaticEvo,
+}
+
 /// The three pages, as copied at one instant.
 #[derive(Clone, Copy)]
 pub struct Pages {
@@ -71,14 +114,82 @@ impl RawPages {
         self
     }
 
+    /// The pages of Assetto Corsa EVO, decoded. Fails when one is shorter than its
+    /// structure.
+    pub fn evo(&self) -> Result<EvoPages, SourceError> {
+        use crate::evo::layout::{GRAPHICS_EVO_MIN_SIZE, GRAPHICS_EVO_SIZE};
+        // A page that stops before the table of identifiers (an older build) is read
+        // with that table at zero.
+        let graphics = if (GRAPHICS_EVO_MIN_SIZE..GRAPHICS_EVO_SIZE).contains(&self.graphics.len())
+        {
+            let mut padded = self.graphics.clone();
+            padded.resize(GRAPHICS_EVO_SIZE, 0);
+            page(&padded, EVO_PAGES.graphics)?
+        } else {
+            page(&self.graphics, EVO_PAGES.graphics)?
+        };
+        Ok(EvoPages {
+            physics: page(&self.physics, EVO_PAGES.physics)?,
+            graphics,
+            statics: page(&self.statics, EVO_PAGES.statics)?,
+        })
+    }
+
+    /// Pages of Assetto Corsa EVO without what names the player: the first name and the
+    /// surname are blanked, and the identifiers of the cars are replaced by small numbers
+    /// (the same car keeps the same number, so the player's slot can still be found).
+    /// What a diagnostic copy must be.
+    pub fn evo_without_names(mut self) -> Self {
+        use crate::evo::layout::{GraphicsEvo, MAX_CARS};
+        use std::mem::offset_of;
+        let from = offset_of!(GraphicsEvo, driver_name);
+        let to = offset_of!(GraphicsEvo, car_model);
+        if let Some(names) = self.graphics.get_mut(from..to) {
+            names.fill(0);
+        }
+        // Each identifier is 16 bytes: the camera's, the player's, then one per slot.
+        let mut places = vec![
+            offset_of!(GraphicsEvo, focused_car_id),
+            offset_of!(GraphicsEvo, player_car_id),
+        ];
+        places.extend((0..MAX_CARS).map(|i| offset_of!(GraphicsEvo, car_ids) + 16 * i));
+        let mut seen: Vec<[u8; 16]> = Vec::new();
+        for at in places {
+            let Some(slot) = self.graphics.get_mut(at..at + 16) else {
+                continue;
+            };
+            let mut id = [0u8; 16];
+            id.copy_from_slice(slot);
+            if id == [0u8; 16] {
+                continue;
+            }
+            let number = match seen.iter().position(|s| *s == id) {
+                Some(i) => i,
+                None => {
+                    seen.push(id);
+                    seen.len() - 1
+                }
+            } as u64
+                + 1;
+            slot.fill(0);
+            slot[..8].copy_from_slice(&number.to_le_bytes());
+        }
+        self
+    }
+
     /// Written as the three files a [`DirPages`] reads (whole files, replaced one after
     /// the other).
     pub fn write_dir(&self, dir: &Path) -> std::io::Result<()> {
+        self.write_dir_of(dir, &ACC_PAGES)
+    }
+
+    /// The same under the names of another family of pages.
+    pub fn write_dir_of(&self, dir: &Path, set: &PageSet) -> std::io::Result<()> {
         std::fs::create_dir_all(dir)?;
         for (name, bytes) in [
-            (STATIC_NAME, &self.statics),
-            (PHYSICS_NAME, &self.physics),
-            (GRAPHICS_NAME, &self.graphics),
+            (set.statics, &self.statics),
+            (set.physics, &self.physics),
+            (set.graphics, &self.graphics),
         ] {
             let tmp = dir.join(format!("{name}.tmp"));
             std::fs::write(&tmp, bytes)?;
@@ -114,18 +225,25 @@ fn page<T: bytemuck::AnyBitPattern>(bytes: &[u8], name: &str) -> Result<T, Sourc
 /// Three files of a directory, read whole at each call.
 pub struct DirPages {
     dir: PathBuf,
+    set: PageSet,
 }
 
 impl DirPages {
     pub fn open(dir: &Path) -> Result<Self, SourceError> {
-        if !dir.join(GRAPHICS_NAME).is_file() {
+        Self::open_of(dir, &ACC_PAGES)
+    }
+
+    pub fn open_of(dir: &Path, set: &PageSet) -> Result<Self, SourceError> {
+        if !dir.join(set.graphics).is_file() {
             return Err(SourceError::NotAvailable(format!(
-                "{} : pas de page {GRAPHICS_NAME}",
-                dir.display()
+                "{} : pas de page {}",
+                dir.display(),
+                set.graphics
             )));
         }
         Ok(Self {
             dir: dir.to_path_buf(),
+            set: *set,
         })
     }
 
@@ -143,9 +261,9 @@ impl DirPages {
 impl PageReader for DirPages {
     fn read_raw(&mut self) -> Result<RawPages, SourceError> {
         Ok(RawPages {
-            physics: self.file(PHYSICS_NAME)?,
-            graphics: self.file(GRAPHICS_NAME)?,
-            statics: self.file(STATIC_NAME)?,
+            physics: self.file(self.set.physics)?,
+            graphics: self.file(self.set.graphics)?,
+            statics: self.file(self.set.statics)?,
         })
     }
 
@@ -157,18 +275,24 @@ impl PageReader for DirPages {
 /// The reader of this platform: the game's mappings on Windows; elsewhere, or when `dir`
 /// is given, a directory mirror.
 pub fn open_default_reader(dir: Option<&Path>) -> Result<Box<dyn PageReader>, SourceError> {
+    open_reader(&ACC_PAGES, dir)
+}
+
+/// The same for the pages of another family of games.
+pub fn open_reader(set: &PageSet, dir: Option<&Path>) -> Result<Box<dyn PageReader>, SourceError> {
     if let Some(dir) = dir {
-        return Ok(Box::new(DirPages::open(dir)?));
+        return Ok(Box::new(DirPages::open_of(dir, set)?));
     }
     #[cfg(windows)]
     {
-        Ok(Box::new(WindowsPages::open()?))
+        Ok(Box::new(WindowsPages::open_of(set)?))
     }
     #[cfg(not(windows))]
     {
-        Err(SourceError::NotAvailable(
-            "Assetto Corsa Competizione ne tourne que sous Windows".into(),
-        ))
+        Err(SourceError::NotAvailable(format!(
+            "{} : ce jeu ne tourne que sous Windows",
+            set.graphics
+        )))
     }
 }
 
@@ -178,8 +302,6 @@ pub use windows_impl::WindowsPages;
 #[cfg(windows)]
 mod windows_impl {
     use super::*;
-    use crate::layout::{GRAPHICS_SIZE, PHYSICS_SIZE, STATIC_SIZE};
-    use windows_sys::core::{w, PCWSTR};
     use windows_sys::Win32::Foundation::{CloseHandle, GetLastError, FALSE, HANDLE};
     use windows_sys::Win32::System::Memory::{
         MapViewOfFile, OpenFileMappingW, UnmapViewOfFile, VirtualQuery, FILE_MAP_READ,
@@ -188,6 +310,8 @@ mod windows_impl {
 
     /// How many times a copy is retaken when the page was rewritten meanwhile.
     const COPY_TRIES: usize = 4;
+    /// The most that is copied of one mapping.
+    const MAX_COPY: usize = 64 * 1024;
 
     /// One mapping of the game, read-only.
     struct Mapping {
@@ -200,9 +324,14 @@ mod windows_impl {
     unsafe impl Send for Mapping {}
 
     impl Mapping {
-        fn open(wide: PCWSTR, name: &str, size: usize) -> Result<Self, SourceError> {
-            // SAFETY: plain Win32 call with a valid NUL-terminated wide name.
-            let handle = unsafe { OpenFileMappingW(FILE_MAP_READ, FALSE, wide) };
+        fn open(name: &str, size: usize) -> Result<Self, SourceError> {
+            let wide: Vec<u16> = format!("Local\\{name}")
+                .encode_utf16()
+                .chain(std::iter::once(0))
+                .collect();
+            // SAFETY: plain Win32 call with a valid NUL-terminated wide name that lives
+            // until the call returns.
+            let handle = unsafe { OpenFileMappingW(FILE_MAP_READ, FALSE, wide.as_ptr()) };
             if handle.is_null() {
                 // SAFETY: no precondition.
                 let err = unsafe { GetLastError() };
@@ -246,7 +375,14 @@ mod windows_impl {
                     "{name} : {region} octets, {size} attendus (autre jeu ou version trop ancienne ?)"
                 )));
             }
-            Ok(Self { handle, view, size })
+            // Everything that is mapped is copied (a whole number of memory pages, zeros
+            // after what the game writes): a diagnostic copy then also holds what a newer
+            // build of the game would have added.
+            Ok(Self {
+                handle,
+                view,
+                size: region.min(MAX_COPY),
+            })
         }
 
         /// The page, copied; taken again while its step counter (the first 4 bytes)
@@ -285,15 +421,22 @@ mod windows_impl {
         physics: Mapping,
         graphics: Mapping,
         statics: Mapping,
+        set: PageSet,
     }
 
     impl WindowsPages {
         pub fn open() -> Result<Self, SourceError> {
+            Self::open_of(&ACC_PAGES)
+        }
+
+        pub fn open_of(set: &PageSet) -> Result<Self, SourceError> {
+            let [physics, graphics, statics] = set.sizes;
             Ok(Self {
                 // Graphics first: it is the one that says whether a session is live.
-                graphics: Mapping::open(w!("Local\\acpmf_graphics"), GRAPHICS_NAME, GRAPHICS_SIZE)?,
-                physics: Mapping::open(w!("Local\\acpmf_physics"), PHYSICS_NAME, PHYSICS_SIZE)?,
-                statics: Mapping::open(w!("Local\\acpmf_static"), STATIC_NAME, STATIC_SIZE)?,
+                graphics: Mapping::open(set.graphics, graphics)?,
+                physics: Mapping::open(set.physics, physics)?,
+                statics: Mapping::open(set.statics, statics)?,
+                set: *set,
             })
         }
     }
@@ -308,7 +451,7 @@ mod windows_impl {
         }
 
         fn describe(&self) -> String {
-            "mémoire partagée du jeu (Local\\acpmf_*)".into()
+            format!("mémoire partagée du jeu (Local\\{})", self.set.graphics)
         }
     }
 }

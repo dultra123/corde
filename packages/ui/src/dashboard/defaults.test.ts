@@ -67,6 +67,10 @@ describe("the layouts proposed for a game", () => {
       expect.not.arrayContaining(["standings", "gaps", "electronics"]),
     );
     expect(kinds("ac", "desktop")).toEqual(expect.arrayContaining(["tyres", "brakes", "map"]));
+    expect(kinds("ac_evo", "desktop")).not.toContain("standings");
+    expect(kinds("ac_evo", "desktop")).toEqual(
+      expect.arrayContaining(["tyres", "brakes", "gaps", "electronics"]),
+    );
   });
 
   it("are full rows of known widgets, none on another, on every game", () => {

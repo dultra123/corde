@@ -10,7 +10,7 @@ version: "2.4"
 
 services:
   corde:
-    image: corde-server:1.10.0
+    image: corde-server:1.11.0
     container_name: corde
     restart: unless-stopped
     ports:

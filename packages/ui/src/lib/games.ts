@@ -9,6 +9,7 @@ const NAMES: Partial<Record<GameId, { name: string; short: string }>> = {
   lmu: { name: "Le Mans Ultimate", short: "LMU" },
   acc: { name: "Assetto Corsa Competizione", short: "ACC" },
   ac: { name: "Assetto Corsa", short: "AC" },
+  ac_evo: { name: "Assetto Corsa EVO", short: "AC EVO" },
   iracing: { name: "iRacing", short: "iRacing" },
 };
 
@@ -24,7 +25,7 @@ export function gameShort(id: GameId | null | undefined): string {
 
 /** Read by Corde, but not checked against the running game yet: said wherever it shows. */
 export function isExperimentalGame(id: GameId | null | undefined): boolean {
-  return id === "acc" || id === "ac" || id === "iracing";
+  return id === "acc" || id === "ac" || id === "ac_evo" || id === "iracing";
 }
 
 /**
@@ -66,6 +67,8 @@ const TRAITS: Partial<Record<GameId, Partial<GameTraits>>> = {
   acc: { standings: false },
   // The game publishes its own car only, and no level of the driver aids.
   ac: { standings: false, gaps: false, electronics: false },
+  // The other cars are only placed on the map; the gaps ahead and behind are there.
+  ac_evo: { standings: false },
   // Tyres are only measured at a stop in the pits, brakes never.
   iracing: { tyres: false, brakes: false },
 };
@@ -75,7 +78,7 @@ export function gameTraits(id: GameId | null | undefined): GameTraits {
 }
 
 /** The games that have an interface of their own (those Corde reads, in the order shown). */
-export const PROFILE_GAMES: readonly GameId[] = ["lmu", "acc", "ac", "iracing"];
+export const PROFILE_GAMES: readonly GameId[] = ["lmu", "acc", "ac", "ac_evo", "iracing"];
 
 /**
  * The game a profile is kept for: the game itself; the simulator plays Le Mans Ultimate;

@@ -21,8 +21,8 @@ pub const DEFAULT_SYNC_INTERVAL_S: u64 = 300;
 #[clap(rename_all = "lower")]
 pub enum SourceKind {
     /// Whichever supported game is running (Le Mans Ultimate, Assetto Corsa
-    /// Competizione, Assetto Corsa, iRacing), looked for every 2 s while none is
-    /// (add `--fallback-sim` to get the simulator after 10 s).
+    /// Competizione, Assetto Corsa, Assetto Corsa EVO, iRacing), looked for every 2 s
+    /// while none is (add `--fallback-sim` to get the simulator after 10 s).
     #[default]
     Auto,
     /// Built-in simulator (no game needed).
@@ -33,6 +33,8 @@ pub enum SourceKind {
     Acc,
     /// The first Assetto Corsa only.
     Ac,
+    /// Assetto Corsa EVO only.
+    AcEvo,
     /// iRacing only.
     Iracing,
 }
@@ -155,8 +157,9 @@ pub struct ServerConfig {
     /// LMU on Linux: path of the mirrored block (default /dev/shm/LMU_Data). Ignored on Windows.
     #[arg(long)]
     pub lmu_shm: Option<PathBuf>,
-    /// Assetto Corsa Competizione and Assetto Corsa: read the three pages from files of
-    /// this directory instead of the game's shared memory (tests and development).
+    /// Assetto Corsa Competizione, Assetto Corsa and Assetto Corsa EVO: read the three
+    /// pages from files of this directory instead of the game's shared memory (tests and
+    /// development).
     #[arg(long, hide = true)]
     pub acc_shm: Option<PathBuf>,
     /// iRacing: read an image of the game's mapping from this file instead of the
