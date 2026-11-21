@@ -134,8 +134,40 @@
     « tour valide », le format si le jeu a été mis à jour depuis (accès anticipé).
     **À faire au premier essai du propriétaire** : lire sa session enregistrée comme le 21 nov. pour ACC
     (corrélation volant / accélération latérale, sens de la carte) et corriger.
-    **Suite** : Assetto Corsa Rally (mêmes pages qu'ACC, `Local\acpmf_*`, températures en kelvins, page
-    statique écrite tard, épreuves sans tours : à modéliser), puis les autres.
+    **Assetto Corsa Rally : le code est sur `main` depuis le 21 nov. au soir, pas encore publié ni
+    documenté pour le pilote** (pas de numéro de version : la prochaine version l'embarquera).
+    `corde-acc`, module `rally` (`convert.rs`, `source.rs`, `fake.rs`), `--source acrally`, détection
+    automatique `[lmu, acc, ac, acevo, acrally, iracing]`, `acc-probe`, exemple `fake-acrally`, tests
+    `rally_frames.rs` (10) et `games_acrally.rs` ; `GameId::AcRally` (`ac_rally`) ; interface : nom,
+    « expérimental », profil sans Classement, Écarts ni Électronique, carte d'un tracé ouvert
+    (`TrackLearner.open`). Le suivi des tours (`corde-core`) a quatre règles de plus, valables pour
+    tous les jeux : un « tour » passé entièrement aux stands n'en est pas un ; un tour abandonné n'est
+    rapporté qu'après 3 s en piste ; un compteur qui « rattrape » n'est le même tour que si la voiture
+    n'est pas passée par les stands ; une source qui renseigne `count_lap_flag` compte elle-même ses
+    tours (jamais chronométrés par Corde à sa place). **Reste à faire avant de publier** : JEUX.md,
+    PRESENTATION, TESTING-ON-PC, CHANGELOG, ADR 0020 § H, numéro de version ; le widget Freins affiche
+    « AV 100 / AR 0 » quand la répartition est inconnue (à masquer).
+    **Interrompu le 21 nov. à 21 h** par une demande du propriétaire : son serveur Corde sur le NAS ne
+    répond plus après une tentative de mise à jour (journal du PC : l'ancien serveur répondait encore
+    à 20 h 57, connexion refusée depuis 20 h 58), et il demande une mise à jour plus simple. À faire :
+    voir Container Manager avec lui (il doit se connecter au NAS lui-même), réparer, puis simplifier
+    (étiquette `latest` dans l'archive de l'image pour ne plus modifier le YAML ; étudier un bouton
+    « Mettre à jour le serveur » depuis le PC).
+    Ce qui est établi pour Rally (lecture de deux lecteurs libres, rien n'est vérifié en jeu) :
+    - mêmes noms de pages qu'ACC (`Local\acpmf_*`) et même disposition des pages physique et graphique ;
+      la page statique est écrite tard (zéros au début) et sa version du jeu est vide : le jeu se
+      reconnaît à ses **températures en kelvins** (air > 200) — les sources ACC et AC doivent alors
+      refuser ces pages ;
+    - menus : page graphique entièrement à zéro ; ligne de départ : chrono (`i_current_time`) à 0, qui
+      part au franchissement ; arrivée : le chrono se fige alors que `distance_traveled` continue ;
+      pause, zone d'arrêt et replay : page physique à zéro (sauf le compteur) ; relance : chrono à 0 ;
+    - modèle retenu sans toucher au suivi des tours (`LapTracker`) : une spéciale = un tour.
+      `lap_number` = départs − 1 (−1 avant le premier), frontière à chaque départ ; à l'arrivée
+      `laps_completed` + 1 et `last_lap_s` = chrono figé (branche « compté sans compteur » du suivi) ;
+      hors spéciale `in_pits` = vrai (rien n'est rapporté pour l'attente) ; une relance en cours de
+      spéciale donne un tour « abandonné » ; longueur = `track_spline_length` si le jeu la donne, sinon
+      0 (le suivi ne vérifie alors pas la fin de tour) ;
+    - interface : carte d'un tracé ouvert (ne pas refermer la boucle), profil sans Classement ni Écarts.
   - **1.10.0 (21 nov.) — un profil par jeu, une interface de départ par jeu.** Demande du propriétaire
     (21 nov., 19 h 17) : « un système de profil en fonction du jeu […] Corde détecte le jeu et ouvre les
     profils en question », et des interfaces par jeu « iRacing ne transmet pas les températures des pneus,

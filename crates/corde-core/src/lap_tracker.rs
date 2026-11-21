@@ -44,6 +44,11 @@ const FRACTION_WARMUP_S: f64 = 2.0;
 const MIN_LAP_S: f64 = 10.0;
 /// An abandoned lap is only reported when the car actually went on track.
 const ABORTED_MIN_SPEED_KMH: f32 = 30.0;
+/// … and stayed there at least this long (a car that only rolled out of its box, or the
+/// instant between the end of a rally stage and its stop zone, is not a lap given up).
+const ABORTED_MIN_TRACK_S: f64 = 3.0;
+/// Two frames further apart than this are not added up as time on track.
+const MAX_FEED_GAP_S: f64 = 0.5;
 
 #[derive(Debug, Clone, Default)]
 struct Accumulator {
@@ -66,6 +71,10 @@ struct Accumulator {
     was_in_pits: bool,
     /// When the car was first seen out of the pits on this lap.
     left_pits_s: Option<f64>,
+    /// Seconds spent out of the pits on this lap.
+    on_track_s: f64,
+    /// Session clock of the previous frame of this lap.
+    fed_s: Option<f64>,
     max_fraction: f32,
     /// Created from a scoring-only boundary: the telemetry lap counter may
     /// still catch up, which must not open a new lap.
@@ -101,6 +110,12 @@ impl Accumulator {
 
     fn feed(&mut self, p: &PlayerTelemetry, now: f64) {
         self.samples += 1;
+        if let Some(prev) = self.fed_s {
+            if !is_in_pits(p) {
+                self.on_track_s += (now - prev).clamp(0.0, MAX_FEED_GAP_S);
+            }
+        }
+        self.fed_s = Some(now);
         for i in 0..4 {
             let w = &p.wheels[i];
             let t = (w.temp_c[0] + w.temp_c[1] + w.temp_c[2]) / 3.0;
@@ -273,7 +288,9 @@ impl LapTracker {
 
         let lc = p.lap.laps_completed;
         let counted_now = self.prev_laps_completed.is_some_and(|prev| lc > prev);
-        if lc > 0 || counted_now {
+        // A source that says whether the lap in progress counts is one that counts laps:
+        // its count is waited for, never replaced by our stopwatch.
+        if lc > 0 || counted_now || p.lap.count_lap_flag.is_some() {
             self.scoring_alive = true;
         }
         let is_race = frame.session.session_type == SessionType::Race;
@@ -317,9 +334,11 @@ impl LapTracker {
                 let game_start = p.lap.lap_start_s;
                 let crossing_known = game_start > cur.start_s && game_start <= now + 0.5;
                 let end_s = if crossing_known { game_start } else { now };
-                if cur.awaiting_counter && now - cur.start_s < MIN_LAP_S {
+                if cur.awaiting_counter && now - cur.start_s < MIN_LAP_S && !cur.was_in_pits {
                     // The telemetry counter catches up with a lap already
                     // closed from the scoring block: same lap, new number.
+                    // (Not when the car went to the pits meanwhile: a rally
+                    // stage restarted right after its finish is another run.)
                     cur.lap_number = p.lap.lap_number;
                     cur.awaiting_counter = false;
                     if game_start > cur.start_s - 1.0 && game_start <= now + 0.5 {
@@ -328,7 +347,12 @@ impl LapTracker {
                     }
                     cur.feed(p, now);
                     self.cur = Some(cur);
-                } else if cur.reached_end(track_len) && end_s - cur.start_s >= MIN_LAP_S {
+                } else if cur.reached_end(track_len)
+                    && end_s - cur.start_s >= MIN_LAP_S
+                    // A « lap » during which the car never left the pits is a wait, not a
+                    // lap (the start line of a rally stage, before the run).
+                    && cur.left_pits_s.is_some()
+                {
                     let pd = Pending::new(&cur, p, frame, end_s, crossing_known, is_race);
                     let pd = Pending {
                         laps_completed_before: if counted_now { lc - 1 } else { lc },
@@ -350,7 +374,10 @@ impl LapTracker {
                     // The counter moved far from the line: the lap was
                     // abandoned (Esc to the garage). Report it only when the
                     // car really drove.
-                    if cur.left_pits_s.is_some() && cur.top_speed >= ABORTED_MIN_SPEED_KMH {
+                    if cur.left_pits_s.is_some()
+                        && cur.top_speed >= ABORTED_MIN_SPEED_KMH
+                        && cur.on_track_s >= ABORTED_MIN_TRACK_S
+                    {
                         let mut rec = cur.finish(p, frame, now);
                         rec.lap_time_s = (now
                             - cur.left_pits_s.unwrap_or(cur.start_s).max(cur.start_s))

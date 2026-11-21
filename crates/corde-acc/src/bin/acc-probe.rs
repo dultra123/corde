@@ -1,7 +1,8 @@
-//! `acc-probe` — what the pages of Assetto Corsa Competizione, of the first Assetto Corsa
-//! or of Assetto Corsa EVO hold, read the way Corde reads them (the game is recognised by
-//! the names of its pages and the version of its interface). The first thing to run with
-//! the game: start a session, then
+//! `acc-probe` — what the pages of Assetto Corsa Competizione, of the first Assetto Corsa,
+//! of Assetto Corsa EVO or of Assetto Corsa Rally hold, read the way Corde reads them (the
+//! game is recognised by the names of its pages, the version of its interface, and for
+//! Rally its temperatures in kelvins). The first thing to run with the game: start a
+//! session, then
 //!
 //! ```text
 //! acc-probe             (Windows: the game's shared memory)
@@ -23,6 +24,74 @@ use corde_acc::reader::{open_default_reader, open_reader, PageReader, EVO_PAGES}
 use corde_acc::Converter;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
+
+/// Assetto Corsa Rally: the pages of Competizione, a stage instead of laps.
+fn rally(mut reader: Box<dyn PageReader>, dump: Option<&Path>) {
+    println!("Jeu reconnu : Assetto Corsa Rally");
+    let origin = Instant::now();
+    let mut conv = corde_acc::rally::RallyConverter::new();
+    for i in 0..10 {
+        let raw = match reader.read_raw() {
+            Ok(raw) => raw,
+            Err(e) => {
+                eprintln!("Lecture impossible : {e}");
+                std::process::exit(1);
+            }
+        };
+        if let (0, Some(to)) = (i, dump) {
+            match raw.clone().without_names().write_dir(to) {
+                Ok(()) => println!(
+                    "Copie des trois pages écrite dans {} (sans le nom du joueur)",
+                    to.display()
+                ),
+                Err(e) => eprintln!("Copie impossible dans {} : {e}", to.display()),
+            }
+        }
+        let pages = match raw.pages() {
+            Ok(p) => p,
+            Err(e) => {
+                eprintln!("Lecture impossible : {e}");
+                std::process::exit(1);
+            }
+        };
+        let (ph, g, s) = (&pages.physics, &pages.graphics, &pages.statics);
+        if i == 0 {
+            let (sm, car, track) = (s.sm_version, s.car_model, s.track);
+            println!(
+                "Interface « {} » · épreuve « {} » ({} m) · voiture « {} » · tailles lues : {} / {} / {} octets",
+                text(&sm),
+                text(&track),
+                { s.track_spline_length },
+                text(&car),
+                raw.physics.len(),
+                raw.graphics.len(),
+                raw.statics.len()
+            );
+        }
+        let f = conv.frame(&pages, origin.elapsed(), "acc-probe");
+        let Some(p) = f.player.as_ref() else { continue };
+        println!(
+            "état {} · chrono du jeu {} ms · distance {:.1} m · place sur l'épreuve {:.3} · {:.0} km/h · rapport {} · passage n°{} ({} terminés) · en cours {:.3} s · dernier {:?} · page physique {} · air {:.1} (brut)",
+            { g.status },
+            { g.i_current_time },
+            { g.distance_traveled },
+            { g.normalized_car_position },
+            p.motion.speed_kmh,
+            p.engine.gear,
+            p.lap.lap_number + 1,
+            p.lap.laps_completed,
+            p.lap.current_lap_s,
+            p.lap.last_lap_s,
+            if corde_acc::rally::convert::is_blank(ph) {
+                "vide"
+            } else {
+                "vivante"
+            },
+            { ph.air_temp },
+        );
+        std::thread::sleep(Duration::from_secs(1));
+    }
+}
 
 /// Assetto Corsa EVO: its own pages, its own conversion.
 fn evo(mut reader: Box<dyn PageReader>, dump: Option<&Path>) {
@@ -170,7 +239,13 @@ fn main() {
     };
     println!("Source : {}", reader.describe());
     let origin = Instant::now();
-    // Which of the two games: said by the pages themselves.
+    // Assetto Corsa Rally writes the same pages, its temperatures in kelvins.
+    if let Ok(pages) = reader.read() {
+        if corde_acc::rally::convert::is_rally(&pages.physics) == Some(true) {
+            return rally(reader, dump.as_deref());
+        }
+    }
+    // Which of the two other games: said by the pages themselves.
     let game = match reader.read_raw().and_then(|raw| raw.game()) {
         Ok(Some(game)) => game,
         Ok(None) => {

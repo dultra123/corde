@@ -38,6 +38,8 @@ pub enum GameId {
     /// The first Assetto Corsa.
     Ac,
     AcEvo,
+    /// Assetto Corsa Rally: stages driven one car at a time, not laps.
+    AcRally,
     Iracing,
     Ams2,
     /// Built-in simulator used for demos and tests.
@@ -283,8 +285,10 @@ pub struct LapTiming {
     pub lap_fraction: f32,
     /// Raw "count lap" flag of the game for the lap in progress, when it has
     /// one (rFactor family: 0 = neither lap nor time count, 1 = lap counts but
-    /// not its time, 2 = lap and time count). Recorded for diagnosis; lap
-    /// validity is decided from the official lap time, not from this flag.
+    /// not its time, 2 = lap and time count). A game timed by runs (a rally
+    /// stage) says 2 during a run and 0 outside. Recorded for diagnosis; lap
+    /// validity is decided from the official lap time, not from this flag —
+    /// its presence only tells that the source counts the laps itself.
     #[serde(default)]
     pub count_lap_flag: Option<u8>,
 }

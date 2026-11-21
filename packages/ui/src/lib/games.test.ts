@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { gameName, gameShort, hasSetupEngineer, isExperimentalGame } from "./games";
+import { gameName, gameShort, hasSetupEngineer, isExperimentalGame, isPointToPoint } from "./games";
 
 describe("the games Corde reads", () => {
   it("names the games that have an adapter, and only them", () => {
@@ -11,6 +11,11 @@ describe("the games Corde reads", () => {
     expect(gameShort("ac")).toBe("AC");
     expect(gameName("ac_evo")).toBe("Assetto Corsa EVO");
     expect(gameShort("ac_evo")).toBe("AC EVO");
+    expect(gameName("ac_rally")).toBe("Assetto Corsa Rally");
+    expect(gameShort("ac_rally")).toBe("AC Rally");
+    expect(isPointToPoint("ac_rally")).toBe(true);
+    expect(isPointToPoint("lmu")).toBe(false);
+    expect(isPointToPoint(null)).toBe(false);
     expect(gameName("iracing")).toBe("iRacing");
     expect(gameShort("iracing")).toBe("iRacing");
     // Planned games, the simulator and the unknown: no name is shown.
@@ -25,6 +30,7 @@ describe("the games Corde reads", () => {
     expect(isExperimentalGame("acc")).toBe(true);
     expect(isExperimentalGame("ac")).toBe(true);
     expect(isExperimentalGame("ac_evo")).toBe(true);
+    expect(isExperimentalGame("ac_rally")).toBe(true);
     expect(isExperimentalGame("iracing")).toBe(true);
     expect(isExperimentalGame("lmu")).toBe(false);
     expect(hasSetupEngineer("lmu")).toBe(true);

@@ -4,6 +4,10 @@
  * the other cars' samples (`observe`) fill the bins faster, so the map appears within seconds
  * when there is a field on track, and the loop also closes once every bin has been seen.
  * Positions recorded in the pit lane are ignored.
+ *
+ * A rally stage is not a loop (`open`): it goes from a start line to a finish line. The
+ * same bins are learnt; the two ends are simply not joined, and the place « 1 » is the
+ * finish line, not the start line again.
  */
 export class TrackLearner {
   readonly bins: number;
@@ -13,6 +17,8 @@ export class TrackLearner {
   private prevFraction: number | null = null;
   private seenFractions = 0;
   closed = false;
+  /** A line from a start to a finish, not a loop. */
+  open = false;
   /** Lap fraction where sector 2 and 3 start, when observed. */
   sectorStarts: [number | null, number | null] = [null, null];
   private prevSector = 0;
@@ -33,6 +39,19 @@ export class TrackLearner {
     this.prevSector = 0;
   }
 
+  /** Tells whether the track is a line (a rally stage); what was learnt as the other is forgotten. */
+  setOpen(open: boolean): void {
+    if (open === this.open) return;
+    this.open = open;
+    this.reset();
+  }
+
+  /** A lap fraction brought into 0..1: around the loop, or held at the ends of a line. */
+  private norm(fraction: number): number {
+    if (this.open) return Math.min(Math.max(fraction, 0), 1 - 1e-9);
+    return ((fraction % 1) + 1) % 1;
+  }
+
   /** Fraction of the lap already seen, 0..1. */
   get progress(): number {
     return this.closed ? 1 : this.seenFractions / this.bins;
@@ -41,12 +60,14 @@ export class TrackLearner {
   /** The player's own sample: fills a bin and detects the end of the first complete lap. */
   learn(x: number, z: number, fraction: number, sector: number, inPits: boolean): void {
     if (!Number.isFinite(fraction)) return;
-    const f = ((fraction % 1) + 1) % 1;
+    const f = this.norm(fraction);
     if (sector !== this.prevSector) {
       if (sector === 2 && this.sectorStarts[0] === null) this.sectorStarts[0] = f;
       if (sector === 3 && this.sectorStarts[1] === null) this.sectorStarts[1] = f;
       this.prevSector = sector;
     }
+    // A stage is known once a run is over (the car is then out of the run, « in the pits »).
+    if (this.open && inPits && !this.closed && this.seenFractions >= this.bins * 0.9) this.close();
     if (this.closed || inPits) {
       this.prevFraction = f;
       return;
@@ -60,7 +81,7 @@ export class TrackLearner {
   /** Another car's sample: only fills bins. */
   observe(x: number, z: number, fraction: number, inPits: boolean): void {
     if (this.closed || inPits || !Number.isFinite(fraction)) return;
-    this.fill(x, z, ((fraction % 1) + 1) % 1);
+    this.fill(x, z, this.norm(fraction));
     if (this.seenFractions >= this.bins * 0.985) this.close();
   }
 
@@ -96,9 +117,9 @@ export class TrackLearner {
       }
     }
     if (cur.length) {
-      // wrap around the start line
+      // wrap around the start line (a loop only)
       const first = runs[0];
-      if (first && this.filled[0]) runs[0] = [...cur, ...first];
+      if (first && this.filled[0] && !this.open) runs[0] = [...cur, ...first];
       else runs.push(cur);
     }
     return runs;
@@ -107,10 +128,10 @@ export class TrackLearner {
   /** Position on the learnt loop at a lap fraction (linear between bins). */
   at(fraction: number): [number, number] | null {
     if (!this.closed) return null;
-    const f = ((fraction % 1) + 1) % 1;
+    const f = this.norm(fraction);
     const pos = f * this.bins;
     const a = Math.floor(pos) % this.bins;
-    const b = (a + 1) % this.bins;
+    const b = this.open ? Math.min(a + 1, this.bins - 1) : (a + 1) % this.bins;
     const t = pos - Math.floor(pos);
     return [
       (this.xs[a] as number) + ((this.xs[b] as number) - (this.xs[a] as number)) * t,
@@ -135,7 +156,12 @@ export class TrackLearner {
         after = (after + 1) % n;
         da += 1;
       }
-      const t = db / (db + da);
+      if (this.open) {
+        // A line: a gap at one end takes the nearest known point, never the other end.
+        if (before > i) before = after;
+        if (after < i) after = before;
+      }
+      const t = before === after ? 0 : db / (db + da);
       this.xs[i] =
         (this.xs[before] as number) +
         ((this.xs[after] as number) - (this.xs[before] as number)) * t;

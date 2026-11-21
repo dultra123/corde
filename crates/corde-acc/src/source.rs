@@ -147,6 +147,16 @@ impl TelemetrySource for AccSource {
                 game.label()
             )));
         }
+        // Assetto Corsa Rally publishes pages of the same names: its temperatures are in
+        // kelvins, and its physics page is blank while it is not simulating the car.
+        if crate::rally::convert::is_rally(&pages.physics) == Some(true)
+            || crate::rally::convert::is_blank(&pages.physics)
+        {
+            return Err(SourceError::NotAvailable(format!(
+                "ces pages ne sont pas celles de {} (Assetto Corsa Rally ?)",
+                game.label()
+            )));
+        }
         tracing::info!("{} : {}", game.label(), reader.describe());
         self.reader = Some(reader);
         self.conv = Converter::for_game(game);
