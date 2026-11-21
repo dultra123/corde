@@ -335,8 +335,9 @@ Le détail de chaque version est dans le [journal des versions](../CHANGELOG.md)
 - Widgets sur Android.
 - Publication sur l'App Store et le Play Store : pas décidée.
 - Signature de l'installeur Windows (aujourd'hui, Windows affiche un avertissement à l'installation).
-- D'autres simulateurs (rFactor 2, Automobilista 2, RaceRoom…), et la suite pour Assetto Corsa
-  Competizione, Assetto Corsa et iRacing : vérification en jeu, temps par secteur, classement complet.
+- D'autres simulateurs (rFactor 2, Automobilista 2, RaceRoom…), et la suite pour les jeux expérimentaux
+  (Assetto Corsa Competizione, Assetto Corsa, Assetto Corsa EVO, Assetto Corsa Rally, iRacing) :
+  vérification en jeu, temps par secteur, classement complet.
 
 ## Engagements
 
@@ -384,8 +385,9 @@ Pour rester exact :
 - pas « disponible sur l'App Store » ni « sur le Play Store » (ce n'est pas le cas) ;
 - pas « application officielle » de Le Mans Ultimate ;
 - pas « installeur signé » ni « sans avertissement Windows » ;
-- pas « compatible » ni « vérifié » pour Assetto Corsa Competizione, Assetto Corsa et iRacing : toujours
-  « expérimental » (Competizione et iRacing : « essayés en jeu » ; Assetto Corsa : « pas encore vérifié
-  face au jeu ») ; et aucun jeu de la liste « prévus » comme disponible ;
+- pas « compatible » ni « vérifié » pour Assetto Corsa Competizione, Assetto Corsa, Assetto Corsa EVO,
+  Assetto Corsa Rally et iRacing : toujours « expérimental » (Competizione et iRacing : « essayés en
+  jeu » ; les trois autres : « pas encore vérifié face au jeu ») ; et aucun jeu de la liste « prévus »
+  comme disponible ;
 - pas de promesse de date pour ce qui est « à venir » ;
 - l'auteur est présenté sous son pseudonyme, **dultra__**.
