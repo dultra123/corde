@@ -34,3 +34,54 @@ export function isExperimentalGame(id: GameId | null | undefined): boolean {
 export function hasSetupEngineer(id: GameId | null | undefined): boolean {
   return id === "lmu" || id === "sim" || id === "unknown" || id == null;
 }
+
+/**
+ * What a game publishes while driving, as far as the interface of departure is concerned: a
+ * widget or a page that would stay empty is left out of what Corde proposes for that game
+ * (the pilot can always add it). Everything is taken as published for a game not listed.
+ */
+export interface GameTraits {
+  /** Tyre temperatures, pressures and wear that move while driving. */
+  tyres: boolean;
+  /** Brake temperatures. */
+  brakes: boolean;
+  /** The other cars: places, laps, times. */
+  standings: boolean;
+  /** Gaps to the cars around. */
+  gaps: boolean;
+  /** Driver aids and their levels (traction control, ABS, engine map). */
+  electronics: boolean;
+}
+
+const EVERYTHING: GameTraits = {
+  tyres: true,
+  brakes: true,
+  standings: true,
+  gaps: true,
+  electronics: true,
+};
+
+const TRAITS: Partial<Record<GameId, Partial<GameTraits>>> = {
+  // The pages of the game name no other driver; the gaps ahead and behind are there.
+  acc: { standings: false },
+  // The game publishes its own car only, and no level of the driver aids.
+  ac: { standings: false, gaps: false, electronics: false },
+  // Tyres are only measured at a stop in the pits, brakes never.
+  iracing: { tyres: false, brakes: false },
+};
+
+export function gameTraits(id: GameId | null | undefined): GameTraits {
+  return { ...EVERYTHING, ...(id ? TRAITS[id] : undefined) };
+}
+
+/** The games that have an interface of their own (those Corde reads, in the order shown). */
+export const PROFILE_GAMES: readonly GameId[] = ["lmu", "acc", "ac", "iracing"];
+
+/**
+ * The game a profile is kept for: the game itself; the simulator plays Le Mans Ultimate;
+ * `null` for what is not a game Corde reads.
+ */
+export function profileGame(id: GameId | null | undefined): GameId | null {
+  if (id === "sim") return "lmu";
+  return id && PROFILE_GAMES.includes(id) ? id : null;
+}

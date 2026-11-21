@@ -145,6 +145,31 @@ mesures que publie la voiture conduite (nom, type, position), et jusqu'à quatre
   gauche était dessiné tournant à droite) : l'axe z, l'accélération latérale, le lacet et le cap sont
   retournés depuis la 1.9.1, pour ACC comme pour le premier Assetto Corsa.
 
+## F. Un profil par jeu, une interface de départ par jeu (1.10.0)
+
+Demande du propriétaire après son premier essai de deux jeux : que Corde ouvre, pour chaque jeu, la
+disposition et le tableau de bord qu'il a choisis pour lui, et que l'interface proposée au départ ne montre
+pas ce que le jeu ne publie pas.
+
+- **Où** : dans l'interface seulement (`store/game-profiles.ts`). Le serveur et le protocole ne changent
+  pas : le jeu détecté est déjà dans l'état de la source (`status.game`).
+- **Quoi** : par jeu, la disposition PC, la disposition téléphone, le tableau de bord de course et
+  l'affichage du Direct. **Par appareil** (stockage du navigateur), comme la disposition courante et le
+  tableau de bord utilisé l'étaient déjà : un téléphone et un PC n'affichent pas la même chose.
+- **Quand** : à la détection d'un jeu, son profil est remis. Ce qui est choisi ensuite est gardé pour le
+  dernier jeu vu, jeu fermé compris — sinon un choix fait hors piste serait défait au lancement suivant.
+- **Interface de départ** : une table `GameTraits` dit ce que chaque jeu publie en roulant. Une
+  disposition « Course » sans les widgets sans données est créée à la première détection, avec un
+  identifiant fixe (`game-<jeu>-desktop|mobile`) pour n'exister qu'une fois entre les appareils, et une
+  date nulle pour qu'une version déjà modifiée ailleurs l'emporte à la synchronisation. Le tableau de bord
+  « Corde » saute la page « Pneus & freins » quand le jeu ne publie ni les uns ni les autres.
+- **Rien n'est verrouillé** : ce sont des dispositions ordinaires. Les widgets restent tous dans la
+  palette ; un tableau de bord fait dans le Studio est montré tel quel, quel que soit le jeu.
+- **Le Mans Ultimate** garde ce qui était utilisé avant les profils : aucune surprise à la mise à jour.
+- **Les overlays (OBS)** ne sont pas par jeu : leur adresse désigne déjà une disposition précise.
+- **Écarté** : stocker les profils sur le serveur (un profil est un choix d'écran, pas une donnée
+  partagée) ; masquer d'office un widget sans données (le pilote ne pourrait plus le remettre).
+
 ## Alternatives écartées
 
 - **Demander le jeu dans les réglages** : c'est exactement ce que le propriétaire ne veut pas.

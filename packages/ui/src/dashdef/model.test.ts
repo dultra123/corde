@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CORDE, cordeDefinition, TEMPLATE_IDS, template } from "./builtin";
+import { CORDE, cordeDefinition, cordePages, TEMPLATE_IDS, template } from "./builtin";
 import { ELEMENTS, getElementSpec } from "./catalog";
 import { FIELDS, formatValue, getField } from "./fields";
 import { exportText, fileName, importText } from "./io";
@@ -362,6 +362,20 @@ describe("the dashboard used on a device", () => {
       "corde",
     );
     expect(resolveDash([], "corde", "en").pages[0]?.name).toBe("Race");
+  });
+
+  it("« Corde » leaves out the pages the game publishes nothing for", () => {
+    const ids = (game?: Parameters<typeof cordePages>[0]) =>
+      resolveDash([], "corde", "fr", game).pages.map((p) => p.id);
+    expect(ids()).toEqual(["course", "tyres", "energy", "timing"]);
+    expect(ids("lmu")).toEqual(["course", "tyres", "energy", "timing"]);
+    expect(ids("acc")).toEqual(["course", "tyres", "energy", "timing"]);
+    // tyres measured in the pits only, brakes never: no « Pneus & freins »
+    expect(ids("iracing")).toEqual(["course", "energy", "timing"]);
+    expect(cordePages("iracing")).not.toContain("tyres");
+    expect(validateDefinition(cordeDefinition("fr", "iracing")).ok).toBe(true);
+    // a dashboard made in the Studio is shown as it was made, whatever the game
+    expect(resolveDash([dash()], "gt3", "fr", "iracing").pages).toEqual(dash().pages);
   });
 
   it("keeps a bounded copy, valid only, never « corde »", () => {

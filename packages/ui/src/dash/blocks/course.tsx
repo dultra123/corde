@@ -3,6 +3,7 @@ import { useRef } from "react";
 import { useT } from "../../i18n";
 import { classColor, tempColor, tyreScale } from "../../lib/color";
 import { fmtClock, fmtGear, fmtLapTime, fmtNum } from "../../lib/format";
+import { gameTraits } from "../../lib/games";
 import { lapNo } from "../../lib/laps";
 import { useTelemetry } from "../../store/telemetry";
 import { useFrameDraw } from "../../widgets/shared/hooks";
@@ -347,10 +348,12 @@ export function CarStripBlock({ frame, laps }: Pick<BlockProps, "frame" | "laps"
           <span className="num dcell-v">{map}</span>
         </div>
       )}
-      <div className="dcell is-mid">
-        <Lab>{t("dash.tyres")}</Lab>
-        <MiniTyres frame={frame} />
-      </div>
+      {gameTraits(frame?.session.game).tyres && (
+        <div className="dcell is-mid">
+          <Lab>{t("dash.tyres")}</Lab>
+          <MiniTyres frame={frame} />
+        </div>
+      )}
     </div>
   );
 }

@@ -77,19 +77,19 @@ ou « réservation DHCP »). Sinon son adresse peut changer et le PC ne le retro
    - Le plus simple, directement sur le Pi (par SSH) :
 
      ```bash
-     wget https://github.com/dultra123/corde/releases/download/v1.9.1/corde-server-1.9.1-linux-arm64.tar.gz
+     wget https://github.com/dultra123/corde/releases/download/v1.10.0/corde-server-1.10.0-linux-arm64.tar.gz
      ```
    - Ou télécharge-la sur le PC, puis copie-la sur le Pi depuis PowerShell :
 
      ```powershell
-     scp $HOME\Downloads\corde-server-1.9.1-linux-arm64.tar.gz ton-utilisateur@corde.local:~
+     scp $HOME\Downloads\corde-server-1.10.0-linux-arm64.tar.gz ton-utilisateur@corde.local:~
      ```
    - Un PC Linux (pas un Pi) prend l'archive `…-linux-x64.tar.gz`.
 2. Sur le Pi (par SSH) :
 
    ```bash
-   tar -xzf corde-server-1.9.1-linux-arm64.tar.gz
-   cd corde-server-1.9.1-linux-arm64
+   tar -xzf corde-server-1.10.0-linux-arm64.tar.gz
+   cd corde-server-1.10.0-linux-arm64
    sudo ./install.sh
    ```
 
@@ -194,8 +194,8 @@ tout partira après la mise à jour). Il faut la **1.6.0 ou plus récente** pour
 2. Sur le Pi :
 
    ```bash
-   tar -xzf corde-server-1.9.1-linux-arm64.tar.gz
-   cd corde-server-1.9.1-linux-arm64
+   tar -xzf corde-server-1.10.0-linux-arm64.tar.gz
+   cd corde-server-1.10.0-linux-arm64
    sudo ./install.sh
    ```
 

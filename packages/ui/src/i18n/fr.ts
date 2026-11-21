@@ -1813,6 +1813,17 @@ export const fr = {
     "ce n'est pas un fichier de tableau de bord lisible (archive abîmée, ou trop d'entrées).",
   "settings.dashUsedHint":
     "Retenu sur cet appareil. Les tableaux de bord se créent dans le Studio, sur le PC (menu des dispositions du Direct).",
+  "profiles.section": "Profils par jeu",
+  "profiles.enable": "Un profil par jeu",
+  "profiles.hint":
+    "Corde retient pour chaque jeu la disposition des widgets, le tableau de bord et l'affichage du Direct, et les remet dès qu'il détecte ce jeu. Ce qui est choisi ensuite reste attaché au dernier jeu vu. Retenu sur cet appareil.",
+  "profiles.inPlace": "en place",
+  "profiles.layout": "Disposition des widgets",
+  "profiles.dash": "Tableau de bord",
+  "profiles.proposed": "Proposée par Corde",
+  "profiles.reset": "Réinitialiser",
+  "profiles.resetConfirm":
+    "Remettre la disposition de ce jeu comme Corde la propose ? Ce qui y a été changé est perdu.",
 } as const;
 
 export type TranslationKey = keyof typeof fr;

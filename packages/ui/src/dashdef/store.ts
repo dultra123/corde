@@ -1,6 +1,9 @@
+import type { GameId } from "@corde/protocol";
+import { useMemo } from "react";
 import { create } from "zustand";
 import { authHeaders } from "../net/auth";
 import { useSettings } from "../store/settings";
+import { useTelemetry } from "../store/telemetry";
 import { cordeDefinition } from "./builtin";
 import {
   BUILTIN_ID,
@@ -125,19 +128,25 @@ export function resolveDash(
   defs: readonly DashDefinition[],
   selected: string,
   lang: "fr" | "en",
+  game?: GameId | null,
 ): DashDefinition {
   if (selected !== BUILTIN_ID) {
     const d = defs.find((x) => x.id === selected);
     if (d && validateDefinition(d).ok) return d;
   }
-  return cordeDefinition(lang);
+  // « Corde » follows the game: only the pages it publishes something for.
+  return cordeDefinition(lang, game);
 }
 
 export function useActiveDash(): DashDefinition {
   const defs = useDashes((s) => s.defs);
   const selected = useDashes((s) => s.selected);
   const lang = useSettings((s) => s.lang);
-  return resolveDash(defs, selected, lang);
+  // The game being read (a demonstration plays every page).
+  const game = useTelemetry((s) =>
+    s.demo === "off" && s.status?.connected ? s.status.game : null,
+  );
+  return useMemo(() => resolveDash(defs, selected, lang, game), [defs, selected, lang, game]);
 }
 
 // ---------------------------------------------------------------- server

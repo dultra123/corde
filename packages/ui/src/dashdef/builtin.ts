@@ -1,3 +1,5 @@
+import type { GameId } from "@corde/protocol";
+import { gameTraits } from "../lib/games";
 import type { Lang } from "../store/settings";
 import {
   BUILTIN_ID,
@@ -54,14 +56,23 @@ const CORDE_NAMES: Record<Lang, Record<(typeof CORDE_PAGES)[number], string>> = 
   en: { course: "Race", tyres: "Tyres & brakes", energy: "Fuel & energy", timing: "Timing & gaps" },
 };
 
-export function cordeDefinition(lang: Lang = "fr"): DashDefinition {
+/**
+ * The pages of « Corde » for a game: a page the game publishes nothing for is left out (no
+ * « Pneus & freins » for a game that gives neither while driving). All of them without a game.
+ */
+export function cordePages(game?: GameId | null): (typeof CORDE_PAGES)[number][] {
+  const traits = gameTraits(game);
+  return CORDE_PAGES.filter((p) => p !== "tyres" || traits.tyres || traits.brakes);
+}
+
+export function cordeDefinition(lang: Lang = "fr", game?: GameId | null): DashDefinition {
   return {
     v: DASH_VERSION,
     id: BUILTIN_ID,
     name: "Corde",
     format: { preset: "fill", ...PRESETS.fill },
     theme: { ...DEFAULT_THEME },
-    pages: CORDE_PAGES.map((p) =>
+    pages: cordePages(game).map((p) =>
       pg(p, CORDE_NAMES[lang][p], [[`corde.page.${p}`, 0, 0, DEFAULT_COLS, DEFAULT_ROWS]]),
     ),
     updated_ms: 0,

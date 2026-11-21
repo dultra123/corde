@@ -1241,3 +1241,38 @@ dialog.sheet.guide {
     display: none;
   }
 }
+
+/* ---- settings dialog: one profile per game ----------------------------------------- */
+.profile-game {
+  margin: 0 0 12px;
+  padding: 8px 12px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+.profile-game legend {
+  padding: 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.profile-on {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 500;
+}
+.profile-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0 12px;
+}
+.profile-fields .field {
+  margin-bottom: 10px;
+  min-width: 0;
+}
+.profile-fields .select {
+  width: 100%;
+}

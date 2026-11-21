@@ -43,6 +43,43 @@ encore écrit. L'ordre dépendra des jeux qu'on pourra essayer.
 | Import des résultats officiels, page Profil | oui | non | non | non |
 | Planning des courses en ligne, rappels | oui | non (c'est le planning de Le Mans Ultimate) | non | non |
 
+## Un profil par jeu (depuis la 1.10.0)
+
+Corde garde, pour chaque jeu, ce que tu utilises avec lui :
+
+- la **disposition des widgets** (une pour le PC, une pour le téléphone) ;
+- le **tableau de bord de course** ;
+- l'**affichage du Direct** (widgets ou tableau de bord).
+
+Dès qu'elle détecte un jeu, elle remet son profil. Ce que tu choisis ensuite — une autre disposition, un
+autre tableau de bord — reste attaché à ce jeu, même une fois le jeu fermé : ce qui est affiché est toujours
+le profil du dernier jeu vu.
+
+**La première fois qu'un jeu est vu**, Corde lui prépare une disposition à son nom (« iRacing », « Assetto
+Corsa Competizione »…) : c'est « Course », sans les widgets pour lesquels ce jeu ne publie rien, les autres
+se partageant la place. Le Mans Ultimate garde simplement ce que tu utilisais.
+
+| Jeu | Ce que Corde laisse de côté au départ |
+|---|---|
+| Le Mans Ultimate | rien |
+| Assetto Corsa Competizione | le widget Classement (le jeu ne nomme pas les autres pilotes) |
+| Assetto Corsa | les widgets Classement, Écarts et Électronique (le jeu ne publie que ta voiture, et pas le niveau des aides) |
+| iRacing | les widgets Pneus et Freins ; la page « Pneus & freins » et la case « Pneus » du tableau de bord « Corde » (le jeu ne publie les pneus qu'à l'arrêt aux stands, et jamais les freins) |
+
+Rien n'est verrouillé : une disposition préparée par Corde se modifie comme les autres (**Modifier** →
+**Ajouter un widget**), et un widget remis reste.
+
+Tout se règle dans **Réglages** → **Profils par jeu** :
+
+- **Un profil par jeu** : l'interrupteur. Coupé, Corde ne change plus rien quand le jeu change.
+- Pour chaque jeu, **Disposition des widgets** et **Tableau de bord** : ce que Corde ouvrira avec ce jeu.
+  Le jeu marqué « en place » est celui dont le profil est affiché.
+- **Réinitialiser** : remet ce jeu comme Corde le propose (sa disposition est refaite ; Corde demande
+  confirmation).
+
+Les profils sont retenus **par appareil** : le PC et le téléphone ont chacun leurs choix. Les dispositions,
+elles, sont partagées entre les appareils comme avant.
+
 ## Assetto Corsa Competizione : ce qu'il faut savoir
 
 - **Rien à installer ni à activer** : lance Corde, lance le jeu, entre en piste. L'accueil passe à « Jeu

@@ -37,6 +37,7 @@ import { connection } from "./net/connection";
 import { isDemoForced } from "./net/url";
 import { isOverlayHash } from "./overlay/model";
 import { OverlayApp } from "./overlay/OverlayApp";
+import { startGameProfiles } from "./store/game-profiles";
 import { useSettings } from "./store/settings";
 import "./widgets";
 
@@ -72,6 +73,7 @@ if (OVERLAY_AT_BOOT) {
     }
     // Before the first render, while the hash still is what the app was opened with.
     startAutoNav();
+    startGameProfiles();
     connection.start({ noAutoDemo: APP_BUILD });
     createRoot(root).render(<App />);
   };

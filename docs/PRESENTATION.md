@@ -1,6 +1,6 @@
 # Corde — fiche de présentation
 
-> À jour pour la **version 1.9.1** (21 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
+> À jour pour la **version 1.10.0** (21 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
 > faut pour présenter Corde (site, page de présentation, annonce) : ce qu'elle fait, où elle tourne, ce qui
 > est nouveau, ce qui arrive, les images et les liens. Elle ne dit que ce qui existe ; le détail et l'état
 > exact de chaque partie sont dans le [README](../README.md) et dans [STATUS.md](STATUS.md).
@@ -26,7 +26,7 @@ Le nom vient du **point de corde** : l'endroit où la trajectoire idéale touche
 
 | | |
 |---|---|
-| Version actuelle | **1.9.1** (21 novembre 2026) |
+| Version actuelle | **1.10.0** (21 novembre 2026) |
 | Prix | Gratuit |
 | Licence | Logiciel libre, GPL-3.0-or-later ; code source public |
 | Jeux | Le Mans Ultimate (complet, vérifié) ; Assetto Corsa Competizione (expérimental, depuis la 1.7.0) ; Assetto Corsa (expérimental, depuis la 1.8.0) ; iRacing (expérimental, depuis la 1.9.0). Détection automatique. Détail : [JEUX.md](JEUX.md) |
@@ -43,7 +43,7 @@ Le nom vient du **point de corde** : l'endroit où la trajectoire idéale touche
 Chaque bloc ci-dessous peut devenir une section de page. Les images sont dans [`docs/images/`](images/) ;
 elles viennent du simulateur intégré et de la course de démonstration (aucune donnée réelle de pilote).
 
-### 0. Plusieurs jeux, sans rien choisir (nouveau en 1.7.0, enrichi en 1.8.0 et 1.9.0)
+### 0. Plusieurs jeux, sans rien choisir (nouveau en 1.7.0, enrichi jusqu'à la 1.10.0)
 
 Corde ne demande pas à quel jeu tu joues : elle regarde toutes les deux secondes si un jeu qu'elle connaît
 est en piste, s'y branche, et recommence à chercher quand tu le quittes. Chaque session est enregistrée
@@ -65,6 +65,12 @@ sous le nom de son jeu.
   les temps par secteur. Essayé en jeu le 21 novembre 2026 (seul en piste) ; reste « expérimental ».
 - **Prévus, sans date** : rFactor 2, Automobilista 2, RaceRoom, Assetto Corsa EVO. L'état de
   chacun est tenu à jour dans [JEUX.md](JEUX.md).
+
+**Un profil par jeu** (nouveau en 1.10.0) : Corde retient, pour chaque jeu, la disposition des widgets (PC
+et téléphone), le tableau de bord de course et l'affichage du Direct, et les remet dès qu'elle détecte ce
+jeu. La première fois qu'un jeu est vu, il reçoit une disposition à son nom, sans les widgets pour lesquels
+il ne publie rien (iRacing : pas de pneus ni de freins ; Assetto Corsa Competizione : pas de classement) ;
+on peut les remettre. Tout se règle dans Réglages → Profils par jeu, et se coupe d'un interrupteur.
 
 Corde ne fait que lire ce que le jeu publie : elle n'écrit rien dans le jeu.
 
@@ -260,6 +266,9 @@ redémarrer. Chaque version est signée et vérifiée avant l'installation ; rie
 
 ## Nouveautés
 
+- **1.10.0 (21 novembre 2026)** — un profil par jeu : Corde retient pour chaque jeu la disposition des
+  widgets, le tableau de bord de course et l'affichage du Direct, et les remet dès qu'elle détecte ce jeu ;
+  chaque jeu reçoit une disposition de départ sans ce qu'il ne publie pas.
 - **1.9.1 (21 novembre 2026)** — après un premier essai en jeu d'Assetto Corsa Competizione et d'iRacing :
   carte du circuit pour iRacing, sens des mesures recalés, noms de circuit et de voiture.
 - **1.9.0 (17 novembre 2026)** — un quatrième jeu, en version expérimentale : iRacing (direct,

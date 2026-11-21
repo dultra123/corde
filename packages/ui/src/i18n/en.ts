@@ -1756,4 +1756,15 @@ export const en: Record<TranslationKey, string> = {
     "this is not a readable dashboard file (damaged archive, or too many entries).",
   "settings.dashUsedHint":
     "Remembered on this device. Dashboards are made in the Studio, on the PC (layouts menu of the Live page).",
+  "profiles.section": "Profiles per game",
+  "profiles.enable": "One profile per game",
+  "profiles.hint":
+    "Corde keeps, for each game, the widget layout, the dashboard and the Live view, and puts them back as soon as it detects that game. What is chosen afterwards stays with the last game seen. Remembered on this device.",
+  "profiles.inPlace": "in place",
+  "profiles.layout": "Widget layout",
+  "profiles.dash": "Dashboard",
+  "profiles.proposed": "Proposed by Corde",
+  "profiles.reset": "Reset",
+  "profiles.resetConfirm":
+    "Put this game's layout back as Corde proposes it? What was changed in it is lost.",
 };

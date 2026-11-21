@@ -10,6 +10,7 @@ import { routeHash } from "../nav/routes";
 import { connection } from "../net/connection";
 import { type Lang, type LiveView, useSettings } from "../store/settings";
 import { useConnectionPhase, useTelemetry } from "../store/telemetry";
+import { GameProfilesSection } from "./GameProfilesSection";
 import { HubDeviceSection, HubLinkSection } from "./HubSection";
 import { UpdatesSection } from "./UpdatesSection";
 
@@ -167,6 +168,11 @@ export function SettingsDialog({ open, onClose }: Props) {
     settings.keepAwake,
     demo,
   ]);
+
+  // A game profile put in place while the dialog is open (a game that starts, a choice of
+  // « Profils par jeu »): what « Enregistrer » would save follows, or it would undo it.
+  useEffect(() => setDashId(dashSelected), [dashSelected]);
+  useEffect(() => setLiveView(settings.liveView), [settings.liveView]);
 
   const save = () => {
     settings.update({
@@ -342,6 +348,7 @@ export function SettingsDialog({ open, onClose }: Props) {
               {t("settings.keepAwake")}
             </label>
           </div>
+          <GameProfilesSection />
           <DesktopSection open={open} />
           <UpdatesSection open={open} />
           <HubLinkSection open={open} />

@@ -8,6 +8,38 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [1.10.0] — 2026-11-21
+
+**Un profil par jeu, et une interface de départ adaptée à chaque jeu.**
+
+### Un profil par jeu
+
+- Corde retient, **pour chaque jeu**, la disposition des widgets (PC et téléphone), le tableau de bord de
+  course et l'affichage du Direct. Dès qu'elle détecte un jeu, elle remet son profil.
+- Ce que tu choisis ensuite (une autre disposition, un autre tableau de bord) reste attaché à ce jeu, même
+  une fois le jeu fermé.
+- **Réglages → Profils par jeu** : pour chaque jeu, choisis sa disposition et son tableau de bord ;
+  « Réinitialiser » le remet comme Corde le propose ; l'interrupteur « Un profil par jeu » coupe tout.
+- Les profils sont retenus par appareil : le PC et le téléphone ont chacun leurs choix.
+
+### Une interface de départ par jeu
+
+- La première fois qu'un jeu est vu, Corde lui prépare une disposition à son nom, **sans les widgets pour
+  lesquels ce jeu ne publie rien** :
+  - **iRacing** : pas de Pneus ni de Freins ; le tableau de bord « Corde » n'a plus sa page « Pneus &
+    freins » ni sa case « Pneus » ;
+  - **Assetto Corsa Competizione** : pas de Classement ;
+  - **Assetto Corsa** : pas de Classement, d'Écarts ni d'Électronique ;
+  - **Le Mans Ultimate** : rien ne change, tu gardes ce que tu utilisais.
+- Rien n'est verrouillé : un widget laissé de côté se remet avec Modifier → Ajouter un widget.
+
+### À savoir
+
+- Au premier lancement d'iRacing ou d'ACC après la mise à jour, Corde passe sur la disposition préparée
+  pour ce jeu. Ta disposition habituelle est toujours dans le menu des dispositions : choisis-la pendant
+  que le jeu tourne, elle devient celle de ce jeu.
+- D'autres jeux arrivent dans les prochaines versions (Assetto Corsa EVO, puis Assetto Corsa Rally).
+
 ## [1.9.1] — 2026-11-21
 
 **Corrections après un premier essai en jeu d'Assetto Corsa Competizione et d'iRacing.**

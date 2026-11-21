@@ -35,7 +35,7 @@ L'option `Automatically Record Telemetry` peut rester désactivée : Corde enreg
 1. Ouvre la page de la dernière version :
    **<https://github.com/dultra123/corde/releases/latest>**.
 2. Tout en bas, section **Assets**, clique sur le fichier dont le nom finit par **`-setup.exe`**
-   (par exemple `Corde_1.9.1_x64-setup.exe`).
+   (par exemple `Corde_1.10.0_x64-setup.exe`).
 3. Ton navigateur peut hésiter : Edge affiche parfois « … n'est pas couramment téléchargé ». Clique sur
    les **…** à côté du fichier → **Conserver** → **Conserver quand même**.
 
@@ -79,6 +79,21 @@ Il ne touche ni au jeu, ni à tes données Corde existantes (§ 7).
 3. Lance LMU. Quand tu **entres en piste**, le tableau de bord s'affiche tout seul. Si la fenêtre de Corde
    était fermée ou réduite, elle réapparaît à ce moment-là, là où tu l'avais laissée (ton second écran par
    exemple) ; dans tous les cas Corde ne passe jamais devant le jeu et ne lui prend pas le clavier.
+
+### Plusieurs jeux : un profil par jeu
+
+Corde reconnaît toute seule le jeu qui tourne (Le Mans Ultimate, Assetto Corsa Competizione, Assetto Corsa,
+iRacing) et, depuis la 1.10.0, ouvre **le profil de ce jeu** : sa disposition de widgets, son tableau de
+bord de course, son affichage du Direct. Ce que tu choisis pendant qu'un jeu est « en place » reste attaché
+à ce jeu.
+
+La première fois qu'un jeu est vu, Corde lui prépare une disposition à son nom, sans les widgets pour
+lesquels ce jeu ne publie rien (iRacing : pas de Pneus ni de Freins). Tu peux les remettre avec
+**Modifier** → **Ajouter un widget**.
+
+Pour choisir toi-même : **Réglages** → **Profils par jeu** → sous le nom du jeu, **Disposition des widgets**
+et **Tableau de bord**. **Réinitialiser** remet ce jeu comme Corde le propose ; l'interrupteur **Un profil
+par jeu** coupe tout. Détail dans [Les jeux que Corde sait lire](JEUX.md).
 
 ### Fermer la fenêtre ne quitte pas Corde
 
@@ -522,7 +537,7 @@ Bon à savoir :
   envoyé (voir `PRIVACY.md`).
 - **La 0.6.0 elle-même s'installe encore à la main** (ci-dessous) : c'est elle qui apporte le bouton. Les
   versions suivantes arrivent par le bouton.
-- Les mises à jour du bouton sont les **versions numérotées** (page des versions, « Corde 1.9.1 »…). La
+- Les mises à jour du bouton sont les **versions numérotées** (page des versions, « Corde 1.10.0 »…). La
   version de développement « Corde — dernière version » (pré-version reconstruite à chaque modification
   du projet, <https://github.com/dultra123/corde/releases/tag/continuous>) s'installe toujours à la main.
 

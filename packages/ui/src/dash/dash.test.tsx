@@ -1,4 +1,4 @@
-import type { LapRecord, TelemetryFrame } from "@corde/protocol";
+import type { LapRecord, SourceStatus, TelemetryFrame } from "@corde/protocol";
 import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -90,6 +90,20 @@ describe("Course", () => {
     expect(labels).toContain("Carto");
     expect(labels).toContain("Énergie");
     unmount();
+  });
+
+  it("leaves the tyres out of the car's strip for a game that does not publish them", () => {
+    const labels = (game: TelemetryFrame["session"]["game"]) => {
+      const frame = { ...DEMO.frame, session: { ...DEMO.frame.session, game } };
+      const { div, unmount } = render(<CoursePage {...props({ frame })} />);
+      const out = [...div.querySelectorAll(".dcell .dlab")].map((n) => n.textContent);
+      unmount();
+      return out;
+    };
+    expect(labels("lmu")).toContain("Pneus");
+    expect(labels("acc")).toContain("Pneus");
+    expect(labels("iracing")).not.toContain("Pneus");
+    expect(labels("iracing")).toContain("TC");
   });
 
   it("writes the fast values outside React and lights the shift lights", async () => {
@@ -224,6 +238,27 @@ describe("DashView", () => {
     const { div, unmount } = render(<DashView />);
     expect(div.querySelector(".dash-demo")).toBeNull();
     unmount();
+  });
+
+  it("« Corde » has no « Pneus & freins » page for a game that publishes neither", () => {
+    const status = (game: SourceStatus["game"]) => ({ connected: true, game }) as SourceStatus;
+    act(() => {
+      useTelemetry.setState({ demo: "off", status: status("iracing") });
+      useDashPage.getState().show(0);
+    });
+    const { div, unmount } = render(<DashView />);
+    expect(div.querySelectorAll(".dash-dots button")).toHaveLength(3);
+    expect(div.querySelector(".dash-page.is-tyres")).toBeNull();
+    expect(div.querySelector(".dash-page.is-energy")).not.toBeNull();
+    // another game: the page is back, without leaving the dashboard
+    act(() => useTelemetry.setState({ status: status("acc") }));
+    expect(div.querySelectorAll(".dash-dots button")).toHaveLength(4);
+    expect(div.querySelector(".dash-page.is-tyres")).not.toBeNull();
+    // a demonstration plays every page, whatever the game the server reads
+    act(() => useTelemetry.setState({ demo: "manual", status: status("iracing") }));
+    expect(div.querySelectorAll(".dash-dots button")).toHaveLength(4);
+    unmount();
+    act(() => useTelemetry.setState({ demo: "off", status: null }));
   });
 });
 

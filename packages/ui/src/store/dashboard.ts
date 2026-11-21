@@ -50,6 +50,16 @@ export interface DashboardState {
   setSync(state: SyncState): void;
 
   selectLayout(id: string): void;
+  /**
+   * Shows layout `id` on its screen without leaving what is being looked at (a game profile
+   * being applied). `false`: no such layout.
+   */
+  showLayout(id: string): boolean;
+  /**
+   * Adds the layouts whose id is not known yet (the layouts Corde proposes for a game); with
+   * `replace`, those already there are put back as proposed.
+   */
+  ensureLayouts(layouts: DashboardLayout[], replace?: boolean): void;
   createLayout(name: string, device?: Slot): string;
   renameLayout(id: string, name: string): void;
   duplicateLayout(id: string): string;
@@ -189,6 +199,33 @@ export const useDashboard = create<DashboardState>((set, get) => {
       set((s) => ({
         current: { ...s.current, [slot]: id },
         view: slot === "overlay" ? "overlay" : slot === "desktop" ? "screen" : s.view,
+      }));
+      save(get());
+    },
+
+    showLayout(id) {
+      const l = get().layouts.find((x) => x.id === id);
+      if (!l || slotOf(l) === "overlay") return false;
+      if (get().current[slotOf(l)] !== id) {
+        set((s) => ({ current: { ...s.current, [slotOf(l)]: id } }));
+        save(get());
+      }
+      return true;
+    },
+
+    ensureLayouts(layouts, replace = false) {
+      const known = new Set(get().layouts.map((l) => l.id));
+      // A layout that is only added keeps its date (0): the same one changed on another
+      // device wins when both meet on the server. Put back as proposed, it is the newest.
+      const fresh = layouts.filter((l) => !known.has(l.id));
+      const again = replace
+        ? layouts.filter((l) => known.has(l.id)).map((l) => ({ ...l, updated_ms: Date.now() }))
+        : [];
+      if (fresh.length === 0 && again.length === 0) return;
+      set((s) => ({
+        layouts: [...s.layouts.map((l) => again.find((a) => a.id === l.id) ?? l), ...fresh],
+        revision: s.revision + 1,
+        sync: s.sync === "synced" ? "local" : s.sync,
       }));
       save(get());
     },
