@@ -38,6 +38,8 @@ pub enum GameId {
     /// The first Assetto Corsa.
     Ac,
     AcEvo,
+    /// Assetto Corsa Rally: stages driven one car at a time, not laps.
+    AcRally,
     Iracing,
     Ams2,
     /// Built-in simulator used for demos and tests.

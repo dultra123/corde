@@ -134,8 +134,22 @@
     « tour valide », le format si le jeu a été mis à jour depuis (accès anticipé).
     **À faire au premier essai du propriétaire** : lire sa session enregistrée comme le 21 nov. pour ACC
     (corrélation volant / accélération latérale, sens de la carte) et corriger.
-    **Suite** : Assetto Corsa Rally (mêmes pages qu'ACC, `Local\acpmf_*`, températures en kelvins, page
-    statique écrite tard, épreuves sans tours : à modéliser), puis les autres.
+    **Suite** : Assetto Corsa Rally, puis les autres. Ce qui est établi pour Rally (lecture de deux
+    lecteurs libres, rien n'est vérifié en jeu) :
+    - mêmes noms de pages qu'ACC (`Local\acpmf_*`) et même disposition des pages physique et graphique ;
+      la page statique est écrite tard (zéros au début) et sa version du jeu est vide : le jeu se
+      reconnaît à ses **températures en kelvins** (air > 200) — les sources ACC et AC doivent alors
+      refuser ces pages ;
+    - menus : page graphique entièrement à zéro ; ligne de départ : chrono (`i_current_time`) à 0, qui
+      part au franchissement ; arrivée : le chrono se fige alors que `distance_traveled` continue ;
+      pause, zone d'arrêt et replay : page physique à zéro (sauf le compteur) ; relance : chrono à 0 ;
+    - modèle retenu sans toucher au suivi des tours (`LapTracker`) : une spéciale = un tour.
+      `lap_number` = départs − 1 (−1 avant le premier), frontière à chaque départ ; à l'arrivée
+      `laps_completed` + 1 et `last_lap_s` = chrono figé (branche « compté sans compteur » du suivi) ;
+      hors spéciale `in_pits` = vrai (rien n'est rapporté pour l'attente) ; une relance en cours de
+      spéciale donne un tour « abandonné » ; longueur = `track_spline_length` si le jeu la donne, sinon
+      0 (le suivi ne vérifie alors pas la fin de tour) ;
+    - interface : carte d'un tracé ouvert (ne pas refermer la boucle), profil sans Classement ni Écarts.
   - **1.10.0 (21 nov.) — un profil par jeu, une interface de départ par jeu.** Demande du propriétaire
     (21 nov., 19 h 17) : « un système de profil en fonction du jeu […] Corde détecte le jeu et ouvre les
     profils en question », et des interfaces par jeu « iRacing ne transmet pas les températures des pneus,
