@@ -1,5 +1,6 @@
 import type { LapRecord, PlayerTelemetry, TelemetryFrame } from "@corde/protocol";
 import {
+  brakeTemp,
   CLOSE_GAP_S,
   energyAutonomy,
   frontBias,
@@ -139,7 +140,7 @@ function fieldsOfCorners(): FieldSpec[] {
       short: { fr: `Frein ${c.fr}`, en: `Brake ${c.en}` },
       format: "int",
       unit: "°",
-      read: (ctx) => num(P(ctx)?.wheels[i]?.brake_temp_c),
+      read: (ctx) => brakeTemp(P(ctx)?.wheels[i]?.brake_temp_c),
       color: (v) =>
         v < BRAKE_SCALE.optLow || v > BRAKE_SCALE.optHigh ? tempColor(v, BRAKE_SCALE) : null,
     });

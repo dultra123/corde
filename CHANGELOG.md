@@ -8,6 +8,45 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [1.9.1] — 2026-11-21
+
+**Corrections après un premier essai en jeu d'Assetto Corsa Competizione et d'iRacing.**
+
+### Les deux jeux
+
+- **Antipatinage, ABS et cartographie moteur s'affichent** (widget Électronique et tableau de bord de
+  course) : ces jeux donnent le niveau sans son maximum, et Corde les prenait pour absents.
+- **Le nom de la voiture** est affiché (« Ferrari 296 GT3 ») à la place de l'identifiant du jeu
+  (« ferrari_296_gt3 »).
+- Une température de frein que le jeu ne publie pas s'affiche « — » au lieu de « 0° ».
+
+### iRacing
+
+- **La carte du circuit fonctionne** : le jeu ne publie aucune position en roulant, Corde reconstruit le
+  tracé d'après ta vitesse et ton cap. Elle apparaît après un tour ; les autres voitures y sont placées
+  d'après leur avancée sur le tour.
+- Sens du lacet corrigé, accélération verticale sans la pesanteur, amplitude du volant corrigée.
+- Le secteur en cours est indiqué (quand le jeu découpe le circuit en plus de trois parties, Corde les
+  regroupe en trois).
+- La catégorie de la voiture est indiquée aussi quand tu roules seul (« GT3 »).
+- En essais et en qualifications, l'écart avec la place de devant et de derrière est celui des meilleurs
+  tours.
+- À savoir : iRacing ne publie pas, en roulant, les températures, pressions et usure des pneus (seulement
+  à l'arrêt aux stands), ni les températures des freins. Corde montre les valeurs du dernier arrêt.
+
+### Assetto Corsa Competizione et Assetto Corsa
+
+- **La carte n'est plus dessinée en miroir.**
+- Sens des accélérations latérales et du lacet corrigés (ils étaient inversés).
+- L'embrayage est celui de la pédale (il était inversé).
+- Noms : « Imola » au lieu de « Imola — Track Config », « Ferrari 296 GT3 » au lieu de « Ferrari 296 Gt3 ».
+
+### À savoir
+
+- Ces corrections viennent des sessions enregistrées le 21 novembre ; pour le premier Assetto Corsa, elles
+  sont reprises de Competizione et pas encore vérifiées en jeu.
+- Les sessions enregistrées avant cette version gardent leurs anciennes valeurs.
+
 ## [1.9.0] — 2026-11-17
 
 **Un quatrième jeu, en version expérimentale : iRacing.**

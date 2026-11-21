@@ -1,3 +1,4 @@
+import { brakeTemp } from "../dash/model";
 import { useT } from "../i18n";
 import { BRAKE_SCALE, tempColor } from "../lib/color";
 import { fmtNum } from "../lib/format";
@@ -8,8 +9,10 @@ import { Empty } from "./shared/Empty";
 const MAX_C = 800;
 
 function BrakeBar({ temp, label }: { temp: number; label: string }) {
-  const color = tempColor(temp, BRAKE_SCALE);
-  const fill = Math.max(0.02, Math.min(1, temp / MAX_C));
+  // A game that publishes no brake temperature gives 0: shown as « not known », not as cold.
+  const known = brakeTemp(temp) !== null;
+  const color = known ? tempColor(temp, BRAKE_SCALE) : undefined;
+  const fill = known ? Math.max(0.02, Math.min(1, temp / MAX_C)) : 0;
   return (
     <div className="brake">
       <div className="brake-col">
@@ -23,7 +26,7 @@ function BrakeBar({ temp, label }: { temp: number; label: string }) {
         />
       </div>
       <div className="brake-val num" style={{ color }}>
-        {fmtNum(temp, 0)}°
+        {known ? `${fmtNum(temp, 0)}°` : "—"}
       </div>
       <div className="brake-label dim">{label}</div>
     </div>

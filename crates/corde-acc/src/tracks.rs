@@ -43,7 +43,15 @@ pub fn length_m(track: &str) -> Option<f32> {
     Some(m)
 }
 
-/// A readable name from an identifier of the game: « mount_panorama » → « Mount Panorama ».
+/// Words the games write in lower case that are read in capitals.
+const CAPITALS: [&str; 16] = [
+    "amg", "amr", "bmw", "cota", "cs", "gp", "gt", "gtc", "gtr", "ii", "ktm", "lms", "nsx", "rc",
+    "rs", "st",
+];
+
+/// A readable name from an identifier of the game: « mount_panorama » → « Mount
+/// Panorama », « ferrari_296_gt3 » → « Ferrari 296 GT3 » (a word with a figure in it is a
+/// model name: in capitals).
 pub fn pretty(id: &str) -> String {
     // « ks_ »: the prefix of the first Assetto Corsa's own content.
     let id = id.trim();
@@ -51,6 +59,10 @@ pub fn pretty(id: &str) -> String {
     id.split(['_', ' '])
         .filter(|w| !w.is_empty())
         .map(|w| {
+            let lower = w.to_lowercase();
+            if w.chars().any(|c| c.is_ascii_digit()) || CAPITALS.contains(&lower.as_str()) {
+                return w.to_uppercase();
+            }
             let mut c = w.chars();
             match c.next() {
                 Some(first) => first.to_uppercase().chain(c).collect::<String>(),
@@ -59,6 +71,17 @@ pub fn pretty(id: &str) -> String {
         })
         .collect::<Vec<_>>()
         .join(" ")
+}
+
+/// The layout of a circuit as the game names it, empty when it names none. Assetto Corsa
+/// Competizione always writes « track config » there: its circuits have one layout.
+pub fn layout(configuration: &str) -> &str {
+    let name = configuration.trim();
+    if name.eq_ignore_ascii_case("track config") {
+        ""
+    } else {
+        name
+    }
 }
 
 #[cfg(test)]
@@ -72,8 +95,17 @@ mod tests {
         assert_eq!(length_m("zolder_2019"), Some(4011.0));
         assert_eq!(length_m("somewhere_new"), None);
         assert_eq!(pretty("mount_panorama"), "Mount Panorama");
-        assert_eq!(pretty("bmw_m4_gt3"), "Bmw M4 Gt3");
+        assert_eq!(pretty("bmw_m4_gt3"), "BMW M4 GT3");
+        assert_eq!(pretty("ferrari_296_gt3"), "Ferrari 296 GT3");
+        assert_eq!(pretty("mclaren_720s_gt3_evo"), "Mclaren 720S GT3 Evo");
+        assert_eq!(pretty("audi_r8_lms_evo_ii"), "Audi R8 LMS Evo II");
         assert_eq!(pretty("ks_nurburgring"), "Nurburgring");
+        assert_eq!(pretty("layout_gp_a"), "Layout GP A");
         assert_eq!(pretty(""), "");
+        // The placeholder Competizione writes where a layout would be.
+        assert_eq!(layout("track config"), "");
+        assert_eq!(layout(" Track Config "), "");
+        assert_eq!(layout("layout_gp_a"), "layout_gp_a");
+        assert_eq!(layout(""), "");
     }
 }

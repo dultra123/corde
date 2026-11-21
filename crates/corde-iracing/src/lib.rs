@@ -13,6 +13,8 @@
 //!   drivers.
 //! * [`reader`] — the game's mapping on Windows; an image in a file for the tests.
 //! * [`convert`] — a row → a frame, and the lap count waited for with its time.
+//! * [`odometer`] — where the car is on the map, from its speed and heading (the game
+//!   publishes no coordinates).
 //! * [`source`] — [`IracingSource`], the `corde_core::TelemetrySource` implementation.
 //! * [`fake`] — a plausible mapping for the tests and the development tools.
 //!
@@ -25,6 +27,7 @@
 pub mod convert;
 pub mod fake;
 pub mod layout;
+pub mod odometer;
 pub mod reader;
 pub mod session;
 pub mod source;

@@ -158,7 +158,7 @@ async fn iracing_is_found_recorded_and_left() {
         "Circuit de Spa-Francorchamps — Grand Prix Pits"
     );
     assert_eq!(detail["vehicle_name"], "BMW M4 GT3");
-    assert_eq!(detail["vehicle_model"], "bmwm4gt3");
+    assert_eq!(detail["vehicle_model"], "BMW M4 GT3");
     assert_eq!(detail["class_name"], "GT3");
     // The first lap was joined on the way (the game was already lapping): the laps seen
     // from the line to the line carry the times the game published (crossings 2 and 3).

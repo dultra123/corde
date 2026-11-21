@@ -1,6 +1,7 @@
 import type { LapRecord } from "@corde/protocol";
 import { describe, expect, it } from "vitest";
 import {
+  brakeTemp,
   chooseView,
   classCount,
   DASH_PAGES,
@@ -258,7 +259,16 @@ describe("session and energy", () => {
 describe("the car's settings", () => {
   it("a setting the car does not have is left out", () => {
     expect(setting(4, 11)).toBe(4);
+    expect(setting(0, 11)).toBe(0);
     expect(setting(0, 0)).toBeNull();
+    // A game that gives the level without its maximum.
+    expect(setting(5, 0)).toBe(5);
+  });
+  it("a brake temperature the game does not publish is not shown as zero", () => {
+    expect(brakeTemp(430)).toBe(430);
+    expect(brakeTemp(0)).toBeNull();
+    expect(brakeTemp(Number.NaN)).toBeNull();
+    expect(brakeTemp(undefined)).toBeNull();
   });
   it("front brake bias in percent", () => {
     expect(frontBias({ brake_bias_rear: 0.455 })).toBeCloseTo(54.5);

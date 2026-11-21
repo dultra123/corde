@@ -57,7 +57,7 @@ fn a_frame_carries_what_the_game_publishes() {
 
     let p = f.player.as_ref().unwrap();
     assert_eq!(p.id, 7);
-    assert_eq!(p.vehicle_model, "bmw_m4_gt3");
+    assert_eq!(p.vehicle_model, "BMW M4 GT3");
     assert_eq!(p.vehicle_class, VehicleClass::Gt3);
     assert_eq!(p.class_name, "GT3");
     assert_eq!(p.place, 4);
@@ -90,9 +90,23 @@ fn a_frame_carries_what_the_game_publishes() {
     assert!((p.electronics.brake_bias_rear - 0.42).abs() < 1e-5);
     assert_eq!(p.gaps.car_ahead_s, Some(1.85));
     assert_eq!(p.gaps.car_behind_s, Some(0.64));
-    // The player's own coordinates, found by its identifier among the cars on track.
+    // The player's own coordinates, found by its identifier among the cars on track. The
+    // game's map is the mirror of Corde's: its third axis is turned round.
     let radius = 5793.0 / std::f64::consts::TAU;
-    assert!(p.motion.pos[0].abs() < 1.0 && (p.motion.pos[2] - radius).abs() < 1.0);
+    assert!(p.motion.pos[0].abs() < 1.0 && (p.motion.pos[2] + radius).abs() < 1.0);
+    // A right-hand bend: positive sideways and in yaw, as with the other games; the
+    // clutch as a pedal (released).
+    assert!((p.motion.g_lat - 1.2).abs() < 1e-6 && (p.motion.g_long - 0.3).abs() < 1e-6);
+    assert!((p.motion.yaw_rate_dps - 11.459).abs() < 1e-2);
+    assert_eq!(p.inputs.clutch, 0.0);
+    assert_eq!(p.vehicle_name, "BMW M4 GT3");
+    // Where a layout would be named, Competizione writes « track config »: not a layout.
+    let placeholder = FakeSession {
+        track_configuration: "track config".into(),
+        ..FakeSession::default()
+    };
+    let named = at(&mut Converter::new(), &placeholder, 27.0);
+    assert_eq!(named.session.track_name, "Monza");
     // The pages name no other driver: the standings hold the player alone.
     assert_eq!(f.standings.len(), 1);
     assert!(f.standings[0].is_player);
@@ -397,7 +411,7 @@ fn the_first_assetto_corsa_is_read_through_its_own_graphics_page() {
     let (laps, f) = drive_ac(&fake, 2.0 * 118.0 + 29.5);
     let s = &f.session;
     assert_eq!(s.game, GameId::Ac);
-    assert_eq!(s.track_name, "Nurburgring — Layout Gp A");
+    assert_eq!(s.track_name, "Nurburgring — Layout GP A");
     // The game publishes the length of the lap: no table, nothing to measure.
     assert_eq!(s.track_length_m, 5137.0);
     assert_eq!(s.session_type, SessionType::Practice);
@@ -405,8 +419,8 @@ fn the_first_assetto_corsa_is_read_through_its_own_graphics_page() {
     assert_eq!(s.num_vehicles, 1);
 
     let p = f.player.as_ref().unwrap();
-    assert_eq!(p.vehicle_model, "ks_ferrari_488_gt3");
-    assert_eq!(p.vehicle_name, "Ferrari 488 Gt3");
+    assert_eq!(p.vehicle_model, "Ferrari 488 GT3");
+    assert_eq!(p.vehicle_name, "Ferrari 488 GT3");
     assert_eq!(p.vehicle_class, VehicleClass::Gt3);
     assert_eq!(p.engine.gear, 4);
     assert!((p.lap.lap_fraction - 0.25).abs() < 1e-3);
@@ -414,7 +428,7 @@ fn the_first_assetto_corsa_is_read_through_its_own_graphics_page() {
     assert!(!p.lap.lap_invalidated, "the game reports no invalid lap");
     // The player's coordinates: where the game writes them in its own page.
     let radius = 5137.0 / std::f64::consts::TAU;
-    assert!(p.motion.pos[0].abs() < 2.0 && (p.motion.pos[2] - radius).abs() < 2.0);
+    assert!(p.motion.pos[0].abs() < 2.0 && (p.motion.pos[2] + radius).abs() < 2.0);
     // Three temperatures per tyre, in the frame's order (left / centre / right of the
     // tyre): the inside of a left wheel is its right side.
     assert_eq!(

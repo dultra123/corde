@@ -35,7 +35,7 @@ L'option `Automatically Record Telemetry` peut rester désactivée : Corde enreg
 1. Ouvre la page de la dernière version :
    **<https://github.com/dultra123/corde/releases/latest>**.
 2. Tout en bas, section **Assets**, clique sur le fichier dont le nom finit par **`-setup.exe`**
-   (par exemple `Corde_1.9.0_x64-setup.exe`).
+   (par exemple `Corde_1.9.1_x64-setup.exe`).
 3. Ton navigateur peut hésiter : Edge affiche parfois « … n'est pas couramment téléchargé ». Clique sur
    les **…** à côté du fichier → **Conserver** → **Conserver quand même**.
 
@@ -522,7 +522,7 @@ Bon à savoir :
   envoyé (voir `PRIVACY.md`).
 - **La 0.6.0 elle-même s'installe encore à la main** (ci-dessous) : c'est elle qui apporte le bouton. Les
   versions suivantes arrivent par le bouton.
-- Les mises à jour du bouton sont les **versions numérotées** (page des versions, « Corde 1.9.0 »…). La
+- Les mises à jour du bouton sont les **versions numérotées** (page des versions, « Corde 1.9.1 »…). La
   version de développement « Corde — dernière version » (pré-version reconstruite à chaque modification
   du projet, <https://github.com/dultra123/corde/releases/tag/continuous>) s'installe toujours à la main.
 

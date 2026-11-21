@@ -128,15 +128,22 @@ mesures que publie la voiture conduite (nom, type, position), et jusqu'à quatre
   laisser ce bit à un, et un autre programme qui lit la même zone la garde en vie : avant de se brancher,
   l'adaptateur attend donc jusqu'à 100 ms de voir le jeu écrire une nouvelle ligne. Ordre : `lmu`, `acc`,
   `ac`, `iracing`.
-- **Carte du circuit.** Le jeu ne donne des coordonnées (GPS) que pour la voiture du pilote : elles sont
-  converties en mètres ; les autres voitures arrivent sans position et le widget les place d'après leur
-  avancée sur le tour, une fois le tracé appris.
+- **Carte du circuit.** Le jeu ne publie aucune coordonnée en roulant (celles de ses fichiers de télémétrie
+  ne sont pas dans la mémoire partagée : constaté le 21 novembre 2026, 1.9.0). Depuis la 1.9.1, la position
+  du pilote est reconstruite d'après sa vitesse et son cap (`odometer`), remise à sa place à chaque passage
+  de ligne ; les autres voitures arrivent sans position et le widget les place d'après leur avancée sur le
+  tour, une fois le tracé appris. Mesuré sur une vraie session : un tour se referme à 5–7 m près sur
+  6,9 km.
 - **Copie de diagnostic** (`iracing-probe --dump`) : le texte de session n'y garde que les clés d'une liste
   blanche (circuit, session, voitures) ; tout le reste — noms, équipes, identifiants, licence, nom du
   réglage — est vidé, et les mesures de type texte sont effacées.
-- **Non vérifié face au jeu** : façon de compter les tours à la sortie des stands (l'adaptateur accepte les
-  deux façons possibles), sens des accélérations et du volant, angle maximal du volant, orientation de la
-  carte.
+- **Essai en jeu du 21 novembre 2026** (sessions du propriétaire, comparées à Le Mans Ultimate au même
+  circuit) : détection, compte des tours et chronos officiels justes ; signes recalés en 1.9.1 (lacet,
+  accélération verticale, amplitude du volant). Les températures, pressions et usure des pneus ne changent
+  qu'à l'arrêt aux stands : c'est le jeu. Reste à voir : le classement avec d'autres voitures.
+- **ACC, même essai** : la carte et tout ce qui est latéral étaient en miroir (un circuit qui tourne à
+  gauche était dessiné tournant à droite) : l'axe z, l'accélération latérale, le lacet et le cap sont
+  retournés depuis la 1.9.1, pour ACC comme pour le premier Assetto Corsa.
 
 ## Alternatives écartées
 

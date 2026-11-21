@@ -296,9 +296,18 @@ export function hasHybrid(e: Pick<Energy, "battery_soc" | "motor_state">): boole
 
 // ---------------------------------------------------------------- electronics
 
-/** A setting the car has (a maximum above zero), else `null`: its cell is left out. */
+/**
+ * A setting the car has, else `null`: its cell is left out. Le Mans Ultimate gives the
+ * maximum of each setting (above zero when the car has it); other games give the level
+ * without its maximum: a level above zero is then a setting the car has.
+ */
 export function setting(value: number, max: number): number | null {
-  return max > 0 ? value : null;
+  return max > 0 || value > 0 ? value : null;
+}
+
+/** A brake temperature, `null` when the game publishes none (it then reads 0). */
+export function brakeTemp(temp: number | null | undefined): number | null {
+  return temp !== null && temp !== undefined && Number.isFinite(temp) && temp > 0 ? temp : null;
 }
 
 /** Front share of the braking, percent. */

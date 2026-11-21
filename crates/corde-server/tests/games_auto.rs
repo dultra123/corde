@@ -160,7 +160,7 @@ async fn a_game_is_found_recorded_and_left_without_being_named() {
     .await;
     assert_eq!(detail["game"], "acc", "{detail}");
     assert_eq!(detail["track_name"], "Monza");
-    assert_eq!(detail["vehicle_model"], "bmw_m4_gt3");
+    assert_eq!(detail["vehicle_model"], "BMW M4 GT3");
     assert_eq!(detail["class_name"], "GT3");
     for lap in detail["laps"].as_array().unwrap().iter().take(2) {
         assert_eq!(lap["timed_by_game"], true, "{lap}");
@@ -246,8 +246,8 @@ async fn a_game_is_found_recorded_and_left_without_being_named() {
     )
     .await;
     assert_eq!(detail["game"], "ac", "{detail}");
-    assert_eq!(detail["track_name"], "Nurburgring — Layout Gp A");
-    assert_eq!(detail["vehicle_model"], "ks_ferrari_488_gt3");
+    assert_eq!(detail["track_name"], "Nurburgring — Layout GP A");
+    assert_eq!(detail["vehicle_model"], "Ferrari 488 GT3");
     // The first lap was joined on the way (the game was already lapping): only a lap seen
     // from the line to the line is checked against the game's time.
     let lap = &detail["laps"][1];

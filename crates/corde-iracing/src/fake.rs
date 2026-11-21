@@ -223,9 +223,6 @@ pub fn table() -> VarTable {
         ("VelocityX", Float, 1),
         ("VelocityY", Float, 1),
         ("VelocityZ", Float, 1),
-        ("Lat", Double, 1),
-        ("Lon", Double, 1),
-        ("Alt", Float, 1),
         ("FuelLevel", Float, 1),
         ("FuelLevelPct", Float, 1),
         ("WaterTemp", Float, 1),
@@ -407,12 +404,13 @@ impl FakeSession {
         put("LatAccel", 9.806_65);
         put("LongAccel", -4.903_325);
         put("VertAccel", 9.806_65);
-        put("YawRate", 0.1);
-        put("Yaw", 1.0);
+        put("YawRate", -0.1);
+        // A round circuit, turning right: the heading follows the place on the lap, and
+        // goes down as the game counts it. (The game publishes no coordinates while
+        // driving.)
+        let turn = -fraction * std::f64::consts::TAU;
+        put("Yaw", turn.sin().atan2(turn.cos()));
         put("VelocityX", speed);
-        put("Lat", 50.437 + 0.001 * fraction);
-        put("Lon", 5.971 + 0.002 * fraction);
-        put("Alt", 410.0);
         put("FuelLevel", 60.0 - 0.02 * t);
         put("FuelLevelPct", (60.0 - 0.02 * t) / 120.0);
         put("WaterTemp", 88.0);
@@ -470,8 +468,9 @@ impl FakeSession {
             car(
                 "CarIdxBestLapTime",
                 i,
+                // The rival's best lap is half a second quicker.
                 if best.is_finite() {
-                    f64::from(best)
+                    f64::from(best) - if i == RIVAL { 0.5 } else { 0.0 }
                 } else {
                     -1.0
                 },

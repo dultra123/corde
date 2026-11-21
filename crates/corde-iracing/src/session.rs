@@ -72,6 +72,18 @@ pub fn session_type(name: &str) -> SessionType {
     }
 }
 
+/// How Corde writes a class the game did not name.
+fn class_label(class: VehicleClass) -> &'static str {
+    match class {
+        VehicleClass::Gt3 => "GT3",
+        VehicleClass::Gte => "GTE",
+        VehicleClass::Lmp2 => "LMP2",
+        VehicleClass::Lmp3 => "LMP3",
+        VehicleClass::Hypercar => "GTP",
+        _ => "",
+    }
+}
+
 /// The class Corde knows, from what the game calls the class or the car.
 pub fn vehicle_class(class_name: &str, car: &str) -> VehicleClass {
     let both = format!("{class_name} {car}").to_ascii_lowercase();
@@ -164,9 +176,15 @@ impl SessionDesc {
                     } else {
                         vehicle_class(&class_name, &car)
                     },
-                    car,
                     car_path: n.get("CarPath").str().to_string(),
-                    class_name,
+                    // Alone on the circuit, the game names no class: the one found in
+                    // the name of the car is shown.
+                    class_name: if class_name.is_empty() && !pace_car {
+                        class_label(vehicle_class("", &car)).to_string()
+                    } else {
+                        class_name
+                    },
+                    car,
                     pace_car,
                     spectator: n.get("IsSpectator").int() == Some(1),
                     ai: n.get("CarIsAI").int() == Some(1),
@@ -237,17 +255,45 @@ impl SessionDesc {
             .and_then(|i| self.driver(i))
     }
 
-    /// The sector (1..3) at this fraction of the lap, when the circuit is cut in three
-    /// (the game cuts some circuits in more parts: 0 then, « not known »).
+    /// The sector (1..3) at this fraction of the lap. The game cuts some circuits in
+    /// more than three parts: they are then grouped in three, at the game's own cuts
+    /// nearest to a third and to two thirds of the lap. 0: the game gives fewer than
+    /// three parts.
     pub fn sector_at(&self, fraction: f32) -> u8 {
-        if self.sectors.len() != 3 {
+        let Some([second, third]) = self.thirds() else {
             return 0;
+        };
+        if fraction >= third {
+            3
+        } else if fraction >= second {
+            2
+        } else {
+            1
         }
-        self.sectors
+    }
+
+    /// Where the second and the third sector start (fractions of the lap).
+    pub fn thirds(&self) -> Option<[f32; 2]> {
+        let cuts: Vec<f32> = self
+            .sectors
             .iter()
-            .rposition(|start| fraction >= *start)
-            .map(|i| i as u8 + 1)
-            .unwrap_or(1)
+            .copied()
+            .filter(|s| *s > 0.0 && *s < 1.0)
+            .collect();
+        if cuts.len() < 2 {
+            return None;
+        }
+        let nearest = |to: f32, among: &[f32]| {
+            among
+                .iter()
+                .copied()
+                .min_by(|a, b| (a - to).abs().total_cmp(&(b - to).abs()))
+        };
+        // The second cut is taken after the first, so that the three parts exist.
+        let second = nearest(1.0 / 3.0, &cuts[..cuts.len() - 1])?;
+        let after: Vec<f32> = cuts.iter().copied().filter(|s| *s > second).collect();
+        let third = nearest(2.0 / 3.0, &after)?;
+        Some([second, third])
     }
 }
 
@@ -310,11 +356,42 @@ mod tests {
         );
         assert_eq!(vehicle_class("LMP2", "Dallara P217"), VehicleClass::Lmp2);
         assert_eq!(vehicle_class("", "Mazda MX-5 Cup"), VehicleClass::Unknown);
-        // A circuit the game cuts in more than three parts: no sector number.
+        // A circuit the game cuts in more than three parts: grouped in three, at the
+        // game's own cuts nearest to the thirds of the lap.
         let desc = SessionDesc {
             sectors: vec![0.0, 0.2, 0.4, 0.6, 0.8],
             ..SessionDesc::default()
         };
-        assert_eq!(desc.sector_at(0.5), 0);
+        assert_eq!(desc.thirds(), Some([0.4, 0.6]));
+        assert_eq!(
+            [0.0, 0.39, 0.4, 0.59, 0.6, 0.99].map(|f| desc.sector_at(f)),
+            [1, 1, 2, 2, 3, 3]
+        );
+        // Three parts: the game's.
+        let three = SessionDesc {
+            sectors: vec![0.0, 0.34, 0.71],
+            ..SessionDesc::default()
+        };
+        assert_eq!(three.thirds(), Some([0.34, 0.71]));
+        // Two cuts only close to each other, at the end of the lap: still three parts.
+        let odd = SessionDesc {
+            sectors: vec![0.0, 0.8, 0.9],
+            ..SessionDesc::default()
+        };
+        assert_eq!(odd.thirds(), Some([0.8, 0.9]));
+        // Fewer than three parts: not known.
+        for sectors in [vec![], vec![0.0], vec![0.0, 0.5]] {
+            let desc = SessionDesc {
+                sectors,
+                ..SessionDesc::default()
+            };
+            assert_eq!(desc.sector_at(0.7), 0);
+        }
+        // Alone on the circuit, the game names no class.
+        let text = crate::fake::session_text(&crate::fake::FakeSession::default())
+            .replace("CarClassShortName: GT3", "CarClassShortName:");
+        let desc = SessionDesc::parse(&text);
+        assert_eq!(desc.player().unwrap().class_name, "GT3");
+        assert_eq!(desc.player().unwrap().class, VehicleClass::Gt3);
     }
 }

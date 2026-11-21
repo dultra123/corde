@@ -15,15 +15,17 @@ function Setting({
   max: number;
   active?: boolean;
 }) {
-  const available = max > 0;
+  // Le Mans Ultimate gives the maximum of each setting; other games only its level.
+  const available = max > 0 || value > 0;
+  const scaled = max > 0;
   return (
     <div className={`setting${active ? " is-active" : ""}${available ? "" : " is-na"}`}>
       <span className="setting-label dim">{label}</span>
       <span className="setting-value num">
         {available ? value : "—"}
-        {available && <small>/{max}</small>}
+        {scaled && <small>/{max}</small>}
       </span>
-      {available && (
+      {scaled && (
         <span className="setting-ticks">
           {Array.from({ length: Math.min(max, 12) }, (_, i) => (
             <i

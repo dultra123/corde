@@ -96,7 +96,7 @@ numéro 8471). Ne mets rien d'autre dedans.
 1. Sur le PC, ouvre la [dernière version de Corde](https://github.com/dultra123/corde/releases/latest)
    (section *Assets* en bas de la page).
 2. Télécharge **`corde-server-<version>-docker-x64.tar.gz`** (par exemple
-   `corde-server-1.9.0-docker-x64.tar.gz`, environ 40 Mo ; le numéro change à chaque version). **Ne le
+   `corde-server-1.9.1-docker-x64.tar.gz`, environ 40 Mo ; le numéro change à chaque version). **Ne le
    décompresse pas** : le NAS le lit tel quel.
 
 Les images apparaissent à partir de la première version publiée après l'arrivée de ce guide ; la pré-release
@@ -110,7 +110,7 @@ Les images apparaissent à partir de la première version publiée après l'arri
    téléchargé le fichier ; « À partir de ce DSM » sert pour un fichier déjà posé sur le NAS).
 3. Sélectionne `corde-server-<version>-docker-x64.tar.gz` et valide. L'envoi prend une minute environ.
 4. L'image **`corde-server`** apparaît dans la liste, avec son numéro dans la colonne **Identification**
-   (ex. `1.9.0`).
+   (ex. `1.9.1`).
 
 Si l'import refuse le fichier compressé : décompresse-le une fois sur le PC (clic droit → Extraire, ou
 7-Zip) pour obtenir `corde-server-<version>-docker-x64.tar`, puis importe ce `.tar`.
@@ -126,14 +126,14 @@ Container Manager s'occupe du reste.
 3. **Chemin** : clique sur **Définir le chemin**, déplie `docker`, choisis **`corde`** (créé au § 3), puis
    **Sélectionnez**. Le champ affiche `/docker/corde`.
 4. **Source** : choisis **Créer un fichier docker-compose.yml**. Une zone de texte s'ouvre en dessous.
-5. Colle ce texte (Ctrl + V), puis **remplace `1.9.0` par le numéro de l'image que tu as importée** (§ 5) :
+5. Colle ce texte (Ctrl + V), puis **remplace `1.9.1` par le numéro de l'image que tu as importée** (§ 5) :
 
    ```yaml
    version: "2.4"
 
    services:
      corde:
-       image: corde-server:1.9.0
+       image: corde-server:1.9.1
        container_name: corde
        restart: unless-stopped
        ports:

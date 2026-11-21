@@ -12,9 +12,9 @@ jeu, et n'utilise aucun compte.
 | Jeu | État | À faire dans le jeu | Comment Corde le lit |
 |---|---|---|---|
 | **Le Mans Ultimate** | **Vérifié en jeu** | Settings → Gameplay → **Enable Plugins** sur ON, une fois | mémoire partagée du jeu |
-| **Assetto Corsa Competizione** | **Expérimental** depuis la 1.7.0 : écrit d'après la documentation du jeu, **pas encore vérifié face au jeu** | rien | mémoire partagée du jeu |
+| **Assetto Corsa Competizione** | **Expérimental, essayé en jeu** le 21 novembre 2026 (une session de 7 tours) : détection, direct, enregistrement, chronos officiels, pneus, freins et carte fonctionnent ; les signes ont été recalés en 1.9.1 | rien | mémoire partagée du jeu |
 | **Assetto Corsa** (le premier) | **Expérimental** depuis la 1.8.0 : écrit d'après le fichier de référence fourni avec le jeu, **pas encore vérifié face au jeu** | rien | mémoire partagée du jeu (les mêmes pages qu'ACC, dans une version plus ancienne) |
-| **iRacing** | **Expérimental** depuis la 1.9.0 : écrit d'après le kit de développement du jeu, **pas encore vérifié face au jeu** | rien | mémoire partagée du jeu |
+| **iRacing** | **Expérimental, essayé en jeu** le 21 novembre 2026 (sessions d'essai, seul en piste) : détection, direct, enregistrement, chronos officiels et carburant fonctionnent ; carte du circuit et signes corrigés en 1.9.1 ; classement avec d'autres voitures pas encore vu | rien | mémoire partagée du jeu |
 | Assetto Corsa EVO | Prévu (jeu en accès anticipé : son format bouge encore) | rien | mémoire partagée du jeu |
 | rFactor 2 | Prévu | installer un plugin tiers de mémoire partagée | mémoire partagée du plugin |
 | Automobilista 2, Project CARS 2 | Prévu | activer la mémoire partagée dans les options | mémoire partagée du jeu |
@@ -31,13 +31,13 @@ encore écrit. L'ordre dépendra des jeux qu'on pourra essayer.
 |---|---|---|---|---|
 | Direct : widgets et tableau de bord de course (PC, téléphone, OBS) | oui | oui | oui | oui |
 | Enregistrement des sessions, chronos des tours | oui | oui (chronos officiels du jeu) | oui (chronos officiels du jeu) | oui (chronos officiels du jeu) |
-| Temps par secteur | oui | pas encore | pas encore | non : le jeu ne les publie pas (le secteur en cours est connu quand le circuit en a trois) |
+| Temps par secteur | oui | pas encore | pas encore | non : le jeu ne les publie pas. Le secteur en cours est connu (quand le jeu découpe le circuit en plus de trois parties, Corde les regroupe en trois) |
 | Comparaison de tours, graphes | oui | oui | oui | oui |
 | Classement, écarts avec les autres voitures | oui | écart avec la voiture devant et derrière seulement : le jeu ne donne les autres pilotes que par une autre interface, pas encore branchée | non : le jeu ne publie que ta voiture | oui : places, tours, meilleur et dernier tour de chacun, écart sur la piste ; écart au premier en course |
-| Températures des pneus intérieur / milieu / extérieur, usure | oui | non : le jeu publie une seule température par pneu, et pas l'usure | oui | trois températures par pneu, en direct ; usure et pressions : celles du dernier arrêt (le jeu ne les mesure qu'aux stands) |
+| Températures des pneus intérieur / milieu / extérieur, usure | oui | non : le jeu publie une seule température par pneu, et pas l'usure | oui | **pas en roulant** : le jeu ne publie températures, pressions et usure des pneus qu'à l'arrêt aux stands. Entre deux arrêts, Corde montre celles du dernier arrêt |
 | Températures des freins | oui | oui | oui | non : le jeu ne les publie pas |
 | Niveaux d'antipatinage et d'ABS, tour annulé | oui | oui | non : le jeu ne les publie pas | les réglages au volant que la voiture possède ; un tour est marqué quand le jeu y compte un incident |
-| Carte du circuit | oui | oui | oui | oui, après un premier tour (le jeu ne donne la position que de ta voiture : les autres sont placées d'après leur avancée sur le tour) |
+| Carte du circuit | oui | oui | oui | oui, après un premier tour : le jeu ne donne aucune position, Corde reconstruit le tracé d'après ta vitesse et ton cap, et place les autres voitures d'après leur avancée sur le tour |
 | Ingénieur de course : analyse du pilotage | oui | indicative (sens de certaines mesures à vérifier) | indicative | indicative |
 | Ingénieur de course : réglages proposés, fichiers de setup | oui | non : il connaît les réglages de Le Mans Ultimate | non | non |
 | Import des résultats officiels, page Profil | oui | non | non | non |
@@ -49,11 +49,14 @@ encore écrit. L'ordre dépendra des jeux qu'on pourra essayer.
   détecté — Assetto Corsa Competizione ».
 - Corde ne voit le jeu **que pendant une session** (dans les menus, le jeu ne publie rien : l'accueil reste
   sur « En attente d'un jeu… »).
-- **Pas encore vérifié face au jeu.** L'adaptateur est écrit d'après la documentation de la mémoire
-  partagée du jeu et recoupé avec deux lecteurs libres ; il est essayé sur des pages fabriquées, pas sur le
-  jeu. Des valeurs peuvent manquer ou être fausses. Ce qui reste à confirmer en priorité : l'unité du
-  carburant (litres), le sens des accélérations latérale et longitudinale, la répartition de freinage (le
-  jeu la publie avant un décalage propre à chaque voiture), le moment exact où le temps du tour est publié.
+- **Essayé en jeu le 21 novembre 2026** (Ferrari 296 GT3 à Imola, 7 tours) : le jeu est reconnu, les sept
+  tours ont le chrono officiel du jeu, pneus, freins, secteurs et carte sont vivants. Cette session a
+  permis de corriger en 1.9.1 ce qui était à l'envers : le sens des accélérations latérales et du lacet,
+  la carte (dessinée en miroir), l'embrayage (le jeu publie son engagement, pas la pédale), et le nom du
+  circuit (« Imola » et non « Imola — Track Config »).
+- **Reste à confirmer** : la répartition de freinage (le jeu la publie avant un décalage propre à chaque
+  voiture : Corde affiche la valeur brute, proche de celle de la voiture mais pas égale), et le carburant
+  (resté constant pendant cette session : consommation désactivée dans le jeu, ou mesure à revoir).
 - La longueur des circuits livrés avec le jeu est connue ; pour un autre circuit, elle est mesurée sur le
   premier tour complet.
 
@@ -64,8 +67,10 @@ encore écrit. L'ordre dépendra des jeux qu'on pourra essayer.
 - Les deux jeux publient des pages du même nom ; Corde les distingue par le numéro de leur interface
   (« 1.7 » au plus pour le premier Assetto Corsa). Sa page de session est plus ancienne et plus courte :
   elle est décrite d'après `sim_info.py`, le fichier que le jeu fournit à ses applications Python.
-- **Pas encore vérifié face au jeu.** À confirmer en priorité : l'échelle de l'usure des pneus (supposée de
-  100 à 0), l'ordre intérieur / extérieur des températures, le sens des accélérations.
+- **Pas encore vérifié face au jeu.** Les corrections faites en 1.9.1 d'après Competizione (sens des
+  accélérations, carte, embrayage) lui sont appliquées aussi : les deux jeux écrivent ces mesures de la
+  même façon. À confirmer en priorité : l'échelle de l'usure des pneus (supposée de 100 à 0), l'ordre
+  intérieur / extérieur des températures.
 - Le jeu donne la longueur du circuit : rien à mesurer. Les voitures et circuits ajoutés (mods) sont lus
   comme les autres ; leur nom est celui de leur dossier.
 - `acc-probe.exe` (ci-dessous) reconnaît les deux jeux.
@@ -80,10 +85,18 @@ encore écrit. L'ordre dépendra des jeux qu'on pourra essayer.
   (antipatinage, ABS, batterie…) reste simplement vide.
 - **Les chronos sont ceux du jeu.** Le jeu publie le temps d'un tour jusqu'à une seconde après la ligne :
   Corde l'attend. Un tour que le jeu refuse de chronométrer est compté sans temps.
-- **Pas encore vérifié face au jeu.** L'adaptateur est écrit d'après le kit de développement du jeu et
-  recoupé avec des lecteurs libres ; il est essayé sur une mémoire fabriquée, pas sur le jeu. À confirmer en
-  priorité : la façon dont le jeu compte les tours à la sortie des stands, le sens des accélérations et du
-  volant, l'angle maximal du volant, l'orientation de la carte.
+- **Essayé en jeu le 21 novembre 2026** (Ferrari 488 GT3 et Audi R8 LMS à Spa, sessions d'essai) : le jeu
+  est reconnu, les tours ont le chrono officiel du jeu, le carburant, les rapports, les aides et les
+  températures d'eau et d'huile sont justes.
+- **Ce que le jeu ne publie pas en roulant** — et que Corde ne peut donc pas montrer : la position de la
+  voiture, les températures, pressions et usure des pneus (seulement à l'arrêt aux stands), les
+  températures des freins, les hauteurs de caisse, les temps par secteur.
+- **La carte du circuit** est reconstruite d'après ta vitesse et ton cap (1.9.1) : elle apparaît après un
+  tour. Comparée au même circuit dans Le Mans Ultimate, elle tombe juste à une quinzaine de mètres près.
+- **Corrigé en 1.9.1 d'après ces sessions** : le sens du lacet, l'accélération verticale (le jeu y compte la
+  pesanteur), l'amplitude du volant, la catégorie de la voiture quand tu roules seul.
+- **Reste à confirmer** : le classement et les écarts avec d'autres voitures en piste (les essais étaient
+  en solo), l'amplitude du volant sur une voiture dont on connaît le braquage.
 - Les noms des autres pilotes s'affichent dans le classement, comme dans le jeu, et sont enregistrés avec
   ta session sur ton PC. Ils ne sortent pas de chez toi.
 

@@ -129,6 +129,15 @@ impl FakeSession {
         put_i32(&mut physics, offset_of!(Physics, gear), 5); // fourth
         put_i32(&mut physics, offset_of!(Physics, rpm), 6500);
         put_f32(&mut physics, offset_of!(Physics, steer_angle), 0.05);
+        // As the game writes them in a right-hand bend, clutch pedal released.
+        put_f32(&mut physics, offset_of!(Physics, acc_g), -1.2);
+        put_f32(&mut physics, offset_of!(Physics, acc_g) + 8, 0.3);
+        put_f32(
+            &mut physics,
+            offset_of!(Physics, local_angular_vel) + 4,
+            -0.2,
+        );
+        put_f32(&mut physics, offset_of!(Physics, clutch), 1.0);
         put_f32(&mut physics, offset_of!(Physics, speed_kmh), speed_ms * 3.6);
         for i in 0..4 {
             put_f32(

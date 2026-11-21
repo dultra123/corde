@@ -2,7 +2,7 @@ import type { CompoundType, TelemetryFrame, Wheel } from "@corde/protocol";
 import { type TranslationKey, useT } from "../../i18n";
 import { BRAKE_SCALE, tempColor, tyreScale, wearColor } from "../../lib/color";
 import { fmtNum } from "../../lib/format";
-import { frontBias } from "../model";
+import { brakeTemp, frontBias } from "../model";
 import { Lab, Level, Row } from "../parts";
 
 /** The blocks of the « Pneus & freins » page (`TyresPage`), also offered by the Studio. */
@@ -60,9 +60,16 @@ export function TyreCard({ wheel, corner }: { wheel: Wheel | null; corner: Trans
           <Lab>{t("dash.brake")}</Lab>
           <span
             className="num dval"
-            style={{ color: wheel ? brakeTone(wheel.brake_temp_c) : undefined }}
+            style={{
+              color:
+                brakeTemp(wheel?.brake_temp_c) !== null
+                  ? brakeTone(wheel?.brake_temp_c ?? 0)
+                  : undefined,
+            }}
           >
-            {wheel ? `${fmtNum(wheel.brake_temp_c, 0)}°` : "—"}
+            {brakeTemp(wheel?.brake_temp_c) !== null
+              ? `${fmtNum(wheel?.brake_temp_c ?? 0, 0)}°`
+              : "—"}
           </span>
         </div>
         <div className="dt-wear">
@@ -149,9 +156,14 @@ export function BrakesBlock({ frame }: { frame: TelemetryFrame | null }) {
               <Lab>{t(CORNERS[i] as TranslationKey)}</Lab>
               <span
                 className="num dval"
-                style={{ color: w ? brakeTone(w.brake_temp_c) : undefined }}
+                style={{
+                  color:
+                    brakeTemp(w?.brake_temp_c) !== null
+                      ? brakeTone(w?.brake_temp_c ?? 0)
+                      : undefined,
+                }}
               >
-                {w ? `${fmtNum(w.brake_temp_c, 0)}°` : "—"}
+                {brakeTemp(w?.brake_temp_c) !== null ? `${fmtNum(w?.brake_temp_c ?? 0, 0)}°` : "—"}
               </span>
             </div>
           );

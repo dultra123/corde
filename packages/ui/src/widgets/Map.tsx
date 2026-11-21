@@ -50,7 +50,8 @@ function MapWidget(_props: WidgetProps) {
       boundsRef.current = null;
     }
     const player = frame.player;
-    if (player) {
+    // A position of zero is « not known » (a game that gives none, or not yet).
+    if (player && hasCoordinates(player.motion.pos)) {
       learner.learn(
         player.motion.pos[0],
         player.motion.pos[2],
@@ -198,10 +199,11 @@ function MapWidget(_props: WidgetProps) {
       ctx.stroke();
     }
     const me = frame.standings.find((s) => s.is_player);
+    // Without coordinates (not known yet), the player too is placed by its place on the lap.
     const mePos = player
-      ? [player.motion.pos[0], player.motion.pos[2]]
+      ? carPoint(learner, player.motion.pos, player.lap.lap_fraction)
       : me
-        ? [me.pos[0], me.pos[2]]
+        ? carPoint(learner, me.pos, me.lap_fraction)
         : null;
     if (mePos) {
       const x = px(mePos[0] as number);

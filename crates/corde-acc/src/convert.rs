@@ -57,6 +57,12 @@ fn wall_ms_now() -> u64 {
         .unwrap_or(0)
 }
 
+/// An angle brought back between −π and π.
+fn wrap(a: f32) -> f32 {
+    use std::f32::consts::{PI, TAU};
+    (a + PI).rem_euclid(TAU) - PI
+}
+
 fn finite(v: f32) -> f32 {
     if v.is_finite() {
         v
@@ -344,7 +350,7 @@ impl Converter {
             track_name: {
                 // The layout, when the circuit has several (the first Assetto Corsa).
                 let field = s.track_configuration;
-                match text(&field).as_str() {
+                match tracks::layout(&text(&field)) {
                     "" => tracks::pretty(track_id),
                     layout => format!("{} — {}", tracks::pretty(track_id), tracks::pretty(layout)),
                 }
@@ -431,17 +437,21 @@ impl Converter {
         let speed_kmh = finite(p.speed_kmh);
         let motion = Motion {
             pos: player_position(g),
-            local_vel: [finite(vel[0]), finite(vel[1]), finite(vel[2])],
-            local_accel: [finite(acc[0]) * G, finite(acc[1]) * G, finite(acc[2]) * G],
-            local_rot: [finite(rot[0]), finite(rot[1]), finite(rot[2])],
+            // The game's world is the mirror of Corde's (see `player_position`): what goes
+            // sideways and what turns about the vertical or the length of the car changes
+            // sign. Checked on a session of Competizione at Imola, which turns left
+            // (21 November 2026); the first Assetto Corsa is taken to do the same.
+            local_vel: [-finite(vel[0]), finite(vel[1]), finite(vel[2])],
+            local_accel: [-finite(acc[0]) * G, finite(acc[1]) * G, finite(acc[2]) * G],
+            local_rot: [finite(rot[0]), -finite(rot[1]), -finite(rot[2])],
             speed_ms: speed_kmh / 3.6,
             speed_kmh,
-            // TODO(verify-in-game): the signs (left / right, braking / accelerating).
-            g_lat: finite(acc[0]),
+            // Positive to the right, and when accelerating.
+            g_lat: -finite(acc[0]),
             g_long: finite(acc[2]),
             g_vert: finite(acc[1]),
-            yaw_rate_dps: finite(rot[1]).to_degrees(),
-            heading_rad: finite(p.heading),
+            yaw_rate_dps: -finite(rot[1]).to_degrees(),
+            heading_rad: wrap(std::f32::consts::PI - finite(p.heading)),
         };
 
         let engine = Engine {
@@ -461,11 +471,12 @@ impl Converter {
             throttle: finite(p.gas).clamp(0.0, 1.0),
             brake: finite(p.brake).clamp(0.0, 1.0),
             steering: finite(p.steer_angle).clamp(-1.0, 1.0),
-            clutch: finite(p.clutch).clamp(0.0, 1.0),
+            // The game publishes how much the clutch is engaged (1: pedal released).
+            clutch: (1.0 - finite(p.clutch)).clamp(0.0, 1.0),
             throttle_raw: finite(p.gas).clamp(0.0, 1.0),
             brake_raw: finite(p.brake).clamp(0.0, 1.0),
             steering_raw: finite(p.steer_angle).clamp(-1.0, 1.0),
-            clutch_raw: finite(p.clutch).clamp(0.0, 1.0),
+            clutch_raw: (1.0 - finite(p.clutch)).clamp(0.0, 1.0),
             ffb_torque: finite(p.final_ff),
             ..Inputs::default()
         };
@@ -585,7 +596,9 @@ impl Converter {
         PlayerTelemetry {
             id: g.player_car_id,
             vehicle_name: tracks::pretty(model),
-            vehicle_model: model.to_string(),
+            // What the interface shows as « the car »: the readable name, not the game's
+            // identifier.
+            vehicle_model: tracks::pretty(model),
             vehicle_class,
             class_name,
             championship: String::new(),
@@ -630,10 +643,12 @@ fn player_position(g: &Graphics) -> [f64; 3] {
         .position(|id| *id == g.player_car_id)
         .unwrap_or(0);
     let c = coords[idx];
+    // The game's map is the mirror of Corde's: a circuit that turns left would be drawn
+    // turning right. Its third axis is turned round.
     [
         finite(c[0]) as f64,
         finite(c[1]) as f64,
-        finite(c[2]) as f64,
+        -finite(c[2]) as f64,
     ]
 }
 

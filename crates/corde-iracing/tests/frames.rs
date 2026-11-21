@@ -75,7 +75,10 @@ fn a_frame_carries_what_the_game_publishes() {
     let p = f.player.as_ref().expect("the player's car");
     assert_eq!(p.id, PLAYER as i32);
     assert_eq!(p.vehicle_name, "BMW M4 GT3");
-    assert_eq!(p.vehicle_model, "bmwm4gt3");
+    assert_eq!(
+        p.vehicle_model, "BMW M4 GT3",
+        "the name, not the game's identifier"
+    );
     assert_eq!(p.vehicle_class, VehicleClass::Gt3);
     assert_eq!(p.place, 2);
     assert!((p.motion.speed_kmh - 249.48).abs() < 0.01);
@@ -91,7 +94,15 @@ fn a_frame_carries_what_the_game_publishes() {
         p.inputs.clutch, 0.0,
         "the game says « engaged », Corde the pedal"
     );
-    assert!((p.inputs.steering + 0.125).abs() < 1e-6, "left of centre");
+    assert!((p.inputs.steering + 0.25).abs() < 1e-6, "left of centre");
+    assert!(
+        (p.inputs.wheel_range_deg - 229.18).abs() < 0.01,
+        "stop to stop"
+    );
+    // Turning right: the yaw rate is positive, as with the other games; no gravity in
+    // the vertical acceleration.
+    assert!((p.motion.yaw_rate_dps - 5.7296).abs() < 1e-3);
+    assert!(p.motion.g_vert.abs() < 1e-4);
     assert!((p.energy.fuel_l - 59.8).abs() < 1e-3);
     assert_eq!(p.energy.fuel_capacity_l, 120.0);
     assert_eq!((p.electronics.tc, p.electronics.abs), (4, 3));
@@ -106,13 +117,8 @@ fn a_frame_carries_what_the_game_publishes() {
     assert!((p.lap.lap_fraction - 0.6).abs() < 1e-4);
     assert!((p.lap.lap_dist_m - 4158.0).abs() < 1.0);
     assert!(!p.lap.lap_invalidated);
-    // Metres from where the session was first seen.
-    assert!(
-        p.motion.pos[0] > 1.0 && p.motion.pos[2] < -1.0,
-        "{:?}",
-        p.motion.pos
-    );
-    assert_eq!(p.motion.pos[1], 410.0);
+    // The game gives no coordinates: nothing from two rows ten seconds apart.
+    assert_eq!(p.motion.pos, [0.0; 3]);
 
     // The cars: the rival then the player; neither the pace car (not out) nor the
     // spectator.
@@ -174,6 +180,41 @@ fn laps_get_the_times_of_the_game() {
     assert_eq!(lap(150.6).last_lap_s, Some(fake.lap_time(2)));
     assert_eq!(lap(399.0).best_lap_s, Some(fake.lap_time(2)));
     assert_eq!(lap(399.0).laps_completed, 3);
+
+    // The map: the game gives no coordinates, the circuit is drawn from the speed and
+    // the heading. A round circuit of 6930 m is 2206 m across, and the same place of the
+    // lap is the same point lap after lap.
+    let pos = |t: f64| at(&frames, t).player.as_ref().unwrap().motion.pos;
+    let dist = |a: [f64; 3], b: [f64; 3]| (a[0] - b[0]).hypot(a[2] - b[2]);
+    assert!((dist(pos(100.0), pos(150.0)) - 2206.0).abs() < 5.0);
+    assert!(dist(pos(120.0), pos(220.0)) < 2.0 && dist(pos(120.0), pos(320.0)) < 2.0);
+    // The line of the player in the standings carries it; the other car has none (the
+    // interface places it by where it is on the lap).
+    let f = at(&frames, 220.0);
+    let me = f.standings.iter().find(|s| s.is_player).unwrap();
+    assert_eq!(me.pos.map(f64::from)[0].round(), pos(220.0)[0].round());
+    assert_eq!(
+        f.standings.iter().find(|s| !s.is_player).unwrap().pos,
+        [0.0; 3]
+    );
+    // Sectors: the game's three (80 % of the lap is in the third).
+    assert_eq!(
+        at(&frames, 130.0)
+            .player
+            .as_ref()
+            .unwrap()
+            .lap
+            .current_sector,
+        3
+    );
+
+    // Practice ranks by best lap: the gap to the place ahead is between best laps.
+    let last = frames.last().unwrap();
+    let gaps = &last.player.as_ref().unwrap().gaps;
+    assert!((gaps.place_ahead_s.unwrap() - 0.5).abs() < 1e-3, "{gaps:?}");
+    assert_eq!(gaps.place_behind_s, None);
+    assert!((last.standings[1].time_behind_leader_s - 0.5).abs() < 1e-3);
+    assert!((last.standings[1].time_behind_next_s - 0.5).abs() < 1e-3);
 
     // The other way the game may count (a lap completed at each crossing): same laps.
     let other = FakeSession {

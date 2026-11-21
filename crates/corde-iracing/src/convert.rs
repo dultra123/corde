@@ -12,18 +12,21 @@
 //!   without a time.
 //! * **Leaving the car.** The counters read 0 while the car is out of the world (garage,
 //!   tow): they are held, not taken for a restart.
-//! * **Sector times, live tyre pressures and brake temperatures, world coordinates of the
-//!   other cars**: not published. The position of the player comes from its GPS
-//!   coordinates, in metres from where the session was first seen.
+//! * **Sector times, brake temperatures, coordinates**: not published. The tyre
+//!   temperatures, pressures and wear only change at a stop in the pits (the game does
+//!   not publish them while driving). The position of the player is worked out from its
+//!   speed and heading ([`crate::odometer`]); the other cars come without one.
 //! * **Invalid lap.** The game has no such flag; a lap during which the incident count of
 //!   the player rose is marked invalidated (Corde's own rule).
 //!
-//! Everything marked `TODO(verify-in-game)` is an assumption taken from the SDK that
-//! still has to be confirmed against the running game.
+//! The signs and the lap count were checked on 21 November 2026 against sessions recorded
+//! with the game (and against Le Mans Ultimate at the same circuit). What is still marked
+//! `TODO(verify-in-game)` is an assumption taken from the SDK.
 
 use crate::layout::{
     engine_warnings, flags, session_state, track_loc, MAX_CARS, UNLIMITED_LAPS, UNLIMITED_TIME_S,
 };
+use crate::odometer::{Odometer, Step};
 use crate::session::{compound_type, SessionDesc};
 use crate::vars::Row;
 use corde_protocol::{
@@ -42,8 +45,6 @@ const SAME_TIME_TOLERANCE_S: f64 = 0.05;
 /// The two lap counters of the game moving within this long are one line crossing.
 const SAME_CROSSING_S: f64 = 1.0;
 const G: f32 = 9.806_65;
-/// Metres per degree of latitude.
-const M_PER_DEG: f64 = 111_320.0;
 /// The four wheels as the game names them, in Corde's order (FL, FR, RL, RR).
 const WHEELS: [&str; 4] = ["LF", "RF", "LR", "RR"];
 
@@ -57,6 +58,12 @@ fn wall_ms_now() -> u64 {
 /// A time of the game in seconds, `None` when it has none (0, −1).
 fn time_s(v: f32) -> Option<f32> {
     (v > 0.0).then_some(v)
+}
+
+/// An angle brought back between −π and π.
+fn wrap(a: f32) -> f32 {
+    use std::f32::consts::{PI, TAU};
+    (a + PI).rem_euclid(TAU) - PI
 }
 
 fn small(v: f32) -> u8 {
@@ -115,8 +122,8 @@ pub struct Converter {
     /// What the lap that ended there lasted, when its start was seen too.
     last_len_s: Option<f64>,
     incidents_at_lap_start: i32,
-    /// Where the session was first seen (latitude, longitude, degrees).
-    origin: Option<(f64, f64)>,
+    /// Where the car is, from its speed and heading.
+    odo: Odometer,
 }
 
 impl Converter {
@@ -151,11 +158,15 @@ impl Converter {
                 confirmed: lap_raw,
                 last_time_seen: last,
                 incidents_at_lap_start: incidents,
-                origin: self
-                    .origin
-                    .filter(|_| self.key.as_ref().is_some_and(|k| k.0 == desc.track_id)),
+                // What was learnt of the circuit stays for its other sessions.
+                odo: if self.key.as_ref().is_some_and(|k| k.0 == desc.track_id) {
+                    std::mem::take(&mut self.odo)
+                } else {
+                    Odometer::default()
+                },
                 ..Self::default()
             };
+            self.odo.pause();
         }
         self.last_clock = now;
 
@@ -212,7 +223,15 @@ impl Converter {
         self.last_time_seen = last;
 
         let fraction = row.f32("LapDistPct").clamp(0.0, 1.0);
-        let pos = self.position(row);
+        let pos = self.odo.step(Step {
+            now,
+            fraction,
+            speed_ms: row.f32("Speed"),
+            heading: row.num("Yaw").map(|v| v as f32),
+            track_m: desc.track_length_m,
+            in_world,
+            in_pits: row.flag("OnPitRoad"),
+        });
         let standings = self.standings(desc, row, player_idx, fraction, pos);
         let session = self.session_info(desc, row, now, session_num, standings.len());
         let player = player_idx.map(|idx| {
@@ -346,7 +365,9 @@ impl Converter {
 
         // The game's axes: X forward, Y to the left, Z up. Corde's (those of the game it
         // was written for): x to the left, y up, z to the back.
-        // TODO(verify-in-game): the signs of the accelerations and of the yaw rate.
+        // Signs checked against Le Mans Ultimate at the same circuit: lateral and
+        // longitudinal as below, the yaw rate the other way round, and the vertical
+        // acceleration comes with gravity.
         let speed_ms = row.f32("Speed").max(0.0);
         let (lat, long, vert) = (
             row.f32("LatAccel"),
@@ -363,7 +384,7 @@ impl Converter {
             local_accel: [lat, vert, -long],
             local_rot: [
                 row.f32("PitchRate"),
-                row.f32("YawRate"),
+                -row.f32("YawRate"),
                 row.f32("RollRate"),
             ],
             speed_ms,
@@ -371,9 +392,11 @@ impl Converter {
             // Positive to the right, and when accelerating.
             g_lat: -lat / G,
             g_long: long / G,
-            g_vert: vert / G,
-            yaw_rate_dps: row.f32("YawRate").to_degrees(),
-            heading_rad: row.f32("Yaw"),
+            g_vert: vert / G - 1.0,
+            yaw_rate_dps: -row.f32("YawRate").to_degrees(),
+            // The game's heading is the direction of travel on the map; Corde's is a
+            // quarter of a turn behind it.
+            heading_rad: wrap(row.f32("Yaw") - std::f32::consts::FRAC_PI_2),
         };
 
         let warnings = row.bits("EngineWarnings");
@@ -394,10 +417,12 @@ impl Converter {
         };
 
         // The wheel: the game counts the angle positive to the left, in radians.
-        // TODO(verify-in-game): `SteeringWheelAngleMax` taken as the angle from the
-        // centre to one stop.
+        // `SteeringWheelAngleMax` is taken as the whole travel of the wheel, stop to stop:
+        // the game gave 514° for a GT3 (21 November 2026), which no GT3 has either side.
+        // TODO(verify-in-game): confirm with a car whose steering lock is known.
         let angle = row.f32("SteeringWheelAngle");
-        let lock = row.f32("SteeringWheelAngleMax");
+        let travel = row.f32("SteeringWheelAngleMax");
+        let lock = travel / 2.0;
         let steering = if lock > 0.0 {
             (-angle / lock).clamp(-1.0, 1.0)
         } else {
@@ -433,7 +458,7 @@ impl Converter {
             },
             steering_torque_nm: row.f32("SteeringWheelTorque"),
             steering_angle_deg: -angle.to_degrees(),
-            wheel_range_deg: (2.0 * lock).to_degrees().max(0.0),
+            wheel_range_deg: travel.to_degrees().max(0.0),
             ffb_torque: row.f32("SteeringWheelPctTorque"),
         };
 
@@ -532,7 +557,18 @@ impl Converter {
         PlayerTelemetry {
             id: idx as i32,
             vehicle_name: me.map(|d| d.car.clone()).unwrap_or_default(),
-            vehicle_model: me.map(|d| d.car_path.clone()).unwrap_or_default(),
+            // What the interface shows as « the car »: its name, not the game's identifier
+            // (kept when the game gives no name).
+            vehicle_model: me
+                .map(|d| {
+                    if d.car.is_empty() {
+                        &d.car_path
+                    } else {
+                        &d.car
+                    }
+                })
+                .cloned()
+                .unwrap_or_default(),
             vehicle_class: me.map(|d| d.class).unwrap_or(VehicleClass::Unknown),
             class_name: me.map(|d| d.class_name.clone()).unwrap_or_default(),
             championship: String::new(),
@@ -560,23 +596,6 @@ impl Converter {
             in_garage: row.flag("IsInGarage"),
             ..PlayerTelemetry::default()
         }
-    }
-
-    /// Metres east (x) and south (z) of where the session was first seen, with the
-    /// altitude (y). Zero while the game gives no coordinates.
-    fn position(&mut self, row: Row) -> [f64; 3] {
-        let (Some(lat), Some(lon)) = (row.num("Lat"), row.num("Lon")) else {
-            return [0.0; 3];
-        };
-        if lat == 0.0 && lon == 0.0 {
-            return [0.0; 3];
-        }
-        let (lat0, lon0) = *self.origin.get_or_insert((lat, lon));
-        [
-            (lon - lon0) * M_PER_DEG * lat0.to_radians().cos(),
-            row.f64("Alt"),
-            -(lat - lat0) * M_PER_DEG,
-        ]
     }
 
     fn standings(
@@ -695,6 +714,19 @@ impl Converter {
                 }
                 ahead = Some((s.time_behind_leader_s, s.laps_completed));
             }
+        } else {
+            // Practice, qualifying: the ranking is by best lap, and so are the gaps.
+            let leader = out.first().and_then(|s| s.best_lap_s);
+            let mut ahead: Option<f32> = None;
+            for s in out.iter_mut().filter(|s| s.place > 0) {
+                if let (Some(best), Some(leader)) = (s.best_lap_s, leader) {
+                    s.time_behind_leader_s = (best - leader).max(0.0);
+                }
+                if let (Some(best), Some(next)) = (s.best_lap_s, ahead) {
+                    s.time_behind_next_s = (best - next).max(0.0);
+                }
+                ahead = s.best_lap_s;
+            }
         }
         out
     }
@@ -727,18 +759,26 @@ fn gaps(desc: &SessionDesc, row: Row, me: usize, race: bool) -> Gaps {
             }
         }
     }
-    if race {
-        let place = row.i32_at("CarIdxPosition", me).unwrap_or(0);
-        let behind_leader = row.f32_at("CarIdxF2Time", me);
-        if place > 0 {
-            for d in desc.drivers.iter().filter(|d| d.idx != me) {
-                let other = row.i32_at("CarIdxPosition", d.idx).unwrap_or(0);
-                let diff = row.f32_at("CarIdxF2Time", d.idx) - behind_leader;
-                if other == place - 1 {
-                    out.place_ahead_s = Some((-diff).max(0.0));
-                } else if other == place + 1 {
-                    out.place_behind_s = Some(diff.max(0.0));
-                }
+    // To the places ahead and behind: on the road in a race; between best laps in the
+    // other sessions, which rank by best lap.
+    let place = row.i32_at("CarIdxPosition", me).unwrap_or(0);
+    let value = |i: usize| {
+        if race {
+            Some(row.f32_at("CarIdxF2Time", i))
+        } else {
+            time_s(row.f32_at("CarIdxBestLapTime", i))
+        }
+    };
+    if let (true, Some(mine)) = (place > 0, value(me)) {
+        for d in desc.drivers.iter().filter(|d| d.idx != me && !d.spectator) {
+            let other = row.i32_at("CarIdxPosition", d.idx).unwrap_or(0);
+            let Some(theirs) = value(d.idx) else {
+                continue;
+            };
+            if other == place - 1 {
+                out.place_ahead_s = Some((mine - theirs).max(0.0));
+            } else if other == place + 1 {
+                out.place_behind_s = Some((theirs - mine).max(0.0));
             }
         }
     }

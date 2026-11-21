@@ -1,6 +1,6 @@
 # Corde — fiche de présentation
 
-> À jour pour la **version 1.9.0** (17 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
+> À jour pour la **version 1.9.1** (21 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
 > faut pour présenter Corde (site, page de présentation, annonce) : ce qu'elle fait, où elle tourne, ce qui
 > est nouveau, ce qui arrive, les images et les liens. Elle ne dit que ce qui existe ; le détail et l'état
 > exact de chaque partie sont dans le [README](../README.md) et dans [STATUS.md](STATUS.md).
@@ -11,8 +11,9 @@
 
 Depuis la 1.7.0, Corde trouve toute seule le jeu qui tourne et lit aussi **Assetto Corsa Competizione**,
 depuis la 1.8.0 le premier **Assetto Corsa** et, depuis la 1.9.0, **iRacing**, tous les trois en version
-expérimentale (pas encore vérifiée face au jeu). Le Mans Ultimate reste le jeu de référence : c'est
-le seul pour lequel tout est disponible et vérifié.
+expérimentale (Competizione et iRacing ont été essayés en jeu le 21 novembre 2026 ; le premier Assetto
+Corsa pas encore). Le Mans Ultimate reste le jeu de référence : c'est le seul pour lequel tout est
+disponible et vérifié.
 
 Version plus longue : Corde tourne à côté du jeu. Elle lit la télémétrie de Le Mans Ultimate, l'affiche en
 direct (widgets ou tableau de bord de course, sur le PC comme sur le téléphone), enregistre chaque session, analyse ta
@@ -25,7 +26,7 @@ Le nom vient du **point de corde** : l'endroit où la trajectoire idéale touche
 
 | | |
 |---|---|
-| Version actuelle | **1.9.0** (17 novembre 2026) |
+| Version actuelle | **1.9.1** (21 novembre 2026) |
 | Prix | Gratuit |
 | Licence | Logiciel libre, GPL-3.0-or-later ; code source public |
 | Jeux | Le Mans Ultimate (complet, vérifié) ; Assetto Corsa Competizione (expérimental, depuis la 1.7.0) ; Assetto Corsa (expérimental, depuis la 1.8.0) ; iRacing (expérimental, depuis la 1.9.0). Détection automatique. Détail : [JEUX.md](JEUX.md) |
@@ -50,16 +51,18 @@ sous le nom de son jeu.
 
 - **Le Mans Ultimate** : tout ce que décrit cette fiche, vérifié en jeu.
 - **Assetto Corsa Competizione** — **expérimental** : direct, enregistrement, chronos officiels des tours,
-  comparaison de tours ; rien à installer ni à activer dans le jeu. Pas encore vérifié face au jeu (à dire
-  tel quel). Pas de temps par secteur ni de classement complet pour l'instant ; l'ingénieur de réglages,
+  comparaison de tours, pneus, freins, carte ; rien à installer ni à activer dans le jeu. Essayé en jeu le
+  21 novembre 2026 (une session de sept tours), corrigé d'après cet essai en 1.9.1 ; reste « expérimental ».
+  Pas de temps par secteur ni de classement complet pour l'instant ; l'ingénieur de réglages,
   l'import des résultats et le planning des courses restent ceux de Le Mans Ultimate.
 - **Assetto Corsa** (le premier) — **expérimental**, depuis la 1.8.0 : direct, enregistrement, chronos
   officiels, trois températures par pneu et usure ; rien à activer dans le jeu ; voitures et circuits
   ajoutés compris. Le jeu ne publie que ta voiture : pas de classement. Pas encore vérifié face au jeu.
-- **iRacing** — **expérimental**, depuis la 1.9.0 : direct, enregistrement, chronos officiels, classement
-  avec les autres voitures et écarts, trois températures par pneu ; rien à activer dans le jeu. Corde ne
-  fait que lire : elle n'envoie aucune commande au jeu. Le jeu ne publie ni les temps par secteur ni les
-  températures des freins. Pas encore vérifié face au jeu.
+- **iRacing** — **expérimental**, depuis la 1.9.0 : direct, enregistrement, chronos officiels, carburant,
+  classement avec les autres voitures et écarts, carte du circuit (reconstruite par Corde depuis la
+  1.9.1) ; rien à activer dans le jeu. Corde ne fait que lire : elle n'envoie aucune commande au jeu. Le
+  jeu ne publie pas, en roulant, les températures et pressions des pneus, les températures des freins ni
+  les temps par secteur. Essayé en jeu le 21 novembre 2026 (seul en piste) ; reste « expérimental ».
 - **Prévus, sans date** : rFactor 2, Automobilista 2, RaceRoom, Assetto Corsa EVO. L'état de
   chacun est tenu à jour dans [JEUX.md](JEUX.md).
 
@@ -257,6 +260,8 @@ redémarrer. Chaque version est signée et vérifiée avant l'installation ; rie
 
 ## Nouveautés
 
+- **1.9.1 (21 novembre 2026)** — après un premier essai en jeu d'Assetto Corsa Competizione et d'iRacing :
+  carte du circuit pour iRacing, sens des mesures recalés, noms de circuit et de voiture.
 - **1.9.0 (17 novembre 2026)** — un quatrième jeu, en version expérimentale : iRacing (direct,
   enregistrement, chronos officiels, classement et écarts).
 - **1.8.1 (17 novembre 2026)** — revue de sécurité de tout le code : rien de grave trouvé, plusieurs
@@ -352,6 +357,7 @@ Pour rester exact :
 - pas « application officielle » de Le Mans Ultimate ;
 - pas « installeur signé » ni « sans avertissement Windows » ;
 - pas « compatible » ni « vérifié » pour Assetto Corsa Competizione, Assetto Corsa et iRacing : toujours
-  « expérimental, pas encore vérifié face au jeu » ; et aucun jeu de la liste « prévus » comme disponible ;
+  « expérimental » (Competizione et iRacing : « essayés en jeu » ; Assetto Corsa : « pas encore vérifié
+  face au jeu ») ; et aucun jeu de la liste « prévus » comme disponible ;
 - pas de promesse de date pour ce qui est « à venir » ;
 - l'auteur est présenté sous son pseudonyme, **dultra__**.
