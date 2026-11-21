@@ -9,8 +9,9 @@
 > [ADR 0017](adr/0017-corde-serveur-en-conteneur.md).
 >
 > **Les noms des menus** des §2, 3, 5 à 7 et 11 ont été relevés sur un vrai NAS (DS220+, DSM 7.4.1,
-> Container Manager 24.0.2, novembre 2026), en français. La mise à jour en deux clics du §11 (depuis la
-> 1.12.0) n'y a pas encore été déroulée en entier. Synology les change parfois d'une version à l'autre : si un
+> Container Manager 24.0.2, novembre 2026), en français. Le passage d'une image importée à l'image du
+> registre (§11) y a été fait le 22 novembre 2026 : le NAS a téléchargé l'image tout seul et redémarré le
+> serveur. La mise à jour en deux clics, elle, sera déroulée pour la première fois à la version suivante. Synology les change parfois d'une version à l'autre : si un
 > nom diffère un peu chez toi, cherche le plus proche, l'étape reste la même. Là où un nom n'a pas été
 > vérifié (terminal, suppression, sauvegarde, DSM 7.0 / 7.1), l'étape décrit ce qu'il faut faire sans le
 > citer.
@@ -298,10 +299,12 @@ Le serveur doit avoir **la même version que Corde sur le PC, ou plus récente**
 « Serveur à mettre à jour » et attend, sans rien perdre). Mets donc le serveur à jour **avant** le PC, ou
 juste après.
 
-1. Container Manager → **Projet** → clique **une fois** sur la ligne `corde` (elle se surligne).
-2. Menu **Action** → **Arrêt**. Attends que la pastille du projet ne soit plus verte.
-3. Menu **Action** → **Créer**. La fenêtre **Terminal : Créer - corde** télécharge la nouvelle image, puis
-   redémarre le serveur. Elle doit finir par `Exit Code: 0` ; clique sur **Fermer**.
+1. Container Manager → **Projet** → ouvre `corde` (double-clic).
+2. Bouton **Arrêt**, en haut à droite. La fenêtre **Terminal : Arrêter - corde** finit par `Exit Code: 0` ;
+   clique sur **Fermer**. (Le bouton devient **Démarrer**.)
+3. Menu **Action**, juste à côté → **Créer**. La fenêtre **Terminal : Créer - corde** télécharge la
+   nouvelle image (lignes « Pulling », « Extracting », puis `corde Pulled`), puis redémarre le serveur.
+   Elle doit finir par `Container corde Started` et `Exit Code: 0` ; clique sur **Fermer**.
 4. Vérifie : dans Corde sur le PC, **Réglages** → **Serveur Corde** affiche **Connecté**. (Ou, dans le
    journal du conteneur (§ 7), la ligne `corde-server <nouvelle version> — serveur Corde (rôle hub)`.)
 
@@ -309,8 +312,8 @@ Rien à télécharger, rien à écrire. Les données (`docker/corde/data`) ne bo
 appairés.
 
 - **S'il n'y a pas de version plus récente**, l'étape 3 relance simplement le serveur tel qu'il est.
-- **Si le téléchargement échoue** (pas d'Internet à cet instant) : menu **Action** → **Démarrer** relance
-  le serveur dans sa version actuelle ; réessaie plus tard.
+- **Si le téléchargement échoue** (pas d'Internet à cet instant) : le bouton **Démarrer** relance le
+  serveur dans sa version actuelle ; réessaie plus tard.
 - De temps en temps, tu peux supprimer les anciennes images dans la section **Image** (celles marquées
   comme non utilisées) pour libérer de la place.
 - Il n'y a pas de mise à jour automatique : rien ne change sans ces clics.

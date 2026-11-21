@@ -111,5 +111,7 @@ Ce qui a été pesé :
 
 Vérifié à la publication de la 1.12.0 (22 novembre 2026) : les deux étiquettes sont dans le registre, pour
 les deux architectures, et le paquet est **public** (créé par la CI d'un dépôt public, il l'a été d'emblée :
-aucun réglage à faire). Reste à vérifier sur le NAS du propriétaire : que « Créer » sur un projet arrêté
-télécharge bien la nouvelle image avec `pull_policy: always` (version de Compose de Container Manager).
+aucun réglage à faire). Le même jour, le projet du NAS du propriétaire est passé à l'image du registre :
+Container Manager l'a téléchargée sans compte et a redémarré le serveur. Reste à vérifier, à la prochaine
+version : que « Créer » sur un projet arrêté télécharge bien l'image plus récente avec
+`pull_policy: always` (version de Compose de Container Manager).

@@ -167,11 +167,19 @@
     à jour automatique (voir l'ADR). **Publié le 22 nov.** (CI n° 44960036732) : release `v1.12.0`,
     images `1.12.0` et `latest` dans le registre (x64 et arm64 sous la même étiquette), paquet
     **public** d'emblée (vu sur sa page GitHub). La prise de l'image sans compte n'a pas pu être
-    essayée d'ici (registre hors de portée de cet environnement). **Reste à faire, avec le
-    propriétaire** : (1) passer son projet à la nouvelle ligne `image:` et ajouter
-    `pull_policy: always` (une fois ; guide §11, « avant la 1.12.0 ») ; (2) **vérifier sur son NAS**
-    que « Créer » sur le projet arrêté télécharge bien la nouvelle image — pas encore observé, le
-    guide le suppose (comportement de Compose v2) ; corriger le §11 du guide si ce n'est pas le cas.
+    essayée d'ici (registre hors de portée de cet environnement). **Fait sur le NAS du propriétaire le
+    22 nov. vers 0 h 45** (à sa demande, lui connecté au NAS, chaque geste approuvé par lui) : projet
+    arrêté (bouton **Arrêt** du détail du projet), texte remplacé (ligne `image:` du registre et
+    `pull_policy: always`), **Sauvegarder** → « Créer et démarrer le projet (reconstruire l'image) » →
+    le NAS a **pris l'image dans le registre sans compte** (`corde Pulled`), `Container corde
+    Started`, `Exit Code: 0`. Côté PC (passé en 1.12.0 par le bouton à 0 h 32) : plus aucune ligne
+    « server unreachable » après le redémarrage. Relevé : l'éditeur du texte du projet est un
+    éditeur Monaco dans un composant qui ne prend en compte une saisie qu'au relâchement d'une vraie
+    touche (d'où les saisies « affichées mais pas enregistrées » de la réparation) ; le détail du
+    projet a, en haut à droite, le bouton **Arrêt** / **Démarrer** et le menu **Action**.
+    **Reste à vérifier** : la mise à jour en deux clics elle-même (Arrêt, puis Action → Créer) quand
+    une image plus récente existe, à la prochaine version — le guide suppose que « Créer » la
+    télécharge (`pull_policy: always`, Compose v2) ; corriger le §11 du guide si ce n'est pas le cas.
     Ce qui est établi pour Rally (lecture de deux lecteurs libres, rien n'est vérifié en jeu) :
     - mêmes noms de pages qu'ACC (`Local\acpmf_*`) et même disposition des pages physique et graphique ;
       la page statique est écrite tard (zéros au début) et sa version du jeu est vide : le jeu se
