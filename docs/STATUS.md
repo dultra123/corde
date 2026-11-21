@@ -164,12 +164,14 @@
     arm64) ; `compose.yaml` et le guide prennent `:latest` avec `pull_policy: always` ; mettre à jour =
     projet → **Arrêt**, puis **Action → Créer**. Le fichier d'image reste dans les releases (NAS sans
     Internet, DSM 7.0 / 7.1). Écartés : un bouton de mise à jour dans le serveur lui-même et toute mise
-    à jour automatique (voir l'ADR). **Reste à faire, avec le propriétaire** : (1) rendre le paquet
-    `corde-server` **public** sur GitHub (privé par défaut à la première poussée ; c'est un réglage de
-    son compte, à faire par lui) ; (2) passer son projet à la nouvelle ligne `image:` et ajouter
-    `pull_policy: always` (une fois) ; (3) **vérifier sur son NAS** que « Créer » sur le projet arrêté
-    télécharge bien la nouvelle image — pas encore observé, le guide le suppose (comportement de
-    Compose v2) ; corriger le §11 du guide si ce n'est pas le cas.
+    à jour automatique (voir l'ADR). **Publié le 22 nov.** (CI n° 44960036732) : release `v1.12.0`,
+    images `1.12.0` et `latest` dans le registre (x64 et arm64 sous la même étiquette), paquet
+    **public** d'emblée (vu sur sa page GitHub). La prise de l'image sans compte n'a pas pu être
+    essayée d'ici (registre hors de portée de cet environnement). **Reste à faire, avec le
+    propriétaire** : (1) passer son projet à la nouvelle ligne `image:` et ajouter
+    `pull_policy: always` (une fois ; guide §11, « avant la 1.12.0 ») ; (2) **vérifier sur son NAS**
+    que « Créer » sur le projet arrêté télécharge bien la nouvelle image — pas encore observé, le
+    guide le suppose (comportement de Compose v2) ; corriger le §11 du guide si ce n'est pas le cas.
     Ce qui est établi pour Rally (lecture de deux lecteurs libres, rien n'est vérifié en jeu) :
     - mêmes noms de pages qu'ACC (`Local\acpmf_*`) et même disposition des pages physique et graphique ;
       la page statique est écrite tard (zéros au début) et sa version du jeu est vide : le jeu se

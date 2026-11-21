@@ -109,6 +109,7 @@ Ce qui a été pesé :
 - **`latest`** : étiquette mobile, voulue ici (c'est elle qui rend la mise à jour sans texte à changer).
   Chaque version garde aussi son étiquette fixe.
 
-Restent à vérifier sur le NAS du propriétaire : que « Créer » sur un projet arrêté télécharge bien la
-nouvelle image avec `pull_policy: always` (version de Compose de Container Manager), et que le paquet est
-public (un paquet créé par la CI est privé par défaut : réglage à faire une fois sur GitHub).
+Vérifié à la publication de la 1.12.0 (22 novembre 2026) : les deux étiquettes sont dans le registre, pour
+les deux architectures, et le paquet est **public** (créé par la CI d'un dépôt public, il l'a été d'emblée :
+aucun réglage à faire). Reste à vérifier sur le NAS du propriétaire : que « Créer » sur un projet arrêté
+télécharge bien la nouvelle image avec `pull_policy: always` (version de Compose de Container Manager).

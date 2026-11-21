@@ -23,12 +23,11 @@ de bord, que Corde remet quand elle le détecte. D'autres jeux sont prévus : vo
 
 ![Écran d'accueil de Corde](docs/images/accueil.png)
 
-> **Version 1.4 (novembre 2026).** Nouveau : **Corde serveur s'installe sur un NAS Synology** (ou toute
-> machine avec Docker), sans taper de commande ; et dans le **Studio**, tes tableaux de bord acceptent des
-> photos, des logos et des vidéos, des couleurs qui changent selon la valeur et des éléments qui
-> n'apparaissent qu'au bon moment. Corde fonctionne avec le jeu réel, mais elle est jeune : certaines parties n'ont pas encore été essayées en conditions réelles (le tableau
-> [Où en est le projet](#où-en-est-le-projet) le dit ligne par ligne), et l'installeur n'est pas encore
-> signé (voir [Installer](#installer-windows)). Les captures de cette page viennent du simulateur intégré.
+> **Nouveautés** : chaque version a ses notes dans le [journal des versions](CHANGELOG.md). Corde
+> fonctionne avec le jeu réel, mais elle est jeune : certaines parties n'ont pas encore été essayées en
+> conditions réelles (le tableau [Où en est le projet](#où-en-est-le-projet) le dit ligne par ligne), et
+> l'installeur n'est pas encore signé (voir [Installer](#installer-windows)). Les captures de cette page
+> viennent du simulateur intégré.
 
 ## Sommaire
 
