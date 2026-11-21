@@ -46,10 +46,17 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Le fichier compose publié, tel quel, sauf l'image (déjà la bonne si les versions concordent).
-grep -q "image: ${image}\$" "$here/compose.yaml" ||
-  fail "compose.yaml ne référence pas ${image} : mets à jour la ligne « image: » de packaging/docker/compose.yaml"
-cp "$here/compose.yaml" "$work/compose.yaml"
+# Le fichier compose publié, tel quel, sauf l'image : le texte publié prend la dernière image du
+# registre ; l'essai doit porter sur celle qui vient d'être construite, sans rien télécharger.
+published='ghcr.io/dultra123/corde-server:latest'
+grep -q "^    image: ${published}\$" "$here/compose.yaml" ||
+  fail "compose.yaml ne référence pas ${published} (ligne « image: » de packaging/docker/compose.yaml)"
+grep -q '^    pull_policy: always$' "$here/compose.yaml" ||
+  fail "compose.yaml n'a pas la ligne « pull_policy: always »"
+sed -e "s|^    image: ${published}\$|    image: ${image}|" -e 's|^    pull_policy: always$|    pull_policy: never|' \
+  "$here/compose.yaml" >"$work/compose.yaml"
+grep -q "^    image: ${image}\$" "$work/compose.yaml" || fail "sed image"
+grep -q '^    pull_policy: never$' "$work/compose.yaml" || fail "sed pull_policy"
 mkdir "$work/data"
 as_root chown "${other_uid}:${other_uid}" "$work/data"
 as_root chmod 0755 "$work/data"

@@ -1,5 +1,5 @@
 """Le texte compose collé par le guide (docs/SYNOLOGY.md, § 6) doit être packaging/docker/compose.yaml
-sans ses commentaires (numéro de version de l'image mis à part). Utilisé par la CI (job server-docker) :
+sans ses commentaires. Utilisé par la CI (job server-docker) :
 
     python3 -I packaging/docker/check-guide.py
 """

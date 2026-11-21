@@ -232,7 +232,8 @@ PC seulement.
 Tâches de fond (pas de route) : lecture de la mémoire partagée du jeu qui tourne — Le Mans Ultimate, ou
 Assetto Corsa Competizione depuis la 1.7 (`corde-acc` : trois zones nommées ouvertes **en lecture seule**,
 rien d'écrit, aucun réseau ; ADR 0020 ; les trois zones d'Assetto Corsa EVO depuis la 1.11, de la même
-façon), iRacing depuis la 1.9 (`corde-iracing` : une zone nommée ouverte
+façon ; Assetto Corsa Rally, depuis la 1.12, publie les zones de Competizione : rien de nouveau n'est
+ouvert), iRacing depuis la 1.9 (`corde-iracing` : une zone nommée ouverte
 **en lecture seule** ; chaque position et chaque taille qu'elle annonce est comparée à sa taille réelle
 avant toute lecture ; **aucune commande n'est envoyée au jeu**, bien qu'il en accepte ; ADR 0020, § D) ; `GET` vers l'API locale du jeu
 (`http://127.0.0.1:6397`, liste fermée de chemins en lecture seule, `lmu_api.rs`, `lmu_garage.rs`) avec
@@ -634,6 +635,29 @@ reçoit SIGTERM ; vérifié : arrêt en moins d'une seconde, code 0). Le passage
 effectives, permises et ambiantes ; `no_new_privs` empêche d'en regagner par un `exec`. L'ensemble limite
 (bounding set) n'est pas vidé (il faudrait `CAP_SETPCAP`) : sans moyen de regagner une capacité, il ne sert
 plus. Les fichiers créés par le serveur le sont avec `umask 077`.
+
+**D'où vient l'image (depuis la 1.12.0).** Le projet du guide la prend dans le registre de GitHub,
+`ghcr.io/dultra123/corde-server:latest`, avec `pull_policy: always` : à chaque création du projet, Docker
+regarde s'il existe une image plus récente et la prend ; un redémarrage du conteneur ou du NAS ne télécharge
+rien. Ce que ça change :
+
+- **Qui peut y écrire** : seulement le job `version` de la CI (`packages: write`, accordé à ce seul job),
+  sur une poussée dans `main`, aux mêmes conditions que la release. Il pousse **les deux fichiers d'image
+  de la release publiée**, retéléchargés d'elle (`docker load`, puis `docker push`), sans rien
+  reconstruire : l'image du registre est celle que `smoke-test.sh` a essayée. Une image déjà dans le
+  registre n'est jamais remplacée ; `latest` ne désigne que la dernière release.
+- **À quoi le NAS se fie** : au compte GitHub du projet et à TLS vers `ghcr.io`. Il n'y a **pas de
+  signature** de l'image vérifiée par le NAS (Docker n'en vérifie pas par défaut) : qui prendrait le
+  contrôle du dépôt ou du compte pourrait publier une image `latest` que le NAS prendrait à la prochaine
+  création du projet. C'est le même niveau de confiance que le fichier téléchargé à la main sur la page des
+  versions (lui non plus n'était pas vérifié par le NAS), mais sans le regard du propriétaire sur la page ;
+  d'où l'importance de la double authentification du compte et de la protection de `main`. L'application
+  Windows, elle, vérifie une signature avant d'installer une mise à jour (§ mises à jour).
+- **Rien d'automatique** : l'image ne change que quand le propriétaire arrête puis recrée le projet. Pour
+  figer une version : `image: ghcr.io/dultra123/corde-server:<version>`, ou l'image importée depuis le
+  fichier (`corde-server:<version>`, sans `pull_policy`), qui ne contacte aucun registre.
+- **Ce que le registre voit** : l'adresse du NAS sur Internet et l'image demandée ; aucun identifiant
+  (image publique), aucune donnée de Corde.
 
 **Le projet compose** (`compose.yaml`, celui du guide) : système de fichiers en lecture seule (seuls
 `/var/lib/corde` et un `/tmp` en mémoire de 16 Mo s'écrivent), `cap_drop: [ALL]` plus `CHOWN`,

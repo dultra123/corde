@@ -274,6 +274,8 @@ describe("the car's settings", () => {
     expect(frontBias({ brake_bias_rear: 0.455 })).toBeCloseTo(54.5);
     expect(frontBias({ brake_bias_rear: Number.NaN })).toBeNull();
     expect(frontBias({ brake_bias_rear: 2 })).toBeNull();
+    // A game that does not publish the bias sends 0: not known, not « 100 % front ».
+    expect(frontBias({ brake_bias_rear: 0 })).toBeNull();
   });
   it("counts the classes on track", () => {
     expect(

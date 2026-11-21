@@ -95,9 +95,10 @@ l'analyse est indicative et que les réglages proposés ne s'appliquent pas.
 ## Ordre des jeux suivants
 
 Le propriétaire a dit (17 nov.) posséder tous les jeux de la liste : chacun pourra être vérifié chez lui.
-Fait : le premier Assetto Corsa (1.8.0), iRacing (1.9.0, § D ci-dessous). Ensuite, par coût croissant :
+Fait : le premier Assetto Corsa (1.8.0), iRacing (1.9.0, § D ci-dessous), Assetto Corsa EVO (1.11.0, § G),
+Assetto Corsa Rally (1.12.0, § H). Ensuite, par coût croissant :
 rFactor 2 (plugin tiers, structures proches de celles de Le Mans Ultimate),
-Automobilista 2, RaceRoom, Assetto Corsa EVO (format encore mouvant), puis les jeux à télémétrie UDP (une
+Automobilista 2, RaceRoom, puis les jeux à télémétrie UDP (une
 option à activer dans le jeu, et un port à écouter : à étudier avec le modèle de sécurité). Les consoles ne
 sont pas prévues.
 
@@ -188,6 +189,38 @@ pas ce que le jeu ne publie pas.
 - **Copie de diagnostic** : prénom et nom effacés ; les identifiants des voitures remplacés par de petits
   numéros qui gardent les égalités (la case du joueur reste retrouvable).
 - **Hypothèses à confirmer en jeu** : marquées `TODO(verify-in-game)` dans `evo/convert.rs`.
+
+## H. Assetto Corsa Rally (1.12.0)
+
+- **Dans le même module** (`corde-acc`, module `rally`) : le jeu publie les pages de Competizione, sous les
+  mêmes noms et dans la même disposition. Il se reconnaît à ses températures, écrites en kelvins (un air à
+  plus de 200 ne peut pas être en °C) ; les sources de Competizione et du premier Assetto Corsa refusent
+  désormais de telles pages, et une page physique vide (pause, zone d'arrêt, ralenti) ne dit rien : la
+  détection attend.
+- **Source** : deux lecteurs libres indépendants qui ont observé le jeu ; aucun document du studio.
+  Rien n'est vérifié face au jeu.
+- **Une spéciale n'a pas de tours ; le modèle de données, lui, est fait de tours.** Plutôt que d'ajouter une
+  notion d'« épreuve » partout (enregistrement, analyse, comparaison, interface), **chaque passage est un
+  tour** :
+  - départ : le chrono du jeu quitte zéro ;
+  - arrivée : le chrono se fige alors que la voiture roule encore d'au moins 2 m (une pause fige les deux) ;
+    le temps est le chrono figé — celui du jeu, jamais un temps compté par Corde ;
+  - passage abandonné (chrono revenu à zéro avant l'arrivée) : un tour sans temps ;
+  - hors passage (ligne de départ, zone d'arrêt), la voiture est rapportée « aux stands », pour que
+    l'attente ne devienne pas un tour.
+- **La source dit elle-même si le tour compte** (`count_lap_flag` : 2 pendant un passage, 0 en dehors) :
+  le suivi des tours ne chronomètre alors jamais à sa place.
+- **Longueur de la spéciale** : celle de la page statique quand elle arrive (le jeu l'écrit en retard) ;
+  sinon celle mesurée sur le premier passage terminé ; d'ici là, une longueur provisoire (deux fois la
+  distance parcourue), parce que le suivi des tours a besoin d'une longueur pour distinguer une arrivée
+  d'un abandon.
+- **Suivi des tours (`corde-core`), pour tous les jeux** : un « tour » passé entièrement aux stands n'en est
+  pas un ; un tour abandonné n'est rapporté qu'après 3 s en piste ; la règle du « compteur qui rattrape »
+  ne joue que sans passage aux stands. Les jeux de circuit n'y perdent rien (tests inchangés).
+- **Carte** : un tracé ouvert (du départ à l'arrivée), que l'interface ne referme pas.
+- **Profil du jeu** : sans les widgets Classement, Écarts et Électronique.
+- **Hypothèses à confirmer en jeu** : marquées `TODO(verify-in-game)` dans `rally/convert.rs` — d'abord le
+  départ et l'arrivée.
 
 ## Alternatives écartées
 

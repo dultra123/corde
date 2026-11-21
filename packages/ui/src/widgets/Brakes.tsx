@@ -1,4 +1,4 @@
-import { brakeTemp } from "../dash/model";
+import { brakeTemp, frontBias } from "../dash/model";
 import { useT } from "../i18n";
 import { BRAKE_SCALE, tempColor } from "../lib/color";
 import { fmtNum } from "../lib/format";
@@ -38,8 +38,8 @@ function BrakesWidget(_props: WidgetProps) {
   const player = usePlayer();
   if (!player) return <Empty />;
   const [fl, fr, rl, rr] = player.wheels;
-  const rear = player.electronics.brake_bias_rear;
-  const front = 1 - rear;
+  // `null`: the game does not publish the bias (shown as « — », not as « 100 % front »).
+  const front = frontBias(player.electronics);
   const absOn = player.electronics.abs_active;
   return (
     <div className="brakes">
@@ -55,13 +55,19 @@ function BrakesWidget(_props: WidgetProps) {
           {absOn && <span className="pill is-on">ABS</span>}
         </div>
         <div className="bias-bar">
-          <div className="bias-front" style={{ width: `${front * 100}%` }} />
-          <span className="bias-txt num is-front">
-            {t("brakes.front")} {fmtNum(front * 100, 1)}
-          </span>
-          <span className="bias-txt num is-rear">
-            {fmtNum(rear * 100, 1)} {t("brakes.rear")}
-          </span>
+          {front === null ? (
+            <span className="bias-txt num is-none dim">—</span>
+          ) : (
+            <>
+              <div className="bias-front" style={{ width: `${front}%` }} />
+              <span className="bias-txt num is-front">
+                {t("brakes.front")} {fmtNum(front, 1)}
+              </span>
+              <span className="bias-txt num is-rear">
+                {fmtNum(100 - front, 1)} {t("brakes.rear")}
+              </span>
+            </>
+          )}
         </div>
       </div>
     </div>

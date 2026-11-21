@@ -1,3 +1,4 @@
+import { frontBias } from "../dash/model";
 import { useT } from "../i18n";
 import { fmtNum } from "../lib/format";
 import { usePlayer } from "../store/telemetry";
@@ -56,6 +57,7 @@ function ElectronicsWidget(_props: WidgetProps) {
   const player = usePlayer();
   if (!player) return <Empty />;
   const e = player.electronics;
+  const bias = frontBias(e);
   const eng = player.engine;
   return (
     <div className="elec">
@@ -83,8 +85,8 @@ function ElectronicsWidget(_props: WidgetProps) {
         <div className="setting">
           <span className="setting-label dim">{t("elec.bias")}</span>
           <span className="setting-value num">
-            {fmtNum((1 - e.brake_bias_rear) * 100, 1)}
-            <small>%</small>
+            {fmtNum(bias, 1)}
+            {bias !== null && <small>%</small>}
           </span>
         </div>
       </div>

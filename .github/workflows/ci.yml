@@ -9,7 +9,8 @@
 # server-docker : Corde serveur en image de conteneur (NAS Synology, Docker ; ADR 0017), construite depuis
 #              ces archives (rien n'est recompilé) pour linux/amd64 et linux/arm64, essayée pour de vrai (x64 :
 #              compose.yaml durci, appairage, arrêt, noms d'hôte), fichiers corde-server-<version>-docker-<arch>.tar.gz
-#              (docker save | gzip) → artefact corde-server-docker. Aucun registre.
+#              (docker save | gzip) → artefact corde-server-docker. Rien n'est poussé dans un registre ici :
+#              c'est le job `version` qui pousse ces mêmes images, une fois par version (voir plus bas).
 # desktop    : application de bureau (coquille Tauri 2, apps/desktop — workspace Cargo à part) sur windows-latest :
 #              installeur NSIS, artefact corde-setup (Corde_<version>_x64-setup.exe, et sa signature de mise à
 #              jour Corde_<version>_x64-setup.exe.sig quand le secret TAURI_SIGNING_PRIVATE_KEY existe). C'est le
@@ -19,7 +20,11 @@
 #              signé qu'android.yml y a mis (Corde_<version>_android.apk) est repris avant la suppression
 # version    : sur push main seulement, release NUMÉROTÉE v<version> (version de tauri.conf.json) si elle n'existe
 #              pas encore et que la signature de mise à jour a été produite : installeur, .sig, zip portable et
-#              latest.json (lu par le bouton « Rechercher une mise à jour » de l'application)
+#              latest.json (lu par le bouton « Rechercher une mise à jour » de l'application). Puis, si
+#              l'image de cette version n'y est pas encore : les deux images de la release publiée sont
+#              poussées dans le registre de GitHub, ghcr.io/dultra123/corde-server:<version> et :latest (x64
+#              et arm64 sous la même étiquette) — c'est de là que le projet d'un NAS les prend
+#              (packaging/docker/compose.yaml)
 # release    : sur tag v* poussé à la main, zip Windows + tar.gz Linux + installeur attachés à une GitHub Release
 #              d'archive (jamais « latest », sautée si la release du tag existe déjà)
 # deny       : licences, avis de sécurité et sources des dépendances Rust (cargo-deny, deny.toml) —
@@ -29,8 +34,7 @@
 #   - `continuous` : la pré-release glissante, recréée à chaque poussée sur main, pour essayer le dernier état.
 #     Une pré-release n'est jamais « latest » : elle n'est pas vue par les mises à jour de l'application.
 #   - `version` : la voie normale des versions. Changer le numéro (tauri.conf.json, Cargo.toml, package.json,
-#     ligne « image: » de packaging/docker/compose.yaml — vérifiée par server-docker —, section du
-#     CHANGELOG.md) et pousser sur main suffit : la release v<version> est créée une fois, marquée
+#     section du CHANGELOG.md) et pousser sur main suffit : la release v<version> est créée une fois, marquée
 #     « latest », et son latest.json est servi à
 #     https://github.com/dultra123/corde/releases/latest/download/latest.json (adresse fixée dans l'application).
 #     Les poussées suivantes avec le même numéro ne recréent rien. L'étiquette v<version> est créée par l'API
@@ -42,7 +46,8 @@
 #
 # Sécurité (dépôt public) : jeton en lecture seule par défaut, `contents: write` seulement dans
 # `continuous`, `version` et `release`, qui ne tournent que sur une poussée du dépôt d'origine (jamais
-# sur une PR ni sur un fork) ; pas de `pull_request_target` ; secrets de signature (code Windows et
+# sur une PR ni sur un fork) ; `packages: write` seulement dans `version` (pousser l'image de Corde
+# serveur dans le registre), aux mêmes conditions ; pas de `pull_request_target` ; secrets de signature (code Windows et
 # mises à jour) jamais exposés au code d'une PR ni d'un fork ; aucune valeur contrôlable par un tiers
 # (titre de PR, nom de branche ou d'étiquette) n'est collée dans un script `run:`, elle passe par une
 # variable d'environnement. Toutes les actions (`uses:`) sont épinglées sur un commit, pas sur une
@@ -318,8 +323,8 @@ jobs:
   server-docker:
     name: Corde serveur (image de conteneur x64 et arm64)
     # Les images reprennent le binaire et l'interface des archives Linux (rien n'est recompilé).
-    # Aucune publication dans un registre : les fichiers « docker save » vont dans les releases,
-    # comme les archives.
+    # Les fichiers « docker save » vont dans les releases, comme les archives ; ce job ne pousse rien
+    # dans un registre (le job `version` y pousse ces mêmes images, une fois par version).
     needs: server-linux
     runs-on: ubuntu-latest
     steps:
@@ -718,6 +723,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      # Pousser l'image de Corde serveur dans le registre de GitHub (dernière étape du job).
+      packages: write
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
@@ -838,6 +845,68 @@ jobs:
             echo "### Release ${TAG} publiée"
             echo ""
             echo "Mises à jour : https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/latest.json"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Les deux images de la release, poussées une fois par version dans le registre de GitHub :
+      # ghcr.io/dultra123/corde-server:<version> et :latest, chacune pour x64 et arm64. C'est ce que
+      # prend le projet d'un NAS (compose.yaml : image « …:latest », pull_policy « always ») : mettre à
+      # jour le serveur revient à arrêter le projet puis à le créer à nouveau.
+      # Les images poussées sont les fichiers de la release publiée, retéléchargés d'elle : jamais une
+      # reconstruction d'un commit suivant qui porterait le même numéro. L'étape se rattrape toute
+      # seule : si l'image d'une version publiée manque (poussée interrompue), l'exécution suivante la
+      # pousse ; une image déjà là n'est jamais remplacée. Le jeton est celui du workflow ; il n'est
+      # écrit que dans la configuration de Docker de cette machine, effacée à la fin.
+      - name: Pousser l'image de Corde serveur dans le registre de GitHub (ghcr.io)
+        env:
+          VERSION: ${{ steps.plan.outputs.version }}
+          TAG: ${{ steps.plan.outputs.tag }}
+          IMAGE: ghcr.io/dultra123/corde-server
+        run: |
+          set -euo pipefail
+          draft=$(gh release view "$TAG" --json isDraft --jq '.isDraft' 2> /dev/null || echo absent)
+          if [ "$draft" != "false" ]; then
+            echo "Pas de release ${TAG} publiée : rien à pousser."
+            exit 0
+          fi
+          printf '%s' "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          trap 'docker logout ghcr.io > /dev/null 2>&1 || true' EXIT
+          if docker buildx imagetools inspect "${IMAGE}:${VERSION}" > /dev/null 2>&1; then
+            echo "${IMAGE}:${VERSION} est déjà dans le registre : rien à faire."
+            exit 0
+          fi
+          mkdir -p images
+          gh release download "$TAG" --pattern "corde-server-${VERSION}-docker-*.tar.gz" --dir images || true
+          for arch in x64 arm64; do
+            if [ ! -s "images/corde-server-${VERSION}-docker-${arch}.tar.gz" ]; then
+              echo "::warning::la release ${TAG} n'a pas le fichier d'image ${arch} : rien n'est poussé dans le registre"
+              exit 0
+            fi
+          done
+          for pair in x64:amd64 arm64:arm64; do
+            arch=${pair%%:*}
+            platform=${pair#*:}
+            docker image rm -f "corde-server:${VERSION}" > /dev/null 2>&1 || true
+            gunzip -c "images/corde-server-${VERSION}-docker-${arch}.tar.gz" | docker load
+            got=$(docker image inspect --format '{{.Architecture}}' "corde-server:${VERSION}")
+            [ "$got" = "$platform" ] || { echo "::error::${arch} : architecture ${got}, attendu ${platform}"; exit 1; }
+            docker tag "corde-server:${VERSION}" "${IMAGE}:${VERSION}-${platform}"
+            docker push "${IMAGE}:${VERSION}-${platform}"
+          done
+          # Une seule étiquette pour les deux architectures : chaque machine prend la sienne.
+          # « latest » ne bouge que si cette version est bien la dernière release du dépôt.
+          tags=(--tag "${IMAGE}:${VERSION}")
+          newest=$(gh release view --json tagName --jq '.tagName' 2> /dev/null || echo "")
+          if [ "$newest" = "$TAG" ]; then
+            tags+=(--tag "${IMAGE}:latest")
+          else
+            echo "::warning::${TAG} n'est pas la dernière release (${newest}) : « latest » n'est pas déplacée"
+          fi
+          docker buildx imagetools create "${tags[@]}" \
+            "${IMAGE}:${VERSION}-amd64" "${IMAGE}:${VERSION}-arm64"
+          docker buildx imagetools inspect "${IMAGE}:${VERSION}"
+          {
+            echo ""
+            echo "Image de Corde serveur poussée : \`${IMAGE}:${VERSION}\` (x64 et arm64)"
           } >> "$GITHUB_STEP_SUMMARY"
 
   release:

@@ -35,7 +35,7 @@ L'option `Automatically Record Telemetry` peut rester désactivée : Corde enreg
 1. Ouvre la page de la dernière version :
    **<https://github.com/dultra123/corde/releases/latest>**.
 2. Tout en bas, section **Assets**, clique sur le fichier dont le nom finit par **`-setup.exe`**
-   (par exemple `Corde_1.11.0_x64-setup.exe`).
+   (par exemple `Corde_1.12.0_x64-setup.exe`).
 3. Ton navigateur peut hésiter : Edge affiche parfois « … n'est pas couramment téléchargé ». Clique sur
    les **…** à côté du fichier → **Conserver** → **Conserver quand même**.
 
@@ -83,7 +83,7 @@ Il ne touche ni au jeu, ni à tes données Corde existantes (§ 7).
 ### Plusieurs jeux : un profil par jeu
 
 Corde reconnaît toute seule le jeu qui tourne (Le Mans Ultimate, Assetto Corsa Competizione, Assetto Corsa,
-Assetto Corsa EVO, iRacing) et, depuis la 1.10.0, ouvre **le profil de ce jeu** : sa disposition de widgets, son tableau de
+Assetto Corsa EVO, Assetto Corsa Rally, iRacing) et, depuis la 1.10.0, ouvre **le profil de ce jeu** : sa disposition de widgets, son tableau de
 bord de course, son affichage du Direct. Ce que tu choisis pendant qu'un jeu est « en place » reste attaché
 à ce jeu.
 
@@ -537,7 +537,7 @@ Bon à savoir :
   envoyé (voir `PRIVACY.md`).
 - **La 0.6.0 elle-même s'installe encore à la main** (ci-dessous) : c'est elle qui apporte le bouton. Les
   versions suivantes arrivent par le bouton.
-- Les mises à jour du bouton sont les **versions numérotées** (page des versions, « Corde 1.11.0 »…). La
+- Les mises à jour du bouton sont les **versions numérotées** (page des versions, « Corde 1.12.0 »…). La
   version de développement « Corde — dernière version » (pré-version reconstruite à chaque modification
   du projet, <https://github.com/dultra123/corde/releases/tag/continuous>) s'installe toujours à la main.
 
@@ -604,6 +604,7 @@ d'ailleurs de démarrer si elle le voit).
 | `lmu-probe.exe --once --dump frame.json` | écrit un instantané complet de ce que le jeu publie — le fichier le plus utile à nous envoyer quand une donnée semble fausse |
 | `acc-probe.exe --dump copie-acc` | Assetto Corsa Competizione, en piste : affiche ce que Corde lit du jeu (circuit, voiture, tour, vitesse, chronos) et écrit une copie de diagnostic sans ton nom — voir [Les jeux que Corde sait lire](JEUX.md) |
 | `acc-probe.exe --dump copie-evo` | Assetto Corsa EVO, en piste : le même outil reconnaît ce jeu, affiche ce que Corde en lit et écrit une copie de diagnostic sans ton nom ni les identifiants des voitures — voir [Les jeux que Corde sait lire](JEUX.md) |
+| `acc-probe.exe --dump copie-rally` | Assetto Corsa Rally, sur une spéciale : le même outil reconnaît ce jeu, affiche ce que Corde en lit (épreuve, chrono du jeu, passage) et écrit une copie de diagnostic sans ton nom — voir [Les jeux que Corde sait lire](JEUX.md) |
 | `iracing-probe.exe --dump copie-iracing.map` | iRacing, dans la voiture : affiche ce que Corde lit du jeu et écrit une copie de diagnostic sans aucun nom ni identifiant — voir [Les jeux que Corde sait lire](JEUX.md) |
 | `corde-server.exe` | le serveur seul ; ouvre ensuite `http://127.0.0.1:8471` dans un navigateur. Comme l'application, il n'est joignable que depuis ce PC par défaut ; avec `--lan` il écoute sur le réseau local et Windows pose la question du pare-feu (§ 6) |
 | `corde-server.exe --source sim` | le même avec une course fictive, sans le jeu |

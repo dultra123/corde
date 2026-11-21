@@ -8,6 +8,48 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [1.12.0] — 2026-11-22
+
+**Corde serveur sur un NAS se met à jour en deux clics. Un sixième jeu, expérimental : Assetto Corsa Rally.**
+
+### Corde serveur sur un NAS : mise à jour simple
+
+- **Plus rien à télécharger ni à importer.** Le NAS va chercher Corde serveur tout seul sur Internet
+  (registre de GitHub, `ghcr.io/dultra123/corde-server`).
+- **Mettre à jour** : Container Manager → **Projet** → `corde` → **Arrêt**, puis **Action** → **Créer**.
+  C'est tout : pas de fichier, pas de numéro à changer. Tes données et tes appareils appairés ne bougent pas.
+- **Si ton serveur est déjà installé** (image importée depuis un fichier) : une dernière modification du
+  texte du projet, une seule fois, expliquée pas à pas dans le guide
+  ([docs/SYNOLOGY.md §11](https://github.com/dultra123/corde/blob/main/docs/SYNOLOGY.md#11-mettre-à-jour)).
+- **Nouvelle installation** : on colle le texte du guide, tel quel, et le NAS fait le reste.
+- Ce que ça change : à l'installation et à chaque mise à jour, le NAS contacte GitHub pour prendre l'image
+  (rien d'autre n'est envoyé). Sans Internet sur le NAS, le fichier d'image reste disponible sur la page des
+  versions, comme avant.
+- Rien n'est automatique : le serveur ne change que quand tu fais ces deux clics.
+- Sur le PC, le message « Serveur à mettre à jour » dit maintenant quoi faire sur un NAS.
+
+### Assetto Corsa Rally (expérimental)
+
+- Corde reconnaît **Assetto Corsa Rally** toute seule : rien à installer ni à activer dans le jeu.
+- Une spéciale n'a pas de tours : **chaque passage est compté comme un tour**, avec **le temps du jeu**.
+  Un passage relancé avant l'arrivée est gardé comme un tour sans temps. L'attente sur la ligne de départ
+  et la zone d'arrêt ne sont pas comptées.
+- Direct, enregistrement, comparaison de deux passages de la même spéciale, carte (une ligne du départ à
+  l'arrivée, dessinée pendant le premier passage).
+- Son **profil** : une disposition « Assetto Corsa Rally » sans les widgets Classement, Écarts et
+  Électronique.
+- **Pas encore vérifié face au jeu** : écrit d'après ce que des outils libres ont relevé. Le départ et
+  l'arrivée d'une spéciale sont le premier point à confirmer. Le jeu est en accès anticipé : une de ses
+  mises à jour peut changer ce qu'il publie.
+- `acc-probe.exe --dump copie-rally` (archive portable) écrit une copie de diagnostic, sans ton nom.
+
+### Corrections
+
+- Pour tous les jeux : un passage entier par les stands n'est plus compté comme un tour, et une sortie des
+  stands n'est plus signalée comme un tour abandonné.
+- Widgets **Freins** et **Électronique**, tableau de bord : quand le jeu ne donne pas la répartition de
+  freinage, Corde affiche « — » au lieu de « AV 100 / 0 AR ».
+
 ## [1.11.0] — 2026-11-21
 
 **Un cinquième jeu, en version expérimentale : Assetto Corsa EVO.**

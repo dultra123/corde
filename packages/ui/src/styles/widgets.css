@@ -249,6 +249,11 @@ small {
 .bias-txt.is-rear {
   right: 8px;
 }
+.bias-txt.is-none {
+  left: 0;
+  right: 0;
+  text-align: center;
+}
 
 /* Inputs ------------------------------------------------------------------ */
 .inputs {

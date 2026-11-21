@@ -310,10 +310,13 @@ export function brakeTemp(temp: number | null | undefined): number | null {
   return temp !== null && temp !== undefined && Number.isFinite(temp) && temp > 0 ? temp : null;
 }
 
-/** Front share of the braking, percent. */
+/**
+ * Front share of the braking, percent; `null` when the game does not give it (a source then
+ * sends 0 for the rear share: no car brakes with its front wheels alone).
+ */
 export function frontBias(e: Pick<Electronics, "brake_bias_rear">): number | null {
   const v = (1 - e.brake_bias_rear) * 100;
-  return Number.isFinite(v) && e.brake_bias_rear >= 0 && e.brake_bias_rear <= 1 ? v : null;
+  return Number.isFinite(v) && e.brake_bias_rear > 0 && e.brake_bias_rear <= 1 ? v : null;
 }
 
 // ---------------------------------------------------------------- standings

@@ -2,14 +2,15 @@
 
 > Pour qui : le pilote qui a déjà un **NAS Synology** allumé en permanence et qui veut y mettre Corde serveur
 > au lieu d'acheter un Raspberry Pi. Tout se fait dans l'interface du NAS (DSM), à la souris. Compte
-> 45 minutes la première fois.
+> 30 minutes la première fois.
 > Ce que fait Corde serveur, et le Raspberry Pi : [SERVEUR.md](SERVEUR.md). Accès depuis l'extérieur :
 > [ACCES-EXTERIEUR.md](ACCES-EXTERIEUR.md) (à lire **après** ce guide). Sécurité :
 > [SECURITY-MODEL.md §7](SECURITY-MODEL.md#7-le-serveur-corde-mode-hub). Décision :
 > [ADR 0017](adr/0017-corde-serveur-en-conteneur.md).
 >
-> **Les noms des menus** des §2 à 7 et 11 ont été relevés sur un vrai NAS (DS220+, DSM 7.4.1, Container
-> Manager 24.0.2, novembre 2026), en français. Synology les change parfois d'une version à l'autre : si un
+> **Les noms des menus** des §2, 3, 5 à 7 et 11 ont été relevés sur un vrai NAS (DS220+, DSM 7.4.1,
+> Container Manager 24.0.2, novembre 2026), en français. La mise à jour en deux clics du §11 (depuis la
+> 1.12.0) n'y a pas encore été déroulée en entier. Synology les change parfois d'une version à l'autre : si un
 > nom diffère un peu chez toi, cherche le plus proche, l'étape reste la même. Là où un nom n'a pas été
 > vérifié (terminal, suppression, sauvegarde, DSM 7.0 / 7.1), l'étape décrit ce qu'il faut faire sans le
 > citer.
@@ -28,9 +29,10 @@ Corde serveur est exactement le même programme que sur un Raspberry Pi ([SERVEU
 l'installation change. Sur le NAS, il tourne dans un **conteneur** (une boîte isolée gérée par l'application
 **Container Manager** de Synology) :
 
-- tu télécharges **un fichier** (l'« image » de Corde serveur) sur la page des versions de Corde ;
-- tu l'**importes** dans Container Manager, puis tu crées un **projet** en collant un petit texte tout prêt ;
+- tu crées un **projet** en collant un petit texte tout prêt : le NAS va chercher tout seul l'« image » de
+  Corde serveur (le programme) sur Internet. Rien à télécharger ni à importer à la main ;
 - le **premier code d'appairage** s'affiche dans le **journal** du conteneur : pas besoin de terminal ;
+- **mettre à jour**, plus tard, c'est deux clics : arrêter le projet, puis le créer à nouveau (§ 11) ;
 - tes données restent dans un dossier du NAS, que les mises à jour ne touchent pas.
 
 Comme sur le Pi : le serveur n'est **jamais** ouvert sur Internet ; depuis l'extérieur, on passe par un VPN.
@@ -39,7 +41,8 @@ Comme sur le Pi : le serveur n'est **jamais** ouvert sur Internet ; depuis l'ext
 
 | Élément | Détail |
 |---|---|
-| **Un NAS Synology à processeur Intel ou AMD** | c'est le cas des modèles « plus » (DS220+, DS224+, DS920+…) et de la plupart des modèles pour petites entreprises. Fichier à prendre : **`…-docker-x64.tar.gz`**. Pour connaître ton processeur : la fiche technique de ton modèle sur le site de Synology (ligne « Processeur »), ou le centre d'informations de DSM (Panneau de configuration). |
+| **Un NAS Synology à processeur Intel ou AMD** | c'est le cas des modèles « plus » (DS220+, DS224+, DS920+…) et de la plupart des modèles pour petites entreprises. Pour connaître ton processeur : la fiche technique de ton modèle sur le site de Synology (ligne « Processeur »), ou le centre d'informations de DSM (Panneau de configuration). |
+| **Un NAS relié à Internet** | pour aller chercher l'image de Corde serveur (à l'installation et à chaque mise à jour). Sans Internet sur le NAS : [§ 5](#5-sans-internet-sur-le-nas--importer-limage-depuis-un-fichier). |
 | **Le paquet Container Manager** | DSM 7.2 ou plus récent. Sous DSM 7.0 / 7.1, il s'appelait **Docker** : voir [§ 15](#15-dsm-70-ou-71--le-paquet-docker). |
 | **Une adresse fixe pour le NAS** | dans ta box, réserve une adresse au NAS (« bail statique » ou « réservation DHCP »), sinon le PC ne le retrouvera plus. Dans ce guide : `192.168.1.50` (exemple, remplace par la tienne). |
 | **De la mémoire** | Corde serveur utilise quelques dizaines de Mo ; le projet le limite à 512 Mo (largement assez sur un NAS de 2 Go). |
@@ -51,11 +54,9 @@ Comme sur le Pi : le serveur n'est **jamais** ouvert sur Internet ; depuis l'ext
   d'entrée de gamme anciens et tous les modèles à processeur ARM 32 bits. Prends un Raspberry Pi
   ([SERVEUR.md](SERVEUR.md)) ;
 - les modèles **à processeur ARM 64 bits** auxquels Synology a ouvert Container Manager (certains modèles
-  récents des séries « j » ou « value ») : le fichier **`…-docker-arm64.tar.gz`** est fait pour eux, mais il
-  n'a **jamais été essayé** sur un tel NAS. Le guide s'applique tel quel ; si ça ne marche pas, signale-le
-  (et le Raspberry Pi reste la voie sûre).
-
-Exemple : un DS220+ a un processeur Intel (Celeron J4025) : fichier **x64**.
+  récents des séries « j » ou « value ») : l'image existe aussi pour eux (le NAS prend la bonne tout seul),
+  mais elle n'a **jamais été essayée** sur un tel NAS. Le guide s'applique tel quel ; si ça ne marche pas,
+  signale-le (et le Raspberry Pi reste la voie sûre).
 
 ## 2. Installer Container Manager
 
@@ -91,29 +92,40 @@ Résultat : `docker/corde/data`. Le dossier `data` gardera tout (sessions, appar
 Corde serveur se l'attribue tout seul au premier démarrage (il appartient ensuite à son compte « corde »,
 numéro 8471). Ne mets rien d'autre dedans.
 
-## 4. Télécharger l'image de Corde serveur
+## 4. L'image de Corde serveur : rien à faire
+
+L'« image » est le programme Corde serveur, prêt à tourner dans un conteneur. Depuis la 1.12.0, le NAS la
+prend **tout seul** dans le registre de GitHub (`ghcr.io/dultra123/corde-server`) quand tu crées le projet
+(§ 6), et en reprend une plus récente à chaque mise à jour (§ 11). Passe directement au § 6.
+
+Ce que ça implique : à ces deux moments, ton NAS contacte `ghcr.io` (GitHub), qui voit l'adresse de ta
+connexion, comme n'importe quel site. Rien d'autre n'est envoyé. Container Manager peut aussi y regarder
+de lui-même, de temps en temps, si une image plus récente existe (il le signale alors dans la section
+**Image**).
+
+## 5. Sans Internet sur le NAS : importer l'image depuis un fichier
+
+À faire **seulement** si ton NAS n'a pas accès à Internet (ou si tu veux rester sur une version précise).
+Sinon, saute cette section.
 
 1. Sur le PC, ouvre la [dernière version de Corde](https://github.com/dultra123/corde/releases/latest)
-   (section *Assets* en bas de la page).
-2. Télécharge **`corde-server-<version>-docker-x64.tar.gz`** (par exemple
-   `corde-server-1.11.0-docker-x64.tar.gz`, environ 40 Mo ; le numéro change à chaque version). **Ne le
-   décompresse pas** : le NAS le lit tel quel.
-
-Les images apparaissent à partir de la première version publiée après l'arrivée de ce guide ; la pré-release
-« Corde — dernière version » les a aussi.
-
-## 5. Importer l'image dans Container Manager
-
-1. Ouvre **Container Manager**, section **Image** (menu de gauche).
-2. Clique sur **Importer** (s'il y a déjà des images dans la liste : menu **Action** → **Importer**), puis
-   **Ajouter à partir d'un fichier** → **À partir d'un périphérique local** (le PC sur lequel tu as
-   téléchargé le fichier ; « À partir de ce DSM » sert pour un fichier déjà posé sur le NAS).
-3. Sélectionne `corde-server-<version>-docker-x64.tar.gz` et valide. L'envoi prend une minute environ.
-4. L'image **`corde-server`** apparaît dans la liste, avec son numéro dans la colonne **Identification**
-   (ex. `1.11.0`).
+   (section *Assets* en bas de la page) et télécharge **`corde-server-<version>-docker-x64.tar.gz`** (par
+   exemple `corde-server-1.12.0-docker-x64.tar.gz`, environ 40 Mo). **Ne le décompresse pas**.
+2. Ouvre **Container Manager**, section **Image** (menu de gauche).
+3. Clique sur **Importer** (s'il y a déjà des images dans la liste : menu **Action** → **Importer**), puis
+   **Ajouter à partir d'un fichier** → **À partir d'un périphérique local**.
+4. Sélectionne le fichier et valide. L'envoi prend une minute environ. L'image **`corde-server`** apparaît
+   dans la liste, avec son numéro dans la colonne **Identification**.
+5. **Ne clique pas sur « Exécuter »** : ce bouton lance un conteneur à part, sans tes données ni le bon
+   port. L'image sert au projet du § 6, rien d'autre.
+6. Dans le texte du § 6, remplace la ligne `image: ghcr.io/dultra123/corde-server:latest` par
+   `image: corde-server:<version>` (par exemple `corde-server:1.12.0`) et **supprime** la ligne
+   `pull_policy: always`.
 
 Si l'import refuse le fichier compressé : décompresse-le une fois sur le PC (clic droit → Extraire, ou
-7-Zip) pour obtenir `corde-server-<version>-docker-x64.tar`, puis importe ce `.tar`.
+7-Zip) pour obtenir un `.tar`, puis importe ce `.tar`. Pour mettre à jour ensuite : importe le nouveau
+fichier, arrête le projet, change le numéro sur la ligne `image:`, **Sauvegarder**, puis « Créer et démarrer
+le projet ».
 
 ## 6. Créer le projet Corde
 
@@ -126,14 +138,15 @@ Container Manager s'occupe du reste.
 3. **Chemin** : clique sur **Définir le chemin**, déplie `docker`, choisis **`corde`** (créé au § 3), puis
    **Sélectionnez**. Le champ affiche `/docker/corde`.
 4. **Source** : choisis **Créer un fichier docker-compose.yml**. Une zone de texte s'ouvre en dessous.
-5. Colle ce texte (Ctrl + V), puis **remplace `1.11.0` par le numéro de l'image que tu as importée** (§ 5) :
+5. Colle ce texte (Ctrl + V), tel quel :
 
    ```yaml
    version: "2.4"
 
    services:
      corde:
-       image: corde-server:1.11.0
+       image: ghcr.io/dultra123/corde-server:latest
+       pull_policy: always
        container_name: corde
        restart: unless-stopped
        ports:
@@ -160,15 +173,17 @@ Container Manager s'occupe du reste.
    ```
 
    Ce texte est le fichier [`packaging/docker/compose.yaml`](../packaging/docker/compose.yaml) du dépôt
-   (avec des commentaires qui expliquent chaque ligne). En résumé : le port **8471** du NAS mène à Corde ;
-   les données vont dans `docker/corde/data` ; le conteneur **redémarre tout seul** (après une coupure ou
-   un redémarrage du NAS) sauf si tu l'as arrêté toi-même ; le reste l'enferme (lecture seule, aucun droit
-   particulier, mémoire limitée).
+   (avec des commentaires qui expliquent chaque ligne). En résumé : `image` et `pull_policy` disent au NAS
+   de prendre la dernière version de Corde serveur à chaque création du projet ; le port **8471** du NAS
+   mène à Corde ; les données vont dans `docker/corde/data` ; le conteneur **redémarre tout seul** (après
+   une coupure ou un redémarrage du NAS) sauf si tu l'as arrêté toi-même ; le reste l'enferme (lecture
+   seule, aucun droit particulier, mémoire limitée).
 6. **Suivant**. Écran **Paramètres du portail Web** : laisse « Configurer le portail Web via Web Station »
    **décoché**, Corde n'en a pas besoin (et ce portail servirait à publier le service).
 7. **Suivant**. Écran **Résumé** : laisse « Démarrer le projet dès sa création » coché, puis **Effectué**.
-8. Une fenêtre **Terminal : Créer - corde** montre la création. Elle doit finir par `Container corde
-   Started` et `Exit Code: 0` ; clique sur **Fermer**. La ligne « Your kernel does not support PIDs limit
+8. Une fenêtre **Terminal : Créer - corde** montre la création : le téléchargement de l'image (une minute
+   environ la première fois), puis le démarrage. Elle doit finir par `Container corde Started` et
+   `Exit Code: 0` ; clique sur **Fermer**. La ligne « Your kernel does not support PIDs limit
    capabilities… PIDs limit discarded » est normale sur un NAS Synology (une des limites du texte n'y est
    pas prise en charge, les autres le sont).
 
@@ -280,23 +295,45 @@ administrateur.
 ## 11. Mettre à jour
 
 Le serveur doit avoir **la même version que Corde sur le PC, ou plus récente** (sinon le PC affiche
-« Serveur à mettre à jour » et attend, sans rien perdre). Il faut aussi la **1.6.0 ou plus récente** pour
-que le serveur relaie « Mes courses » entre le PC et le téléphone (l'application du téléphone l'indique,
-sous « Mes courses », quand le serveur est trop ancien).
+« Serveur à mettre à jour » et attend, sans rien perdre). Mets donc le serveur à jour **avant** le PC, ou
+juste après.
 
-1. Télécharge le nouveau `corde-server-<version>-docker-x64.tar.gz` (§ 4) et **importe-le** (§ 5) : une
-   seconde étiquette (le nouveau numéro) apparaît à côté de l'ancienne.
-2. Container Manager → **Projet** → ouvre `corde` (double-clic) → bouton **Arrêt** (tant que le projet
+1. Container Manager → **Projet** → clique **une fois** sur la ligne `corde` (elle se surligne).
+2. Menu **Action** → **Arrêt**. Attends que la pastille du projet ne soit plus verte.
+3. Menu **Action** → **Créer**. La fenêtre **Terminal : Créer - corde** télécharge la nouvelle image, puis
+   redémarre le serveur. Elle doit finir par `Exit Code: 0` ; clique sur **Fermer**.
+4. Vérifie : dans Corde sur le PC, **Réglages** → **Serveur Corde** affiche **Connecté**. (Ou, dans le
+   journal du conteneur (§ 7), la ligne `corde-server <nouvelle version> — serveur Corde (rôle hub)`.)
+
+Rien à télécharger, rien à écrire. Les données (`docker/corde/data`) ne bougent pas : les appareils restent
+appairés.
+
+- **S'il n'y a pas de version plus récente**, l'étape 3 relance simplement le serveur tel qu'il est.
+- **Si le téléchargement échoue** (pas d'Internet à cet instant) : menu **Action** → **Démarrer** relance
+  le serveur dans sa version actuelle ; réessaie plus tard.
+- De temps en temps, tu peux supprimer les anciennes images dans la section **Image** (celles marquées
+  comme non utilisées) pour libérer de la place.
+- Il n'y a pas de mise à jour automatique : rien ne change sans ces clics.
+
+### Tu as installé Corde serveur avant la 1.12.0 (image importée depuis un fichier)
+
+À faire **une seule fois**, pour ne plus jamais importer de fichier :
+
+1. Container Manager → **Projet** → ouvre `corde` (double-clic) → bouton **Arrêt** (tant que le projet
    tourne, son texte est en lecture seule).
-3. Onglet **Configurations YAML** : remplace l'ancien numéro par le nouveau sur la ligne
-   `image: corde-server:…`, puis **Sauvegarder**.
-4. DSM demande quoi faire ensuite : garde **Créer et démarrer le projet (reconstruire l'image)**, puis
-   **OK**. La fenêtre de création doit finir par `Exit Code: 0`.
-5. Vérifie dans le journal (§ 7) la ligne `corde-server <nouvelle version> — serveur Corde (rôle hub)`.
+2. Onglet **Configurations YAML**. Clique dans le texte, sélectionne tout (Ctrl + A), puis colle à la
+   place le texte du [§ 6](#6-créer-le-projet-corde) (Ctrl + V). Les seules différences avec ton ancien
+   texte sont la ligne `image:` et la nouvelle ligne `pull_policy: always`.
+   Si tu avais changé le port (`"8471:8471"`) ou rempli `CORDE_ALLOW_HOST`, refais ce changement.
+3. **Sauvegarder** → garde **Créer et démarrer le projet (reconstruire l'image)** → **OK**. La fenêtre
+   télécharge l'image et doit finir par `Exit Code: 0`.
 
-Les données (`docker/corde/data`) ne bougent pas : les appareils restent appairés. Quand tout marche, tu peux
-supprimer l'**ancienne** image (section **Image**, l'ancienne étiquette) pour libérer de la place. Il n'y a
-pas de mise à jour automatique.
+Tes données ne risquent rien : elles sont dans le dossier `data`, pas dans ce texte, et les appareils
+restent appairés. Ensuite, les mises à jour se font comme ci-dessus, en deux clics. L'ancienne image
+`corde-server` (section **Image**) ne sert plus : tu peux la supprimer.
+
+Pour rester sur une version précise au lieu de la dernière : remplace `latest` par son numéro (`1.12.0`)
+et supprime la ligne `pull_policy: always`.
 
 ## 12. Sauvegarder, déménager
 
@@ -350,7 +387,7 @@ courses du serveur et les sessions supprimées du PC.
 - **Arrêter** : Container Manager → **Projet** → `corde` → arrêter. Il ne redémarre plus tout seul (même
   après un redémarrage du NAS) tant que tu ne le démarres pas.
 - **Désinstaller** : arrête le projet, supprime-le (Container Manager propose aussi de le **nettoyer**, ce
-  qui retire le conteneur), puis supprime l'image `corde-server` (section **Image**). Le dossier
+  qui retire le conteneur), puis supprime l'image de Corde serveur (section **Image**). Le dossier
   `docker/corde/data` reste : supprime-le avec File Station seulement si tu ne veux plus tes données.
 - Sur le PC : Réglages → Serveur Corde → **Dissocier**.
 
@@ -360,18 +397,21 @@ courses du serveur et les sessions supprimées du PC.
 |---|---|
 | Le projet ne démarre pas : **port déjà utilisé** (« port is already allocated », « address already in use ») | Une autre application du NAS prend 8471. Dans le texte du projet, remplace `"8471:8471"` par `"8472:8471"` (seul le nombre de **gauche** change), reconstruis, et utilise `http://192.168.1.50:8472` partout (sur le PC : adresse `192.168.1.50:8472`). |
 | Le conteneur redémarre en boucle ; le journal dit **« impossible de donner /var/lib/corde au compte « corde » »** ou **« impossible de rendre … inscriptible »** | Le dossier de données n'est pas utilisable. Vérifie que le projet est bien dans `docker/corde` et que le dossier `data` existe. Sinon : arrête le projet, renomme `data` en `data-ancien`, crée un dossier `data` **vide** avec File Station, redémarre. Ne retire pas `CHOWN`, `DAC_READ_SEARCH`, `SETUID` ni `SETGID` de la liste `cap_add` : ils servent au démarrage. |
-| Le journal dit **« compte « corde » absent de l'image »** ou **« programme introuvable »** | Le fichier importé est abîmé : supprime l'image, retélécharge-la, réimporte-la. |
+| Le journal dit **« compte « corde » absent de l'image »** ou **« programme introuvable »** | L'image est abîmée : arrête le projet, supprime l'image (section **Image**), puis **Action** → **Créer** dans le projet : elle est reprise. |
+| La création du projet échoue : **« pull access denied »**, **« unauthorized »**, **« no such host »**, **« timeout »** | Le NAS n'a pas pu prendre l'image sur Internet. Vérifie que le NAS a accès à Internet (Centre de paquets qui se charge, par exemple), puis recommence. S'il n'y a pas accès : § 5. |
+| Dans la section **Conteneur**, un conteneur **`corde-server-1`** (ou un nom proche) à côté de `corde` | L'image a été lancée à part (bouton « Exécuter » de la section Image). Il n'a ni tes données ni le bon port : sélectionne-le, **Action** → **Arrêter**, puis **Action** → **Supprimer**. Le vrai serveur est le conteneur `corde` du projet. |
 | Le navigateur affiche **« hôte non autorisé »** | Tu as ouvert le serveur par un **nom** (le nom du NAS, un nom donné par le VPN…) et non par son adresse. Ouvre-le par l'adresse (`http://192.168.1.50:8471`), ou ajoute ce nom dans le texte du projet : `CORDE_ALLOW_HOST: "mon-nas.local"` (plusieurs noms : séparés par des virgules, ex. `"mon-nas,mon-nas.local"`), puis reconstruis. Lettres, chiffres, points et tirets seulement : un autre caractère et le conteneur refuse de démarrer (le journal le dit). |
 | Le PC (ou le téléphone) **n'atteint pas** le serveur alors que le conteneur est vert | Le **pare-feu de DSM** est peut-être activé (Panneau de configuration, sécurité, pare-feu) : ajoute une règle qui **autorise le port TCP 8471** (ou celui que tu as choisi) **depuis ton réseau local seulement** (par exemple `192.168.1.0/24`). Jamais « toutes les adresses » si le NAS est joignable depuis Internet. |
 | Pas de code dans le journal | Un appareil est déjà appairé (c'est voulu), ou `CORDE_FIRST_PAIRING_CODE` vaut `"0"`. Utilise le terminal (§ 10). |
 | « Code incorrect » / « Ce code a expiré » | Redémarre le conteneur (§ 7) s'il n'y a encore aucun appareil, sinon `corde-server pair` (§ 10). |
-| Le PC dit **« Serveur à mettre à jour »** | Importe l'image de la même version que Corde sur le PC (§ 11). |
+| Le PC dit **« Serveur à mettre à jour »** | Mets le serveur à jour : projet `corde` → **Arrêt**, puis **Action** → **Créer** (§ 11). |
 
 ## 15. DSM 7.0 ou 7.1 : le paquet Docker
 
 Avant DSM 7.2, Container Manager s'appelait **Docker** (même Centre de paquets). Différences :
 
-- **Pas de section « Projet »** : on crée le conteneur avec l'assistant. Section **Image** → importe le
+- **Pas de section « Projet »** : on crée le conteneur avec l'assistant. Télécharge sur le PC le fichier
+  `corde-server-<version>-docker-x64.tar.gz` de la page des versions ; section **Image** → importe le
   fichier (menu **Ajouter**, ajout depuis un fichier) → sélectionne l'image → lance-la ; dans les
   **paramètres avancés** : redémarrage automatique activé ; dossier `docker/corde/data` monté sur
   **`/var/lib/corde`** ; port local **8471** vers le port du conteneur **8471** (TCP) ; laisse les variables
@@ -385,10 +425,11 @@ Ces écrans n'ont pas pu être vérifiés : suis l'idée de chaque réglage plut
 
 ## 16. Un autre NAS ou une autre machine avec Docker
 
-L'image n'a rien de propre à Synology. Sur tout système avec Docker et Docker Compose (autre marque de NAS,
-mini-PC Linux…) : importe l'image (`docker load < corde-server-<version>-docker-x64.tar.gz`), copie
-[`packaging/docker/compose.yaml`](../packaging/docker/compose.yaml) dans un dossier, mets le bon numéro sur la
-ligne `image:`, crée le sous-dossier `data`, puis `docker compose up -d`. Journal : `docker logs corde` ;
+L'image n'a rien de propre à Synology. Sur tout système avec Docker et Docker Compose v2 (autre marque de
+NAS, mini-PC Linux…) : copie [`packaging/docker/compose.yaml`](../packaging/docker/compose.yaml) dans un
+dossier, crée le sous-dossier `data`, puis `docker compose up -d` (l'image est prise dans le registre de
+GitHub ; pour mettre à jour : la même commande). Sans Internet : `docker load <
+corde-server-<version>-docker-x64.tar.gz`, puis les deux changements du § 5. Journal : `docker logs corde` ;
 commandes : `docker exec -it corde corde-server pair` ; sauvegarde : `docker exec corde corde-sauvegarde`.
 Une interface graphique de NAS qui accepte un fichier compose (souvent appelé « stack » ou « projet ») prend
 le même texte.

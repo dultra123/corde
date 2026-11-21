@@ -42,7 +42,7 @@ corde/
 │  ├─ corde-protocol/         # types partagés (serde + ts-rs) — LE contrat
 │  ├─ corde-core/             # trait TelemetrySource, LapTracker, derive::*
 │  ├─ corde-lmu/              # adaptateur Le Mans Ultimate (+ parseur des résultats XML)
-│  ├─ corde-acc/              # adaptateur Assetto Corsa Competizione, Assetto Corsa et Assetto Corsa EVO (expérimental)
+│  ├─ corde-acc/              # adaptateur des quatre Assetto Corsa : Competizione, le premier, EVO, Rally (expérimental)
 │  ├─ corde-iracing/          # adaptateur iRacing (expérimental)
 │  ├─ corde-sim/              # simulateur LMU_Data pour dev/tests
 │  ├─ corde-store/            # enregistrement : SQLite + Parquet, résultats importés, lecture, CLI corde-store

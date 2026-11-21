@@ -32,7 +32,8 @@ compose. Le premier appairage demande aujourd'hui `sudo corde-server pair` sur l
    SECURITY-MODEL §7.6.
 4. **Distribution par fichier** : `docker save | gzip` → `corde-server-<version>-docker-<x64|arm64>.tar.gz`,
    publié au même endroit que les archives Linux (release `v<version>`, pré-release `continuous`), importé
-   par Container Manager. **Aucun registre** pour l'instant.
+   par Container Manager. **Aucun registre** pour l'instant (révisé le 21 novembre 2026 : voir l'amendement
+   en fin de document).
 5. **Vérifié par la CI** à chaque poussée : construction des deux images, architecture, licence, étiquettes,
    puis essai réel de l'image amd64 avec le texte compose tel que publié (`smoke-test.sh`).
 
@@ -59,8 +60,10 @@ compose. Le premier appairage demande aujourd'hui `sudo corde-server pair` sur l
 ## Conséquences
 
 - Le propriétaire installe Corde serveur sur son NAS à la souris (docs/SYNOLOGY.md) ; la mise à jour est un
-  import plus un numéro à changer dans le projet. Pas de mise à jour automatique.
-- La ligne `image:` de `packaging/docker/compose.yaml` suit le numéro de version (vérifié par la CI) ; le
+  import plus un numéro à changer dans le projet (depuis la 1.12.0 : arrêter puis recréer le projet, voir
+  l'amendement). Pas de mise à jour automatique.
+- La ligne `image:` de `packaging/docker/compose.yaml` suit le numéro de version (vérifié par la CI ; plus
+  depuis la 1.12.0, voir l'amendement) ; le
   texte du guide doit rester identique à ce fichier (vérifié par `check-guide.py`).
 - L'empreinte de l'image de base est à rafraîchir à la main (le job `server-docker` l'affiche) ; les
   correctifs de Debian n'arrivent qu'à ce moment-là.
@@ -68,3 +71,44 @@ compose. Le premier appairage demande aujourd'hui `sudo corde-server pair` sur l
 - Le nom d'hôte du NAS n'est pas reconnu tout seul (le conteneur a le sien) : adresse IP, ou
   `CORDE_ALLOW_HOST`.
 - Le serveur garde les mêmes protections qu'ADR 0010 : jamais exposé à Internet, accès par VPN.
+
+## Amendement du 21 novembre 2026 (version 1.12.0) : l'image est aussi publiée dans un registre
+
+Le point 4 (« Aucun registre pour l'instant ») est révisé. Raison : la première mise à jour faite par le
+propriétaire seul a échoué. La procédure demandait de télécharger un fichier, de l'importer, d'arrêter le
+projet, de changer un numéro dans un texte, puis de reconstruire ; il a importé l'image et l'a lancée par le
+bouton « Exécuter » de la section Image, ce qui a créé un second conteneur sans données ni port, pendant
+que le vrai projet restait arrêté. Une mise à jour en cinq gestes dont un texte à modifier est trop fragile
+pour quelqu'un qui n'est pas informaticien.
+
+Décision :
+
+1. Le job `version` de la CI pousse les deux images de la release dans le registre de GitHub :
+   `ghcr.io/dultra123/corde-server:<version>` et `:latest`, chacune pour x64 et arm64 sous la même étiquette
+   (liste de manifestes). Les images poussées sont **les fichiers de la release**, chargés puis poussés,
+   pas une reconstruction. `packages: write` n'est accordé qu'à ce job.
+2. `packaging/docker/compose.yaml` (et le texte du guide) prend `image: ghcr.io/dultra123/corde-server:latest`
+   avec `pull_policy: always`. La ligne `image:` ne suit donc plus le numéro de version : le texte du projet
+   ne change plus d'une version à l'autre.
+3. Mettre à jour sur Synology : projet `corde` → **Arrêt**, puis **Action → Créer**. Rien à télécharger, à
+   importer ou à écrire.
+4. Le fichier `…-docker-<x64|arm64>.tar.gz` reste dans chaque release, pour un NAS sans Internet, DSM 7.0 /
+   7.1 et qui veut figer une version.
+
+Ce qui a été pesé :
+
+- **Un bouton « Mettre à jour » dans Corde serveur lui-même** (le serveur se remplace tout seul) : écarté
+  pour l'instant. Le conteneur est en lecture seule et sans privilèges ; se mettre à jour demanderait
+  d'exécuter un programme téléchargé depuis le dossier de données, avec vérification de signature, retour
+  arrière et protection de la page qui déclenche l'opération. C'est une surface sensible pour un gain de un
+  clic.
+- **Mise à jour automatique** (Watchtower, tâche planifiée) : écartée. Elle demande l'accès au démon Docker
+  (équivalent root sur le NAS) et changerait le serveur sans que le propriétaire le décide.
+- **Confiance** : l'image n'est pas signée ; le NAS se fie au compte GitHub et à TLS (voir
+  SECURITY-MODEL §7.6). Même niveau que le fichier téléchargé à la main.
+- **`latest`** : étiquette mobile, voulue ici (c'est elle qui rend la mise à jour sans texte à changer).
+  Chaque version garde aussi son étiquette fixe.
+
+Restent à vérifier sur le NAS du propriétaire : que « Créer » sur un projet arrêté télécharge bien la
+nouvelle image avec `pull_policy: always` (version de Compose de Container Manager), et que le paquet est
+public (un paquet créé par la CI est privé par défaut : réglage à faire une fois sur GitHub).

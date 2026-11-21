@@ -15,8 +15,9 @@ que l'on vise à chaque tour. Corde s'appelait anciennement Muret (nom de travai
 
 **Plusieurs jeux, sans rien choisir** (depuis la 1.7.0) : Corde trouve toute seule le jeu qui tourne. Le
 Mans Ultimate est le jeu de référence, complet et vérifié ; **Assetto Corsa Competizione**, le premier
-**Assetto Corsa**, **Assetto Corsa EVO** et **iRacing** sont lus en version expérimentale (direct,
-enregistrement, chronos des tours). Chaque jeu a son **profil** : sa disposition de widgets et son tableau
+**Assetto Corsa**, **Assetto Corsa EVO**, **Assetto Corsa Rally** et **iRacing** sont lus en version
+expérimentale (direct, enregistrement, chronos des tours ; en rallye, chaque passage d'une spéciale compte
+comme un tour). Chaque jeu a son **profil** : sa disposition de widgets et son tableau
 de bord, que Corde remet quand elle le détecte. D'autres jeux sont prévus : voir
 [Les jeux que Corde sait lire](docs/JEUX.md).
 
@@ -294,9 +295,11 @@ parti). Le direct reste sur le PC.
 - Installation : télécharge `corde-server-<version>-linux-arm64.tar.gz` (page des versions), puis
   `sudo ./install.sh` sur le Pi. Sur le PC : **Réglages → Serveur Corde**.
 
-**Sur un NAS** (Synology avec Container Manager, ou tout Docker) au lieu d'un Pi : importe le fichier
-`corde-server-<version>-docker-x64.tar.gz` (page des versions) dans Container Manager et crée le projet ; le
-premier code d'appairage s'affiche dans le journal du conteneur, sans terminal :
+**Sur un NAS** (Synology avec Container Manager, ou tout Docker) au lieu d'un Pi : crée un projet dans
+Container Manager en collant le texte du guide ; le NAS prend l'image tout seul
+(`ghcr.io/dultra123/corde-server`), et le premier code d'appairage s'affiche dans le journal du conteneur,
+sans terminal. Mettre à jour : arrêter le projet, puis **Action → Créer**. Sans Internet sur le NAS, l'image
+existe aussi en fichier (`corde-server-<version>-docker-x64.tar.gz`, page des versions) :
 [docs/SYNOLOGY.md](docs/SYNOLOGY.md).
 
 Pas à pas pour un non-informaticien : [docs/SERVEUR.md](docs/SERVEUR.md) · accès depuis l'extérieur :
@@ -325,7 +328,7 @@ Pas à pas pour un non-informaticien : [docs/SERVEUR.md](docs/SERVEUR.md) · acc
 | Application Android (Capacitor) : courses sans PC avec rappels en notifications, connexion au PC et au serveur Corde, sans services Google | fait (lot 1, sans widgets) ; compilée et essayée sur un émulateur Android 15 sans services Google par la CI (démarrage, lien, rappel reçu application tuée et téléphone en veille) ; **jamais vue sur un vrai téléphone** ; APK signé publié quand la clé de signature est fournie |
 | Tableau de bord du téléphone (Direct plein écran, quatre pages, écran allumé, démonstration dans l'application) | fait (1.1.0) ; vérifié avec la course de démonstration dans Chromium (cinq tailles d'écran) et sur le simulateur iOS / l'émulateur Android de la CI ; **pas encore vu avec le jeu ni sur un vrai téléphone** |
 | Linux (le jeu tourne sous Proton) | serveur compilé, non testé avec le jeu |
-| Autres simulateurs (Assetto Corsa EVO, rFactor 2, Automobilista 2, RaceRoom…) | à venir |
+| Autres simulateurs (rFactor 2, Automobilista 2, RaceRoom…) | à venir |
 
 Le détail, tenu à jour à chaque étape, est dans [docs/STATUS.md](docs/STATUS.md).
 
@@ -380,7 +383,7 @@ corde/
 │  ├─ corde-protocol/         # types partagés (serde + ts-rs) — LE contrat
 │  ├─ corde-core/             # trait TelemetrySource, AutoSource (le jeu qui tourne), LapTracker, derive::*
 │  ├─ corde-lmu/              # adaptateur Le Mans Ultimate (+ outils lmu-probe, lmu-shm-fake)
-│  ├─ corde-acc/              # adaptateur Assetto Corsa Competizione, Assetto Corsa et Assetto Corsa EVO, expérimental (+ outil acc-probe)
+│  ├─ corde-acc/              # adaptateur des quatre Assetto Corsa (Competizione, le premier, EVO, Rally), expérimental (+ outil acc-probe)
 │  ├─ corde-iracing/          # adaptateur iRacing, expérimental, en lecture seule (+ outil iracing-probe)
 │  ├─ corde-sim/              # simulateur LMU_Data pour développer sans le jeu
 │  ├─ corde-store/            # enregistrement des sessions : SQLite + Parquet (+ CLI corde-store)

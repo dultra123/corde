@@ -762,7 +762,7 @@ fn run_round(
         return Err(SyncError::Incompatible {
             code: "server_outdated".into(),
             message: format!(
-                "Le serveur Corde (version {}) est plus ancien que Corde sur ton PC : mets à jour le serveur (docs/SERVEUR.md, « Mettre à jour »).",
+                "Le serveur Corde (version {}) est plus ancien que Corde sur ton PC : mets à jour le serveur. Sur un NAS Synology : Container Manager, Projet, « corde », bouton Arrêt, puis Action → Créer. Sur un Raspberry Pi : docs/SERVEUR.md, « Mettre à jour ».",
                 manifest.server_version
             ),
         });

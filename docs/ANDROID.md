@@ -1,6 +1,6 @@
 # Corde sur Android
 
-> Version 1.11.0 — tableaux de bord personnalisés du Studio (1.1.0 : tableau de bord de course et
+> Version 1.12.0 — tableaux de bord personnalisés du Studio (1.1.0 : tableau de bord de course et
 > démonstration ; 1.0.0 : première version Android, la même
 > que l'iPhone, sans les widgets ni le compte à rebours). Décision : [ADR 0013](adr/0013-application-android.md). Sécurité :
 > [SECURITY-MODEL.md §9](SECURITY-MODEL.md#9-lapplication-android). Vie privée :
@@ -49,8 +49,8 @@ interface, avec les onglets en bas de l'écran.
 L'application n'est pas sur le Play Store : on l'installe à partir d'un fichier **APK** publié sur GitHub.
 
 1. Sur le téléphone, ouvre la page des versions de Corde :
-   <https://github.com/dultra123/corde/releases>. Prends le fichier **`Corde_1.11.0_android.apk`** :
-   - dans la version numérotée (**Corde 1.11.0**), s'il y est : c'est la version stable ;
+   <https://github.com/dultra123/corde/releases>. Prends le fichier **`Corde_1.12.0_android.apk`** :
+   - dans la version numérotée (**Corde 1.12.0**), s'il y est : c'est la version stable ;
    - sinon dans **Corde — dernière version** (la pré-release `continuous`), refaite à chaque modification.
 2. Le navigateur prévient que ce type de fichier peut être dangereux : **Télécharger quand même**.
 3. Ouvre le fichier téléchargé (la notification « Téléchargement terminé », ou l'application **Fichiers** →

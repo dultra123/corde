@@ -3,7 +3,7 @@
 > Corde s'appelait anciennement Muret (nom de travail) ; renommée le 11 novembre 2026 (version 0.3.0).
 
 > Fichier de reprise : n'importe qui (humain ou agent) doit pouvoir repartir d'ici.
-> Mis à jour à chaque jalon. Dernière mise à jour : 2026-11-21 (**version 1.11.0 : Assetto Corsa EVO, expérimental** ; le même jour : **version 1.10.0 : un profil par jeu, interface de départ par jeu** ; le même jour : **version 1.9.1 : corrections après le premier essai en jeu d'ACC et d'iRacing** ; 2026-11-17 : **version 1.9.0 : iRacing, expérimental** ; le même jour : **version 1.8.1 : revue de sécurité de tout le code, durcissements** ; le même jour : **version 1.8.0 : le premier Assetto Corsa, expérimental** ; le même jour : **version 1.7.0 : détection automatique du jeu, Assetto Corsa Competizione expérimental** ; la veille : **version 1.6.0 : « Mes courses » partagées entre le PC, le serveur Corde et l'application du téléphone** ; avant, le même jour : **version 1.5.0 : onglet Studio, format libre et forme des tableaux de bord (rectangle, coins arrondis, rond)** ; avant, le même jour : **version 1.4.3 : nouveau logo (le compte-tours), page d'appairage du serveur correcte dans un conteneur** ; avant, le 15 nov. : **version 1.4.2 : l'application du téléphone accepte l'adresse d'un VPN maillé (100.64/10), commande d'appairage correcte dans un conteneur** ; avant, le même jour : **version 1.4.1 : correction de l'interblocage du premier envoi PC → serveur, guide Synology relu sur un vrai NAS** ; avant, le même jour : **version 1.4.0 : Corde serveur en conteneur pour NAS Synology** ; avant, le même jour : **version 1.3.0 : Studio — images, vidéos, fonds de page, seuils de couleur, « afficher quand… », style, polices, jauge circulaire, formes, bandeau d'alerte, rampe réglable, sélection multiple, copier / coller** ; avant, le même jour : **version 1.2.0 : le tableau de bord dans le menu des dispositions du PC, et le Studio (tableaux de bord personnalisés)**, fusionnée dans `main` ; fiche de présentation `docs/PRESENTATION.md` pour le site ; avant, le 14 nov. : **version 1.1.0 : tableau de bord du téléphone**, quatre pages, écran allumé, démonstration dans l'application, fusionnée dans `main` ; avant, le même jour : lot **« certificat de distribution stable »** (iOS, CI seulement), fusionné dans `main` ; avant, le même jour : **application Android 1.0.0**, lot 1 sans widgets, fusionnée dans `main` ; avant, le même jour : **version 1.0.0, première version officielle** : PC, Corde serveur et application iPhone au même numéro, demandée par le propriétaire ; avant, le même jour : widget « Courses en images », application iPhone 0.10.0, fusionné dans `main` ; avant, le même jour : « Widgets iOS et activité en direct », application iPhone 0.9.0, branche `ios-widgets` ; premier build iPhone dans TestFlight ; « Application iPhone », version 0.8.0, le 12 ; avant : « Défilé des courses en ligne sur l'Accueil », 0.7.1 ; lot « Corde serveur » — serveur domestique Raspberry Pi, appairage, synchronisation depuis le PC —, version 0.7.0 ; avant : « Mises à jour depuis l'application », 0.6.0 ; « Widgets dans OBS », 0.5.0, et son correctif 0.5.1 ; « Courses en ligne », 0.4.0 ; publication dans `dultra123/corde`, sécurité réseau, adresse masquée sur l'accueil ; lot « Corde : renommage, migration des données, licence GPL, logo » ; avant : « S2 — calibration de l'ingénieur sur des données réelles », « réglages réels : fichiers .svm lus et écrits », « ressenti → symptômes → itération du plan », « Précision des tours », « Accueil » et « Application de bureau »).
+> Mis à jour à chaque jalon. Dernière mise à jour : 2026-11-22 (**version 1.12.0 : Corde serveur sur un NAS pris dans un registre et mis à jour en deux clics, Assetto Corsa Rally expérimental** ; 2026-11-21 : **version 1.11.0 : Assetto Corsa EVO, expérimental** ; le même jour : **version 1.10.0 : un profil par jeu, interface de départ par jeu** ; le même jour : **version 1.9.1 : corrections après le premier essai en jeu d'ACC et d'iRacing** ; 2026-11-17 : **version 1.9.0 : iRacing, expérimental** ; le même jour : **version 1.8.1 : revue de sécurité de tout le code, durcissements** ; le même jour : **version 1.8.0 : le premier Assetto Corsa, expérimental** ; le même jour : **version 1.7.0 : détection automatique du jeu, Assetto Corsa Competizione expérimental** ; la veille : **version 1.6.0 : « Mes courses » partagées entre le PC, le serveur Corde et l'application du téléphone** ; avant, le même jour : **version 1.5.0 : onglet Studio, format libre et forme des tableaux de bord (rectangle, coins arrondis, rond)** ; avant, le même jour : **version 1.4.3 : nouveau logo (le compte-tours), page d'appairage du serveur correcte dans un conteneur** ; avant, le 15 nov. : **version 1.4.2 : l'application du téléphone accepte l'adresse d'un VPN maillé (100.64/10), commande d'appairage correcte dans un conteneur** ; avant, le même jour : **version 1.4.1 : correction de l'interblocage du premier envoi PC → serveur, guide Synology relu sur un vrai NAS** ; avant, le même jour : **version 1.4.0 : Corde serveur en conteneur pour NAS Synology** ; avant, le même jour : **version 1.3.0 : Studio — images, vidéos, fonds de page, seuils de couleur, « afficher quand… », style, polices, jauge circulaire, formes, bandeau d'alerte, rampe réglable, sélection multiple, copier / coller** ; avant, le même jour : **version 1.2.0 : le tableau de bord dans le menu des dispositions du PC, et le Studio (tableaux de bord personnalisés)**, fusionnée dans `main` ; fiche de présentation `docs/PRESENTATION.md` pour le site ; avant, le 14 nov. : **version 1.1.0 : tableau de bord du téléphone**, quatre pages, écran allumé, démonstration dans l'application, fusionnée dans `main` ; avant, le même jour : lot **« certificat de distribution stable »** (iOS, CI seulement), fusionné dans `main` ; avant, le même jour : **application Android 1.0.0**, lot 1 sans widgets, fusionnée dans `main` ; avant, le même jour : **version 1.0.0, première version officielle** : PC, Corde serveur et application iPhone au même numéro, demandée par le propriétaire ; avant, le même jour : widget « Courses en images », application iPhone 0.10.0, fusionné dans `main` ; avant, le même jour : « Widgets iOS et activité en direct », application iPhone 0.9.0, branche `ios-widgets` ; premier build iPhone dans TestFlight ; « Application iPhone », version 0.8.0, le 12 ; avant : « Défilé des courses en ligne sur l'Accueil », 0.7.1 ; lot « Corde serveur » — serveur domestique Raspberry Pi, appairage, synchronisation depuis le PC —, version 0.7.0 ; avant : « Mises à jour depuis l'application », 0.6.0 ; « Widgets dans OBS », 0.5.0, et son correctif 0.5.1 ; « Courses en ligne », 0.4.0 ; publication dans `dultra123/corde`, sécurité réseau, adresse masquée sur l'accueil ; lot « Corde : renommage, migration des données, licence GPL, logo » ; avant : « S2 — calibration de l'ingénieur sur des données réelles », « réglages réels : fichiers .svm lus et écrits », « ressenti → symptômes → itération du plan », « Précision des tours », « Accueil » et « Application de bureau »).
 
 ## Où on en est
 
@@ -134,8 +134,7 @@
     « tour valide », le format si le jeu a été mis à jour depuis (accès anticipé).
     **À faire au premier essai du propriétaire** : lire sa session enregistrée comme le 21 nov. pour ACC
     (corrélation volant / accélération latérale, sens de la carte) et corriger.
-    **Assetto Corsa Rally : le code est sur `main` depuis le 21 nov. au soir, pas encore publié ni
-    documenté pour le pilote** (pas de numéro de version : la prochaine version l'embarquera).
+    **Assetto Corsa Rally : publié en 1.12.0 (22 nov.), expérimental, rien n'est vérifié face au jeu.**
     `corde-acc`, module `rally` (`convert.rs`, `source.rs`, `fake.rs`), `--source acrally`, détection
     automatique `[lmu, acc, ac, acevo, acrally, iracing]`, `acc-probe`, exemple `fake-acrally`, tests
     `rally_frames.rs` (10) et `games_acrally.rs` ; `GameId::AcRally` (`ac_rally`) ; interface : nom,
@@ -144,15 +143,33 @@
     tous les jeux : un « tour » passé entièrement aux stands n'en est pas un ; un tour abandonné n'est
     rapporté qu'après 3 s en piste ; un compteur qui « rattrape » n'est le même tour que si la voiture
     n'est pas passée par les stands ; une source qui renseigne `count_lap_flag` compte elle-même ses
-    tours (jamais chronométrés par Corde à sa place). **Reste à faire avant de publier** : JEUX.md,
-    PRESENTATION, TESTING-ON-PC, CHANGELOG, ADR 0020 § H, numéro de version ; le widget Freins affiche
-    « AV 100 / AR 0 » quand la répartition est inconnue (à masquer).
-    **Interrompu le 21 nov. à 21 h** par une demande du propriétaire : son serveur Corde sur le NAS ne
-    répond plus après une tentative de mise à jour (journal du PC : l'ancien serveur répondait encore
-    à 20 h 57, connexion refusée depuis 20 h 58), et il demande une mise à jour plus simple. À faire :
-    voir Container Manager avec lui (il doit se connecter au NAS lui-même), réparer, puis simplifier
-    (étiquette `latest` dans l'archive de l'image pour ne plus modifier le YAML ; étudier un bouton
-    « Mettre à jour le serveur » depuis le PC).
+    tours (jamais chronométrés par Corde à sa place). Documenté pour le pilote (JEUX.md, PRESENTATION,
+    TESTING-ON-PC, CHANGELOG, ADR 0020 § H). Les widgets Freins et Électronique affichent « — » quand
+    le jeu ne donne pas la répartition de freinage (`frontBias` : 0 à l'arrière = inconnu).
+    **À faire au premier essai du propriétaire** : lire sa session enregistrée (un tour par passage ?
+    temps du jeu ? carte dans le bon sens ?) et corriger ; le départ et l'arrivée sont le premier point.
+    **Serveur du NAS du propriétaire, 21 nov. au soir.** Sa mise à jour vers 1.11.0 avait échoué : image
+    importée puis lancée par « Exécuter » (section Image), ce qui a créé un conteneur à part
+    (`corde-server-1`, sans données, port 8471 du conteneur sur un port au hasard du NAS) pendant que
+    le projet `corde` (1.4.0) restait arrêté. Réparé avec lui dans le navigateur (lui connecté au NAS,
+    accord explicite pour chaque geste) : conteneur à part arrêté et supprimé, ligne `image:` du projet
+    passée à `corde-server:1.11.0`, projet recréé ; vérifié par le journal du PC (8 sessions envoyées,
+    appairage intact). Relevé à cette occasion (Container Manager 24.0.2) : menu **Action** du projet =
+    Créer, Démarrer, Arrêt, Redémarrer, Nettoyer, Supprimer, Ouvrir le terminal ; l'onglet
+    **Configurations YAML** est en lecture seule tant que le projet tourne ; **Sauvegarder** ne propose
+    « Créer et démarrer le projet (reconstruire l'image) » que s'il voit un changement ; son Compose est
+    la version 2.
+    **Mise à jour simplifiée (1.12.0, ADR 0017 amendée).** Le job `version` de la CI pousse les deux
+    images de la release dans `ghcr.io/dultra123/corde-server` (`:<version>` et `:latest`, x64 et
+    arm64) ; `compose.yaml` et le guide prennent `:latest` avec `pull_policy: always` ; mettre à jour =
+    projet → **Arrêt**, puis **Action → Créer**. Le fichier d'image reste dans les releases (NAS sans
+    Internet, DSM 7.0 / 7.1). Écartés : un bouton de mise à jour dans le serveur lui-même et toute mise
+    à jour automatique (voir l'ADR). **Reste à faire, avec le propriétaire** : (1) rendre le paquet
+    `corde-server` **public** sur GitHub (privé par défaut à la première poussée ; c'est un réglage de
+    son compte, à faire par lui) ; (2) passer son projet à la nouvelle ligne `image:` et ajouter
+    `pull_policy: always` (une fois) ; (3) **vérifier sur son NAS** que « Créer » sur le projet arrêté
+    télécharge bien la nouvelle image — pas encore observé, le guide le suppose (comportement de
+    Compose v2) ; corriger le §11 du guide si ce n'est pas le cas.
     Ce qui est établi pour Rally (lecture de deux lecteurs libres, rien n'est vérifié en jeu) :
     - mêmes noms de pages qu'ACC (`Local\acpmf_*`) et même disposition des pages physique et graphique ;
       la page statique est écrite tard (zéros au début) et sa version du jeu est vide : le jeu se

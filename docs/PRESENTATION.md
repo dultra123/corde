@@ -1,6 +1,6 @@
 # Corde — fiche de présentation
 
-> À jour pour la **version 1.11.0** (21 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
+> À jour pour la **version 1.12.0** (22 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
 > faut pour présenter Corde (site, page de présentation, annonce) : ce qu'elle fait, où elle tourne, ce qui
 > est nouveau, ce qui arrive, les images et les liens. Elle ne dit que ce qui existe ; le détail et l'état
 > exact de chaque partie sont dans le [README](../README.md) et dans [STATUS.md](STATUS.md).
@@ -10,10 +10,10 @@
 **Corde — télémétrie en direct, analyse des tours et ingénieur de course pour Le Mans Ultimate.**
 
 Depuis la 1.7.0, Corde trouve toute seule le jeu qui tourne et lit aussi **Assetto Corsa Competizione**,
-depuis la 1.8.0 le premier **Assetto Corsa** et, depuis la 1.9.0, **iRacing**, tous les trois en version
-expérimentale (Competizione et iRacing ont été essayés en jeu le 21 novembre 2026 ; le premier Assetto
-Corsa pas encore). Le Mans Ultimate reste le jeu de référence : c'est le seul pour lequel tout est
-disponible et vérifié.
+depuis la 1.8.0 le premier **Assetto Corsa**, depuis la 1.9.0 **iRacing**, depuis la 1.11.0 **Assetto Corsa
+EVO** et, depuis la 1.12.0, **Assetto Corsa Rally**, tous en version expérimentale (Competizione et iRacing
+ont été essayés en jeu le 21 novembre 2026 ; les autres pas encore). Le Mans Ultimate reste le jeu de
+référence : c'est le seul pour lequel tout est disponible et vérifié.
 
 Version plus longue : Corde tourne à côté du jeu. Elle lit la télémétrie de Le Mans Ultimate, l'affiche en
 direct (widgets ou tableau de bord de course, sur le PC comme sur le téléphone), enregistre chaque session, analyse ta
@@ -26,10 +26,10 @@ Le nom vient du **point de corde** : l'endroit où la trajectoire idéale touche
 
 | | |
 |---|---|
-| Version actuelle | **1.11.0** (21 novembre 2026) |
+| Version actuelle | **1.12.0** (22 novembre 2026) |
 | Prix | Gratuit |
 | Licence | Logiciel libre, GPL-3.0-or-later ; code source public |
-| Jeux | Le Mans Ultimate (complet, vérifié) ; Assetto Corsa Competizione (expérimental, depuis la 1.7.0) ; Assetto Corsa (expérimental, depuis la 1.8.0) ; iRacing (expérimental, depuis la 1.9.0). Détection automatique. Détail : [JEUX.md](JEUX.md) |
+| Jeux | Le Mans Ultimate (complet, vérifié) ; Assetto Corsa Competizione (expérimental, depuis la 1.7.0) ; Assetto Corsa (expérimental, depuis la 1.8.0) ; iRacing (expérimental, depuis la 1.9.0) ; Assetto Corsa EVO (expérimental, depuis la 1.11.0) ; Assetto Corsa Rally (expérimental, depuis la 1.12.0). Détection automatique. Détail : [JEUX.md](JEUX.md) |
 | PC | Windows (64 bits), installeur `Corde_<version>_x64-setup.exe` |
 | Téléphone | Navigateur du téléphone, application iPhone (iOS 17 ou plus récent), application Android (Android 8 ou plus récent) |
 | Serveur maison (facultatif) | Corde serveur, pour Raspberry Pi 5 (Linux arm64), Linux x64, ou un NAS avec Docker (Synology : Container Manager) |
@@ -68,7 +68,11 @@ sous le nom de son jeu.
   cartographie avec leur maximum, écarts devant et derrière, carte ; rien à activer dans le jeu. Pas de
   classement (le jeu ne donne des autres voitures que leur position), pas de temps par secteur ni d'usure
   des pneus. Pas encore vérifié face au jeu ; le jeu est en accès anticipé et son format peut changer.
-- **Prévus, sans date** : Assetto Corsa Rally (le prochain), rFactor 2, Automobilista 2, RaceRoom.
+- **Assetto Corsa Rally** — **expérimental**, depuis la 1.12.0 : direct, enregistrement, carte de la
+  spéciale ; chaque passage d'une spéciale est compté comme un tour, avec le temps du jeu, et deux passages
+  se comparent comme deux tours ; rien à activer dans le jeu. Pas de classement ni de temps
+  intermédiaires. Pas encore vérifié face au jeu ; le jeu est en accès anticipé et son format peut changer.
+- **Prévus, sans date** : rFactor 2, Automobilista 2, RaceRoom.
   L'état de chacun est tenu à jour dans [JEUX.md](JEUX.md).
 
 **Un profil par jeu** (nouveau en 1.10.0) : Corde retient, pour chaque jeu, la disposition des widgets (PC
@@ -250,7 +254,9 @@ s'ouvre jamais sur Internet (de l'extérieur, on passe par son propre VPN).
 
 Deux façons de l'installer : sur un **Raspberry Pi** (ou une machine Linux), ou, depuis la 1.4.0, sur un
 **NAS Synology** déjà allumé à la maison (application Container Manager), à la souris, sans taper de
-commande. La même image marche sur tout NAS ou machine avec Docker.
+commande. La même image marche sur tout NAS ou machine avec Docker. Depuis la 1.12.0, le NAS va chercher
+Corde serveur tout seul : rien à télécharger ni à importer, et une mise à jour se fait en deux clics (arrêter
+le projet, puis le créer à nouveau).
 
 Image : `serveur.png`.
 
@@ -268,10 +274,15 @@ redémarrer. Chaque version est signée et vérifiée avant l'installation ; rie
 | iPhone | Application, par TestFlight sur invitation | En test |
 | Android | Application, fichier APK | Fichier pas encore publié |
 | Raspberry Pi 5 / Linux | Corde serveur, archive `corde-server-<version>-linux-arm64.tar.gz` | Pas encore essayé sur un vrai Pi |
-| NAS Synology (processeur Intel ou AMD) / Docker | Corde serveur, image `corde-server-<version>-docker-x64.tar.gz` | Installé sur un vrai NAS (DS220+, DSM 7.4.1) : démarrage, appairage et envoi des sessions du PC vérifiés (1.4.1) |
+| NAS Synology (processeur Intel ou AMD) / Docker | Corde serveur, image `ghcr.io/dultra123/corde-server` (ou le fichier `corde-server-<version>-docker-x64.tar.gz`) | Installé sur un vrai NAS (DS220+, DSM 7.4.1) : démarrage, appairage et envoi des sessions du PC vérifiés (1.4.1) |
 
 ## Nouveautés
 
+- **1.12.0 (22 novembre 2026)** — Corde serveur sur un NAS se met à jour en deux clics (arrêter le projet,
+  puis le créer à nouveau) : le NAS va chercher la nouvelle version tout seul, sans fichier à télécharger ni
+  à importer. Un sixième jeu, en version expérimentale : Assetto Corsa Rally (chaque passage d'une spéciale
+  compte comme un tour, avec le temps du jeu). La répartition de freinage s'affiche « — » quand le jeu ne
+  la donne pas.
 - **1.11.0 (21 novembre 2026)** — un cinquième jeu, en version expérimentale : Assetto Corsa EVO (direct,
   enregistrement, chronos officiels, pneus, freins, niveaux des aides, carte).
 - **1.10.0 (21 novembre 2026)** — un profil par jeu : Corde retient pour chaque jeu la disposition des

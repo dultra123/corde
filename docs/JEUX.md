@@ -16,7 +16,7 @@ jeu, et n'utilise aucun compte.
 | **Assetto Corsa** (le premier) | **Expérimental** depuis la 1.8.0 : écrit d'après le fichier de référence fourni avec le jeu, **pas encore vérifié face au jeu** | rien | mémoire partagée du jeu (les mêmes pages qu'ACC, dans une version plus ancienne) |
 | **iRacing** | **Expérimental, essayé en jeu** le 21 novembre 2026 (sessions d'essai, seul en piste) : détection, direct, enregistrement, chronos officiels et carburant fonctionnent ; carte du circuit et signes corrigés en 1.9.1 ; classement avec d'autres voitures pas encore vu | rien | mémoire partagée du jeu |
 | **Assetto Corsa EVO** | **Expérimental** depuis la 1.11.0 : écrit d'après la documentation de la mémoire partagée publiée par le studio, **pas encore vérifié face au jeu**. Le jeu est en accès anticipé : son format peut encore changer | rien | mémoire partagée du jeu (trois pages à son nom) |
-| Assetto Corsa Rally | Prévu, le prochain (des épreuves de rallye, sans tours : Corde doit apprendre à les chronométrer) | rien | mémoire partagée du jeu |
+| **Assetto Corsa Rally** | **Expérimental** depuis la 1.12.0 : écrit d'après ce que des outils libres ont relevé du jeu, **pas encore vérifié face au jeu**. Chaque passage d'une spéciale est compté comme un tour. Le jeu est en accès anticipé : son format peut encore changer | rien | mémoire partagée du jeu (les pages d'ACC, températures en kelvins) |
 | rFactor 2 | Prévu | installer un plugin tiers de mémoire partagée | mémoire partagée du plugin |
 | Automobilista 2, Project CARS 2 | Prévu | activer la mémoire partagée dans les options | mémoire partagée du jeu |
 | RaceRoom Racing Experience | Prévu | rien | mémoire partagée du jeu |
@@ -28,21 +28,21 @@ encore écrit. L'ordre dépendra des jeux qu'on pourra essayer.
 
 ## Ce qui marche avec chaque jeu
 
-| | Le Mans Ultimate | Assetto Corsa Competizione | Assetto Corsa | Assetto Corsa EVO | iRacing |
-|---|---|---|---|---|---|
-| Direct : widgets et tableau de bord de course (PC, téléphone, OBS) | oui | oui | oui | oui | oui |
-| Enregistrement des sessions, chronos des tours | oui | oui (chronos officiels du jeu) | oui (chronos officiels du jeu) | oui (chronos officiels du jeu) | oui (chronos officiels du jeu) |
-| Temps par secteur | oui | pas encore | pas encore | non : le jeu ne les publie pas (le secteur affiché est un tiers du tour) | non : le jeu ne les publie pas. Le secteur en cours est connu (quand le jeu découpe le circuit en plus de trois parties, Corde les regroupe en trois) |
-| Comparaison de tours, graphes | oui | oui | oui | oui | oui |
-| Classement, écarts avec les autres voitures | oui | écart avec la voiture devant et derrière seulement : le jeu ne donne les autres pilotes que par une autre interface, pas encore branchée | non : le jeu ne publie que ta voiture | écart avec la voiture devant et derrière seulement : le jeu ne donne des autres voitures que leur position sur la carte | oui : places, tours, meilleur et dernier tour de chacun, écart sur la piste ; écart au premier en course |
-| Températures des pneus intérieur / milieu / extérieur, usure | oui | non : le jeu publie une seule température par pneu, et pas l'usure | oui | trois températures par pneu et la pression ; pas l'usure (le jeu la laisse à zéro) | **pas en roulant** : le jeu ne publie températures, pressions et usure des pneus qu'à l'arrêt aux stands. Entre deux arrêts, Corde montre celles du dernier arrêt |
-| Températures des freins | oui | oui | oui | oui | non : le jeu ne les publie pas |
-| Niveaux d'antipatinage et d'ABS, tour annulé | oui | oui | non : le jeu ne les publie pas | oui, chacun avec son maximum ; un tour est marqué quand le jeu l'invalide | les réglages au volant que la voiture possède ; un tour est marqué quand le jeu y compte un incident |
-| Carte du circuit | oui | oui | oui | oui | oui, après un premier tour : le jeu ne donne aucune position, Corde reconstruit le tracé d'après ta vitesse et ton cap, et place les autres voitures d'après leur avancée sur le tour |
-| Ingénieur de course : analyse du pilotage | oui | indicative (sens de certaines mesures à vérifier) | indicative | indicative (sens de certaines mesures à vérifier) | indicative |
-| Ingénieur de course : réglages proposés, fichiers de setup | oui | non : il connaît les réglages de Le Mans Ultimate | non | non | non |
-| Import des résultats officiels, page Profil | oui | non | non | non | non |
-| Planning des courses en ligne, rappels | oui | non (c'est le planning de Le Mans Ultimate) | non | non | non |
+| | Le Mans Ultimate | Assetto Corsa Competizione | Assetto Corsa | Assetto Corsa EVO | Assetto Corsa Rally | iRacing |
+|---|---|---|---|---|---|---|
+| Direct : widgets et tableau de bord de course (PC, téléphone, OBS) | oui | oui | oui | oui | oui | oui |
+| Enregistrement des sessions, chronos des tours | oui | oui (chronos officiels du jeu) | oui (chronos officiels du jeu) | oui (chronos officiels du jeu) | oui : chaque passage d'une spéciale est un tour, avec le temps du jeu ; un passage abandonné est un tour sans temps | oui (chronos officiels du jeu) |
+| Temps par secteur | oui | pas encore | pas encore | non : le jeu ne les publie pas (le secteur affiché est un tiers du tour) | non : le jeu ne les publie pas | non : le jeu ne les publie pas. Le secteur en cours est connu (quand le jeu découpe le circuit en plus de trois parties, Corde les regroupe en trois) |
+| Comparaison de tours, graphes | oui | oui | oui | oui | oui, entre deux passages de la même spéciale | oui |
+| Classement, écarts avec les autres voitures | oui | écart avec la voiture devant et derrière seulement : le jeu ne donne les autres pilotes que par une autre interface, pas encore branchée | non : le jeu ne publie que ta voiture | écart avec la voiture devant et derrière seulement : le jeu ne donne des autres voitures que leur position sur la carte | non : tu es seul sur la spéciale | oui : places, tours, meilleur et dernier tour de chacun, écart sur la piste ; écart au premier en course |
+| Températures des pneus intérieur / milieu / extérieur, usure | oui | non : le jeu publie une seule température par pneu, et pas l'usure | oui | trois températures par pneu et la pression ; pas l'usure (le jeu la laisse à zéro) | une seule température par pneu, pas l'usure | **pas en roulant** : le jeu ne publie températures, pressions et usure des pneus qu'à l'arrêt aux stands. Entre deux arrêts, Corde montre celles du dernier arrêt |
+| Températures des freins | oui | oui | oui | oui | oui | non : le jeu ne les publie pas |
+| Niveaux d'antipatinage et d'ABS, tour annulé | oui | oui | non : le jeu ne les publie pas | oui, chacun avec son maximum ; un tour est marqué quand le jeu l'invalide | non | les réglages au volant que la voiture possède ; un tour est marqué quand le jeu y compte un incident |
+| Carte du circuit | oui | oui | oui | oui | oui, après un premier passage : la spéciale est une ligne du départ à l'arrivée, pas une boucle | oui, après un premier tour : le jeu ne donne aucune position, Corde reconstruit le tracé d'après ta vitesse et ton cap, et place les autres voitures d'après leur avancée sur le tour |
+| Ingénieur de course : analyse du pilotage | oui | indicative (sens de certaines mesures à vérifier) | indicative | indicative (sens de certaines mesures à vérifier) | indicative | indicative |
+| Ingénieur de course : réglages proposés, fichiers de setup | oui | non : il connaît les réglages de Le Mans Ultimate | non | non | non | non |
+| Import des résultats officiels, page Profil | oui | non | non | non | non | non |
+| Planning des courses en ligne, rappels | oui | non (c'est le planning de Le Mans Ultimate) | non | non | non | non |
 
 ## Un profil par jeu (depuis la 1.10.0)
 
@@ -66,6 +66,7 @@ se partageant la place. Le Mans Ultimate garde simplement ce que tu utilisais.
 | Assetto Corsa Competizione | le widget Classement (le jeu ne nomme pas les autres pilotes) |
 | Assetto Corsa | les widgets Classement, Écarts et Électronique (le jeu ne publie que ta voiture, et pas le niveau des aides) |
 | Assetto Corsa EVO | le widget Classement (le jeu ne donne des autres voitures que leur position) |
+| Assetto Corsa Rally | les widgets Classement, Écarts et Électronique (tu es seul sur la spéciale, et le jeu ne publie pas le niveau des aides) |
 | iRacing | les widgets Pneus et Freins ; la page « Pneus & freins » et la case « Pneus » du tableau de bord « Corde » (le jeu ne publie les pneus qu'à l'arrêt aux stands, et jamais les freins) |
 
 Rien n'est verrouillé : une disposition préparée par Corde se modifie comme les autres (**Modifier** →
@@ -146,6 +147,45 @@ Le dossier `copie-evo` contient une copie de ce que le jeu publiait à cet insta
 nom**, et les identifiants des voitures y sont remplacés par de simples numéros. C'est le plus utile à
 joindre à un signalement sur [GitHub](https://github.com/dultra123/corde/issues) quand une valeur est fausse.
 
+## Assetto Corsa Rally : ce qu'il faut savoir
+
+- **Rien à installer ni à activer** : le jeu publie les mêmes pages de mémoire partagée qu'Assetto Corsa
+  Competizione. Corde les ouvre en lecture seule, et reconnaît le jeu à ses températures (il les écrit en
+  kelvins).
+- **Expérimental, pas encore vérifié face au jeu** : le module est écrit d'après ce que des outils libres ont
+  relevé du jeu, et testé contre un faux jeu. Le premier essai dira ce qui est juste.
+- **Une spéciale n'a pas de tours** : Corde compte **chaque passage comme un tour**.
+  - Le passage commence quand le chrono du jeu démarre (au franchissement de la ligne de départ).
+  - Il finit à l'arrivée, quand le chrono du jeu s'arrête alors que la voiture roule encore. Le temps
+    enregistré est **celui du jeu**, pas un temps compté par Corde.
+  - Si tu relances la spéciale avant l'arrivée, le passage est gardé comme un tour **sans temps**.
+  - L'attente sur la ligne de départ et la zone d'arrêt après l'arrivée ne sont pas comptées : Corde les
+    montre comme un passage « aux stands ».
+- **Comparer deux passages** de la même spéciale marche comme pour deux tours d'un circuit (page Sessions).
+- **La carte** se dessine pendant ton premier passage et reste : une ligne du départ à l'arrivée.
+- **La longueur de la spéciale** : le jeu la donne parfois avec retard. En attendant, Corde la mesure sur ton
+  premier passage terminé ; pendant ce tout premier passage, l'avancée affichée sur la spéciale n'est qu'une
+  estimation.
+- **Ce que le jeu ne publie pas** : les autres concurrents, les temps intermédiaires, le niveau des aides,
+  l'usure des pneus.
+- **Le jeu est en accès anticipé** : le format de ses pages peut changer d'une mise à jour à l'autre.
+- **À confirmer en jeu** : le départ et l'arrivée (un passage par passage, avec le bon temps), le sens de ce
+  qui est latéral (carte en miroir ?), les températures.
+
+### Aider à vérifier Assetto Corsa Rally
+
+Dans l'archive `corde-<version>-portable-windows.zip` de la page des versions, l'outil **`acc-probe.exe`**
+reconnaît aussi ce jeu :
+
+1. Lance Assetto Corsa Rally et pars sur une spéciale (le chrono doit tourner).
+2. Ouvre une invite de commandes dans le dossier de l'archive et lance `acc-probe.exe --dump copie-rally`.
+3. La première ligne doit dire « Jeu reconnu : Assetto Corsa Rally ». Compare les suivantes (épreuve,
+   voiture, chrono du jeu, vitesse, rapport, numéro du passage) avec ce que montre le jeu.
+
+Le dossier `copie-rally` contient une copie de ce que le jeu publiait à cet instant, **sans ton prénom, ton
+nom ni ton pseudo**. Et le plus parlant reste une session enregistrée : fais deux passages de la même
+spéciale, puis regarde dans **Sessions** si Corde a bien compté deux tours, avec les temps du jeu.
+
 ## iRacing : ce qu'il faut savoir
 
 - **Rien à installer ni à activer** : lance Corde, lance le jeu, monte dans la voiture. L'accueil passe à
@@ -205,5 +245,5 @@ ni ton pseudo** (l'outil les efface). C'est le plus utile à joindre à un signa
 ## Pour les curieux
 
 La décision et ses raisons : [ADR 0020](adr/0020-plusieurs-jeux-detection-automatique.md). Le code : un
-module par jeu (`crates/corde-lmu`, `crates/corde-acc` pour les trois Assetto Corsa, `crates/corde-iracing`), tous derrière la même interface
+module par jeu (`crates/corde-lmu`, `crates/corde-acc` pour les quatre Assetto Corsa, `crates/corde-iracing`), tous derrière la même interface
 (`corde_core::TelemetrySource`) ; `corde_core::AutoSource` choisit celui dont le jeu tourne.

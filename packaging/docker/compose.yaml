@@ -1,16 +1,25 @@
 # Corde serveur dans un conteneur : le « Projet » de Container Manager (Synology), ou
 # « docker compose up -d » ailleurs. Guide pas à pas : docs/SYNOLOGY.md.
 #
-# Avant : importer l'image (fichier corde-server-<version>-docker-x64.tar.gz de la release) et
-# mettre ci-dessous le même numéro de version que ce fichier.
+# Rien à télécharger ni à importer : l'image est prise dans le registre de GitHub (ghcr.io) à la
+# création du projet. Pour mettre à jour : arrêter le projet, puis le créer à nouveau
+# (Synology : Projet → Action → Arrêt, puis Action → Créer ; ailleurs : docker compose up -d).
 #
-# « version: "2.4" » : lu aussi par l'ancien docker-compose 1.x de certains NAS (Docker Compose
-# v2 l'ignore, avec un simple avertissement).
+# « version: "2.4" » : ignoré par Docker Compose v2 (simple avertissement). Avec l'ancien
+# docker-compose 1.x, retire la ligne « pull_policy » et lance « docker-compose pull » avant
+# « up -d ».
 version: "2.4"
 
 services:
   corde:
-    image: corde-server:1.11.0
+    # « latest » : la dernière version publiée. Pour rester sur une version précise, remplace
+    # « latest » par son numéro (ex. 1.12.0) et retire la ligne « pull_policy ».
+    # Sans accès à Internet sur le NAS : importe le fichier corde-server-<version>-docker-x64.tar.gz
+    # de la release, mets ici « corde-server:<version> » et retire « pull_policy ».
+    image: ghcr.io/dultra123/corde-server:latest
+    # À chaque création du projet, vérifie s'il existe une image plus récente et la prend.
+    # (Un redémarrage du NAS ou du conteneur ne télécharge rien.)
+    pull_policy: always
     container_name: corde
     restart: unless-stopped
     ports:

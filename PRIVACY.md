@@ -30,7 +30,7 @@ code ; s'il devient faux, c'est un bogue à signaler.
 
 | Source | Quoi |
 |---|---|
-| Mémoire partagée du jeu qui tourne (Le Mans Ultimate : `LMU_Data` ; Assetto Corsa Competizione, Assetto Corsa, Assetto Corsa EVO et iRacing : celle que chacun publie) | la télémétrie en direct : ta voiture, la session, la météo, et le classement en direct (avec les noms des autres pilotes, pour Le Mans Ultimate et iRacing). Corde n'y écrit rien et n'envoie aucune commande au jeu |
+| Mémoire partagée du jeu qui tourne (Le Mans Ultimate : `LMU_Data` ; Assetto Corsa Competizione, Assetto Corsa, Assetto Corsa EVO, Assetto Corsa Rally et iRacing : celle que chacun publie) | la télémétrie en direct : ta voiture, la session, la météo, et le classement en direct (avec les noms des autres pilotes, pour Le Mans Ultimate et iRacing). Corde n'y écrit rien et n'envoie aucune commande au jeu |
 | API locale du jeu (`http://127.0.0.1:6397`, sur ton PC) | uniquement des requêtes de lecture (`GET`) d'une liste fermée : description de l'API, données du garage (limites des réglages de ta voiture). Jamais ton profil, jamais de ticket d'authentification, jamais une écriture |
 | Fichiers de résultats du jeu (`UserData\Log\Results\*.xml`) | tes résultats de course, de qualification et d'essais. **Ils contiennent les noms et les temps des autres pilotes de la session** |
 | Fichiers de réglages du jeu (`UserData\player\Settings\…\*.svm`) et `UserData\player\Settings.JSON` | tes réglages de voiture (pour proposer des modifications) et le port de l'API locale du jeu |
@@ -99,6 +99,12 @@ Tu peux installer **Corde serveur** sur une machine à toi, toujours allumée, c
   appareils qui s'appairent ou sont refusés ; jamais un code ni une clé).
 - **Le serveur lui-même ne contacte Internet** que si un appareil administrateur active le planning des
   courses en ligne sur lui (mêmes deux pages, mêmes règles que plus bas).
+- **Sur un NAS (image de conteneur)** : ce n'est pas Corde mais le NAS (Docker, Container Manager) qui va
+  chercher l'image de Corde serveur dans le registre de GitHub (`ghcr.io`), quand tu crées le projet et à
+  chaque mise à jour ; Container Manager peut aussi y regarder de lui-même si une image plus récente existe.
+  GitHub voit alors l'adresse de ta connexion, comme pour un téléchargement, et rien d'autre : aucune donnée
+  de Corde n'y part, et le téléchargement est anonyme (pas de compte). Pour l'éviter : installe l'image
+  depuis le fichier de la page des versions ([docs/SYNOLOGY.md §5](docs/SYNOLOGY.md)).
 - **Effacer** : supprimer une session sur le PC ne la supprime pas du serveur ; supprime-la aussi sur le
   serveur (appareil administrateur), ou efface tout le serveur (`sudo /opt/corde/uninstall.sh --purge`).
   Pour que le PC arrête d'envoyer : Réglages → Serveur Corde → **Dissocier**.
