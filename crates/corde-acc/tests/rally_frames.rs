@@ -186,6 +186,21 @@ fn a_run_given_up_is_a_lap_without_a_time() {
 }
 
 #[test]
+fn a_run_given_up_near_the_end_is_never_timed_by_corde() {
+    // The very first run, restarted at 95 % of the stage: no time of the game, so no
+    // time at all — Corde's own stopwatch is not a referee.
+    let fake = FakeRallyStage {
+        gives_up_after_s: Some(90.25),
+        ..FakeRallyStage::default()
+    };
+    let (laps, _) = drive(&fake, 6.0 + 90.25 + fake.cycle_s() + 30.0);
+    assert_eq!(laps.len(), 2, "{laps:#?}");
+    assert!(!laps[0].valid && !laps[0].timed_by_game, "{laps:#?}");
+    assert!(laps[1].valid && laps[1].timed_by_game);
+    assert_eq!(laps[1].lap_time_s, 95.0);
+}
+
+#[test]
 fn a_pause_is_not_a_finish_and_a_replay_is_not_a_run() {
     let fake = FakeRallyStage::default();
     // A pause from 30 s to 50 s of the game: its pages are frozen (the same as at 30 s)

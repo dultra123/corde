@@ -240,8 +240,7 @@ impl RallyConverter {
         };
         let (length, fraction) = match known {
             _ if at_the_end => (known.unwrap_or(along.max(PROVISIONAL_MIN_M)), 1.0),
-            // Never quite the end before the clock stops: the finish is the game's to say.
-            Some(len) => (len, (along / len).clamp(0.0, 0.89)),
+            Some(len) => (len, (along / len).clamp(0.0, 1.0)),
             None if running => (2.0 * along.max(PROVISIONAL_MIN_M), 0.5),
             None => (0.0, 0.0),
         };
@@ -284,6 +283,9 @@ impl RallyConverter {
             lap.estimated_lap_s = 0.0;
             lap.lap_dist_m = along;
             lap.lap_fraction = fraction;
+            // The game counts the runs itself: a run given up near the end is never
+            // timed by Corde's own stopwatch.
+            lap.count_lap_flag = Some(if running { 2 } else { 0 });
             // Outside a run the car is « in the pits »: the wait is not a lap.
             p.in_pits = !running;
             p.in_garage = false;

@@ -59,6 +59,7 @@ describe("« Profils par jeu » in the settings", () => {
       "Assetto Corsa Competizione",
       "Assetto Corsa",
       "Assetto Corsa EVO",
+      "Assetto Corsa Rally",
       "iRacing",
     ]);
     const layout = (game: string) =>

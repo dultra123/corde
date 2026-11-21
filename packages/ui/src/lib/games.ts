@@ -10,6 +10,7 @@ const NAMES: Partial<Record<GameId, { name: string; short: string }>> = {
   acc: { name: "Assetto Corsa Competizione", short: "ACC" },
   ac: { name: "Assetto Corsa", short: "AC" },
   ac_evo: { name: "Assetto Corsa EVO", short: "AC EVO" },
+  ac_rally: { name: "Assetto Corsa Rally", short: "AC Rally" },
   iracing: { name: "iRacing", short: "iRacing" },
 };
 
@@ -25,7 +26,7 @@ export function gameShort(id: GameId | null | undefined): string {
 
 /** Read by Corde, but not checked against the running game yet: said wherever it shows. */
 export function isExperimentalGame(id: GameId | null | undefined): boolean {
-  return id === "acc" || id === "ac" || id === "ac_evo" || id === "iracing";
+  return id === "acc" || id === "ac" || id === "ac_evo" || id === "ac_rally" || id === "iracing";
 }
 
 /**
@@ -69,6 +70,8 @@ const TRAITS: Partial<Record<GameId, Partial<GameTraits>>> = {
   ac: { standings: false, gaps: false, electronics: false },
   // The other cars are only placed on the map; the gaps ahead and behind are there.
   ac_evo: { standings: false },
+  // A stage is driven alone, and the cars have no levels of driver aids to show.
+  ac_rally: { standings: false, gaps: false, electronics: false },
   // Tyres are only measured at a stop in the pits, brakes never.
   iracing: { tyres: false, brakes: false },
 };
@@ -78,7 +81,22 @@ export function gameTraits(id: GameId | null | undefined): GameTraits {
 }
 
 /** The games that have an interface of their own (those Corde reads, in the order shown). */
-export const PROFILE_GAMES: readonly GameId[] = ["lmu", "acc", "ac", "ac_evo", "iracing"];
+export const PROFILE_GAMES: readonly GameId[] = [
+  "lmu",
+  "acc",
+  "ac",
+  "ac_evo",
+  "ac_rally",
+  "iracing",
+];
+
+/**
+ * A game whose « circuit » is a stage driven from a start line to a finish line: its map is
+ * a line, not a loop.
+ */
+export function isPointToPoint(id: GameId | null | undefined): boolean {
+  return id === "ac_rally";
+}
 
 /**
  * The game a profile is kept for: the game itself; the simulator plays Le Mans Ultimate;

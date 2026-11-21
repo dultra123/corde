@@ -288,7 +288,9 @@ impl LapTracker {
 
         let lc = p.lap.laps_completed;
         let counted_now = self.prev_laps_completed.is_some_and(|prev| lc > prev);
-        if lc > 0 || counted_now {
+        // A source that says whether the lap in progress counts is one that counts laps:
+        // its count is waited for, never replaced by our stopwatch.
+        if lc > 0 || counted_now || p.lap.count_lap_flag.is_some() {
             self.scoring_alive = true;
         }
         let is_race = frame.session.session_type == SessionType::Race;

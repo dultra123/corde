@@ -882,10 +882,10 @@ export const fr = {
   // Quick-start guide (home page)
   "guide.title": "Guide de démarrage",
   "guide.intro":
-    "Corde lit ce que le jeu publie. Elle ne modifie ni le jeu ni tes réglages. Elle reconnaît toute seule Le Mans Ultimate, Assetto Corsa Competizione, Assetto Corsa, Assetto Corsa EVO et iRacing.",
+    "Corde lit ce que le jeu publie. Elle ne modifie ni le jeu ni tes réglages. Elle reconnaît toute seule Le Mans Ultimate, Assetto Corsa Competizione, Assetto Corsa, Assetto Corsa EVO, Assetto Corsa Rally et iRacing.",
   "guide.step1.title": "Le Mans Ultimate : active les plugins, une seule fois",
   "guide.step1.body":
-    "Dans LMU : Settings → Gameplay → Enable Plugins sur ON. Puis quitte complètement le jeu et relance-le. Assetto Corsa Competizione, Assetto Corsa, Assetto Corsa EVO et iRacing : rien à régler.",
+    "Dans LMU : Settings → Gameplay → Enable Plugins sur ON. Puis quitte complètement le jeu et relance-le. Assetto Corsa Competizione, Assetto Corsa, Assetto Corsa EVO, Assetto Corsa Rally et iRacing : rien à régler.",
   "guide.step2.title": "Lance Corde, puis le jeu",
   "guide.step2.body":
     "L'accueil passe de « En attente d'un jeu… » à « Jeu détecté », avec le nom du jeu.",

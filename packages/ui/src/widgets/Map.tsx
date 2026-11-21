@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useT } from "../i18n";
 import { COLORS, classColor } from "../lib/color";
+import { isPointToPoint } from "../lib/games";
 import { useTelemetry } from "../store/telemetry";
 import { carPoint, hasCoordinates, TrackLearner } from "./map/learner";
 import { registerWidget, type WidgetProps } from "./registry";
@@ -49,6 +50,8 @@ function MapWidget(_props: WidgetProps) {
       learner.reset();
       boundsRef.current = null;
     }
+    // A rally stage is a line from its start to its finish, not a loop.
+    learner.setOpen(isPointToPoint(frame.session.game));
     const player = frame.player;
     // A position of zero is « not known » (a game that gives none, or not yet).
     if (player && hasCoordinates(player.motion.pos)) {
@@ -119,7 +122,7 @@ function MapWidget(_props: WidgetProps) {
             if (i === 0) ctx.moveTo(px(x), py(z));
             else ctx.lineTo(px(x), py(z));
           }
-          if (learner.closed) ctx.closePath();
+          if (learner.closed && !learner.open) ctx.closePath();
           ctx.stroke();
         }
       };
