@@ -161,6 +161,19 @@
     Données lues sur son PC pour ce diagnostic seulement (aucun fichier du fabricant, identifiant
     d'appareil ou image copié dans le dépôt).
     **rFactor 2 : publié en 1.13.0 (22 nov.), expérimental, rien n'est vérifié face au jeu.**
+    Publication : CI n° 45012140529 (22 nov. midi), release `v1.13.0`, images `1.13.0` et `latest`
+    dans le registre. Le code Windows de lecture compile et `games_rf2` passe sous Windows. **Deux
+    points relevés par cette CI** : (1) le test `games_auto` a échoué une fois sous Windows
+    (« timeout waiting for two laps of Assetto Corsa ») puis est passé au second essai, sans
+    changement : test fragile sous Windows (sans doute une perte passagère de la source pendant
+    qu'un fichier du faux jeu est remplacé, donc une nouvelle session) — à durcir ; (2) le contrôle
+    informatif des dépendances signale RUSTSEC-2026-0592 (crate `url` 2.5.8, débordement de pile de
+    `Url::origin()` sur des adresses `blob:` imbriquées) : pas de version corrigée disponible ce
+    jour-là, le code de Corde n'appelle pas cette fonction (dépendance indirecte) — mettre à jour
+    dès qu'un correctif existe.
+    **Tutoriel de mise à jour du NAS** : `docs/MISE-A-JOUR-NAS.md` (demandé le 22 nov.) ; la première
+    mise à jour réelle par ces étapes est celle de la 1.13.0, à faire par le propriétaire : noter ce
+    que la fenêtre « Créer » affiche (téléchargement ou non) et corriger le guide au besoin.
     Demande du propriétaire (22 nov. 0 h 34, avec la liste de sa bibliothèque Steam, 495 jeux) : faire
     les autres jeux. Ordre retenu d'après la liste : rFactor 2, puis Automobilista 2 et Project CARS 2
     (une même mémoire partagée, `$pcars2$`, option à activer dans le jeu), RaceRoom (`$R3E`, rien à
