@@ -33,6 +33,7 @@ pub mod layout;
 pub mod reader;
 pub mod rest;
 pub mod results;
+pub mod rf2;
 pub mod settings;
 pub mod source;
 pub mod svm;

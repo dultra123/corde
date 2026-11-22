@@ -8,6 +8,26 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [1.13.0] — 2026-11-22
+
+**Un septième jeu, en version expérimentale : rFactor 2.**
+
+- Corde reconnaît **rFactor 2** toute seule, comme les autres jeux. C'est le moteur de Le Mans Ultimate :
+  Corde le lit avec le même convertisseur, celui qui a été vérifié en jeu.
+- **Une étape dans le jeu, une seule fois** : réglages (roue dentée) → **GAMEPLAY** → **PLUGINS** →
+  `rFactor2SharedMemoryMapPlugin64.dll` sur **On**, puis relancer le jeu. Ce plugin est normalement livré
+  avec rFactor 2 (dossier `Bin64\Plugins`).
+- Ce qui marche : direct (widgets et tableau de bord de course), enregistrement, chronos officiels et temps
+  par secteur, comparaison de tours, classement et écarts, pneus (trois températures, pression, usure),
+  freins, carburant, batterie, carte du circuit.
+- Ce que rFactor 2 ne publie pas : le niveau des aides (antipatinage, ABS), le type de gomme, l'écart au
+  meilleur tour calculé par le jeu. Son **profil** est donc une disposition « rFactor 2 » sans le widget
+  Électronique.
+- Corde ne fait que lire : elle n'envoie aucune commande au jeu.
+- **Pas encore vérifié face au jeu.**
+- L'outil `rf2-probe.exe` (archive portable) montre ce que Corde lit du jeu ; `rf2-probe.exe --dump
+  copie-rf2` écrit une copie de diagnostic, sans aucun nom de pilote.
+
 ## [1.12.0] — 2026-11-22
 
 **Corde serveur sur un NAS se met à jour en deux clics. Un sixième jeu, expérimental : Assetto Corsa Rally.**

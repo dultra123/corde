@@ -56,6 +56,7 @@ describe("« Profils par jeu » in the settings", () => {
     const games = () => [...div.querySelectorAll("fieldset legend")].map((n) => n.textContent);
     expect(games()).toEqual([
       "Le Mans Ultimate",
+      "rFactor 2",
       "Assetto Corsa Competizione",
       "Assetto Corsa",
       "Assetto Corsa EVO",

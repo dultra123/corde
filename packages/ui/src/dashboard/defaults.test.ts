@@ -63,6 +63,11 @@ describe("the layouts proposed for a game", () => {
     expect(kinds("iracing", "desktop")).toContain("standings");
     expect(kinds("acc", "desktop")).not.toContain("standings");
     expect(kinds("acc", "desktop")).toContain("tyres");
+    // rFactor 2: everything but the levels of the driver aids.
+    expect(kinds("rfactor2", "desktop")).not.toContain("electronics");
+    expect(kinds("rfactor2", "desktop")).toEqual(
+      expect.arrayContaining(["tyres", "brakes", "standings", "gaps", "map", "fuel"]),
+    );
     expect(kinds("ac", "desktop")).toEqual(
       expect.not.arrayContaining(["standings", "gaps", "electronics"]),
     );

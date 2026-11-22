@@ -1,0 +1,73 @@
+# Disposition des zones de mémoire partagée de rFactor 2 (plugin « rFactor2SharedMemoryMapPlugin64.dll »)
+#
+# Calculée à part (compilation d'un programme d'essai contre la description publique du plugin, types
+# ramenés à ceux de MSVC x64 : long = 32 bits, alignement « pack(4) »), le 22 novembre 2026.
+# Ce fichier ne contient que des tailles et des positions ; il sert aux tests de
+# crates/corde-lmu/src/rf2/layout.rs.
+#
+# Chaque zone : un bloc de version de 8 octets (début, fin), puis la structure.
+
+zone $rFactor2SMMP_Telemetry$   taille 241680
+  version_debut      0
+  version_fin        4
+  octets_modifies    8
+  nb_vehicules      12
+  vehicules         16   (128 × 1888)
+
+zone $rFactor2SMMP_Scoring$     taille 75312
+  version_debut      0
+  version_fin        4
+  octets_modifies    8
+  infos_session     12   (548)
+  vehicules        560   (128 × 584)
+
+structure télémétrie d'un véhicule   taille 1888
+  id                 0
+  temps_ecoule      12
+  nom_vehicule      32
+  nom_circuit       96
+  regime           356
+  carburant        524
+  repartition_ar   664
+  amplitude_volant 692   (dernier champ à la même place que dans Le Mans Ultimate : 0 à 696)
+  charge_batterie  696   (Le Mans Ultimate : 704, après son champ « écart au meilleur tour »)
+  couple_moteur_el 704   (Le Mans Ultimate : 712)
+  regime_moteur_el 712   (Le Mans Ultimate : 720)
+  temp_moteur_el   720   (Le Mans Ultimate : 728)
+  temp_eau_mot_el  728   (Le Mans Ultimate : 736)
+  etat_moteur_el   736   (Le Mans Ultimate : 744)
+  reserve          737   (111 octets)
+  roues            848   (4 × 260 ; dans une roue, réserve à 236 — Le Mans Ultimate : 242)
+
+Comparaison champ par champ avec reference/lmu-shared-memory-layout.txt (les 188 champs des quatre
+structures) : tous à la même position, sauf les six champs ci-dessus (décalés de 8) et le début des
+réserves.
+
+structure infos de session            taille 548
+  nom_circuit        0
+  session           64
+  temps_courant     68
+  temps_fin         76
+  longueur_tour     88
+  nb_vehicules     104
+  phase            108
+  en_piste         115
+  nom_joueur       116
+  nuages           212
+  heure_debut      328
+  humidite_moy     332
+  reserve          340   (200 octets ; Le Mans Ultimate y a mis ses propres champs)
+
+structure classement d'un véhicule    taille 584
+  id                 0
+  nom_pilote         4
+  nom_vehicule      36
+  tours_faits      100
+  est_joueur       196
+  controle         197
+  place            199
+  categorie        200
+  ecart_suivant    232
+  tour_compte      506
+  meilleur_s2      532
+  reserve          536   (48 octets ; Le Mans Ultimate y a mis ses propres champs)

@@ -1,6 +1,6 @@
 [package]
 name = "corde-lmu"
-description = "Adaptateur Le Mans Ultimate : mémoire partagée native LMU_Data (Windows + pont /dev/shm Linux), API REST locale, fichiers de setup .svm."
+description = "Adaptateur Le Mans Ultimate : mémoire partagée native LMU_Data (Windows + pont /dev/shm Linux), API REST locale, fichiers de setup .svm. Et rFactor 2 (même moteur), par le plugin de mémoire partagée livré avec le jeu, expérimental."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -13,6 +13,10 @@ path = "src/bin/lmu-probe.rs"
 [[bin]]
 name = "lmu-shm-fake"
 path = "src/bin/lmu-shm-fake.rs"
+
+[[bin]]
+name = "rf2-probe"
+path = "src/bin/rf2-probe.rs"
 
 [dependencies]
 corde-protocol = { workspace = true }

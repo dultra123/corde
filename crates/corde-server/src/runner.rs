@@ -14,6 +14,7 @@ use corde_acc::{
 };
 use corde_core::{AutoSource, LapTracker, SourceError, TelemetrySource};
 use corde_iracing::{IracingSource, IracingSourceConfig};
+use corde_lmu::rf2::{Rf2Source, Rf2SourceConfig};
 use corde_lmu::{LmuSource, LmuSourceConfig};
 use corde_protocol::{GameEvent, GameId, TelemetryFrame};
 use corde_sim::{SimConfig, SimSource};
@@ -32,6 +33,9 @@ pub enum SourceSpec {
     /// Le Mans Ultimate shared memory; `shm_path` overrides the Linux mirror path.
     Lmu {
         shm_path: Option<PathBuf>,
+    },
+    Rf2 {
+        dir: Option<PathBuf>,
     },
     /// Assetto Corsa Competizione shared memory; `dir` reads three files instead (tests).
     Acc {
@@ -62,6 +66,7 @@ impl SourceSpec {
         match self {
             SourceSpec::Sim(_) => "sim",
             SourceSpec::Lmu { .. } => "lmu",
+            SourceSpec::Rf2 { .. } => "rf2",
             SourceSpec::Acc { .. } => "acc",
             SourceSpec::Ac { .. } => "ac",
             SourceSpec::AcEvo { .. } => "acevo",
@@ -79,6 +84,10 @@ pub fn make_source(spec: &SourceSpec) -> anyhow::Result<Box<dyn TelemetrySource>
         SourceSpec::Lmu { shm_path } => Ok(Box::new(LmuSource::with_config(LmuSourceConfig {
             shm_path: shm_path.clone(),
             ..LmuSourceConfig::default()
+        }))),
+        SourceSpec::Rf2 { dir } => Ok(Box::new(Rf2Source::with_config(Rf2SourceConfig {
+            dir: dir.clone(),
+            ..Rf2SourceConfig::default()
         }))),
         SourceSpec::Acc { dir } => Ok(Box::new(AccSource::with_config(AccSourceConfig {
             dir: dir.clone(),
@@ -126,6 +135,9 @@ impl SourcePlan {
         let lmu = SourceSpec::Lmu {
             shm_path: cfg.lmu_shm.clone(),
         };
+        let rf2 = SourceSpec::Rf2 {
+            dir: cfg.rf2_shm.clone(),
+        };
         let acc = SourceSpec::Acc {
             dir: cfg.acc_shm.clone(),
         };
@@ -145,6 +157,11 @@ impl SourcePlan {
             SourceKind::Sim => (sim, None, Duration::from_secs(5)),
             SourceKind::Lmu => (
                 lmu,
+                cfg.fallback_sim.then(|| sim.clone()),
+                Duration::from_secs(5),
+            ),
+            SourceKind::Rf2 => (
+                rf2,
                 cfg.fallback_sim.then(|| sim.clone()),
                 Duration::from_secs(5),
             ),
@@ -176,7 +193,7 @@ impl SourcePlan {
             // auto: every game, looked for every 2 s while none is running. Le Mans
             // Ultimate first (the game Corde was written for), see ADR 0020.
             SourceKind::Auto => (
-                SourceSpec::Auto(vec![lmu, acc, ac, acevo, acrally, iracing]),
+                SourceSpec::Auto(vec![lmu, rf2, acc, ac, acevo, acrally, iracing]),
                 cfg.fallback_sim.then(|| sim.clone()),
                 Duration::from_secs(2),
             ),
@@ -605,7 +622,7 @@ mod tests {
         };
         assert_eq!(
             games.iter().map(SourceSpec::name).collect::<Vec<_>>(),
-            ["lmu", "acc", "ac", "acevo", "acrally", "iracing"]
+            ["lmu", "rf2", "acc", "ac", "acevo", "acrally", "iracing"]
         );
         assert_eq!(plan.retry_max, Duration::from_secs(2));
         // Building it opens nothing: it succeeds without any game, and names none.

@@ -41,7 +41,7 @@ corde/
 ├─ crates/
 │  ├─ corde-protocol/         # types partagés (serde + ts-rs) — LE contrat
 │  ├─ corde-core/             # trait TelemetrySource, LapTracker, derive::*
-│  ├─ corde-lmu/              # adaptateur Le Mans Ultimate (+ parseur des résultats XML)
+│  ├─ corde-lmu/              # adaptateur Le Mans Ultimate (+ parseur des résultats XML) ; module rf2 : rFactor 2, expérimental
 │  ├─ corde-acc/              # adaptateur des quatre Assetto Corsa : Competizione, le premier, EVO, Rally (expérimental)
 │  ├─ corde-iracing/          # adaptateur iRacing (expérimental)
 │  ├─ corde-sim/              # simulateur LMU_Data pour dev/tests

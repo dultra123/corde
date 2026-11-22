@@ -54,6 +54,7 @@ fn source_from_env() -> SourceKind {
         Some("ac") => SourceKind::Ac,
         Some("acevo") => SourceKind::AcEvo,
         Some("acrally") => SourceKind::AcRally,
+        Some("rf2") => SourceKind::Rf2,
         Some("iracing") => SourceKind::Iracing,
         _ => SourceKind::Auto,
     }

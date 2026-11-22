@@ -20,7 +20,7 @@ pub const DEFAULT_SYNC_INTERVAL_S: u64 = 300;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum, Default)]
 #[clap(rename_all = "lower")]
 pub enum SourceKind {
-    /// Whichever supported game is running (Le Mans Ultimate, Assetto Corsa
+    /// Whichever supported game is running (Le Mans Ultimate, rFactor 2, Assetto Corsa
     /// Competizione, Assetto Corsa, Assetto Corsa EVO, Assetto Corsa Rally, iRacing),
     /// looked for every 2 s while none is (add `--fallback-sim` to get the simulator
     /// after 10 s).
@@ -30,6 +30,8 @@ pub enum SourceKind {
     Sim,
     /// Le Mans Ultimate only.
     Lmu,
+    /// rFactor 2 only.
+    Rf2,
     /// Assetto Corsa Competizione only.
     Acc,
     /// The first Assetto Corsa only.
@@ -165,6 +167,10 @@ pub struct ServerConfig {
     /// shared memory (tests and development).
     #[arg(long, hide = true)]
     pub acc_shm: Option<PathBuf>,
+    /// rFactor 2: read the two buffers of the game's plugin from files of this directory
+    /// instead of the game's shared memory (tests and development).
+    #[arg(long, hide = true)]
+    pub rf2_shm: Option<PathBuf>,
     /// iRacing: read an image of the game's mapping from this file instead of the
     /// game's shared memory (tests and development).
     #[arg(long, hide = true)]
@@ -233,6 +239,7 @@ impl Default for ServerConfig {
             sim_speed: None,
             lmu_shm: None,
             acc_shm: None,
+            rf2_shm: None,
             iracing_shm: None,
             record: false,
             no_record: false,

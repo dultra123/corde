@@ -7,6 +7,7 @@ import type { GameId } from "@corde/protocol";
  */
 const NAMES: Partial<Record<GameId, { name: string; short: string }>> = {
   lmu: { name: "Le Mans Ultimate", short: "LMU" },
+  rfactor2: { name: "rFactor 2", short: "rF2" },
   acc: { name: "Assetto Corsa Competizione", short: "ACC" },
   ac: { name: "Assetto Corsa", short: "AC" },
   ac_evo: { name: "Assetto Corsa EVO", short: "AC EVO" },
@@ -26,7 +27,14 @@ export function gameShort(id: GameId | null | undefined): string {
 
 /** Read by Corde, but not checked against the running game yet: said wherever it shows. */
 export function isExperimentalGame(id: GameId | null | undefined): boolean {
-  return id === "acc" || id === "ac" || id === "ac_evo" || id === "ac_rally" || id === "iracing";
+  return (
+    id === "rfactor2" ||
+    id === "acc" ||
+    id === "ac" ||
+    id === "ac_evo" ||
+    id === "ac_rally" ||
+    id === "iracing"
+  );
 }
 
 /**
@@ -64,6 +72,8 @@ const EVERYTHING: GameTraits = {
 };
 
 const TRAITS: Partial<Record<GameId, Partial<GameTraits>>> = {
+  // Everything Le Mans Ultimate inherited, but not the levels of the driver aids.
+  rfactor2: { electronics: false },
   // The pages of the game name no other driver; the gaps ahead and behind are there.
   acc: { standings: false },
   // The game publishes its own car only, and no level of the driver aids.
@@ -83,6 +93,7 @@ export function gameTraits(id: GameId | null | undefined): GameTraits {
 /** The games that have an interface of their own (those Corde reads, in the order shown). */
 export const PROFILE_GAMES: readonly GameId[] = [
   "lmu",
+  "rfactor2",
   "acc",
   "ac",
   "ac_evo",

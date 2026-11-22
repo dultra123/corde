@@ -5,6 +5,8 @@ describe("the games Corde reads", () => {
   it("names the games that have an adapter, and only them", () => {
     expect(gameName("lmu")).toBe("Le Mans Ultimate");
     expect(gameShort("lmu")).toBe("LMU");
+    expect(gameName("rfactor2")).toBe("rFactor 2");
+    expect(gameShort("rfactor2")).toBe("rF2");
     expect(gameName("acc")).toBe("Assetto Corsa Competizione");
     expect(gameShort("acc")).toBe("ACC");
     expect(gameName("ac")).toBe("Assetto Corsa");
@@ -19,7 +21,7 @@ describe("the games Corde reads", () => {
     expect(gameName("iracing")).toBe("iRacing");
     expect(gameShort("iracing")).toBe("iRacing");
     // Planned games, the simulator and the unknown: no name is shown.
-    for (const id of ["rfactor2", "ams2", "sim", "unknown"] as const) {
+    for (const id of ["ams2", "sim", "unknown"] as const) {
       expect(gameName(id)).toBe("");
       expect(gameShort(id)).toBe("");
     }
@@ -27,6 +29,8 @@ describe("the games Corde reads", () => {
   });
 
   it("says which game is not verified yet, and which one the setup engineer knows", () => {
+    expect(isExperimentalGame("rfactor2")).toBe(true);
+    expect(hasSetupEngineer("rfactor2")).toBe(false);
     expect(isExperimentalGame("acc")).toBe(true);
     expect(isExperimentalGame("ac")).toBe(true);
     expect(isExperimentalGame("ac_evo")).toBe(true);

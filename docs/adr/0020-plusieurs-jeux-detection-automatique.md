@@ -96,9 +96,9 @@ l'analyse est indicative et que les réglages proposés ne s'appliquent pas.
 
 Le propriétaire a dit (17 nov.) posséder tous les jeux de la liste : chacun pourra être vérifié chez lui.
 Fait : le premier Assetto Corsa (1.8.0), iRacing (1.9.0, § D ci-dessous), Assetto Corsa EVO (1.11.0, § G),
-Assetto Corsa Rally (1.12.0, § H). Ensuite, par coût croissant :
-rFactor 2 (plugin tiers, structures proches de celles de Le Mans Ultimate),
-Automobilista 2, RaceRoom, puis les jeux à télémétrie UDP (une
+Assetto Corsa Rally (1.12.0, § H), rFactor 2 (1.13.0, § I). Ensuite, d'après sa bibliothèque
+(liste du 21 nov. 2026) : Automobilista 2 et Project CARS 2 (une même mémoire partagée), RaceRoom, puis
+les jeux à télémétrie UDP — F1 24 et 2021, DiRT Rally 2.0, Forza Motorsport et Horizon, BeamNG.drive (une
 option à activer dans le jeu, et un port à écouter : à étudier avec le modèle de sécurité). Les consoles ne
 sont pas prévues.
 
@@ -221,6 +221,39 @@ pas ce que le jeu ne publie pas.
 - **Profil du jeu** : sans les widgets Classement, Écarts et Électronique.
 - **Hypothèses à confirmer en jeu** : marquées `TODO(verify-in-game)` dans `rally/convert.rs` — d'abord le
   départ et l'arrivée.
+
+## I. rFactor 2 (1.13.0)
+
+- **Dans le module de Le Mans Ultimate** (`corde-lmu`, module `rf2`) : les deux jeux ont le même moteur.
+  Le plugin de mémoire partagée livré avec rFactor 2 (`rFactor2SharedMemoryMapPlugin64.dll`) publie les
+  structures dont Le Mans Ultimate a hérité.
+- **Comparaison champ par champ** (les 188 champs des quatre structures, calcul fait à part, gardé dans
+  `reference/rf2-shared-memory-layout.txt`) : mêmes tailles, mêmes positions, sauf six champs (batterie et
+  moteur électrique) que Le Mans Ultimate a décalés de 8 octets en insérant son « écart au meilleur
+  tour » ; tout ce que Le Mans Ultimate a ajouté d'autre occupe des octets que rFactor 2 garde en réserve.
+- **Pas de second convertisseur** : les deux zones du plugin sont remises dans la forme du bloc de Le Mans
+  Ultimate (`rf2::convert::assemble` : copie champ pour champ, les six champs remis à leur place, les
+  octets propres à Le Mans Ultimate laissés vides), puis lues par `convert::to_frame` — le convertisseur
+  vérifié en jeu. Unités, axes, chronos et secteurs sont donc ceux de Le Mans Ultimate ; un test compare
+  les deux chemins sur le même monde simulé.
+- **Ce qui n'existe pas dans rFactor 2 reste vide**, jamais inventé : niveaux des aides, énergie virtuelle,
+  écart au meilleur tour, type de gomme, température idéale, modèle de voiture, état de la piste. Le temps
+  restant, l'heure et la couverture nuageuse sont déduits de ce que le jeu publie.
+- **Lecture seule** : zones `$rFactor2SMMP_Telemetry$` et `$rFactor2SMMP_Scoring$`, ouvertes en lecture ;
+  chaque copie est refaite si le plugin écrivait (deux compteurs d'écriture). Les zones d'entrée du plugin
+  (commandes de météo, de règles, de boutons) ne sont jamais ouvertes.
+- **Une session est vivante** quand les zones nomment un circuit et des véhicules **et** que leurs
+  compteurs ont bougé entre deux regards (des zones laissées par un jeu planté ne bougent pas). Le plugin
+  vide ses zones en fin de session : c'est ainsi qu'on la voit finir. Sans écriture pendant 5 s, les zones
+  sont rouvertes : jeu en pause si elles existent encore, jeu fermé sinon (notre propre accès les
+  maintenait).
+- **Le Mans Ultimate peut charger ce même plugin** (d'autres outils l'y installent) : la détection essaie
+  Le Mans Ultimate d'abord, et la source de rFactor 2 refuse des zones quand le bloc propre à Le Mans
+  Ultimate existe.
+- **Plus de 104 véhicules** (le plugin en liste 128, le bloc de Le Mans Ultimate 104) : les premiers, et
+  toujours celui du joueur.
+- **Rien n'est vérifié face au jeu** ; l'étape d'activation du plugin vient de la documentation d'outils
+  tiers.
 
 ## Alternatives écartées
 

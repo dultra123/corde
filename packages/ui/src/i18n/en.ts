@@ -847,10 +847,10 @@ export const en: Record<TranslationKey, string> = {
   // Quick-start guide (home page)
   "guide.title": "Getting started",
   "guide.intro":
-    "Corde reads what the game publishes. It changes neither the game nor your setups. It recognises Le Mans Ultimate, Assetto Corsa Competizione, Assetto Corsa, Assetto Corsa EVO, Assetto Corsa Rally and iRacing by itself.",
+    "Corde reads what the game publishes. It changes neither the game nor your setups. It recognises Le Mans Ultimate, rFactor 2, Assetto Corsa Competizione, Assetto Corsa, Assetto Corsa EVO, Assetto Corsa Rally and iRacing by itself.",
   "guide.step1.title": "Le Mans Ultimate: enable plugins, once",
   "guide.step1.body":
-    "In LMU: Settings → Gameplay → Enable Plugins set to ON. Then quit the game completely and start it again. Assetto Corsa Competizione, Assetto Corsa, Assetto Corsa EVO, Assetto Corsa Rally and iRacing: nothing to set.",
+    "In LMU: Settings → Gameplay → Enable Plugins set to ON. Then quit the game completely and start it again. rFactor 2: settings (gear icon) → GAMEPLAY → PLUGINS → rFactor2SharedMemoryMapPlugin64.dll set to On, then restart the game. Assetto Corsa Competizione, Assetto Corsa, Assetto Corsa EVO, Assetto Corsa Rally and iRacing: nothing to set.",
   "guide.step2.title": "Start Corde, then the game",
   "guide.step2.body":
     "The home page goes from “Waiting for a game…” to “Game detected”, with the name of the game.",
