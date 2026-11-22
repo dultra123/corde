@@ -295,6 +295,9 @@ administrateur.
 
 ## 11. Mettre à jour
 
+> La même chose, expliquée clic par clic avec ce que chaque fenêtre doit afficher et quoi faire si ça ne
+> se passe pas comme prévu : [MISE-A-JOUR-NAS.md](MISE-A-JOUR-NAS.md).
+
 Le serveur doit avoir **la même version que Corde sur le PC, ou plus récente** (sinon le PC affiche
 « Serveur à mettre à jour » et attend, sans rien perdre). Mets donc le serveur à jour **avant** le PC, ou
 juste après.

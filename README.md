@@ -297,7 +297,8 @@ parti). Le direct reste sur le PC.
 **Sur un NAS** (Synology avec Container Manager, ou tout Docker) au lieu d'un Pi : crée un projet dans
 Container Manager en collant le texte du guide ; le NAS prend l'image tout seul
 (`ghcr.io/dultra123/corde-server`), et le premier code d'appairage s'affiche dans le journal du conteneur,
-sans terminal. Mettre à jour : arrêter le projet, puis **Action → Créer**. Sans Internet sur le NAS, l'image
+sans terminal. Mettre à jour : arrêter le projet, puis **Action → Créer**
+([pas à pas](docs/MISE-A-JOUR-NAS.md)). Sans Internet sur le NAS, l'image
 existe aussi en fichier (`corde-server-<version>-docker-x64.tar.gz`, page des versions) :
 [docs/SYNOLOGY.md](docs/SYNOLOGY.md).
 

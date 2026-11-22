@@ -134,6 +134,32 @@
     « tour valide », le format si le jeu a été mis à jour depuis (accès anticipé).
     **À faire au premier essai du propriétaire** : lire sa session enregistrée comme le 21 nov. pour ACC
     (corrélation volant / accélération latérale, sens de la carte) et corriger.
+    **Demande du 22 nov. 11 h : l'écran du volant MOZA KS Pro, avec MOZA Pit House ouvert, et « deux
+    volants ».** Étude faite le jour même (rien d'écrit dans le code) :
+    - le KS Pro a un écran en bandeau (2,99 pouces ; **780 × 248** dans les fichiers du logiciel du
+      fabricant, « 268 × 800 » sur sa page produit). Ce n'est pas un moniteur : il affiche des
+      tableaux de bord faits dans l'éditeur de Pit House, envoyés au volant, et alimentés par la
+      télémétrie que **Pit House** lit lui-même dans le jeu. Un logiciel tiers ne peut parler au
+      volant que Pit House fermé (un seul programme à la fois sur le port de la base) : exclu, le
+      propriétaire règle sa base avec Pit House ;
+    - ces tableaux de bord sont des fichiers `.mzdash` : du JSON lisible (fenêtre → pages → éléments
+      Texte, Rectangle, Image, Jauge linéaire ; la doc du fabricant cite aussi Ellipse, Cadran, Carte),
+      chaque propriété pouvant être liée à une expression JavaScript sur des données nommées
+      (`v1/gameData/Rpm`, `Gear`, `SpeedKmh`, `Fuel`, `FuelLaps`, `GAP`, temps au tour, pneus intérieur /
+      milieu / extérieur, pressions, usure, freins, niveaux TC / ABS, drapeaux, énergie virtuelle… une
+      soixantaine relevées dans les tableaux de bord présents sur son PC, dans
+      `%LOCALAPPDATA%\MOZA Pit House\_dashes\dashes\<nom>\<nom>.mzdash`, avec une image d'aperçu par
+      page). Le fichier nomme les écrans visés (« W17 Display », « W18 Display » — le sien —, « W20
+      Display ») : plusieurs volants possibles dans un même fichier ;
+    - **voie retenue, à construire** : dans le Studio, un format « écran de volant MOZA (780 × 248) »
+      et un export `.mzdash` d'un tableau de bord Corde (valeurs → textes liés, barres → jauges
+      linéaires, formes, images, couleurs selon la valeur et « afficher quand… » → expressions), que le
+      propriétaire importe dans Pit House. Limites à dire : ce sont les données de Pit House (ses jeux,
+      ses champs), pas celles de Corde ; les widgets, la carte, la vidéo et les blocs Corde n'ont pas
+      d'équivalent ; format non documenté, à essayer sur son volant (je ne peux pas l'essayer) ;
+    - à lui demander : quel est le second volant ; comment il importe un fichier dans Pit House.
+    Données lues sur son PC pour ce diagnostic seulement (aucun fichier du fabricant, identifiant
+    d'appareil ou image copié dans le dépôt).
     **rFactor 2 : publié en 1.13.0 (22 nov.), expérimental, rien n'est vérifié face au jeu.**
     Demande du propriétaire (22 nov. 0 h 34, avec la liste de sa bibliothèque Steam, 495 jeux) : faire
     les autres jeux. Ordre retenu d'après la liste : rFactor 2, puis Automobilista 2 et Project CARS 2
