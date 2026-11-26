@@ -192,6 +192,41 @@
       réussi) ; la jauge circulaire et l'ellipse du format, dont les clés sont connues mais pas vues.
     - **Second volant** : toujours pas dit par le propriétaire ; l'export vaut pour tout écran
       780 × 248 (KS Pro, CS Pro), un volant sans écran n'est pas concerné.
+    **Jeu suivant : DiRT Rally 2.0 — étude du 26 nov., rien d'écrit dans le code.** Le propriétaire
+    demande « les autres jeux », « le prochain ça serait ac rallye » : Assetto Corsa Rally est déjà là
+    (1.12.0), lu donc comme « un jeu de rallye » → DiRT Rally 2.0, premier jeu à **télémétrie UDP**.
+    - **Côté jeu** : rien n'est publié tant que le pilote n'a pas modifié
+      `Documents\My Games\DiRT Rally 2.0\hardwaresettings\hardware_settings_config.xml`, ligne
+      `<udp enabled="true" extradata="3" ip="127.0.0.1" port="20777" delay="1" />`. Corde ne modifie
+      pas ce fichier d'elle-même (étape à la main dans le guide ; un bouton, plus tard, sur action
+      explicite et avec copie de sauvegarde).
+    - **Paquet (`extradata="3"`)** : 66 nombres `f32` petit-boutiste, 264 octets (64 = 256 octets
+      pour le premier DiRT Rally ; `extradata` 0 → 17 nombres, 1 → 38). Trois sources concordent sur :
+      0 temps de session, 1 temps de la spéciale (s), 2 distance dans la spéciale (m), 3 distance
+      totale, 4–6 position, 7 vitesse (m/s), 8–10 vitesse, 11–13 vecteur de roulis, 14–16 vecteur de
+      tangage, 17–20 débattements, 21–24 vitesses de débattement, 25–28 vitesses de roue (ordre
+      **AR G, AR D, AV G, AV D**), 29 accélérateur, 30 direction, 31 frein, 32 embrayage, 33 rapport
+      (0 = neutre ; marche arrière : négatif ou 10 selon les sources), 34–35 g latéral et longitudinal,
+      36 tour, 37 régime (**÷ 10**), 39 position, 51–54 températures de frein (même ordre), 60 nombre
+      de tours, 61 longueur (m), 62 dernier temps, 63 régime maximal (÷ 10). **Moins sûrs** (repris de
+      l'ancien format commun de l'éditeur, à confirmer en jeu) : 43 antipatinage, 44 ABS, 45–46
+      carburant et capacité, 47 dans les stands, 48 secteur, 49–50 temps de secteur, 55–58 pressions
+      (psi), 59 tours faits, 64 régime de ralenti, 65 nombre de rapports.
+    - **Ce que le jeu ne publie pas** : températures et usure des pneus, eau, classement, noms
+      (voiture, spéciale, pilote), écarts.
+    - **À décider avant d'écrire** : (1) **un port à l'écoute** — nouveauté pour le modèle de
+      sécurité : `127.0.0.1` seulement, lecture seule, aucune réponse envoyée, taille des paquets
+      bornée, valeurs non finies écartées ; (2) **conflit de port** : un seul programme écoute un port
+      UDP, et Pit House ou un autre outil peut déjà tenir le 20777 → Corde prend un port à elle et le
+      guide fait ajouter une **seconde** ligne `<udp …>` (à vérifier : le jeu en accepte plusieurs) ;
+      (3) **détection** : pas de zone mémoire à chercher, le jeu « tourne » quand des paquets
+      arrivent ; (4) **spéciale = tour**, comme Assetto Corsa Rally : départ quand le temps de la
+      spéciale quitte 0, arrivée quand la distance atteint la longueur ou que le dernier temps
+      change ; temps officiel = champ 62 s'il est donné, sinon le temps observé ; (5) nom de la
+      spéciale absent : la désigner par sa longueur.
+    - Sources lues (faits seulement, aucun code repris) : la documentation d'une bibliothèque Rust
+      de lecture de ces paquets, un fil de discussion de la communauté du premier jeu, le guide d'un
+      fabricant de bases pour l'activation.
     **rFactor 2 : publié en 1.13.0 (22 nov.), expérimental, rien n'est vérifié face au jeu.**
     Publication : CI n° 45012140529 (22 nov. midi), release `v1.13.0`, images `1.13.0` et `latest`
     dans le registre. Le code Windows de lecture compile et `games_rf2` passe sous Windows. **Deux
