@@ -161,6 +161,11 @@
     Données lues sur son PC pour ce diagnostic seulement (aucun fichier du fabricant, identifiant
     d'appareil ou image copié dans le dépôt).
     **Écran du volant MOZA : export publié en 1.14.0 (26 nov.), expérimental, jamais vu sur un volant.**
+    Publication : CI n° 45787074310 (26 nov.), release `v1.14.0` (installeur, archives du serveur,
+    `latest.json`), images `1.14.0` et `latest` dans le registre ; tous les jobs verts sauf le
+    contrôle informatif des dépendances (RUSTSEC-2026-0592, toujours sans correctif) ; `games_auto`
+    est passé sous Windows cette fois. Un exemplaire du fichier du modèle (`Volant MOZA.mzdash`) a été
+    remis au propriétaire pour un essai immédiat sur son KS Pro.
     Le 26 nov., le propriétaire précise : l'écran ne se pilote par autre chose que Pit House fermé,
     « c'est pas grave, fais en sorte qu'on puisse le faire quand même, on laisse la possibilité aux gens
     de le faire ou pas ». Décision (ADR 0021) : **pas de pilote série dans Corde** (base à retour de
