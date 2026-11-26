@@ -46,6 +46,7 @@ const PRESET_NAME: Record<PresetId | "custom", TranslationKey> = {
   "screen-16-9": "studio.preset.screen-16-9",
   "wheel-strip": "studio.preset.wheel-strip",
   "wheel-round": "studio.preset.wheel-round",
+  "wheel-moza": "studio.preset.wheel-moza",
   square: "studio.preset.square",
   "screen-5-3": "studio.preset.screen-5-3",
   "screen-3-2": "studio.preset.screen-3-2",

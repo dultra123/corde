@@ -137,6 +137,12 @@ de chaque élément, police des chiffres, jauge circulaire, formes, bandeau d'al
 sélection multiple et copier / coller. Partage par fichier `.cordedash` (avec ses images). Pas à pas dans
 [docs/TESTING-ON-PC.md](docs/TESTING-ON-PC.md#créer-ton-propre-tableau-de-bord-studio).
 
+**Sur l'écran d'un volant MOZA** (KS Pro, CS Pro — expérimental, depuis la 1.14) : le Studio a un modèle
+« Écran de volant MOZA » et un bouton **Exporter pour le volant MOZA**, qui écrit le tableau de bord au
+format de ce volant. Tu charges le fichier sur le volant avec le logiciel de MOZA, qui continue de piloter
+l'écran : Corde ne parle pas au volant. Ce qui s'exporte, ce qui ne s'exporte pas et les étapes :
+[docs/VOLANT-MOZA.md](docs/VOLANT-MOZA.md).
+
 ![Le Studio : la palette d'éléments, la page et les propriétés de l'élément choisi](docs/images/studio-edition.png)
 
 ![Tableau de bord du téléphone, page Course (course de démonstration)](docs/images/tableau-de-bord-telephone.png)
@@ -422,12 +428,14 @@ corde/
   [widgets iOS et activité en direct](docs/adr/0012-widgets-activite-en-direct.md),
   [application Android](docs/adr/0013-application-android.md),
   [tableau de bord du téléphone](docs/adr/0014-tableau-de-bord-telephone.md),
-  [Corde serveur en conteneur](docs/adr/0017-corde-serveur-en-conteneur.md)
+  [Corde serveur en conteneur](docs/adr/0017-corde-serveur-en-conteneur.md),
+  [écran d'un volant MOZA](docs/adr/0021-ecran-du-volant-moza.md)
 - [docs/TESTING-ON-PC.md](docs/TESTING-ON-PC.md) — installer et utiliser Corde sur Windows, dépannage
 - [docs/SERVEUR.md](docs/SERVEUR.md) — installer Corde serveur sur un Raspberry Pi, appairer, sauvegarder
 - [docs/SYNOLOGY.md](docs/SYNOLOGY.md) — installer Corde serveur sur un NAS Synology (Container Manager), sans commande
 - [docs/ACCES-EXTERIEUR.md](docs/ACCES-EXTERIEUR.md) — ouvrir le serveur depuis l'extérieur par un VPN, sans exposer Corde
 - [docs/IOS.md](docs/IOS.md) — l'application iPhone : ce qu'elle fait, comment sortent les versions (CI, TestFlight), ce qu'il faut faire côté Apple
+- [docs/VOLANT-MOZA.md](docs/VOLANT-MOZA.md) — mettre un tableau de bord de Corde sur l'écran d'un volant MOZA KS Pro ou CS Pro (expérimental)
 - [docs/ANDROID.md](docs/ANDROID.md) — l'application Android : l'installer (APK), ses autorisations, quoi essayer, la clé de signature et la CI
 - [docs/STATUS.md](docs/STATUS.md) — état détaillé du projet, tenu à jour à chaque étape
 - [CHANGELOG.md](CHANGELOG.md) — nouveautés de chaque version (affichées par l'application avant une mise à jour)

@@ -1,6 +1,6 @@
 # Corde — fiche de présentation
 
-> À jour pour la **version 1.13.0** (22 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
+> À jour pour la **version 1.14.0** (26 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
 > faut pour présenter Corde (site, page de présentation, annonce) : ce qu'elle fait, où elle tourne, ce qui
 > est nouveau, ce qui arrive, les images et les liens. Elle ne dit que ce qui existe ; le détail et l'état
 > exact de chaque partie sont dans le [README](../README.md) et dans [STATUS.md](STATUS.md).
@@ -27,7 +27,7 @@ Le nom vient du **point de corde** : l'endroit où la trajectoire idéale touche
 
 | | |
 |---|---|
-| Version actuelle | **1.13.0** (22 novembre 2026) |
+| Version actuelle | **1.14.0** (26 novembre 2026) |
 | Prix | Gratuit |
 | Licence | Logiciel libre, GPL-3.0-or-later ; code source public |
 | Jeux | Le Mans Ultimate (complet, vérifié) ; Assetto Corsa Competizione (expérimental, depuis la 1.7.0) ; Assetto Corsa (expérimental, depuis la 1.8.0) ; iRacing (expérimental, depuis la 1.9.0) ; Assetto Corsa EVO (expérimental, depuis la 1.11.0) ; Assetto Corsa Rally (expérimental, depuis la 1.12.0) ; rFactor 2 (expérimental, depuis la 1.13.0). Détection automatique. Détail : [JEUX.md](JEUX.md) |
@@ -159,8 +159,14 @@ Depuis la 1.3.0 :
 - **Chaque appareil choisit son tableau de bord** ; le téléphone en garde une copie pour l'afficher PC éteint
   (les images, elles, restent sur le PC : PC éteint, leur place est vide).
 - **Sur un petit écran branché au PC** : une fenêtre de navigateur à l'adresse `…#/dash`, en plein écran ;
-  un tableau de bord 480 × 480 remplit exactement un écran 480 × 480. Corde n'écrit pas sur l'écran intégré
-  d'un volant, qui reste piloté par le logiciel de son fabricant.
+  un tableau de bord 480 × 480 remplit exactement un écran 480 × 480.
+- **Sur l'écran d'un volant MOZA KS Pro ou CS Pro** (expérimental, depuis la 1.14.0) : le Studio a un
+  modèle et un format « Écran de volant MOZA » (780 × 248) et un bouton **Exporter pour le volant MOZA**,
+  qui écrit le tableau de bord au format de ce volant. Le fichier se charge sur le volant avec le logiciel
+  de son fabricant, qui reste celui qui pilote l'écran et lui envoie les données : Corde ne parle pas au
+  volant. Seuls les éléments simples s'exportent (valeurs, barres, textes, rampe de régime, alertes), sans
+  images ; Corde liste ce qu'elle a laissé de côté. Pas encore vu sur un volant.
+  Guide : [VOLANT-MOZA.md](VOLANT-MOZA.md).
 - **Un téléphone dont l'application n'est pas encore à jour** affiche un tableau de bord rond ou arrondi
   en rectangle, sans rognage.
 - **Partage par fichier** : un tableau de bord s'exporte et s'importe (`.cordedash`, avec ses images et
@@ -176,7 +182,9 @@ dans l'éditeur, l'extérieur du cercle hachuré), `studio-edition.png` (l'édit
 centre, propriétés à droite — capture d'avant l'onglet), `studio-image.png` (un logo ajouté à une page, ses
 réglages à droite), `studio-couleurs.png` (les règles de couleur selon la valeur),
 `tableau-de-bord-photo.png` (un tableau de bord avec logo, image de fond, jauge circulaire et bandeau
-d'alerte), `tableau-de-bord-personnalise.png` (un tableau de bord d'exemple).
+d'alerte), `tableau-de-bord-personnalise.png` (un tableau de bord d'exemple), `studio-volant-moza.png` (le
+modèle « Écran de volant MOZA » dans l'éditeur), `studio-export-moza.png` (la fenêtre qui suit l'export
+pour le volant MOZA).
 
 ### 4. Sessions et tours
 
@@ -283,6 +291,9 @@ redémarrer. Chaque version est signée et vérifiée avant l'installation ; rie
 
 ## Nouveautés
 
+- **1.14.0 (26 novembre 2026)** — le Studio exporte un tableau de bord pour l'écran d'un volant MOZA
+  KS Pro ou CS Pro (expérimental) : un modèle et un format prêts, un fichier à charger sur le volant avec
+  le logiciel de son fabricant. Corde ne parle pas au volant.
 - **1.13.0 (22 novembre 2026)** — un septième jeu, en version expérimentale : rFactor 2 (le moteur de Le
   Mans Ultimate : chronos officiels, secteurs, classement, pneus, freins, carte), après activation d'un
   plugin livré avec le jeu.
@@ -394,6 +405,8 @@ Pour rester exact :
 - pas « disponible sur l'App Store » ni « sur le Play Store » (ce n'est pas le cas) ;
 - pas « application officielle » de Le Mans Ultimate ;
 - pas « installeur signé » ni « sans avertissement Windows » ;
+- pas « Corde pilote l'écran du volant » ni « compatible MOZA » : Corde **exporte un fichier** pour
+  l'écran d'un volant MOZA KS Pro ou CS Pro, expérimental, pas encore vu sur un volant ;
 - pas « compatible » ni « vérifié » pour rFactor 2, Assetto Corsa Competizione, Assetto Corsa, Assetto
   Corsa EVO, Assetto Corsa Rally et iRacing : toujours « expérimental » (Competizione et iRacing :
   « essayés en jeu » ; les quatre autres : « pas encore vérifié face au jeu ») ; et aucun jeu de la liste « prévus »

@@ -383,6 +383,26 @@ que sur demande.
   signature de chaque média vérifiée contre l'extension de son nom ; chaque média passe ensuite par la même
   préparation et le même envoi qu'un fichier choisi. L'ancien `.cordedash.json` reste lu.
 
+## 5 bis-4. Export pour l'écran d'un volant MOZA (1.14.0, ADR 0021)
+
+- **Aucune surface nouvelle.** « Exporter pour le volant MOZA » (`dashdef/mzdash.ts`,
+  `studio/MozaExport.tsx`) fabrique un fichier `.mzdash` **dans la page** et le remet au navigateur comme
+  un téléchargement. Aucune route, aucune requête, aucune permission ; Corde n'ouvre pas de port série, ne
+  parle pas au volant et n'écrit dans aucun dossier d'un autre logiciel. Le fichier n'est jamais relu par
+  Corde.
+- **Ce que le fichier contient** : la disposition (positions, tailles, couleurs), les textes tapés par le
+  pilote, un identifiant aléatoire tiré à chaque export, et des expressions sur des données nommées du
+  jeu — c'est le format. Ni nom de PC, ni chemin, ni adresse, ni identifiant de matériel (les écrans
+  visés y sont décrits par modèle, les mêmes valeurs pour tous).
+- **Les expressions sont toutes écrites par Corde**, à partir d'une liste fermée de données et de formes.
+  De la définition n'y entrent que des valeurs vérifiées : un nombre fini (seuil), une couleur `#rrggbb`,
+  un identifiant de donnée présent dans la table (lue par ses clés propres : `constructor`, `__proto__`
+  ne sont pas des données). Les textes du pilote vont dans des champs de texte du fichier, jamais dans
+  une expression. Tests : `dashdef/mzdash.test.ts` (« what a definition says »).
+- **Hors de Corde** : ce que le logiciel du fabricant, ou un logiciel tiers choisi par le pilote, fait
+  du fichier et de la base. Le guide (`docs/VOLANT-MOZA.md`) le dit, et dit que la voie du logiciel tiers
+  n'est ni livrée ni vérifiée par Corde.
+
 ## 5 bis. Mises à jour de l'application de bureau (0.6)
 
 Décision : [ADR 0009](adr/0009-mises-a-jour-releases-github-signees.md). Code : `apps/desktop/src-tauri/src/updater.rs`

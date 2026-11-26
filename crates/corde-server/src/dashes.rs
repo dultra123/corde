@@ -55,13 +55,14 @@ pub const FILL_PRESET: &str = "fill";
 /// `packages/ui/src/dashdef/model.ts` (plus `custom`, any size within the bounds). A preset is
 /// only a name for these values: [`validate`] does not depend on this list, and an id that is
 /// not in it (a definition made by a later version) is drawn as a custom size.
-pub const PRESETS: [(&str, u16, u16, Option<&str>); 10] = [
+pub const PRESETS: [(&str, u16, u16, Option<&str>); 11] = [
     ("phone-landscape", 852, 393, None),
     ("phone-portrait", 393, 852, None),
     ("tablet", 1024, 768, None),
     ("screen-16-9", 1920, 1080, None),
     ("wheel-strip", 800, 240, None),
     ("wheel-round", 480, 480, Some("round")),
+    ("wheel-moza", 780, 248, None),
     ("square", 720, 720, None),
     ("screen-5-3", 800, 480, None),
     ("screen-3-2", 480, 320, None),

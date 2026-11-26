@@ -5,7 +5,14 @@ import { EMPTY_PAGE, type PageProps } from "../dash/parts";
 import { exportDash, importFile } from "../dashdef/archive";
 import { cordeDefinition, isBuiltin, TEMPLATE_IDS, type TemplateId } from "../dashdef/builtin";
 import { MediaMotion } from "../dashdef/draw";
-import { type DashDefinition, type DashFormat, MAX_DASHES, presetFormat } from "../dashdef/model";
+import {
+  type DashDefinition,
+  type DashFormat,
+  MAX_DASHES,
+  presetFormat,
+  presetOf,
+} from "../dashdef/model";
+import type { MzdashResult } from "../dashdef/mzdash";
 import { duplicateDefinition, newDefinition, renameDefinition } from "../dashdef/ops";
 import { DashPage } from "../dashdef/Renderer";
 import { deleteDash, type SaveResult, saveDash, useDashes } from "../dashdef/store";
@@ -13,6 +20,7 @@ import { type TranslationKey, useT } from "../i18n";
 import { navigate, routeHash } from "../nav/routes";
 import type { TelemetryState } from "../store/telemetry";
 import { FormatFields, formatWords } from "./Format";
+import { exportForMoza, MozaExportDialog } from "./MozaExport";
 import { problemKey } from "./messages";
 
 function previewData(s: TelemetryState): PageProps {
@@ -31,6 +39,7 @@ const TEMPLATE_KEY: Record<TemplateId, TranslationKey> = {
   blank: "studio.template.blank",
   "corde-blocks": "studio.template.cordeBlocks",
   endurance: "studio.template.endurance",
+  "moza-wheel": "studio.template.mozaWheel",
 };
 
 const MEDIA_UPLOAD_ERR: Record<string, TranslationKey> = {
@@ -109,7 +118,11 @@ function NewDashDialog({
                     name="studio-new-model"
                     value={tid}
                     checked={model === tid}
-                    onChange={() => setModel(tid)}
+                    onChange={() => {
+                      setModel(tid);
+                      // The model drawn for the screen of a wheel comes with that screen's format.
+                      if (tid === "moza-wheel") setFormat(presetFormat("wheel-moza"));
+                    }}
                   />
                   <span>{t(TEMPLATE_KEY[tid])}</span>
                 </label>
@@ -155,6 +168,7 @@ export function DashLibrary() {
   const [renaming, setRenaming] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [newOpen, setNewOpen] = useState(false);
+  const [moza, setMoza] = useState<MzdashResult | null>(null);
   const file = useRef<HTMLInputElement>(null);
   const corde = cordeDefinition(lang);
   const all = [corde, ...defs];
@@ -347,6 +361,19 @@ export function DashLibrary() {
                     <button type="button" className="btn" onClick={() => void onExport(d)}>
                       {t("studio.export")}
                     </button>
+                    {presetOf(d.format) === "wheel-moza" && (
+                      <button
+                        type="button"
+                        className="btn"
+                        aria-haspopup="dialog"
+                        onClick={() => {
+                          setMessage(null);
+                          setMoza(exportForMoza(d, lang));
+                        }}
+                      >
+                        {t("studio.moza.export")}
+                      </button>
+                    )}
                     {!builtin && (
                       <button
                         type="button"
@@ -375,6 +402,7 @@ export function DashLibrary() {
           void store(newDefinition(model, taken, lang, format), "studio.created", true);
         }}
       />
+      <MozaExportDialog result={moza} onClose={() => setMoza(null)} />
     </div>
   );
 }

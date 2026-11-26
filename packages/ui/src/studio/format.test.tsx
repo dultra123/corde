@@ -342,6 +342,7 @@ describe("the « Format » control of the editor", () => {
       "screen-16-9",
       "wheel-strip",
       "wheel-round",
+      "wheel-moza",
       "square",
       "screen-5-3",
       "screen-3-2",
@@ -351,7 +352,7 @@ describe("the « Format » control of the editor", () => {
     expect(presets.filter((p) => p.getAttribute("aria-pressed") === "true")).toHaveLength(1);
     expect(presets[0]?.getAttribute("aria-pressed")).toBe("true");
     expect(presets[5]?.textContent).toBe("Écran rond de volant480 × 480 · rond");
-    expect(presets[7]?.textContent).toBe("Petit écran 5:3800 × 480");
+    expect(presets[8]?.textContent).toBe("Petit écran 5:3800 × 480");
     for (const p of presets)
       expect(p.querySelector("svg.fmt-glyph"), p.dataset.preset).not.toBeNull();
     // The keyboard goes to the format in use; every field has its label.

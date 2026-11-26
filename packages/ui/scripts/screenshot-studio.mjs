@@ -16,6 +16,8 @@
  *   screenshots/studio-nouveau.png  the « Nouveau tableau de bord » dialog (model and format)
  *   screenshots/studio-format.png   the editor with the « Format » panel open (rounded corners)
  *   screenshots/studio-rond.png     a round dashboard in the editor, the outside hatched
+ *   screenshots/studio-volant-moza.png   the model « Écran de volant MOZA » in the editor
+ *   screenshots/studio-export-moza.png   what « Exporter pour le volant MOZA » says (ADR 0021)
  *
  * and checks what the docs say about a small extra screen: at `#/dash`, a 480 × 480 round
  * dashboard fills a 480 × 480 window exactly (black corners) and sits centred, black around, in
@@ -308,6 +310,41 @@ async function studioShots(browser) {
   const words = await s.page.locator(".fmt-btn-words").textContent();
   if (words !== "Rond 480 × 480") fail(`the format reads « ${words} »`);
   await shoot(s.page, "studio-rond");
+  await s.context.close();
+
+  // The screen of a MOZA wheel (ADR 0021): the model comes with its format, everything in it
+  // is exported, and the export is a download made in the page.
+  s = await open(browser, view, 2, "#/dash-studio");
+  await s.page.getByRole("button", { name: "Nouveau", exact: true }).click();
+  await s.page.locator("dialog.studio-new form").waitFor();
+  await s.page.getByText("Écran de volant MOZA (KS Pro, CS Pro)", { exact: true }).click();
+  const wheel = await s.page.locator('dialog.studio-new button[type="submit"]').textContent();
+  if (wheel !== "Créer · 780 × 248") fail(`the create button reads « ${wheel} »`);
+  await s.page.locator('dialog.studio-new button[type="submit"]').click();
+  await s.page.locator(".studio-canvas .dstage").waitFor();
+  await s.page.waitForTimeout(2500);
+  await shoot(s.page, "studio-volant-moza");
+  await s.page.goto(url("#/dash-studio"), { waitUntil: "load" });
+  const exportBtn = s.page.getByRole("button", {
+    name: "Exporter pour le volant MOZA",
+    exact: true,
+  });
+  await exportBtn.waitFor();
+  if ((await exportBtn.count()) !== 1) fail("the MOZA export is offered on more than one card");
+  const [download] = await Promise.all([s.page.waitForEvent("download"), exportBtn.click()]);
+  if (download.suggestedFilename() !== "Volant MOZA.mzdash") {
+    fail(`the exported file is named « ${download.suggestedFilename()} »`);
+  }
+  const said = await s.page.locator("dialog.studio-moza p").first().textContent();
+  const counts = /: (\d+) élément\(s\) écrit\(s\) sur (\d+)\.$/.exec(said ?? "");
+  if (!counts || counts[1] !== counts[2] || Number(counts[1]) < 30) {
+    fail(`the export says « ${said} »`);
+  }
+  if ((await s.page.locator("dialog.studio-moza .studio-moza-notes").count()) !== 0) {
+    fail("the model for the wheel leaves something out");
+  }
+  await s.page.waitForTimeout(400);
+  await shoot(s.page, "studio-export-moza");
   await s.context.close();
 }
 

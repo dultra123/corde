@@ -921,9 +921,9 @@ pub struct DashDefinition {
 #[ts(export, export_to = "../../../packages/protocol/src/generated/")]
 pub struct DashFormat {
     /// `phone-landscape`, `phone-portrait`, `tablet`, `screen-16-9`, `wheel-strip`,
-    /// `wheel-round`, `square`, `screen-5-3`, `screen-3-2`, `custom` (any size), or `fill` (the
-    /// page takes the whole screen, whatever its shape). A name for the values below, nothing
-    /// more: an id this version does not know is drawn as a custom size.
+    /// `wheel-round`, `wheel-moza`, `square`, `screen-5-3`, `screen-3-2`, `custom` (any size),
+    /// or `fill` (the page takes the whole screen, whatever its shape). A name for the values
+    /// below, nothing more: an id this version does not know is drawn as a custom size.
     pub preset: String,
     pub width: u16,
     pub height: u16,

@@ -1588,6 +1588,7 @@ export const en: Record<TranslationKey, string> = {
   "studio.preset.screen-16-9": "16:9 screen",
   "studio.preset.wheel-strip": "Wide wheel strip",
   "studio.preset.wheel-round": "Round wheel screen",
+  "studio.preset.wheel-moza": "MOZA wheel screen",
   "studio.preset.square": "Square",
   "studio.preset.screen-5-3": "Small 5:3 screen",
   "studio.preset.screen-3-2": "Small 3:2 screen",
@@ -1746,6 +1747,31 @@ export const en: Record<TranslationKey, string> = {
   "studio.exportedVideo": "“{name}” exported. It holds a video: it is shared as it is.",
   "studio.exportMissing":
     "{n} picture(s) or video(s) not found on this PC were left out of the file.",
+  "studio.template.mozaWheel": "MOZA wheel screen (KS Pro, CS Pro)",
+  "studio.moza.export": "Export for the MOZA wheel",
+  "studio.moza.title": "Export for the MOZA wheel screen",
+  "studio.moza.done": "File “{file}” downloaded: {written} element(s) written out of {total}.",
+  "studio.moza.left": "Good to know ({n})",
+  "studio.moza.background": "Page background",
+  "studio.moza.note.element": "no counterpart on the wheel, left out",
+  "studio.moza.note.field": "the wheel is not given this data ({what}), left out",
+  "studio.moza.note.condition":
+    "its display condition is about data the wheel is not given ({what}), left out",
+  "studio.moza.note.media": "pictures and videos are not carried by this export",
+  "studio.moza.note.partial": "written in a simpler form",
+  "studio.moza.note.arc": "the arc has no counterpart: the value alone is written",
+  "studio.moza.note.overflow": "no room left in the file, left out",
+  "studio.moza.note.clock": "this clock",
+  "studio.moza.howTitle": "To put it on the wheel",
+  "studio.moza.how1": "Open MOZA Pit House, go to the wheel's dashboards and import this file.",
+  "studio.moza.how2":
+    "“{name}” joins the list: send it to the wheel from there, then pick it on the wheel.",
+  "studio.moza.how3":
+    "With Pit House closed, third-party software that drives the wheel's screen can load the same file. That is your call: Corde's documentation (“MOZA wheel”) says how.",
+  "studio.moza.data":
+    "On the wheel, the data comes from the software driving it, not from Corde: a number may differ slightly from Corde's.",
+  "studio.moza.experimental":
+    "Experimental: this format is not documented by its maker; it was learnt from existing dashboards.",
   "studio.importedMedia": "“{name}” imported, with {n} picture(s) or video(s).",
   "studio.importing": "Importing…",
   "studio.problem.media":

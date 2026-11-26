@@ -1641,6 +1641,7 @@ export const fr = {
   "studio.preset.screen-16-9": "Écran 16:9",
   "studio.preset.wheel-strip": "Bandeau large de volant",
   "studio.preset.wheel-round": "Écran rond de volant",
+  "studio.preset.wheel-moza": "Écran de volant MOZA",
   "studio.preset.square": "Carré",
   "studio.preset.screen-5-3": "Petit écran 5:3",
   "studio.preset.screen-3-2": "Petit écran 3:2",
@@ -1803,6 +1804,32 @@ export const fr = {
     "« {name} » exporté. Il contient une vidéo : elle est partagée telle quelle.",
   "studio.exportMissing":
     "{n} image(s) ou vidéo(s) introuvable(s) sur ce PC n'ont pas été mises dans le fichier.",
+  "studio.template.mozaWheel": "Écran de volant MOZA (KS Pro, CS Pro)",
+  "studio.moza.export": "Exporter pour le volant MOZA",
+  "studio.moza.title": "Export pour l'écran du volant MOZA",
+  "studio.moza.done": "Fichier « {file} » téléchargé : {written} élément(s) écrit(s) sur {total}.",
+  "studio.moza.left": "À savoir ({n})",
+  "studio.moza.background": "Fond de la page",
+  "studio.moza.note.element": "pas d'équivalent sur le volant, laissé de côté",
+  "studio.moza.note.field": "le volant ne reçoit pas cette donnée ({what}), laissé de côté",
+  "studio.moza.note.condition":
+    "sa condition d'affichage porte sur une donnée que le volant ne reçoit pas ({what}), laissé de côté",
+  "studio.moza.note.media": "les images et les vidéos ne sont pas transportées par cet export",
+  "studio.moza.note.partial": "écrit sous une forme plus simple",
+  "studio.moza.note.arc": "l'arc n'a pas d'équivalent : la valeur seule est écrite",
+  "studio.moza.note.overflow": "plus de place dans le fichier, laissé de côté",
+  "studio.moza.note.clock": "cette horloge",
+  "studio.moza.howTitle": "Pour le mettre sur le volant",
+  "studio.moza.how1":
+    "Ouvre MOZA Pit House, va dans la partie des tableaux de bord du volant et importe ce fichier.",
+  "studio.moza.how2":
+    "« {name} » rejoint la liste : envoie-le au volant depuis là, puis choisis-le sur le volant.",
+  "studio.moza.how3":
+    "Pit House fermé, un logiciel tiers qui pilote l'écran du volant peut charger le même fichier. C'est à toi de voir : la documentation de Corde (« Volant MOZA ») dit comment.",
+  "studio.moza.data":
+    "Sur le volant, les données viennent du logiciel qui le pilote, pas de Corde : un nombre peut différer un peu de celui de Corde.",
+  "studio.moza.experimental":
+    "Expérimental : ce format n'est pas documenté par son fabricant, il a été appris sur des tableaux de bord existants.",
   "studio.importedMedia": "« {name} » importé, avec {n} image(s) ou vidéo(s).",
   "studio.importing": "Import en cours…",
   "studio.problem.media":

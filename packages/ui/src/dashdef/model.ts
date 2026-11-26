@@ -84,6 +84,7 @@ export type PresetId =
   | "screen-16-9"
   | "wheel-strip"
   | "wheel-round"
+  | "wheel-moza"
   | "square"
   | "screen-5-3"
   | "screen-3-2"
@@ -101,6 +102,8 @@ export const PRESETS: Record<PresetId, { width: number; height: number; shape?: 
   "screen-16-9": { width: 1920, height: 1080 },
   "wheel-strip": { width: 800, height: 240 },
   "wheel-round": { width: 480, height: 480, shape: "round" },
+  // The screen of a MOZA KS Pro or CS Pro wheel: what « Exporter pour un volant MOZA » writes.
+  "wheel-moza": { width: 780, height: 248 },
   square: { width: 720, height: 720 },
   "screen-5-3": { width: 800, height: 480 },
   "screen-3-2": { width: 480, height: 320 },

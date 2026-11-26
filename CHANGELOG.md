@@ -8,6 +8,28 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [1.14.0] — 2026-11-26
+
+**Un tableau de bord de Corde sur l'écran d'un volant MOZA (KS Pro, CS Pro) — expérimental.**
+
+- Dans le **Studio**, **Nouveau** propose un modèle **Écran de volant MOZA** : trois pages (course, pneus
+  et freins, carburant et énergie) au format de cet écran, 780 × 248.
+- Sur la carte d'un tableau de bord à ce format, un bouton **Exporter pour le volant MOZA** télécharge un
+  fichier `.mzdash`, le format des tableaux de bord MOZA.
+- Tu le charges sur le volant avec **MOZA Pit House**, qui reste ouvert et continue de régler ta base.
+  Pit House fermé, un logiciel tiers qui pilote l'écran du volant peut charger le même fichier : c'est
+  toi qui choisis.
+- **Corde ne parle pas au volant** : elle fabrique un fichier, rien d'autre. Sur le volant, les données
+  viennent du logiciel qui le pilote, pas de Corde.
+- S'exportent : valeurs, barres, textes, panneaux, formes, rampe de régime, bandeau d'alerte, temps
+  restant, avec leurs couleurs et « Afficher quand… ». Pas les images, ni les widgets, ni la plupart des
+  blocs de Corde. Après chaque export, Corde liste ce qu'elle a laissé de côté et pourquoi.
+- Certaines données ne s'exportent pas, parce que le volant ne les reçoit pas ou qu'on ne sait pas encore
+  ce qu'elles valent chez lui (huile, usure des pneus, tours restants, pluie…).
+- **Pas encore vu sur un volant.** Si tu l'essaies, dis ce que ça donne : le guide
+  ([docs/VOLANT-MOZA.md](https://github.com/dultra123/corde/blob/main/docs/VOLANT-MOZA.md)) dit comment
+  faire et quoi regarder.
+
 ## [1.13.0] — 2026-11-22
 
 **Un septième jeu, en version expérimentale : rFactor 2.**

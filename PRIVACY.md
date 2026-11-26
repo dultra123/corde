@@ -187,6 +187,11 @@ n'a ni compte, ni statistiques d'usage, ni publicité, ni service à nous.
     avant de l'envoyer. À l'import, les images d'un ami passent par le même nettoyage.
   - **Ne mets et ne partage que des images dont tu as le droit** (tes photos, tes dessins, un logo que tu
     peux utiliser).
+  - **Fichier pour l'écran d'un volant MOZA** (`<nom>.mzdash`, depuis la 1.14, expérimental) : fabriqué
+    sur ton appareil et téléchargé, rien n'est envoyé. Il contient la disposition, les couleurs et les
+    textes que tu as tapés ; pas d'image, pas de nom de PC, pas de chemin, pas d'identifiant de ton
+    matériel, pas de donnée de course. Corde ne parle pas au volant : c'est toi qui charges le fichier,
+    avec le logiciel de ton choix.
 
 ## Application Android
 

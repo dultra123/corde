@@ -35,7 +35,7 @@ L'option `Automatically Record Telemetry` peut rester désactivée : Corde enreg
 1. Ouvre la page de la dernière version :
    **<https://github.com/dultra123/corde/releases/latest>**.
 2. Tout en bas, section **Assets**, clique sur le fichier dont le nom finit par **`-setup.exe`**
-   (par exemple `Corde_1.13.0_x64-setup.exe`).
+   (par exemple `Corde_1.14.0_x64-setup.exe`).
 3. Ton navigateur peut hésiter : Edge affiche parfois « … n'est pas couramment téléchargé ». Clique sur
    les **…** à côté du fichier → **Conserver** → **Conserver quand même**.
 
@@ -228,7 +228,9 @@ Le **Studio** est l'éditeur de tableaux de bord de Corde, sur le PC (à la sour
 #### Un petit écran en plus (écran rond de volant, écran de tableau de bord)
 
 Corde affiche un tableau de bord dans une fenêtre : elle n'écrit pas sur l'écran intégré d'un volant, qui
-reste piloté par le logiciel de son fabricant. Pour un petit écran branché au PC comme un moniteur :
+reste piloté par le logiciel de son fabricant. Pour l'écran d'un volant **MOZA KS Pro ou CS Pro**, le Studio
+sait en revanche **exporter** un tableau de bord au format de ce volant (expérimental) : voir
+[VOLANT-MOZA.md](VOLANT-MOZA.md). Pour un petit écran branché au PC comme un moniteur :
 
 1. Dans le Studio, crée le tableau de bord au **format de l'écran** (par exemple **Écran rond de volant**,
    480 × 480) et enregistre-le.
@@ -288,7 +290,8 @@ abîmé, trop gros ou piégé est refusé avec la raison. Les fichiers `.cordeda
 toujours. Ne partage que des images dont tu as le droit.
 
 Pas encore possible (plus tard) : placement au pixel près, formules, galerie en ligne. Corde n'affiche rien
-sur l'écran intégré d'un volant (il reste piloté par le logiciel de son fabricant).
+elle-même sur l'écran intégré d'un volant (il reste piloté par le logiciel de son fabricant) ; pour un volant
+MOZA KS Pro ou CS Pro, elle exporte un fichier à y charger : [VOLANT-MOZA.md](VOLANT-MOZA.md).
 
 ## 6 bis. Les courses en ligne et leurs rappels (facultatif)
 
@@ -537,7 +540,7 @@ Bon à savoir :
   envoyé (voir `PRIVACY.md`).
 - **La 0.6.0 elle-même s'installe encore à la main** (ci-dessous) : c'est elle qui apporte le bouton. Les
   versions suivantes arrivent par le bouton.
-- Les mises à jour du bouton sont les **versions numérotées** (page des versions, « Corde 1.13.0 »…). La
+- Les mises à jour du bouton sont les **versions numérotées** (page des versions, « Corde 1.14.0 »…). La
   version de développement « Corde — dernière version » (pré-version reconstruite à chaque modification
   du projet, <https://github.com/dultra123/corde/releases/tag/continuous>) s'installe toujours à la main.
 

@@ -154,6 +154,7 @@ describe("the shape of the page (same rules as the server)", () => {
       ["screen-16-9", 1920, 1080, null],
       ["wheel-strip", 800, 240, null],
       ["wheel-round", 480, 480, "round"],
+      ["wheel-moza", 780, 248, null],
       ["square", 720, 720, null],
       ["screen-5-3", 800, 480, null],
       ["screen-3-2", 480, 320, null],

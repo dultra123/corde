@@ -4,6 +4,7 @@ import type { Lang } from "../store/settings";
 import {
   BUILTIN_ID,
   DASH_VERSION,
+  type DashCondition,
   type DashDefinition,
   type DashElement,
   type DashPageDef,
@@ -11,6 +12,7 @@ import {
   DEFAULT_ROWS,
   DEFAULT_THEME,
   PRESETS,
+  presetFormat,
 } from "./model";
 
 /**
@@ -25,10 +27,11 @@ type Spot = [
   w: number,
   h: number,
   props?: Record<string, unknown>,
+  show?: DashCondition,
 ];
 
 function els(spots: Spot[]): DashElement[] {
-  return spots.map(([type, x, y, w, h, props], i) => ({
+  return spots.map(([type, x, y, w, h, props, show], i) => ({
     id: `e${i + 1}`,
     type,
     x,
@@ -36,11 +39,12 @@ function els(spots: Spot[]): DashElement[] {
     w,
     h,
     props: props ?? {},
+    ...(show ? { show } : {}),
   }));
 }
 
-function pg(id: string, name: string, spots: Spot[]): DashPageDef {
-  return { id, name, cols: DEFAULT_COLS, rows: DEFAULT_ROWS, elements: els(spots) };
+function pg(id: string, name: string, spots: Spot[], rows = DEFAULT_ROWS): DashPageDef {
+  return { id, name, cols: DEFAULT_COLS, rows, elements: els(spots) };
 }
 
 /** Page ids of the dashboard « Corde »: the names 1.1.0 remembered (`corde.dash.page`). */
@@ -87,9 +91,12 @@ export function isBuiltin(def: Pick<DashDefinition, "id">): boolean {
 
 // ---------------------------------------------------------------- models
 
-export type TemplateId = "blank" | "corde-blocks" | "endurance";
+export type TemplateId = "blank" | "corde-blocks" | "endurance" | "moza-wheel";
 
-export const TEMPLATE_IDS: TemplateId[] = ["blank", "corde-blocks", "endurance"];
+export const TEMPLATE_IDS: TemplateId[] = ["blank", "corde-blocks", "endurance", "moza-wheel"];
+
+/** The rows of a page drawn for the strip of a wheel: 24 × 8 roughly square cells. */
+const STRIP_ROWS = 8;
 
 function base(name: string, pages: DashPageDef[]): Omit<DashDefinition, "id"> {
   return {
@@ -177,5 +184,76 @@ export function template(id: TemplateId, lang: Lang = "fr"): Omit<DashDefinition
           ["corde.weather", 16, 7, 8, 5],
         ]),
       ]);
+    case "moza-wheel": {
+      // For the screen of a MOZA wheel: plain elements (and the gear block, which has a plain
+      // form there) over data that screen is given, so that « Exporter pour le volant MOZA »
+      // (`mzdash.ts`) writes all of it.
+      const corners = (field: string, x: number): Spot[] => [
+        ["value", x, 0, 4, 4, { field: `${field}_fl`, align: "center" }],
+        ["value", x + 4, 0, 4, 4, { field: `${field}_fr`, align: "center" }],
+        ["value", x, 4, 4, 4, { field: `${field}_rl`, align: "center" }],
+        ["value", x + 4, 4, 4, 4, { field: `${field}_rr`, align: "center" }],
+      ];
+      const pages = [
+        pg(
+          "course",
+          CORDE_NAMES[lang].course,
+          [
+            ["rpm", 0, 0, 24, 1],
+            ["value", 0, 1, 4, 3, { field: "speed_kmh" }],
+            ["value", 4, 1, 4, 3, { field: "position" }],
+            ["value", 0, 4, 8, 2, { field: "lap_current" }],
+            ["value", 0, 6, 4, 2, { field: "lap_last" }],
+            ["value", 4, 6, 4, 2, { field: "lap_best" }],
+            ["corde.gear", 8, 1, 8, 5, { speed: false }],
+            ["value", 8, 6, 8, 2, { field: "delta_best", align: "center" }],
+            ["value", 16, 1, 4, 3, { field: "gap_ahead" }],
+            ["value", 20, 1, 4, 3, { field: "gap_behind" }],
+            ["value", 16, 4, 4, 2, { field: "fuel_l" }],
+            ["value", 20, 4, 4, 2, { field: "fuel_laps" }],
+            ["value", 16, 6, 2, 2, { field: "tc", align: "center" }],
+            ["value", 18, 6, 2, 2, { field: "abs", align: "center" }],
+            ["value", 20, 6, 4, 2, { field: "brake_bias" }],
+            ["alert", 8, 1, 8, 2, { text: fr ? "LIMITEUR" : "PIT LIMITER" }, { when: "limiter" }],
+          ],
+          STRIP_ROWS,
+        ),
+        pg(
+          "tyres",
+          CORDE_NAMES[lang].tyres,
+          [
+            ...corners("tyre_temp", 0),
+            ...corners("tyre_pressure", 8),
+            ...corners("brake_temp", 16),
+          ],
+          STRIP_ROWS,
+        ),
+        pg(
+          "energy",
+          CORDE_NAMES[lang].energy,
+          [
+            ["bar", 0, 0, 12, 2, { field: "fuel_fraction" }],
+            ["value", 0, 2, 4, 3, { field: "fuel_l" }],
+            ["value", 4, 2, 4, 3, { field: "fuel_per_lap" }],
+            ["value", 8, 2, 4, 3, { field: "fuel_laps" }],
+            ["bar", 12, 0, 12, 2, { field: "virtual_energy" }],
+            ["value", 12, 2, 4, 3, { field: "battery" }],
+            ["value", 16, 2, 4, 3, { field: "motor_map" }],
+            ["value", 20, 2, 4, 3, { field: "lap_number" }],
+            ["clock", 0, 5, 6, 3, { mode: "left" }],
+            ["value", 6, 5, 3, 3, { field: "track_c" }],
+            ["value", 9, 5, 3, 3, { field: "air_c" }],
+            ["value", 12, 5, 4, 3, { field: "water_c" }],
+            ["value", 16, 5, 4, 3, { field: "position" }],
+            ["value", 20, 5, 4, 3, { field: "cars" }],
+          ],
+          STRIP_ROWS,
+        ),
+      ];
+      return {
+        ...base(fr ? "Volant MOZA" : "MOZA wheel", pages),
+        format: presetFormat("wheel-moza"),
+      };
+    }
   }
 }

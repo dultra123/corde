@@ -556,6 +556,33 @@ dialog.sheet.studio-new {
   accent-color: var(--accent);
 }
 
+/* ---- « Exporter pour le volant MOZA » : ce qui a été écrit, ce qui a été laissé, où va le
+   fichier (ADR 0021). ---- */
+dialog.sheet.studio-moza {
+  width: min(560px, calc(100vw - 24px));
+}
+.studio-moza p {
+  margin: 8px 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.studio-moza-notes,
+.studio-moza-how {
+  margin: 6px 0 10px;
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.studio-moza-notes {
+  max-height: 180px;
+  overflow: auto;
+  color: var(--text-dim);
+}
+.studio-moza-how li + li,
+.studio-moza-notes li + li {
+  margin-top: 4px;
+}
+
 /* ---- « Format » : le bouton de la barre de l'éditeur et son panneau (ADR 0018). Les mêmes
    champs servent dans le dialogue « Nouveau tableau de bord ». ---- */
 .fmt-btn {
