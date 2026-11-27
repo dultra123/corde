@@ -111,7 +111,7 @@ Sinon, saute cette section.
 
 1. Sur le PC, ouvre la [dernière version de Corde](https://github.com/dultra123/corde/releases/latest)
    (section *Assets* en bas de la page) et télécharge **`corde-server-<version>-docker-x64.tar.gz`** (par
-   exemple `corde-server-1.14.0-docker-x64.tar.gz`, environ 40 Mo). **Ne le décompresse pas**.
+   exemple `corde-server-1.14.1-docker-x64.tar.gz`, environ 40 Mo). **Ne le décompresse pas**.
 2. Ouvre **Container Manager**, section **Image** (menu de gauche).
 3. Clique sur **Importer** (s'il y a déjà des images dans la liste : menu **Action** → **Importer**), puis
    **Ajouter à partir d'un fichier** → **À partir d'un périphérique local**.
@@ -120,7 +120,7 @@ Sinon, saute cette section.
 5. **Ne clique pas sur « Exécuter »** : ce bouton lance un conteneur à part, sans tes données ni le bon
    port. L'image sert au projet du § 6, rien d'autre.
 6. Dans le texte du § 6, remplace la ligne `image: ghcr.io/dultra123/corde-server:latest` par
-   `image: corde-server:<version>` (par exemple `corde-server:1.14.0`) et **supprime** la ligne
+   `image: corde-server:<version>` (par exemple `corde-server:1.14.1`) et **supprime** la ligne
    `pull_policy: always`.
 
 Si l'import refuse le fichier compressé : décompresse-le une fois sur le PC (clic droit → Extraire, ou
@@ -338,7 +338,7 @@ Tes données ne risquent rien : elles sont dans le dossier `data`, pas dans ce t
 restent appairés. Ensuite, les mises à jour se font comme ci-dessus, en deux clics. L'ancienne image
 `corde-server` (section **Image**) ne sert plus : tu peux la supprimer.
 
-Pour rester sur une version précise au lieu de la dernière : remplace `latest` par son numéro (`1.14.0`)
+Pour rester sur une version précise au lieu de la dernière : remplace `latest` par son numéro (`1.14.1`)
 et supprime la ligne `pull_policy: always`.
 
 ## 12. Sauvegarder, déménager

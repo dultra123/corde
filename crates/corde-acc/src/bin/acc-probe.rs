@@ -71,9 +71,10 @@ fn rally(mut reader: Box<dyn PageReader>, dump: Option<&Path>) {
         let f = conv.frame(&pages, origin.elapsed(), "acc-probe");
         let Some(p) = f.player.as_ref() else { continue };
         println!(
-            "état {} · chrono du jeu {} ms · distance {:.1} m · place sur l'épreuve {:.3} · {:.0} km/h · rapport {} · passage n°{} ({} terminés) · en cours {:.3} s · dernier {:?} · page physique {} · air {:.1} (brut)",
+            "état {} · chrono du jeu {} ms, en texte « {} » · distance {:.1} m · place sur l'épreuve {:.3} · {:.0} km/h · rapport {} · passage n°{} ({} terminés) · en cours {:.3} s · dernier {:?} · page physique {} · air {:.1} (brut)",
             { g.status },
             { g.i_current_time },
+            text(&{ g.current_time }),
             { g.distance_traveled },
             { g.normalized_car_position },
             p.motion.speed_kmh,

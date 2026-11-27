@@ -8,7 +8,6 @@
 //! of a directory — the adapter reads them the way it reads the game's shared memory on
 //! Windows.
 
-use corde_acc::layout::status;
 use corde_acc::rally::fake::FakeRallyStage;
 use corde_server::{Server, ServerConfig, SourceKind};
 use serde_json::Value;
@@ -118,19 +117,12 @@ async fn assetto_corsa_rally_is_found_and_its_runs_are_laps() {
         std::thread::spawn(move || {
             let start = Instant::now();
             while !quit.load(Ordering::Relaxed) {
-                let stage = FakeRallyStage {
-                    // Back in the menus once the stage is left.
-                    status: if running.load(Ordering::Relaxed) {
-                        status::LIVE
-                    } else {
-                        status::OFF
-                    },
-                    ..fake.clone()
-                };
-                stage
-                    .at(start.elapsed().as_secs_f64())
-                    .write_dir(&dir)
-                    .expect("pages");
+                // Once the game is closed its pages are not written any more.
+                if running.load(Ordering::Relaxed) {
+                    fake.at(start.elapsed().as_secs_f64())
+                        .write_dir(&dir)
+                        .expect("pages");
+                }
                 std::thread::sleep(Duration::from_millis(16));
             }
         })
@@ -156,7 +148,7 @@ async fn assetto_corsa_rally_is_found_and_its_runs_are_laps() {
     })
     .await;
     let id = rec["session_id"].as_str().unwrap().to_string();
-    assert!(id.contains("alsace"), "{id}");
+    assert!(id.contains("alsace-steigenbach"), "{id}");
     let detail = wait_for("two runs", Duration::from_secs(90), async || {
         let (code, v) = get(format!("{base}/api/sessions/{id}")).await;
         assert_eq!(code, 200, "{v}");
@@ -164,8 +156,8 @@ async fn assetto_corsa_rally_is_found_and_its_runs_are_laps() {
     })
     .await;
     assert_eq!(detail["game"], "ac_rally", "{detail}");
-    assert_eq!(detail["track_name"], "Alsace Stage 02");
-    assert_eq!(detail["vehicle_model"], "Alpine A110 Rally");
+    assert_eq!(detail["track_name"], "Alsace Steigenbach");
+    assert_eq!(detail["vehicle_model"], "Peugeot 206 WRC");
     let laps = detail["laps"].as_array().unwrap();
     // Every lap of the session is a run that finished, with the clock of the game: the
     // waits on the start line and in the stop zone are not laps.
@@ -175,7 +167,9 @@ async fn assetto_corsa_rally_is_found_and_its_runs_are_laps() {
         assert_eq!(lap["lap_time_s"].as_f64().unwrap(), 12.0, "{lap}");
     }
 
-    // Back in the menus: the recording is closed, Corde looks for a game again.
+    // The game is closed (nothing moves in its pages any more): the recording is closed,
+    // Corde looks for a game again. Leaving a stage for the menus is in the tests of the
+    // source (`rally_frames.rs`).
     running.store(false, Ordering::Relaxed);
     let st = wait_for("the game to be left", Duration::from_secs(15), async || {
         let (_, v) = get(format!("{base}/api/status")).await;

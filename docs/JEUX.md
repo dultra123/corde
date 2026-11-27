@@ -16,7 +16,7 @@ jeu, et n'utilise aucun compte.
 | **Assetto Corsa** (le premier) | **Expérimental** depuis la 1.8.0 : écrit d'après le fichier de référence fourni avec le jeu, **pas encore vérifié face au jeu** | rien | mémoire partagée du jeu (les mêmes pages qu'ACC, dans une version plus ancienne) |
 | **iRacing** | **Expérimental, essayé en jeu** le 21 novembre 2026 (sessions d'essai, seul en piste) : détection, direct, enregistrement, chronos officiels et carburant fonctionnent ; carte du circuit et signes corrigés en 1.9.1 ; classement avec d'autres voitures pas encore vu | rien | mémoire partagée du jeu |
 | **Assetto Corsa EVO** | **Expérimental** depuis la 1.11.0 : écrit d'après la documentation de la mémoire partagée publiée par le studio, **pas encore vérifié face au jeu**. Le jeu est en accès anticipé : son format peut encore changer | rien | mémoire partagée du jeu (trois pages à son nom) |
-| **Assetto Corsa Rally** | **Expérimental** depuis la 1.12.0 : écrit d'après ce que des outils libres ont relevé du jeu, **pas encore vérifié face au jeu**. Chaque passage d'une spéciale est compté comme un tour. Le jeu est en accès anticipé : son format peut encore changer | rien | mémoire partagée du jeu (les pages d'ACC, températures en kelvins) |
+| **Assetto Corsa Rally** | **Expérimental** depuis la 1.12.0. **Corrigé en 1.14.1 d'après des pages relevées dans le jeu** (27 novembre 2026) : avant, Corde ne voyait pas le jeu. Le direct est vérifié sur ces pages ; le comptage des passages (départ, arrivée) reste à voir en roulant. Chaque passage d'une spéciale est compté comme un tour. Le jeu est en accès anticipé : son format peut encore changer | rien | mémoire partagée du jeu (les pages d'ACC, températures en kelvins) |
 | **rFactor 2** | **Expérimental** depuis la 1.13.0 : même moteur que Le Mans Ultimate, lu par le même convertisseur (déjà vérifié en jeu pour Le Mans Ultimate) ; la lecture du jeu lui-même n'est **pas encore vérifiée** | activer un plugin livré avec le jeu, une fois (voir plus bas) | mémoire partagée du plugin `rFactor2SharedMemoryMapPlugin64.dll` |
 | Automobilista 2, Project CARS 2 | Prévu, les prochains (une même interface pour les deux) | activer la mémoire partagée dans les options | mémoire partagée du jeu |
 | RaceRoom Racing Experience | Prévu, ensuite | rien | mémoire partagée du jeu |
@@ -203,8 +203,17 @@ joindre à un signalement sur [GitHub](https://github.com/dultra123/corde/issues
 - **Rien à installer ni à activer** : le jeu publie les mêmes pages de mémoire partagée qu'Assetto Corsa
   Competizione. Corde les ouvre en lecture seule, et reconnaît le jeu à ses températures (il les écrit en
   kelvins).
-- **Expérimental, pas encore vérifié face au jeu** : le module est écrit d'après ce que des outils libres ont
-  relevé du jeu, et testé contre un faux jeu. Le premier essai dira ce qui est juste.
+- **Expérimental.** Le module a d'abord été écrit d'après ce que des outils libres avaient relevé du jeu.
+  Le premier essai (27 novembre 2026) a montré que **Corde ne voyait pas le jeu** : il ne remplit pas tout
+  ce que ses pages prévoient. Corrigé en **1.14.1**, d'après des pages copiées dans le jeu en roulant et en
+  pause (Peugeot 206 WRC, Alsace Steigenbach) :
+  - la case « état » reste à zéro, en roulant comme à l'arrêt : Corde regarde si la voiture est simulée ;
+  - le chrono n'est donné qu'en texte (« 00:05.996 ») : Corde lit ce texte ;
+  - la page fixe ne donne que la voiture, la spéciale et sa longueur : le régime maximal vient de la page
+    de la voiture ; la capacité du réservoir n'est donnée nulle part ;
+  - en pause, la page de la voiture est vide et le reste est figé (comme attendu).
+  Sur ces pages, Corde lit juste : spéciale et longueur, voiture, vitesse, rapport, régime, températures
+  (air, piste, eau, pneus, freins), pressions, carburant.
 - **Une spéciale n'a pas de tours** : Corde compte **chaque passage comme un tour**.
   - Le passage commence quand le chrono du jeu démarre (au franchissement de la ligne de départ).
   - Il finit à l'arrivée, quand le chrono du jeu s'arrête alors que la voiture roule encore. Le temps
@@ -220,8 +229,13 @@ joindre à un signalement sur [GitHub](https://github.com/dultra123/corde/issues
 - **Ce que le jeu ne publie pas** : les autres concurrents, les temps intermédiaires, le niveau des aides,
   l'usure des pneus.
 - **Le jeu est en accès anticipé** : le format de ses pages peut changer d'une mise à jour à l'autre.
-- **À confirmer en jeu** : le départ et l'arrivée (un passage par passage, avec le bon temps), le sens de ce
-  qui est latéral (carte en miroir ?), les températures.
+- **Quand tu quittes une spéciale**, rien dans les pages ne le dit : Corde ferme la session quand la voiture
+  n'est plus simulée depuis une minute (ou tout de suite si le jeu est fermé). Une pause de plus d'une
+  minute coupe donc la session en deux.
+- **Si Corde est lancée au milieu d'un passage**, ce passage n'est pas chronométré (elle n'a pas vu le
+  départ) : le suivant l'est.
+- **À confirmer en jeu** : le départ et l'arrivée (un passage par passage, avec le bon temps), ce que le jeu
+  publie dans ses menus, le sens de ce qui est latéral (carte en miroir ?).
 
 ### Aider à vérifier Assetto Corsa Rally
 

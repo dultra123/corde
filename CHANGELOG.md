@@ -8,6 +8,21 @@ crée la release `v<version>` et copie la section `## [<version>]` dans ses note
 Écrire pour le pilote : ce qui change pour lui, en quelques lignes, sans jargon. Le détail technique reste
 dans `docs/STATUS.md` et l'historique git.
 
+## [1.14.1] — 2026-11-27
+
+**Assetto Corsa Rally : Corde ne voyait pas le jeu. Corrigé.**
+
+- Au premier essai du jeu, Corde restait sur « aucun jeu » pendant qu'on roulait. Le jeu ne remplit pas tout
+  ce que ses pages de mémoire prévoient : la case qui dit « en piste » reste à zéro, et le chrono n'est
+  donné qu'en texte. Corde attendait les deux autrement.
+- Corde lit maintenant ce que le jeu écrit vraiment, d'après des pages copiées dans le jeu en roulant et en
+  pause : le direct (vitesse, rapport, régime, températures, pressions, carburant), le nom et la longueur
+  de la spéciale, la voiture.
+- Chaque passage reste compté comme un tour, avec le chrono du jeu. Cette partie (départ, arrivée) n'a pas
+  encore été vue en roulant : dis ce que ça donne.
+- Si le jeu est fermé pendant qu'un autre logiciel garde ses pages ouvertes, Corde ne s'y rebranche plus.
+- Assetto Corsa Rally reste **expérimental**.
+
 ## [1.14.0] — 2026-11-26
 
 **Un tableau de bord de Corde sur l'écran d'un volant MOZA (KS Pro, CS Pro) — expérimental.**

@@ -18,11 +18,24 @@
 //!   to be twice what was driven so far (the car « half-way »): the lap tracker needs a
 //!   length to tell a finish from a run given up.
 //!
-//! Everything here follows what was observed by others; `TODO(verify-in-game)` marks what
-//! matters most to confirm.
+//! **What the game really writes** (pages copied from the running game, build of November
+//! 2026) is less than what its pages have room for, and [`normalised`] fills the gaps
+//! before anything else looks at them:
+//!
+//! * `Graphics::status` stays at zero, driving or not: the state is taken from the physics
+//!   page (simulated: live; blank: paused).
+//! * The clock is only there as a text (« 00:05.996 »); `Graphics::i_current_time` stays
+//!   at zero.
+//! * The static page gives the car, the stage and its length, and nothing else: no
+//!   version, no rev limit (the physics page has the current one).
+//!
+//! A build that fills these fields is read as it is: nothing is overwritten.
+//!
+//! The runs — the clock at zero on the start line, frozen at the finish — still follow
+//! what was observed by others; `TODO(verify-in-game)` marks what matters most to confirm.
 
 use crate::convert::Converter;
-use crate::layout::{status, Physics};
+use crate::layout::{status, text, Physics};
 use crate::reader::Pages;
 use corde_protocol::{GameId, GamePhase, TelemetryFrame, YellowFlagState};
 use std::time::Duration;
@@ -81,6 +94,65 @@ fn in_celsius(mut p: Physics) -> Physics {
     p
 }
 
+/// The clock of the game from its text, in ms: « 00:05.996 », « 1:02:05.120 », and the
+/// « 1:23:456 » of the other games of the family. `None` when it is not a time (empty,
+/// a countdown below zero): the clock is then taken at zero.
+pub fn clock_ms(text: &str) -> Option<i32> {
+    let text = text.trim();
+    let digits = |s: &str| !s.is_empty() && s.len() <= 4 && s.bytes().all(|b| b.is_ascii_digit());
+    let (whole, frac) = match text.rsplit_once('.') {
+        Some((whole, frac)) => (whole, Some(frac)),
+        None => match text.rsplit_once(':') {
+            // Three digits after the last colon are thousandths, not seconds.
+            Some((whole, last)) if last.len() == 3 => (whole, Some(last)),
+            _ => (text, None),
+        },
+    };
+    let mut seconds: i64 = 0;
+    let mut parts = 0;
+    for part in whole.split(':') {
+        parts += 1;
+        if parts > 3 || !digits(part) {
+            return None;
+        }
+        seconds = seconds * 60 + part.parse::<i64>().ok()?;
+    }
+    let ms = match frac {
+        None => 0,
+        Some(f) if digits(f) && f.len() <= 3 => {
+            // « .5 » is half a second.
+            f.parse::<i64>().ok()? * 10_i64.pow(3 - f.len() as u32)
+        }
+        Some(_) => return None,
+    };
+    i32::try_from(seconds * 1000 + ms).ok()
+}
+
+/// The pages as the rest of the conversion reads them: temperatures in °C, and what this
+/// game leaves at zero taken from where it does write it (see the module documentation).
+pub fn normalised(pages: &Pages) -> Pages {
+    let blank = is_blank(&pages.physics);
+    let mut graphics = pages.graphics;
+    if graphics.status == status::OFF {
+        graphics.status = if blank { status::PAUSE } else { status::LIVE };
+    }
+    if graphics.i_current_time == 0 {
+        if let Some(ms) = clock_ms(&text(&{ graphics.current_time })) {
+            graphics.i_current_time = ms;
+        }
+    }
+    let mut statics = pages.statics;
+    let limit = pages.physics.current_max_rpm;
+    if statics.max_rpm <= 0 && limit > 0 {
+        statics.max_rpm = limit;
+    }
+    Pages {
+        physics: in_celsius(pages.physics),
+        graphics,
+        statics,
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 enum Run {
     /// Not in a run: on the start line, in the stop zone, or a stage joined on the way.
@@ -130,10 +202,7 @@ impl RallyConverter {
     /// One frame from one copy of the pages. `now` is a monotonic clock (any origin).
     pub fn frame(&mut self, pages: &Pages, now: Duration, source_id: &str) -> TelemetryFrame {
         let blank = is_blank(&pages.physics);
-        let pages = Pages {
-            physics: in_celsius(pages.physics),
-            ..*pages
-        };
+        let pages = normalised(pages);
         let mut f = self.inner.frame(&pages, now, source_id);
         let g = &pages.graphics;
         let elapsed = self.inner.elapsed_s();

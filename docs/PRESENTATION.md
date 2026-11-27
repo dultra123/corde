@@ -1,6 +1,6 @@
 # Corde — fiche de présentation
 
-> À jour pour la **version 1.14.0** (26 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
+> À jour pour la **version 1.14.1** (27 novembre 2026). Cette fiche rassemble, en un seul endroit, ce qu'il
 > faut pour présenter Corde (site, page de présentation, annonce) : ce qu'elle fait, où elle tourne, ce qui
 > est nouveau, ce qui arrive, les images et les liens. Elle ne dit que ce qui existe ; le détail et l'état
 > exact de chaque partie sont dans le [README](../README.md) et dans [STATUS.md](STATUS.md).
@@ -27,7 +27,7 @@ Le nom vient du **point de corde** : l'endroit où la trajectoire idéale touche
 
 | | |
 |---|---|
-| Version actuelle | **1.14.0** (26 novembre 2026) |
+| Version actuelle | **1.14.1** (27 novembre 2026) |
 | Prix | Gratuit |
 | Licence | Logiciel libre, GPL-3.0-or-later ; code source public |
 | Jeux | Le Mans Ultimate (complet, vérifié) ; Assetto Corsa Competizione (expérimental, depuis la 1.7.0) ; Assetto Corsa (expérimental, depuis la 1.8.0) ; iRacing (expérimental, depuis la 1.9.0) ; Assetto Corsa EVO (expérimental, depuis la 1.11.0) ; Assetto Corsa Rally (expérimental, depuis la 1.12.0) ; rFactor 2 (expérimental, depuis la 1.13.0). Détection automatique. Détail : [JEUX.md](JEUX.md) |
@@ -72,7 +72,9 @@ sous le nom de son jeu.
 - **Assetto Corsa Rally** — **expérimental**, depuis la 1.12.0 : direct, enregistrement, carte de la
   spéciale ; chaque passage d'une spéciale est compté comme un tour, avec le temps du jeu, et deux passages
   se comparent comme deux tours ; rien à activer dans le jeu. Pas de classement ni de temps
-  intermédiaires. Pas encore vérifié face au jeu ; le jeu est en accès anticipé et son format peut changer.
+  intermédiaires. Corrigé en 1.14.1 d'après des pages relevées dans le jeu (avant, Corde ne le voyait
+  pas) ; le comptage des passages reste à voir en roulant. Le jeu est en accès anticipé et son format
+  peut changer.
 - **rFactor 2** — **expérimental**, depuis la 1.13.0 : le même moteur que Le Mans Ultimate, lu par le même
   convertisseur : direct, enregistrement, chronos officiels et secteurs, classement et écarts, pneus,
   freins, carburant, carte. Un plugin livré avec le jeu est à activer une fois dans ses options. Le jeu
@@ -291,6 +293,8 @@ redémarrer. Chaque version est signée et vérifiée avant l'installation ; rie
 
 ## Nouveautés
 
+- **1.14.1 (27 novembre 2026)** — correction : Assetto Corsa Rally n'était pas détecté (le jeu ne remplit
+  pas tout ce que ses pages prévoient). Corde lit maintenant ce que le jeu écrit vraiment.
 - **1.14.0 (26 novembre 2026)** — le Studio exporte un tableau de bord pour l'écran d'un volant MOZA
   KS Pro ou CS Pro (expérimental) : un modèle et un format prêts, un fichier à charger sur le volant avec
   le logiciel de son fabricant. Corde ne parle pas au volant.

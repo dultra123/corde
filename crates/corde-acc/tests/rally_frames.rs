@@ -3,7 +3,7 @@
 
 use corde_acc::fake::FakeSession;
 use corde_acc::layout::status;
-use corde_acc::rally::fake::{blank_physics, FakeRallyStage};
+use corde_acc::rally::fake::{blank_physics, FakeRallyStage, Writes};
 use corde_acc::rally::{RallyConverter, RallySource, RallySourceConfig};
 use corde_acc::reader::RawPages;
 use corde_acc::{AccSource, AccSourceConfig, Game};
@@ -66,7 +66,7 @@ fn a_frame_carries_what_the_game_publishes_in_celsius() {
     let f = frames.last().unwrap();
     let s = &f.session;
     assert_eq!(s.game, GameId::AcRally);
-    assert_eq!(s.track_name, "Alsace Stage 02");
+    assert_eq!(s.track_name, "Alsace Steigenbach");
     assert_eq!(s.track_length_m, 2850.0);
     assert_eq!(s.phase, GamePhase::Green);
     assert!(s.in_realtime);
@@ -74,7 +74,9 @@ fn a_frame_carries_what_the_game_publishes_in_celsius() {
     assert!((s.weather.ambient_c - 22.0).abs() < 1e-3, "kelvins → °C");
     assert!((s.weather.track_c - 27.0).abs() < 1e-3);
     let p = f.player.as_ref().unwrap();
-    assert_eq!(p.vehicle_model, "Alpine A110 Rally");
+    assert_eq!(p.vehicle_model, "Peugeot 206 WRC");
+    // The static page has no rev limit: the one of the physics page.
+    assert_eq!(p.engine.max_rpm, 7500.0);
     assert_eq!(p.lap.lap_number, 0);
     assert_eq!(p.lap.laps_completed, 0);
     assert!(!p.in_pits);
@@ -93,6 +95,96 @@ fn a_frame_carries_what_the_game_publishes_in_celsius() {
     assert_eq!(p.gaps.car_ahead_s, None);
     assert_eq!(f.standings.len(), 1);
     assert_eq!(f.standings[0].lap_fraction, p.lap.lap_fraction);
+}
+
+/// What the game was seen to write, and what readers of an earlier build described: both
+/// are read, and give the same runs.
+#[test]
+fn the_state_and_the_clock_are_taken_from_where_the_game_writes_them() {
+    let seen = FakeRallyStage::default();
+    let described = FakeRallyStage {
+        writes: Writes::AsDescribed,
+        ..FakeRallyStage::default()
+    };
+    // As seen: no status, no clock as a number, the clock as a text.
+    let raw = seen.at(6.0 + 23.75).pages().unwrap();
+    let (state, number, clock) = (
+        { raw.graphics.status },
+        { raw.graphics.i_current_time },
+        corde_acc::layout::text(&{ raw.graphics.current_time }),
+    );
+    assert_eq!(
+        (state, number, clock.as_str()),
+        (status::OFF, 0, "00:23.750")
+    );
+    assert_eq!(corde_acc::layout::text(&{ raw.statics.sm_version }), "");
+    let filled = corde_acc::rally::convert::normalised(&raw);
+    let (state, number, limit) = (
+        { filled.graphics.status },
+        { filled.graphics.i_current_time },
+        { filled.statics.max_rpm },
+    );
+    assert_eq!((state, number, limit), (status::LIVE, 23_750, 7500));
+    // In the stop zone the game does not simulate the car: paused.
+    let stopped =
+        corde_acc::rally::convert::normalised(&seen.at(6.0 + 95.0 + 6.0).pages().unwrap());
+    assert_eq!({ stopped.graphics.status }, status::PAUSE);
+    assert_eq!({ stopped.graphics.i_current_time }, 95_000);
+    // As described: what the game says is kept as it is.
+    let raw = described.at(6.0 + 23.75).pages().unwrap();
+    let kept = corde_acc::rally::convert::normalised(&raw);
+    let (state, number, limit) = (
+        { kept.graphics.status },
+        { kept.graphics.i_current_time },
+        { kept.statics.max_rpm },
+    );
+    assert_eq!((state, number, limit), (status::LIVE, 23_750, 7000));
+
+    for fake in [seen, described] {
+        let (laps, frames) = drive(&fake, 2.0 * fake.cycle_s() + 8.0);
+        assert_eq!(laps.len(), 2, "{laps:#?}");
+        for lap in &laps {
+            assert!(lap.timed_by_game && lap.valid, "{lap:#?}");
+            assert_eq!(lap.lap_time_s, 95.0);
+        }
+        let running = &frames[(100.0 * (6.0 + 40.0)) as usize];
+        assert_eq!(running.session.phase, GamePhase::Green);
+        assert!(running.session.in_realtime);
+        assert!(
+            (running.session.elapsed_s - 44.0).abs() < 0.05,
+            "the session clock runs"
+        );
+        let p = running.player.as_ref().unwrap();
+        assert!((p.lap.current_lap_s - 40.0).abs() < 0.02);
+        assert!(!p.in_pits);
+    }
+}
+
+#[test]
+fn the_clock_of_the_game_is_read_from_its_text() {
+    use corde_acc::rally::convert::clock_ms;
+    assert_eq!(clock_ms("00:05.996"), Some(5_996));
+    assert_eq!(clock_ms("00:00.000"), Some(0));
+    assert_eq!(clock_ms("12:34.567"), Some(754_567));
+    assert_eq!(clock_ms("1:02:05.120"), Some(3_725_120));
+    assert_eq!(clock_ms("5.5"), Some(5_500));
+    assert_eq!(clock_ms("  03:07.04 "), Some(187_040));
+    // The way the other games of the family write a time.
+    assert_eq!(clock_ms("1:23:456"), Some(83_456));
+    assert_eq!(clock_ms("01:23"), Some(83_000));
+    // Not a time: the clock is then taken at zero.
+    for bad in [
+        "",
+        "-00:03.000",
+        "--:--.---",
+        "1:2:3:4.5",
+        "12345:00.000",
+        "ab:cd.efg",
+        "1.2345",
+        ":",
+    ] {
+        assert_eq!(clock_ms(bad), None, "{bad:?}");
+    }
 }
 
 #[test]
@@ -246,7 +338,7 @@ fn the_name_of_the_stage_arriving_during_a_run_does_not_lose_the_run() {
     };
     let (laps, frames) = drive(&fake, fake.cycle_s() + 20.0);
     assert_eq!(frames[3000].session.track_name, "");
-    assert_eq!(frames[4000].session.track_name, "Alsace Stage 02");
+    assert_eq!(frames[4000].session.track_name, "Alsace Steigenbach");
     assert_eq!(laps.len(), 1, "{laps:#?}");
     assert!(laps[0].timed_by_game && laps[0].valid, "{laps:#?}");
     assert_eq!(laps[0].lap_time_s, 95.0);
@@ -272,6 +364,7 @@ fn the_source_tells_this_game_from_the_two_others() {
         dir: Some(dir.clone()),
         stall_timeout: Duration::from_millis(300),
         name_wait: Duration::from_millis(150),
+        idle_timeout: Duration::from_millis(120),
     });
     assert_eq!(source.info().game, GameId::AcRally);
     assert_eq!(source.info().label, "Assetto Corsa Rally");
@@ -290,35 +383,49 @@ fn the_source_tells_this_game_from_the_two_others() {
         Err(SourceError::NotAvailable(_))
     ));
 
-    // In the menus: the graphics page is all zeros.
+    // In the menus: no car is simulated.
     let mut fake = FakeRallyStage {
-        status: status::OFF,
+        in_menus: true,
         ..FakeRallyStage::default()
     };
-    fake.at(0.0).write_dir(&dir).unwrap();
-    assert!(matches!(
-        source.connect(),
-        Err(SourceError::NotAvailable(_))
-    ));
+    for t in [0.0, 0.1] {
+        fake.at(t).write_dir(&dir).unwrap();
+        assert!(matches!(
+            source.connect(),
+            Err(SourceError::NotAvailable(_))
+        ));
+    }
 
-    // A stage, its static page still empty: this game's, and nobody else's. The name
-    // of the stage is waited for a moment, then the source goes on without it.
-    fake.status = status::LIVE;
+    // A stage, its static page still empty: this game's, and nobody else's. The game
+    // leaves its status at zero all along: it is not what says that a stage is driven.
+    fake.in_menus = false;
+    assert_eq!(fake.at(1.0).pages().unwrap().graphics.status, status::OFF);
     fake.at(1.0).write_dir(&dir).unwrap();
     for mut other in others(&dir) {
         assert!(matches!(other.connect(), Err(SourceError::NotAvailable(_))));
     }
+    // The name of the stage is waited for a moment…
     assert!(matches!(
         source.connect(),
         Err(SourceError::NotAvailable(_))
     ));
     std::thread::sleep(Duration::from_millis(200));
+    // … and pages that did not move since the last look are those of nobody: a game
+    // that was closed leaves them behind for as long as another program keeps them.
+    assert!(matches!(
+        source.connect(),
+        Err(SourceError::NotAvailable(_))
+    ));
+    // They moved: the source goes on without the name.
+    fake.at(1.2).write_dir(&dir).unwrap();
     source.connect().unwrap();
     let first = source.poll().unwrap().expect("a frame");
     assert_eq!(first.session.game, GameId::AcRally);
     assert_eq!(first.source, "acrally-shm");
+    assert_eq!(first.session.phase, GamePhase::Green);
+    assert!(first.session.in_realtime);
     assert!(source.poll().unwrap().is_none(), "nothing moved");
-    // The static page written: still not the others' (their version number is there now).
+    // The static page written: still not the others' (it names no version).
     std::thread::sleep(Duration::from_millis(20));
     fake.at(3.0).write_dir(&dir).unwrap();
     assert!(source.poll().unwrap().is_some());
@@ -326,34 +433,81 @@ fn the_source_tells_this_game_from_the_two_others() {
         assert!(matches!(other.connect(), Err(SourceError::NotAvailable(_))));
     }
     // A blank physics page with that static page: nobody connects on it.
-    blank_physics(fake.at(3.0)).write_dir(&dir).unwrap();
-    for mut other in others(&dir) {
-        assert!(matches!(other.connect(), Err(SourceError::NotAvailable(_))));
-    }
     let mut again = RallySource::with_config(RallySourceConfig {
         dir: Some(dir.clone()),
         name_wait: Duration::ZERO,
         ..RallySourceConfig::default()
     });
-    assert!(matches!(again.connect(), Err(SourceError::NotAvailable(_))));
+    for t in [3.0, 3.1] {
+        blank_physics(fake.at(t)).write_dir(&dir).unwrap();
+        for mut other in others(&dir) {
+            assert!(matches!(other.connect(), Err(SourceError::NotAvailable(_))));
+        }
+        assert!(matches!(again.connect(), Err(SourceError::NotAvailable(_))));
+    }
 
-    // Nothing moves any more: the game is gone.
+    // Nothing moves any more: the game is gone, and its pages left behind are not taken
+    // again, however often they are looked at.
+    assert!(source.poll().is_ok());
     std::thread::sleep(Duration::from_millis(350));
     assert!(matches!(source.poll(), Err(SourceError::NotAvailable(_))));
-    // Back in the menus after a stage.
-    fake.at(4.0).write_dir(&dir).unwrap();
+    fake.at(3.5).write_dir(&dir).unwrap();
     source.connect().unwrap();
-    fake.status = status::OFF;
-    fake.at(5.0).write_dir(&dir).unwrap();
+    assert!(source.poll().unwrap().is_some());
+    std::thread::sleep(Duration::from_millis(350));
     assert!(matches!(source.poll(), Err(SourceError::NotAvailable(_))));
-
-    // The pages of Competizione, of the first Assetto Corsa: not this game's.
-    for theirs in [FakeSession::default(), FakeSession::assetto_corsa()] {
-        theirs.at(1.0).write_dir(&dir).unwrap();
+    for _ in 0..3 {
         assert!(matches!(
             source.connect(),
             Err(SourceError::NotAvailable(_))
         ));
+    }
+
+    // A pause in the car: the physics page is blank and the graphics page frozen, only
+    // the counter of the physics page runs. The session is kept for a while (a stage
+    // restarted from the pause menu is the same session)…
+    fake.at(4.0).write_dir(&dir).unwrap();
+    source.connect().unwrap();
+    let paused = |t: f64| {
+        let mut raw = blank_physics(fake.at(4.0));
+        raw.physics[..4].copy_from_slice(&fake.at(t).physics[..4]);
+        raw
+    };
+    paused(4.1).write_dir(&dir).unwrap();
+    let frame = source.poll().unwrap().expect("a frame of the pause");
+    assert_eq!(frame.session.phase, GamePhase::Paused);
+    assert!(frame.session.in_realtime);
+    std::thread::sleep(Duration::from_millis(60));
+    // … and driving again within that while goes on in it.
+    fake.at(4.2).write_dir(&dir).unwrap();
+    assert_eq!(
+        source.poll().unwrap().expect("a frame").session.phase,
+        GamePhase::Green
+    );
+    // Back in the menus after a stage: the car is not simulated any more. Past the
+    // while, the stage is taken for left.
+    fake.in_menus = true;
+    fake.at(5.0).write_dir(&dir).unwrap();
+    assert!(source.poll().is_ok(), "not at once");
+    std::thread::sleep(Duration::from_millis(150));
+    fake.at(5.2).write_dir(&dir).unwrap();
+    assert!(matches!(source.poll(), Err(SourceError::NotAvailable(_))));
+    fake.at(5.3).write_dir(&dir).unwrap();
+    assert!(matches!(
+        source.connect(),
+        Err(SourceError::NotAvailable(_))
+    ));
+    fake.in_menus = false;
+
+    // The pages of Competizione, of the first Assetto Corsa: not this game's.
+    for theirs in [FakeSession::default(), FakeSession::assetto_corsa()] {
+        for t in [1.0, 1.1] {
+            theirs.at(t).write_dir(&dir).unwrap();
+            assert!(matches!(
+                source.connect(),
+                Err(SourceError::NotAvailable(_))
+            ));
+        }
     }
     // … and another game taking the names while connected ends the session.
     FakeRallyStage::default().at(3.0).write_dir(&dir).unwrap();

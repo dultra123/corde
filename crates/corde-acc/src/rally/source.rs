@@ -4,21 +4,25 @@
 //! The game publishes pages of the names of Competizione's: what tells them apart is in
 //! the physics page (temperatures in kelvins, see [`super::convert::is_rally`]).
 //!
-//! * `connect` opens the pages and checks that a stage is loaded (in the menus the
-//!   graphics page is all zeros) and that the physics page is this game's. A blank
-//!   physics page (a pause, a replay, the stop zone) does not say whose it is: not
-//!   available, and looked at again a moment later.
+//! * `connect` opens the pages and checks that the physics page is this game's, which
+//!   also says that a stage is being driven. A blank physics page (the menus, a pause, a
+//!   replay, the stop zone) does not say whose it is: not available, and looked at again
+//!   a moment later. `Graphics::status` is not asked: the game leaves it at zero while a
+//!   stage is driven (seen in the game, build of November 2026).
+//! * Nothing in the pages says that the game was closed, and they outlive it for as long
+//!   as another program keeps them open: `connect` only takes pages whose physics counter
+//!   moved since it last looked.
 //! * The game writes its static page — the name of the stage — a moment after the stage
 //!   loaded. `connect` waits for it up to [`RallySourceConfig::name_wait`], so that the
 //!   session is not recorded under no name; past that, it goes on without.
 //! * `poll` copies the pages; a new frame is made when one of the two step counters moved,
 //!   at most [`NATIVE_RATE_HZ`] times a second.
-//! * The game left (the pages are gone, the graphics page went back to zeros, or nothing
-//!   moved for [`RallySourceConfig::stall_timeout`]): not available, and the mappings are
-//!   closed.
+//! * The game left (the pages are gone, or nothing moved for
+//!   [`RallySourceConfig::stall_timeout`]) or the stage was (the car has not been
+//!   simulated for [`RallySourceConfig::idle_timeout`]): not available, and the mappings
+//!   are closed.
 
-use super::convert::{is_rally, RallyConverter};
-use crate::layout::status;
+use super::convert::{is_blank, is_rally, RallyConverter};
 use crate::reader::{open_default_reader, PageReader};
 use corde_core::{SourceError, SourceInfo, TelemetrySource};
 use corde_protocol::{GameId, TelemetryFrame};
@@ -42,6 +46,11 @@ pub struct RallySourceConfig {
     /// How long the name of the stage is waited for before connecting without it.
     /// Default 10 s.
     pub name_wait: Duration,
+    /// How long the game may go without simulating the car (its physics page blank: a
+    /// pause, the stop zone after the finish, a replay, the menus) before the stage is
+    /// taken for left. Default 60 s: a stage restarted meanwhile stays the same session,
+    /// and its runs compare as laps.
+    pub idle_timeout: Duration,
 }
 
 impl Default for RallySourceConfig {
@@ -50,6 +59,7 @@ impl Default for RallySourceConfig {
             dir: None,
             stall_timeout: Duration::from_secs(5),
             name_wait: Duration::from_secs(10),
+            idle_timeout: Duration::from_secs(60),
         }
     }
 }
@@ -64,6 +74,10 @@ pub struct RallySource {
     last_frame: Option<Instant>,
     /// When a stage without a name was first seen.
     unnamed_since: Option<Instant>,
+    /// Since when the game has not been simulating the car.
+    blank_since: Option<Instant>,
+    /// The counter of the physics page when it was last looked at, connected or not.
+    looked: Option<i32>,
 }
 
 impl RallySource {
@@ -82,11 +96,14 @@ impl RallySource {
             last_change: now,
             last_frame: None,
             unnamed_since: None,
+            blank_since: None,
+            looked: None,
         }
     }
 
     fn lost(&mut self, why: impl Into<String>) -> SourceError {
         self.reader = None;
+        self.blank_since = None;
         SourceError::NotAvailable(why.into())
     }
 }
@@ -117,12 +134,8 @@ impl TelemetrySource for RallySource {
                 return Err(e);
             }
         };
-        if pages.graphics.status == status::OFF {
-            self.unnamed_since = None;
-            return Err(SourceError::NotAvailable(format!(
-                "{LABEL} : pas d'épreuve en cours"
-            )));
-        }
+        let id = pages.physics.packet_id;
+        let moved = self.looked.replace(id).is_some_and(|before| before != id);
         match is_rally(&pages.physics) {
             Some(true) => {}
             Some(false) => {
@@ -131,10 +144,17 @@ impl TelemetrySource for RallySource {
                 )))
             }
             None => {
+                self.unnamed_since = None;
                 return Err(SourceError::NotAvailable(format!(
-                    "{LABEL} : page physique vide (pause, replay ou zone d'arrêt)"
-                )))
+                    "{LABEL} : pas d'épreuve en cours (la voiture n'est pas simulée : \
+                     menus, pause, replay ou zone d'arrêt)"
+                )));
             }
+        }
+        if !moved {
+            return Err(SourceError::NotAvailable(format!(
+                "{LABEL} : ses pages ne bougent pas (jeu fermé, ou premier regard)"
+            )));
         }
         let track = pages.statics.track;
         if crate::layout::text(&track).is_empty() {
@@ -152,6 +172,7 @@ impl TelemetrySource for RallySource {
         self.last_ids = None;
         self.last_change = Instant::now();
         self.last_frame = None;
+        self.blank_since = None;
         Ok(())
     }
 
@@ -164,13 +185,21 @@ impl TelemetrySource for RallySource {
             Err(SourceError::NotAvailable(why)) => return Err(self.lost(why)),
             Err(e) => return Err(e),
         };
-        if pages.graphics.status == status::OFF {
-            return Err(self.lost("épreuve quittée"));
-        }
+        self.looked = Some(pages.physics.packet_id);
         if is_rally(&pages.physics) == Some(false) {
             return Err(self.lost("un autre jeu a pris la place"));
         }
         let now = Instant::now();
+        if is_blank(&pages.physics) {
+            let since = *self.blank_since.get_or_insert(now);
+            if now.duration_since(since) > self.cfg.idle_timeout {
+                return Err(
+                    self.lost("épreuve quittée (la voiture n'est plus simulée depuis un moment)")
+                );
+            }
+        } else {
+            self.blank_since = None;
+        }
         let ids = (pages.physics.packet_id, pages.graphics.packet_id);
         if self.last_ids == Some(ids) {
             if now.duration_since(self.last_change) > self.cfg.stall_timeout {

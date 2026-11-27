@@ -6,6 +6,11 @@
 //! differently: temperatures in kelvins, a static page written late, a clock that reads
 //! zero on the start line and freezes on the finish line, a blank physics page once the
 //! car stands in the stop zone.
+//!
+//! By default they hold **what the game was seen to write** (pages copied from the game,
+//! build of November 2026) and nothing more: no status, the clock as a text only, a static
+//! page with the car, the stage and its length ([`Writes::AsSeen`]). [`Writes::AsDescribed`]
+//! fills them the way readers of an earlier build described it, which Corde still reads.
 
 use crate::layout::{
     session, status, Graphics, Physics, Static, GRAPHICS_SIZE, PHYSICS_SIZE, STATIC_SIZE,
@@ -39,6 +44,28 @@ pub fn blank_physics(mut raw: RawPages) -> RawPages {
     raw
 }
 
+/// The clock as the game writes it: « 00:05.996 ».
+pub fn clock_text(ms: i32) -> String {
+    format!(
+        "{:02}:{:02}.{:03}",
+        ms / 60_000,
+        (ms / 1000) % 60,
+        ms % 1000
+    )
+}
+
+/// How much of the pages is filled.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Writes {
+    /// What the game was seen to write. `Graphics::status` and the integer clock stay at
+    /// zero; the static page names no version and no rev limit.
+    #[default]
+    AsSeen,
+    /// What readers of an earlier build described: a status, the clock as a number, a
+    /// version of the interface, the rev limit and the tank in the static page.
+    AsDescribed,
+}
+
 /// A stage driven again and again.
 #[derive(Debug, Clone)]
 pub struct FakeRallyStage {
@@ -62,15 +89,18 @@ pub struct FakeRallyStage {
     pub publishes_length: bool,
     /// The first run is given up this long after its start (the stage is restarted).
     pub gives_up_after_s: Option<f64>,
-    /// `Graphics::status`.
+    /// `Graphics::status`, with [`Writes::AsDescribed`] (the game leaves it at zero).
     pub status: i32,
+    pub writes: Writes,
+    /// Back in the menus: no car is simulated, no stage is named.
+    pub in_menus: bool,
 }
 
 impl Default for FakeRallyStage {
     fn default() -> Self {
         Self {
-            track: "alsace_stage_02".into(),
-            car: "alpine_a110_rally".into(),
+            track: "Alsace Steigenbach".into(),
+            car: "Peugeot 206 WRC".into(),
             wait_s: 6.0,
             run_s: 95.0,
             roll_s: 4.0,
@@ -81,6 +111,8 @@ impl Default for FakeRallyStage {
             publishes_length: true,
             gives_up_after_s: None,
             status: status::LIVE,
+            writes: Writes::AsSeen,
+            in_menus: false,
         }
     }
 }
@@ -154,11 +186,14 @@ impl FakeRallyStage {
             ),
         };
         let dist = (self.start_m + along) as f32;
+        let simulated = simulated && !self.in_menus;
+        let described = self.writes == Writes::AsDescribed;
 
         let mut physics = vec![0u8; PHYSICS_SIZE];
         let p = &mut physics;
         put_i32(p, offset_of!(Physics, packet_id), (t * 333.0) as i32 + 1);
         if simulated {
+            put_i32(p, offset_of!(Physics, current_max_rpm), 7500);
             put_f32(
                 p,
                 offset_of!(Physics, gas),
@@ -189,30 +224,44 @@ impl FakeRallyStage {
         let mut graphics = vec![0u8; GRAPHICS_SIZE];
         let g = &mut graphics;
         put_i32(g, offset_of!(Graphics, packet_id), (t * 60.0) as i32 + 1);
-        put_i32(g, offset_of!(Graphics, status), self.status);
-        put_i32(g, offset_of!(Graphics, session), session::HOTLAP);
-        put_i32(g, offset_of!(Graphics, position), 1);
-        put_i32(g, offset_of!(Graphics, i_current_time), clock_ms);
-        put_f32(g, offset_of!(Graphics, distance_traveled), dist);
-        put_i32(g, offset_of!(Graphics, active_cars), 1);
-        // A stage that winds from west to east.
-        let at = offset_of!(Graphics, car_coordinates);
-        put_f32(g, at, dist);
-        put_f32(g, at + 4, 310.0);
-        put_f32(g, at + 8, 60.0 * (dist / 180.0).sin());
+        if described {
+            put_i32(g, offset_of!(Graphics, status), self.status);
+            put_i32(g, offset_of!(Graphics, session), session::HOTLAP);
+            put_i32(g, offset_of!(Graphics, position), 1);
+            put_i32(g, offset_of!(Graphics, i_current_time), clock_ms);
+            put_i32(g, offset_of!(Graphics, active_cars), 1);
+        }
+        if !self.in_menus {
+            if !described {
+                put_text(
+                    g,
+                    offset_of!(Graphics, current_time),
+                    15,
+                    &clock_text(clock_ms),
+                );
+            }
+            put_f32(g, offset_of!(Graphics, distance_traveled), dist);
+            // A stage that winds from west to east.
+            let at = offset_of!(Graphics, car_coordinates);
+            put_f32(g, at, dist);
+            put_f32(g, at + 4, 310.0);
+            put_f32(g, at + 8, 60.0 * (dist / 180.0).sin());
+        }
 
         let mut statics = vec![0u8; STATIC_SIZE];
-        if t >= self.static_after_s {
+        if t >= self.static_after_s && !self.in_menus {
             let s = &mut statics;
-            put_text(s, offset_of!(Static, sm_version), 15, "1.7");
-            put_i32(s, offset_of!(Static, number_of_sessions), 1);
-            put_i32(s, offset_of!(Static, num_cars), 1);
+            if described {
+                put_text(s, offset_of!(Static, sm_version), 15, "1.7");
+                put_i32(s, offset_of!(Static, number_of_sessions), 1);
+                put_i32(s, offset_of!(Static, num_cars), 1);
+                put_i32(s, offset_of!(Static, max_rpm), 7000);
+                put_f32(s, offset_of!(Static, max_fuel), 60.0);
+            }
             put_text(s, offset_of!(Static, car_model), 33, &self.car);
             put_text(s, offset_of!(Static, track), 33, &self.track);
             put_text(s, offset_of!(Static, player_name), 33, "Alex");
             put_text(s, offset_of!(Static, player_surname), 33, "Martin");
-            put_i32(s, offset_of!(Static, max_rpm), 7000);
-            put_f32(s, offset_of!(Static, max_fuel), 60.0);
             if self.publishes_length {
                 put_f32(
                     s,

@@ -222,6 +222,45 @@ pas ce que le jeu ne publie pas.
 - **Hypothèses à confirmer en jeu** : marquées `TODO(verify-in-game)` dans `rally/convert.rs` — d'abord le
   départ et l'arrivée.
 
+### Amendement du 27 novembre 2026 (1.14.1) : ce que le jeu écrit vraiment
+
+Premier essai par le propriétaire : Corde restait sur « aucun jeu » pendant qu'il roulait
+(`/api/status` : « Assetto Corsa Rally : pas d'épreuve en cours »). Des pages copiées dans le jeu, en
+roulant puis en pause (version installée le 21 novembre 2026), ont montré que le jeu ne remplit qu'une
+partie de ce que ses pages prévoient, et que deux hypothèses reprises des autres lecteurs étaient fausses
+pour cette version :
+
+| Champ | Attendu | Relevé |
+| --- | --- | --- |
+| `Graphics::status` | 2 en piste, 3 en pause, 0 dans les menus | **0 tout le temps** |
+| `Graphics::i_current_time` | le chrono, en ms | **0** ; le chrono n'est que dans le texte `current_time` (« 00:05.996 ») |
+| page graphique, le reste | session, position, voitures… | seuls le compteur, le texte du chrono, la distance et la position de la voiture sont écrits |
+| page fixe | version de l'interface, régime maximal, réservoir… | **seulement** la voiture, la spéciale (noms d'affichage) et sa longueur |
+| page physique | pleine en piste, vide en pause, kelvins | conforme ; le régime maximal y est (`current_max_rpm`) |
+| en pause | page physique vide, compteur qui tourne | conforme ; la page graphique est figée, compteur compris |
+
+Décisions :
+
+- **`rally::convert::normalised`** remet les pages dans la forme que le reste de la conversion lit, sans
+  rien écraser de ce que le jeu écrirait un jour : l'état vient de la page physique (simulée : en piste ;
+  vide : en pause), le chrono du texte, le régime maximal de la page physique. Un jeu qui remplit ces
+  champs est lu tel quel (testé : `Writes::AsDescribed`).
+- **Le statut ne décide plus de rien dans la source.** Une épreuve est en cours quand la page physique
+  est celle du jeu (kelvins) ; elle est tenue pour quittée quand la voiture n'est plus simulée depuis
+  `idle_timeout` (60 s : une spéciale relancée entre-temps reste la même session), ou quand plus rien ne
+  bouge depuis `stall_timeout`.
+- **Des pages qui ne bougent pas ne sont celles de personne.** Rien ne dit que le jeu a été fermé, et ses
+  pages lui survivent tant qu'un autre programme les garde ouvertes (le logiciel de la base, un outil
+  d'affichage) : `connect` ne prend que des pages dont le compteur a bougé depuis son dernier regard.
+- **Le faux jeu écrit par défaut ce qui a été relevé**, et rien de plus (`Writes::AsSeen`).
+- Les pages relevées restent sur le PC du propriétaire : aucune n'est dans le dépôt. Vérifié en local en
+  les rejouant dans la source corrigée : jeu reconnu, spéciale et longueur, voiture, vitesse, rapport,
+  régime, températures, pressions, carburant.
+- **Toujours pas vu** : le départ et l'arrivée d'un passage (le chrono à zéro sur la ligne, figé à
+  l'arrivée), et ce que le jeu publie dans ses menus.
+- **Leçon** : un module écrit sans le jeu doit être essayé avec le jeu avant d'être dit « fait ». Corde le
+  disait « pas encore vérifié face au jeu » ; il fallait aussi le faire essayer plus tôt.
+
 ## I. rFactor 2 (1.13.0)
 
 - **Dans le module de Le Mans Ultimate** (`corde-lmu`, module `rf2`) : les deux jeux ont le même moteur.
