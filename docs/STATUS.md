@@ -285,6 +285,9 @@
     - **À faire ensuite** : la même vérification par relevé pour rFactor 2 et le premier Assetto
       Corsa dès qu'il les lance ; un bouton « copie de diagnostic » dans Corde pour ne plus passer par
       PowerShell.
+    Publication : CI n° 46032823852 (27 nov.), release `v1.14.1` à 17 h 37 (heure de Zurich), images
+    `1.14.1` et `latest` ; 549 tests Rust (69 suites) en local et sur les deux systèmes ; seul le
+    contrôle informatif des dépendances reste rouge (RUSTSEC-2026-0592).
     Historique : publié en 1.12.0 (22 nov.), expérimental, écrit sans le jeu.
     `corde-acc`, module `rally` (`convert.rs`, `source.rs`, `fake.rs`), `--source acrally`, détection
     automatique `[lmu, acc, ac, acevo, acrally, iracing]`, `acc-probe`, exemple `fake-acrally`, tests
